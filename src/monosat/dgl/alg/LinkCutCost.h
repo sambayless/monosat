@@ -29,8 +29,8 @@
 #include <vector>
 
 
-#ifdef NDEBUG
-#define NDEBUG_LINKCUT
+#ifdef DEBUG_DGL
+#define DEBUG_DGL_LINKCUT
 #endif
 //This implementation of link/cut trees is based of a combination of D. Sleator's implementation (//http://codeforces.com/contest/117/submission/860934),
 //and the (extremely well presented!) version described by Klein and Mozes, in the Appendix of Planarity.
@@ -56,7 +56,7 @@ class LinkCutCost {
 		//However, that information can be easily maintained outside the structure, at each link/cut operation.
 		bool hasRealParent = false; //used to skip splays in some cases.
 		bool deleted = false;
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		Weight cost = INF;
 		Weight min = INF;
 		Weight dbg_min = INF;
@@ -67,7 +67,7 @@ class LinkCutCost {
 		int right = -1;//Splay tree
 		int parent = -1;//Splay tree
 		Node(int id) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			dbg_ID = id;
 #endif
 		}
@@ -84,26 +84,26 @@ class LinkCutCost {
 	Weight grosscost(int v) {
 		//int cost = v.netcost + grossmin(v);
 		//assert(cost==v.cost);
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		Weight cp = nodes[v].cost;
 #endif
 		expose(v);
 		//dbg_print_forest();
 		//int it = iter;
 		Weight cost = nodes[v].netcost;
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		assert(cost == cp);
 #endif
 		return cost;
 		//return v.cost;
 	}
 	inline void update(int v) {
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		update(nodes[v]);
 #endif
 	}
 	inline void update(Node & v) {
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		Weight mincost = v.cost;
 		
 		if (v.left > -1) {
@@ -137,7 +137,7 @@ class LinkCutCost {
 	void updatePathCost(int v, Weight delta) {
 		expose(v);
 		nodes[v].netcost += delta;
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		
 		while (v > -1) {
 			nodes[v].cost += delta;
@@ -154,7 +154,7 @@ class LinkCutCost {
 	}
 	
 	void dbg_min(int v) {
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		if (v == -1) {
 			return;
 		}
@@ -233,7 +233,7 @@ class LinkCutCost {
 	}
 
 	inline void dbg_print_forest(bool force = false) {
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		int iter = 0;
 		/*if (!force)
 			return;*/
@@ -276,7 +276,7 @@ class LinkCutCost {
 	}
 public:
 	inline void print_forest(bool force = false) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		int iter = 0;
 		/*if (!force)
 			return;*/
@@ -319,7 +319,7 @@ public:
 #endif
 	}
 	void dbg_cost(int v) {
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		if (v == -1)
 			return;
 		Weight c = nodes[v].netcost;
@@ -337,7 +337,7 @@ public:
 	}
 	
 	void dbg_all() {
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		int i = 0;
 		for (Node & v : nodes) {
 			int id = i++;
@@ -349,7 +349,7 @@ public:
 	}
 	
 	void dbg_isGrossMin(int min, int v) {
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		static int iter = 0;
 		if (++iter == 22349) {
 			int a = 1;
@@ -403,7 +403,7 @@ public:
 		Node & q = nodes[p.parent];
 		int rID = q.parent;
 		Node & r = nodes[q.parent];
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		Weight cp = p.cost;
 		Weight cq = q.cost;
 		//int cr = r? grosscost(r):0;
@@ -456,7 +456,7 @@ public:
 		Node & q = nodes[p.parent];
 		int rID = q.parent;
 		Node & r = nodes[q.parent];
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		Weight cp = p.cost;
 		Weight cq = q.cost;
 		//int cr = r? grosscost(r):0;
@@ -503,7 +503,7 @@ public:
 	
 	void splay(int pID) {
 		Node & p = nodes[pID];
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		//dbg_print_forest();
 		Weight cp = p.cost;
 #endif
@@ -590,7 +590,7 @@ public:
 	}
 	
 	bool dbgSetCount() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		int count = 0;
 		for (int i = 0; i < nodes.size(); i++) {
 			int n = i;
@@ -607,7 +607,7 @@ public:
 	// prerequisite: x and y are in distinct trees, AND x is the root of its tree
 	void _link(int x, int y, Weight cost = 0) {
 		//assert (_findRoot(x) != _findRoot(y));
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		int sY = _findRoot(y);
 		int sX = _findRoot(x);
 		assert(sY != sX);  //else these are already linked.
@@ -619,13 +619,13 @@ public:
 		expose(x);
 		
 		assert(nodes[x].parent == -1);
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		//assert(nodes[x].cost==INF);
 #endif
 		nodes[x].parent = y;
 		nodes[x].netcost = cost;
 		nodes[x].hasRealParent = true;
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		
 		if (nodes[x].left == -1 && nodes[x].right == -1) {
 			assert(nodes[x].netmin == 0);
@@ -636,7 +636,7 @@ public:
 #endif
 		nodes[x].netmin = std::min(nodes[x].netmin, cost);
 		
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		nodes[x].cost = cost;
 		nodes[x].dbg_parent = y;
 #endif
@@ -794,7 +794,7 @@ public:
 		x.right = -1;
 		x.netcost = INF;
 		x.hasRealParent = false;
-#ifndef NDEBUG_LINKCUT
+#ifdef DEBUG_DGL_LINKCUT
 		x.cost = INF;
 		x.dbg_parent = -1;
 #endif

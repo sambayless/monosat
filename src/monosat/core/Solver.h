@@ -414,7 +414,7 @@ public:
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);
 
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 		for(Lit l:theory_reason)
 			assert(value(l)!=l_Undef);
 #endif

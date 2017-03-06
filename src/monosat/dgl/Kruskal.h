@@ -89,9 +89,9 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 	void dbg_printSpanningTree(bool showWeights=true){
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		printf("graph{\n");
 	/*	for (int i = 0; i < g.nodes(); i++) {
 			printf("n%d\n", i);
@@ -309,7 +309,7 @@ public:
 	}
 	
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
 		for (int i = 0; i < g.edges(); i++) {
@@ -364,7 +364,7 @@ private:
 			assert(parents[root] == -1);
 		}
 		/*
-		 #ifndef NDEBUG
+		 #ifdef DEBUG_DGL
 		 int rootcount =0;
 		 for(int i = 0;i<parents.size();i++){
 		 if(parents[i]==-1)

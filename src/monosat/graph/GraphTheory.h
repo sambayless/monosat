@@ -498,7 +498,7 @@ public:
 			return false;
 		}
 	void dbg_check_trail(int lev){
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		static vec<bool> seen;
 		seen.clear();
 		seen.growTo(vars.size());
@@ -547,7 +547,7 @@ public:
 	}
 
 	void dbg_check_trails(){
-/*#ifndef NDEBUG
+/*#ifdef DEBUG_GRAPH
 
 		int last_pos=-1;
 		for(int i = 0;i<bvtrail.size();i++){
@@ -1476,7 +1476,7 @@ public:
 	}
 
 	bool dbg_propgation(Lit l) {
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		static vec<Lit> c;
 		c.clear();
 		for (int i = 0; i < S->trail.size(); i++) {
@@ -1504,18 +1504,18 @@ public:
 	}
 
 	void dbg_sync_reachability() {
-
+/*
 #ifdef DEBUG_GRAPH
 
 		for(int i = 0;i<reach_detectors.size();i++) {
 			ReachDetector* d = reach_detectors[i];
 			d->dbg_sync_reachability();
 		}
-#endif
+#endif*/
 
 	}
 	void bassert(bool condition) {
-	#ifndef NDEBUG
+	#ifdef DEBUG_GRAPH
 		assert(condition);
 		if (!condition) {
 			throw std::runtime_error("Assertion error");
@@ -1548,7 +1548,7 @@ public:
 		}*/
 
 
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		/*dbg_check_trails();
 
 		if (opt_conflict_min_cut) {
@@ -1759,7 +1759,7 @@ public:
 	}
 
 	void debug_decisions(){
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
         for(int v = 0;v<nVars();v++){
 			if(value(v)==l_Undef){
 				for (int i = 0; i < detectors.size(); i++) {
@@ -1773,7 +1773,7 @@ public:
 
 
 	void debug_decision(Detector * r){
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		for(int v = 0;v<nVars();v++){
 			if(value(v)==l_Undef){
 					r->debug_decidable(v);
@@ -2342,7 +2342,7 @@ public:
 
 	bool dbg_notreachable(int from, int to, bool undirected = false) {
 
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		//drawFull(from,to);
 
 		/*DynamicGraph<Weight> g;
@@ -2870,7 +2870,7 @@ public:
 			stats_propagations_skipped++;
 			return true;
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		for(int v = 0;v<nVars();v++){
 			if(v==var(const_true))
 				continue;
@@ -3195,7 +3195,7 @@ public:
 	}
 	void drawFull(bool forceDraw=false, bool drawDisabled=true) {
 
-#ifdef NDEBUG
+#ifndef DEBUG_GRAPH
 		if(!forceDraw)
 			return;
 #endif
@@ -3450,7 +3450,7 @@ public:
 	}
 
 	void drawCurrent() {
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		int from = -1;
 		int to = -1;
 		printf("digraph{\n");

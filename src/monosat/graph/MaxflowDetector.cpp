@@ -454,7 +454,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 
  template<typename Weight>
  int MaxflowDetector<Weight>::dbg_minconflict(){
- #ifndef NDEBUG
+ #ifdef DEBUG_GRAPH
  Weight foundflow = negative_conflict_detector->maxFlow();
 
  int INF=0x0FF0F0;
@@ -520,7 +520,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
  }
  */
 void bassert(bool condition) {
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 	assert(condition);
 	if (!condition) {
 		throw std::runtime_error("Assertion error");
@@ -553,7 +553,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 			collectDisabledEdges();
 			//g_over.drawFull(true);
 			//learn_graph.drawFull(true);
-	#ifndef NDEBUG
+	#ifdef DEBUG_GRAPH
 			for (auto & e : g_over.getEdges()) {
 				int from = e.from;
 				int to = e.to;
@@ -773,7 +773,7 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 			analyzeMaxFlowLEQ(flow, conflict, true);
 			return;
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 	if (overapprox_detector != overapprox_conflict_detector) {
 		Weight foundflow2 = overapprox_detector->maxFlow();
 		assert(foundflow == foundflow2);
@@ -1099,7 +1099,7 @@ void MaxflowDetector<Weight>::FlowOp::analyzeReason(bool compareOver,Comparison 
 
 template<typename Weight>
 bool MaxflowDetector<Weight>::checkSatisfied() {
-	g_under.drawFull(true);
+	//g_under.drawFull(true);
 	EdmondsKarpAdj<Weight> underCheck(g_under, source, target);
 	EdmondsKarpAdj<Weight> overCheck(g_over, source, target);
 	for (int j = 0; j < flow_lits.size(); j++) {
@@ -1522,7 +1522,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 
 template<typename Weight>
 void MaxflowDetector<Weight>::dbg_decisions() {
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 	static int iter = 0;
 	++iter;
 	if (iter == 911) {
@@ -1612,7 +1612,7 @@ bool MaxflowDetector<Weight>::decideEdgeWeight(int edgeID, Weight & store, Detec
 
 template<typename Weight>
 void MaxflowDetector<Weight>::debug_decidable(Var v){
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
     if(opt_maxflow_decisions_type>0) {
 		if (outer->isEdgeVar(v)) {
 
@@ -1818,7 +1818,7 @@ Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
 
 		collectChangedEdges();
 		//DEBUG:check that the decision_q contains the right elements
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		if(opt_maxflow_decisions_type==1){
 			if(outer->hasBitVectorEdges()){
 			for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
@@ -2082,7 +2082,7 @@ Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
 			if (outer->value(l) == l_True && opt_decide_graph_pos) {
 				assert(over_flow >= required_flow);
 				
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 				static vec<bool> dbg_expect;
 				int dbg_count = 0;
 				dbg_expect.clear();

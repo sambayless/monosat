@@ -210,7 +210,7 @@ protected:
 	}
 	
 	bool dbg_distinctVertexCount() const {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		if (distinct_vertices >= 0) {
 			int same_count = 0;
 			for (int i = 0; i < size(); i++) {
@@ -227,7 +227,7 @@ protected:
 	}
 	
 	static bool dbg_orderClockwise2dTri(Point<2, T> p1, Point<2, T> p2, Point<2, T> p3) {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		
 		std::vector<Point<2, T>> points;
 		points.push_back(p1);
@@ -477,7 +477,7 @@ inline bool Polygon<D, T>::orderClockwise2d() const {
 
 template<unsigned int D, class T>
 inline bool Polygon<D, T>::dbg_orderClockwise2d() const {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	//from http://stackoverflow.com/a/1165943
 	if (vertices_clockwise) {
 		T sum = 0;

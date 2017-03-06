@@ -1929,7 +1929,7 @@ public:
 		void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
 						  Cause &over_cause_new) override {
 			importTheory(theory);
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 			Weight dbg_min = 0;
 			Weight dbg_max = 0;
 			for (Var v:args) {
@@ -5382,7 +5382,7 @@ public:
 		if (sl.x == 83) {
 			int a = 1;
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 
 		/*printf("learnt ");
 	for (int i = 0;i<nVars();i++){
@@ -6171,7 +6171,7 @@ public:
 		assigns[var(l)] = sign(l) ? l_False : l_True;
 		requiresPropagation = true;
 		//printf("enqueue %d\n", dimacs(l));
-/*#ifndef NDEBUG
+/*#ifdef DEBUG_BV
         {
             for (int i = 0; i < trail.size(); i++) {
                 assert(trail[i].var != v);
@@ -6256,7 +6256,7 @@ public:
 			int a=1;
 
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 /*		for(int i = 0;i<vars.size();i++){
 			if(value(i)==l_True){
 				std::cout << "1";
@@ -6574,7 +6574,7 @@ public:
 	}
 
 	bool checkApproxUpToDate(int bvID, Weight *under_store = nullptr, Weight *over_store = nullptr) {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		if (bvID == 2966) {
 			int a = 1;
 		}
@@ -6667,7 +6667,7 @@ public:
 	}
 
 	bool dbg_synced() {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		for (Var v = 0; v < nVars(); v++) {
 			assert(value(v) == dbg_value(v));
 		}
@@ -6676,7 +6676,7 @@ public:
 	}
 
 	bool checkAllApproxUpToDate() {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		for (int i = 0; i < bitvectors.size(); i++) {
 			assert(checkApproxUpToDate(i));
 		}
@@ -6685,7 +6685,7 @@ public:
 	}
 
 /*	bool dbg_uptodate(){
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		assert(checkAllApproxUpToDate());
 		for(int cID = 0;cID<comparisons.size();cID++){
 			ComparisonID & c = comparisons[cID];
@@ -7179,7 +7179,7 @@ public:
 	}
 
 	inline void assert_in_range(Weight val, int bvID) {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		int width = bitvectors[bvID].size();
 		Weight max_val = ((1L) << width) - 1;
 		assert(val >= 0);
@@ -7390,7 +7390,7 @@ public:
 	}
 
 	inline void dbg_no_pending_analyses() {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		for (int i = 0; i < pending_under_analyses.size(); i++) {
 			assert(pending_under_analyses[i] == -1);
 			assert(pending_over_analyses[i] == -1);
@@ -8199,7 +8199,7 @@ private:
 
 	int getComparisonID(Comparison op, int bvID, const Weight &w) {
 		//could do a binary search here:
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		int expect = -1;
 		for (int i = 0; i < compares[bvID].size(); i++) {
 			int cID = compares[bvID][i];
@@ -8218,20 +8218,24 @@ private:
 				//we found a comparison to the same bitvector. Now lets see if there is a comparison with the same operator to that bitvector
 				while (pos < compare.size() && ((ComparisonOp &) getOperation(compare[pos])).w == w) {
 					if (((ComparisonOp &) getOperation(compare[pos])).getOp() == op) {
+#ifdef DEBUG_BV
 						assert(compare[pos] == expect);
+#endif
 						return compare[pos];
 					}
 					pos++;
 				}
 			}
 		}
+#ifdef DEBUG_BV
 		assert(expect == -1);
+#endif
 		return -1;
 	}
 
 	bool dbg_compares_sorted(int bvID) {
 
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		vec<int> &compare = compares[bvID];
         for (int i = 1; i < compare.size(); i++) {
             int cID0 = compare[i - 1];
@@ -8246,7 +8250,7 @@ private:
 
 	bool dbg_bvcompares_sorted(int bvID) {
 
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		vec<int> &bvcompare = bvcompares[bvID];
 		for (int i = 1; i < bvcompare.size(); i++) {
 			int cID0 = bvcompare[i - 1];
@@ -8338,7 +8342,7 @@ private:
 		assert(dbg_bvcompares_sorted(bvID));
 		//The bv's are kept in sorted order.
 		//Do a binary search to find this bvcompare, if it exists.
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 		Lit expect = lit_Undef;
 		for (int i = 0; i < bvcompare.size(); i++) {
 			int cID = bvcompare[i];
@@ -8359,14 +8363,18 @@ private:
 					   ((ComparisonBVOp &) getOperation(bvcompare[pos])).getCompareID() == compareID) {
 					ComparisonBVOp &cOp = ((ComparisonBVOp &) getOperation(bvcompare[pos]));
 					if (cOp.getOp() == op) {
+#ifdef DEBUG_BV
 						assert(cOp.l == expect);
+#endif
 						return cOp.l;
 					}
 					pos++;
 				}
 			}
 		}
+#ifdef DEBUG_BV
 		assert(expect == lit_Undef);
+#endif
 		return lit_Undef;
 	}
 
@@ -9010,7 +9018,7 @@ public:
 	}
 
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
         return true;
 		//dbg_synced();
 		for (int bvID = 0; bvID < bitvectors.size(); bvID++) {
@@ -9284,7 +9292,7 @@ void BVTheorySolver<Weight>::dbg_evaluate(int bvID, int pos, vec<Weight> &vals, 
 
 template<typename Weight>
 Weight BVTheorySolver<Weight>::refine_ubound_check(int bvID, Weight bound, Var ignore_bit) {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 	//test all values of mbits, find the lowest one >= i
 	static vec<Weight> vals;
 	vals.clear();
@@ -9304,7 +9312,7 @@ Weight BVTheorySolver<Weight>::refine_ubound_check(int bvID, Weight bound, Var i
 
 template<typename Weight>
 Weight BVTheorySolver<Weight>::refine_lbound_check(int bvID, Weight bound, Var ignore_bit) {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 	//test all values of mbits, find the lowest one >= i
 	static vec<Weight> vals;
 	vals.clear();
@@ -9324,7 +9332,7 @@ Weight BVTheorySolver<Weight>::refine_lbound_check(int bvID, Weight bound, Var i
 
 template<typename Weight>
 Weight BVTheorySolver<Weight>::refine_ubound(int bvID, Weight bound, Var ignore_bit) {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 	Weight expected = refine_ubound_check(bvID, bound, ignore_bit);
 #endif
 	//Weight under_old = under_approx[bvID];
@@ -9379,7 +9387,9 @@ Weight BVTheorySolver<Weight>::refine_ubound(int bvID, Weight bound, Var ignore_
 			}
 
 			if (!found) {
+#ifdef DEBUG_BV
 				assert(expected == -1);
+#endif
 				return -1;
 			}
 		}
@@ -9401,11 +9411,13 @@ Weight BVTheorySolver<Weight>::refine_ubound(int bvID, Weight bound, Var ignore_
 
 
 	if (refined_bound < bound) {
+#ifdef DEBUG_BV
 		assert(expected == -1);
+#endif
 		return -1;
 	}
 	//#return ubound(ibits,mbits2)
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 	if (refined_bound != expected) {
 		assert(false);
 		exit(5);
@@ -9416,7 +9428,7 @@ Weight BVTheorySolver<Weight>::refine_ubound(int bvID, Weight bound, Var ignore_
 
 template<typename Weight>
 Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore_bit) {
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 	Weight expected = refine_lbound_check(bvID, obound, ignore_bit);
 #endif
 /*	static int iter = 0;
@@ -9476,7 +9488,9 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 			}
 
 			if (!found) {
+#ifdef DEBUG_BV
 				assert(expected == -1);
+#endif
 				return -1;
 			}
 		}
@@ -9502,13 +9516,15 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 
 	refined_bound = (1L << bv.size()) + ~refined_bound;
 	if (refined_bound > obound) {
+#ifdef DEBUG_BV
 		assert(expected == -1);
+#endif
 		return -1;
 	}
 
 	//#return ubound(ibits,mbits2)
 
-#ifndef NDEBUG
+#ifdef DEBUG_BV
 	if (refined_bound != expected) {
 		assert(false);
 		exit(5);

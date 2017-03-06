@@ -311,7 +311,7 @@ public:
 	}
 	
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
 		for (int i = 0; i < g.edges(); i++) {

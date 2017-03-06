@@ -764,7 +764,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 		 }
 		 }
 		 //cutgraph.drawFull();
-		 #ifndef NDEBUG
+		 #ifdef DEBUG_GRAPH
 		 for(int i = 0;i<g.nEdgeIDs();i++){
 		 Var v = outer->getEdgeVar(i);
 		 if(outer->value(v)==l_False && outer->level(v)==0){
@@ -1307,7 +1307,7 @@ bool ReachDetector<Weight>::checkSatisfied() {
 }
 template<typename Weight>
 void ReachDetector<Weight>::dbg_sync_reachability() {
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 	if (!underapprox_detector)
 		return;
 	for (int j = 0; j < reach_lits.size(); j++) {

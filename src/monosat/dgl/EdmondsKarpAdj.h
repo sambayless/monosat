@@ -161,7 +161,7 @@ public:
 		
 	}
 	void dbg_print_graph(int from, int to) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 /*		return;
 		static int it = 0;
 		if (++it == 6) {
@@ -364,7 +364,7 @@ public:
 			}
 		}
 		cut.resize(j);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;

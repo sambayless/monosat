@@ -309,7 +309,7 @@ public:
     T&       last  (void)              { return data[sz-1]; }
 
     // Vector interface:
-  #ifdef DEBUG
+  #ifdef DEBUG_PB
     const T& operator [] (int index) const  { assert((uint)index < (uint)sz); return data[index]; }
     T&       operator [] (int index)        { assert((uint)index < (uint)sz); return data[index]; }
   #else

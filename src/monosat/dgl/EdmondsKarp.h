@@ -385,7 +385,7 @@ public:
 			}
 		}
 		cut.resize(j);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;

@@ -289,7 +289,7 @@ void  MonotoneDelaynay<2,double>::addDiagonal(int fromIndex, int toIndex){
 template<>
 void  MonotoneDelaynay<2,double>::triangulate(){
 	buildMonotonePolygons();
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	for(auto & v:monotonePolygons)
 		assert(!v.seen);
 #endif

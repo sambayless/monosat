@@ -31,7 +31,7 @@
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
 #include <limits>
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 //#define DEBUG_MAXFLOW2
 #endif
 namespace dgl {
@@ -435,7 +435,7 @@ public:
 				edge_map_ind[arc_id]={first_ind,last_ind};
 
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 				for(int edgeID:tmp_edge_map[i]){
 					int arcID=arc_map[edgeID];
 					assert(arcID==arc_id);
@@ -459,14 +459,14 @@ public:
 				tmp_edges[to]=-1;
 			}
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			for(int i = 0;i<tmp_edges.size();i++)
 				assert(tmp_edges[i]==-1);
 #endif
 
 		}
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 				for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
 					if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
 							continue;
@@ -624,7 +624,7 @@ public:
 #endif
 		//dbg_print_graph(s,t,true);
 		//g.drawFull(true);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		
 		for (int i = 0; i < g.edges(); i++) {
 			if (g.getEdge(i).from == g.getEdge(i).to)
@@ -712,7 +712,7 @@ private:
 	}*/
 	
 	void dbg_print_graph(int from, int to, bool only_flow = false) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 
 		if (edge_enabled.size() < g.edges())
 			return;
@@ -772,7 +772,7 @@ private:
 #endif
 	}
 	void bassert(bool c) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		assert(c);
 		if (!c) {
 			throw std::logic_error("Assertion Fail!");
@@ -782,7 +782,7 @@ private:
 	
 
 	void dbg_check_flow(int s, int t) {
-/*#ifndef NDEBUG
+/*#ifdef DEBUG_DGL
 		//check that the flow is legal
 		for (int i = 0; i < g.edges(); i++) {
 			Weight flow = getEdgeFlow(i);
@@ -977,7 +977,7 @@ public:
 		 }
 		 cut.resize(j);
 		 */
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;

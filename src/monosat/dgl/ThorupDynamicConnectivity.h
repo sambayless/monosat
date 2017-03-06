@@ -26,7 +26,7 @@
 #include "monosat/dgl/alg/EulerTree.h"
 #include <cmath>
 #include <algorithm>
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 #include "monosat/mtl/Sort.h"
 #include "NaiveDynamicConnectivity.h"
 #endif
@@ -38,7 +38,7 @@ namespace dgl {
  */
 class ThorupDynamicConnectivity: public DynamicConnectivityImpl {
 	
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 	NaiveDynamicConnectivity dbg;
 #endif
 	
@@ -133,7 +133,7 @@ private:
 	}
 	
 	void dbg_tree(int level) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int n = 0; n < nodes; n++) {
 			int sz = et[level].getFullTreeSize(n);
 			assert(sz <= pow(2, level + 1));//invariant from paper (note that we are adding one because our levels are offset by one (and reversed!) from the papers)
@@ -152,7 +152,7 @@ private:
 #endif
 	}
 	void dbg_checkGraph() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < nodes; i++) {
 			/*	for(int e:incident_edges[i]){
 			 assert(!edges[e].in_forest);
@@ -184,7 +184,7 @@ private:
 	}
 	
 	void dbg_incident() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int n = 0; n < nodes; n++) {
 			std::vector<int> & incident = incident_edges[n];
 			std::vector<int> seen;
@@ -218,7 +218,7 @@ private:
 	}
 	
 	void dbg_print() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		std::vector<bool> seen;
 		seen.resize(nodes);
 		for (int n = 0; n < nodes; n++) {
@@ -351,7 +351,7 @@ private:
 		int u = e.from;
 		int v = e.to;
 		assert(e.level > 0);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < e.level; i++) {
 			assert(!et[i].connected(u, v));
 		}
@@ -461,7 +461,7 @@ private:
 		
 	}
 	void dbg_levels() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int l = 0; l < levels; l++) {
 			dbg_tree(l);
 			
@@ -471,7 +471,7 @@ private:
 	}
 	
 	void dbg_printTree(int level, int fromnode) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		std::vector<bool> dbg_seen;
 		dbg_seen.resize(nodes);
 		std::vector<int> treenodes;
@@ -511,7 +511,7 @@ public:
 		
 	}
 	bool connected(int u, int v) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		/*	bool c = et.back().connected(u,v);
 		 bool d= dbg.connected(u,v);
 		 if(c!=d){
@@ -544,7 +544,7 @@ public:
 				t.createVertex();
 			assert(t.nVertices() == nodes);
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		dbg.addNode();
 #endif
 	}
@@ -558,7 +558,7 @@ public:
 			edges[edgeID].level = levels - 1;
 			edges[edgeID].edgeID = edgeID;
 			setEdgeLevel(edgeID, edges[edgeID].level);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			dbg.addEdge(from, to, edgeID);
 #endif
 		}
@@ -679,7 +679,7 @@ public:
 				nodes_out.push_back(treeEdge.from);
 			}
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		/*	for(int i =0;i<nodes;i++){
 		 if(t_seen[i]){
 		 assert(nodes_out.contains(i));
@@ -751,7 +751,7 @@ public:
 			edges[edgeID].enabled = false;
 			changed = cut(edgeID);
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		dbg.setEdgeEnabled(from, to, edgeID, enabled);
 		dbg_checkGraph();
 #endif
@@ -774,7 +774,7 @@ public:
 			edges[edgeID].enabled = true;
 			changed = insert_unchecked(edgeID, connected);
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		dbg.setEdgeEnabled(from, to, edgeID, true);
 		dbg_checkGraph();
 #endif

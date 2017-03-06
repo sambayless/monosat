@@ -468,7 +468,7 @@ public:
 			inq.pop();
 		}
 		
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		for (PbClause & c : clauses) {
 			assert(!c.inQueue);
 		}
@@ -877,7 +877,7 @@ private:
 		
 	}
 	void dbg_fully_propped() {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		
 		for (int i = 0; i < clauses.size(); i++) {
 			int clauseID = i;
@@ -924,7 +924,7 @@ private:
 #endif
 	}
 	void dbg_min_conflict(const PbClause & c, vec<Lit> &conflict) {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		if (opt_shrink_theory_conflicts) {
 			dbg_prove(c, conflict);
 			vec<Lit> t;
@@ -952,7 +952,7 @@ private:
 #endif
 	}
 	void dbg_min_conflictb(const PbClause & c, vec<Lit> &conflict) {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		
 		dbg_prove(c, conflict);
 		vec<Lit> t;
@@ -984,7 +984,7 @@ private:
 #endif
 	}
 	void dbg_fully_propped(const PbClause & c) {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		if (!opt_dbg_prop)
 			return;
 		vec<Lit> prove;
@@ -1031,7 +1031,7 @@ private:
 	}
 	
 	void dbg_prop(const PbClause & c, Lit e) {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		vec<Lit> prove;
 		for (PbElement p : c.clause) {
 			if (value(p.lit) == l_False) {
@@ -1054,7 +1054,7 @@ private:
 	}
 	
 	void dbg_prove(const PbClause & c, const vec<Lit> & clause) {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 	/*	return;
 		bool rhs_val = true;
 		for (Lit l : clause) {
@@ -1112,7 +1112,7 @@ private:
 #endif
 	}
 	void dbg_unprove(const PbClause & c, const vec<Lit> & clause) {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		bool rhs_val = true;
 		for (Lit l : clause) {
 			if (var(l) == var(c.rhs.lit)) {
@@ -1169,7 +1169,7 @@ private:
 #endif
 	}
 	void dbg_unsat(const PbClause & c, const vec<Lit> & clause) {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		bool rhs_val = true;
 		for (Lit l : clause) {
 			if (var(l) == var(c.rhs.lit)) {
@@ -1226,7 +1226,7 @@ private:
 #endif
 	}
 	void dbg_sat(const PbClause & c, const vec<Lit> & clause) {
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		bool rhs_val = true;
 		for (Lit l : clause) {
 			if (var(l) == var(c.rhs.lit)) {
@@ -1393,7 +1393,7 @@ public:
 		for (int clauseID : inq) {
 			clauses[clauseID].inQueue = false;
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		for (PbClause & c : clauses) {
 			assert(!c.inQueue);
 		}
@@ -1430,7 +1430,7 @@ public:
 		for (int clauseID : inq) {
 			clauses[clauseID].inQueue = false;
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_PB
 		for (PbClause & c : clauses) {
 			assert(!c.inQueue);
 		}

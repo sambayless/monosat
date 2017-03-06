@@ -91,7 +91,7 @@ private:
 	bool containsInSplit2d_helper(const Point<2, T> & point, int firstVertex, int lastVertex,
 			NConvexPolygon<2, T> & polygon_out, int depth, bool inclusive, bool excludeVertices);
 	bool dbg_Convex() {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		bool seenPositive = false;
 		bool seenNegative = false;
 		for (int i = 0; i < this->size(); i++) {
@@ -112,7 +112,7 @@ private:
 	}
 	
 	static bool dbg_orderClockwise2dTri(Point<2, T> p1, Point<2, T> p2, Point<2, T> p3) {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		std::vector<Point<2, T>> points;
 		points.push_back(p1);
 		points.push_back(p2);
@@ -710,7 +710,7 @@ bool ConvexPolygon<D, T>::containsInSplit2d_helper(const Point<2, T> & point, in
 		stats_split_checks_depths += depth;
 		return true;	//we are done
 	} else {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		NConvexPolygon<D, T> dbg_poly;
 		dbg_poly.addVertexUnchecked(a);
 		dbg_poly.addVertexUnchecked(c);
@@ -1140,7 +1140,7 @@ bool ConvexPolygon<D, T>::intersects2d(Shape<2, T> & shape, NConvexPolygon<2, T>
 		return false;
 	
 	if (!this->boundIntersects(shape, inclusive)) {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		NConvexPolygon<2, T> t;
 		for (auto & p : *this) {
 			t.addVertex(p);
@@ -1343,7 +1343,7 @@ bool ConvexPolygon<D, T>::intersects2d(Shape<2, T> & shape, NConvexPolygon<2, T>
 			 }*/
 		}
 		
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		NConvexPolygon<2, T> test;
 		test.addVertex(line.a);
 		test.addVertex(line.b);

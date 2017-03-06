@@ -307,7 +307,7 @@ void WeightedDistanceDetector<Weight>::analyzeDistanceGTReason(int to, Weight & 
 	Weight & actual_dist = overapprox_weighted_distance_detector->distance(to);
 
 	bool connected = overapprox_weighted_distance_detector->connected(to);
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 	Dijkstra<Weight> d(source, g_over);
 	Weight & expected = d.distance(to);
 	assert(expected == actual_dist);

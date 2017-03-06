@@ -92,7 +92,6 @@
 // NOTE: in UNIX you need to use -DNDEBUG preprocessor option to suppress assert's!!!
 
 namespace kohli_torr {
-
 /*
  special constants for node->parent
  */
@@ -285,7 +284,7 @@ public:
 			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 				a = a->next;
 		}else{
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			a = nodes[from].first;
 			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 				a = a->next;
@@ -461,7 +460,7 @@ private:
 			prev[u] = nullptr;
 			
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < this->get_node_num(); i++)
 			assert(prev[i] == nullptr);
 #endif
@@ -596,7 +595,7 @@ public:
 		}
 		flowtype total_flow = maxflow(true, nullptr);
 		flowtype f = 0;
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < get_node_num(); i++) {
 			tcaptype & t_edge_flow = nodes[i].tr_cap;
 			if (t_edge_flow < 0) {
@@ -1126,7 +1125,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
 	}else{
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		a = nodes[from].first;
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
@@ -1280,7 +1279,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
 	}else{
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		a = nodes[from].first;
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
@@ -1432,7 +1431,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, 
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
 	}else{
-	#ifndef NDEBUG
+	#ifdef DEBUG_DGL
 			a = nodes[from].first;
 			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 				a = a->next;

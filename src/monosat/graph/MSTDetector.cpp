@@ -393,7 +393,7 @@ void MSTDetector<Weight>::buildMinWeightTooLargeReason(Weight & weight, vec<Lit>
 		root = overapprox_conflict_detector->getParent(root);
 	}
 	TarjanOLCA(root, conflict);
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 	for (int i = 0; i < black.size(); i++)
 		assert(black[i]);
 #endif

@@ -323,7 +323,7 @@ public:
 				}
 			}
 			dbg_print_graph(s, t, -1, -1);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		/*	if (!allow_flow_cycles) {
 				for (int i = 0; i < g.nIncoming(s); i++) {
 					auto & edge = g.incoming(s, i);
@@ -378,7 +378,7 @@ public:
 		}
 #endif
 		
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		assert(edge_enabled.size() == g.edges());
 		for (int i = 0; i < g.edges(); i++)
 			assert(edge_enabled[i] == g.edgeEnabled(i));
@@ -421,7 +421,7 @@ private:
 	
 	Weight maxFlow_residual(int s, int t, Weight & bound) {
 		/*
-		 #ifndef NDEBUG
+		 #ifdef DEBUG_DGL
 		 DynamicGraph d;
 		 d.addNodes(g.nodes());
 		 std::vector<Weight> weights;
@@ -481,7 +481,7 @@ private:
 			dbg_print_graph(s, t, -1, -1);
 		}
 		/*
-		 #ifndef NDEBUG
+		 #ifdef DEBUG_DGL
 		 EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,weights);
 
 		 Weight expect =  ek_check.maxFlow(s,t);
@@ -532,7 +532,7 @@ private:
 			
 		}
 		
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		//EdmondsKarp<EdgeStatus> ek_check(g);
 		EdmondsKarpAdj<Weight> ek_check(g);
 		Weight expect = ek_check.maxFlow(s, t);
@@ -627,7 +627,7 @@ private:
 	}
 	
 	void dbg_print_graph(int from, int to, Weight shortCircuitFrom = -1, Weight shortCircuitTo = -1) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		return;
 		static int it = 0;
 		if (++it == 6) {
@@ -665,7 +665,7 @@ private:
 	Weight maxFlow_p(int s, int t, int shortCircuitFrom, int shortCircuitTo, Weight & bound) {
 		//
 		Weight newFlow = 0;
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		/*    	 	DynamicGraph d;
 		 d.addNodes(g.nodes());
 		 //std::vector<int> R;
@@ -744,7 +744,7 @@ private:
 				v = u;
 			}
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		dbg_print_graph(s, t, shortCircuitFrom, shortCircuitTo);
 		/*	if(shortCircuitFrom>=0){
 		 d.addEdge(shortCircuitFrom,shortCircuitTo,d.edges(),100);
@@ -768,7 +768,7 @@ private:
 	}
 	
 	void dbg_check_flow(int s, int t) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int u = 0; u < g.nodes(); u++) {
 			Weight inflow = 0;
 			Weight outflow = 0;
@@ -860,7 +860,7 @@ public:
 			}
 		}
 		cut.resize(j);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;

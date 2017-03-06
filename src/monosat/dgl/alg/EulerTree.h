@@ -58,7 +58,7 @@ private:
 		EulerVertex * to;
 		Tree::Node * node;		//node in the treap
 		
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		int rank;//this is the position of this edge in the euler tour. This information is only maintained implicitly as the edges position in the underlying binary search tree.
 #endif
 		bool contains(EulerVertex * v) {
@@ -80,7 +80,7 @@ private:
 		int index;
 		bool visited;
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		EulerTree * owner;
 		//Note: in an euler-tour tree representation, these values are not explicitly maintained
 		EulerVertex * dbg_parent;
@@ -92,7 +92,7 @@ private:
 				left_out(nullptr), right_in(nullptr), visited(false) {
 			
 			index = 0;
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			dbg_visited = false;
 			owner = nullptr;
 			dbg_parent = nullptr;
@@ -103,7 +103,7 @@ private:
 			left_out = nullptr;
 			right_in = nullptr;
 			visited = false;
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			dbg_visited = false;
 			owner = nullptr;
 			dbg_parent = nullptr;
@@ -170,7 +170,7 @@ private:
 
 		//
 		void dbg_real_tour(std::vector<int> & tour_list) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			tour_list.clear();
 			
 			if (isSingleton()) {
@@ -201,7 +201,7 @@ private:
 		}
 		
 		int dbg_getSize() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			int s = 1;
 			for (EulerVertex* c : dbg_children) {
 				s += c->dbg_getSize();
@@ -213,7 +213,7 @@ private:
 		}
 		
 		void dbg_make_parent(EulerVertex * new_parent) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			if (new_parent) {
 				assert(std::count(dbg_children.begin(), dbg_children.end(), new_parent));
 				
@@ -231,7 +231,7 @@ private:
 		}
 		
 		void dbg_make_root() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			if (dbg_parent) {
 				dbg_children.push_back(dbg_parent);
 				dbg_parent->dbg_make_parent(this);
@@ -241,7 +241,7 @@ private:
 #endif
 		}
 		void dbg_remove() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			
 			if (dbg_parent) {
 				std::remove(dbg_parent->dbg_children.begin(), dbg_parent->dbg_children.end(), this);
@@ -290,7 +290,7 @@ private:
 		}
 		
 		void dbg_insert(EulerVertex* node) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			assert(!node->dbg_parent);
 			dbg_children.push_back(node);
 			node->dbg_parent = this;
@@ -298,7 +298,7 @@ private:
 #endif
 		}
 		void dbg_build_tour_helper(EulerVertex * r, std::vector<int> & tour) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			tour.push_back(r->index);
 			for (EulerVertex * c : r->dbg_children) {
 				dbg_build_tour_helper(c, tour);
@@ -308,7 +308,7 @@ private:
 #endif
 		}
 		void dbg_build_tour(EulerVertex * r, std::vector<int> & tour) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			while (r->dbg_parent)
 				r = r->dbg_parent;
 			dbg_build_tour_helper(r, tour);
@@ -316,7 +316,7 @@ private:
 		}
 		
 		void dbg_clear() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			assert(dbg_visited);
 			dbg_visited = false;
 			assert(dbg_children.size() == dbg_children_t.size());
@@ -329,7 +329,7 @@ private:
 		}
 		
 		void dbg_tour() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			if (!left_out) {
 				assert(!right_in);
 				return;
@@ -787,7 +787,7 @@ public:
 		/*	t.setIncident(f->node,0);
 		 t.setIncident(b->node,0);*/
 		assert(!connected(from, to));
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		if (f->to->dbg_parent == f->from)
 			f->to->dbg_remove();
 		else
@@ -1000,7 +1000,7 @@ public:
 
 		tour_iterator(EulerHalfEdge * start, bool strict = false) :
 				n(start), start(start), backward(false), strict(strict), restarted(false) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			if (start) {
 				//check that the nodes are well structured...
 				Tree::Node * t = start->node;
@@ -1175,7 +1175,7 @@ public:
 	void createVertex() {
 		nComponents++;
 		vertices.push_back(new EulerVertex());
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		vertices.back()->owner = this;
 #endif
 		vertices.back()->index = vertices.size() - 1;

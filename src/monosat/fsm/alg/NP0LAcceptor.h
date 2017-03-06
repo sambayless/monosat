@@ -577,7 +577,7 @@ public:
 			}
 		}
 
-#ifndef NDEBUG
+#ifdef DEBUG_FSM
 		assert(!used_rules[string].contains(true));
 		assert(used_rule_sets[string].size()==0);
 #endif

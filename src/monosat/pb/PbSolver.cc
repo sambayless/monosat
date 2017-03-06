@@ -89,7 +89,7 @@ bool PbSolver:: addConstr(const vec<Lit> &solver_ps, const vec<Int> &Cs, Int rhs
 }
 bool PbSolver::addConstr_(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq) {
     sat_solver.cancelUntil(0);
-#ifndef NDEBUG
+#ifdef DEBUG_PB
     for(Lit l:ps){
         assert(var(l)<nVars());
     }

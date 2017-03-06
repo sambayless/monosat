@@ -215,7 +215,7 @@ public:
 	}
 	
 	void dbg_drawSteiner() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		
 		printf("digraph{\n");
 		for (int i = 0; i < g.nodes(); i++) {
@@ -275,7 +275,7 @@ public:
 	}
 	
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		
 #endif
 		return true;

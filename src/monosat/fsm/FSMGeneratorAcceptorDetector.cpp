@@ -97,7 +97,7 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(bool add_graph_symbols){
 		for(int j = 0;j<acceptor_over.states();j++){
 			int n = graph->newNode();
 			nodes[i].push(n);
-//#ifndef NDEBUG
+//#ifdef DEBUG_FSM
 			if(add_graph_symbols){
 				std::stringstream ss;
 				ss<<"" << i << ":" << j;
@@ -179,7 +179,7 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(bool add_graph_symbols){
 					Var outerVar =  outer->toSolver(outer->newAuxVar());
 					Lit edgeLit = mkLit(outerVar);
 					Lit innerLit  = graph->newEdge(nodes[from][accept_source],nodes[to][accept_source],outerVar);
-//#ifndef NDEBUG
+//#ifdef DEBUG_FSM
 					if(add_graph_symbols){
 						graph->setEdgeName(var(innerLit),"{}");
 					}
@@ -218,7 +218,7 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(bool add_graph_symbols){
 						Lit edgeLit = mkLit(outerVar);
 						Lit innerLit  =  graph->newEdge(nodes[gen_prev_state][from],nodes[gen_prev_state][to],outerVar);
 						outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
-//#ifndef NDEBUG
+//#ifdef DEBUG_FSM
 						if(add_graph_symbols){
 							graph->setEdgeName(var(innerLit),"{}");
 						}
@@ -245,7 +245,7 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(bool add_graph_symbols){
 						Lit edgeLit = mkLit(outerVar);
 						Lit innerLit  = graph->newEdge(nodes[gen_prev_state][from],nodes[gen_prev_state][to],outerVar);
 						outer->makeEqualInSolver(mkLit(transitionVar),edgeLit);
-//#ifndef NDEBUG
+//#ifdef DEBUG_FSM
 						if(add_graph_symbols){
 							graph->setEdgeName(var(innerLit),"{}");
 						}
@@ -272,7 +272,7 @@ void FSMGeneratorAcceptorDetector::constructAllPaths(bool add_graph_symbols){
 							outer->getSolver()->addClause(acceptLit,~edgeLit);
 							outer->getSolver()->addClause(edgeLit,~genLit,~acceptLit);
 
-//#ifndef NDEBUG
+//#ifdef DEBUG_FSM
 							if(add_graph_symbols){
 								std::stringstream ss;
 								ss<<l;

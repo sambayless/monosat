@@ -23,7 +23,7 @@
 
 using namespace Monosat;
 
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 int dbg_total_iterations = 0;
 #endif
 

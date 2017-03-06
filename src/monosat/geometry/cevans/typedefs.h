@@ -30,7 +30,7 @@ typedef unsigned short int const ushortintc;
 #define endln "\n"
 
 /** The argument is evaluated in both debug and release. */
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 #define asserteval(xarg) xarg;
 #else
 #define asserteval(xarg) assert(xarg);
@@ -44,7 +44,7 @@ typedef unsigned short int const ushortintc;
 //      assertreturnT (xarg,retobj) user return type
 
 /** Operating systems have 0 as success, let 1 be unsuccessful. */
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 #define assertreturnOS(xarg) \
   assert(xarg); 
 #else
@@ -57,7 +57,7 @@ typedef unsigned short int const ushortintc;
 #endif
 
 /** If in release (not debug mode) and test fails return false. */
-#ifndef NDEBUG 
+#ifdef DEBUG_GEOMETRY 
 #define assertreturnfalse(xarg) \
 assert(xarg);
 #else
@@ -72,7 +72,7 @@ assert(xarg);
 #define assertreturnfalseN(xarg) assertreturnfalse( ! (xarg) )
 
 /** Assert(debug) or return(release) when the assertion fails. */
-#ifndef NDEBUG 
+#ifdef DEBUG_GEOMETRY 
 #define assertreturn(xarg) \
 assert(xarg);
 #else
@@ -84,7 +84,7 @@ assert(xarg);
 #endif
 
 /** On failure user object returned. */
-#ifndef NDEBUG 
+#ifdef DEBUG_GEOMETRY 
 #define assertreturnT(xarg,failedreturnobj) \
 assert(xarg);
 #else

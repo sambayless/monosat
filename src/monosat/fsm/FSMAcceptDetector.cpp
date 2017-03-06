@@ -345,7 +345,7 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 			}
 		}
 	{
-#ifndef NDEBUG
+#ifdef DEBUG_FSM
 		NFAAccept<> check_over(g_over,source,strings);
 		NFAAccept<> check_under(g_under,source,strings);
 

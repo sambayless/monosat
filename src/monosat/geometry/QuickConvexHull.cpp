@@ -46,7 +46,7 @@ void QuickConvexHull<2, mpq_class>::update() {
 			hull.addVertex(points[chull.boundary[i]]);
 		}
 	}
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	for (int i = 0; i < pointSet.size(); i++) {
 		Point<2, mpq_class> & p = pointSet[i];
 		if (!pointSet.pointEnabled(i)) {
@@ -97,7 +97,7 @@ void QuickConvexHull<2, double>::update() {
 			hull.addVertex(points[chull.boundary[i]]);
 		}
 	}
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	for (int i = 0; i < pointSet.size(); i++) {
 		Point<2, double> & p = pointSet[i];
 		if (!pointSet.pointEnabled(i)) {

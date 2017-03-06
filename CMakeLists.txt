@@ -4,7 +4,7 @@ project(monosat)
 set (PB_SUPPORT 1)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++14 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_BV -DDEBUG_CORE" )
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG -O2") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG") #it is _critically_ important that release builds specify -DNDEBUG!

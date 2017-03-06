@@ -160,7 +160,7 @@ class LinkCut {
 	// prerequisite: x and y are in distinct trees
 	void _link(Node* x, Node* y) {
 		//assert (_findRoot(x) != _findRoot(y));
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Node* sY = _findRoot(y);
 		Node* sX = _findRoot(x);
 		assert(sY != sX);  //else this is a bug
@@ -231,7 +231,7 @@ public:
 		Node * ynode = nodes[y];
 		expose(xnode);
 		expose(ynode);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		int s1 = findRoot(x);
 		int s2 = findRoot(y);
 		bool dbg_connected = s1 == s2;

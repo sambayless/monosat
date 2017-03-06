@@ -101,7 +101,7 @@ public:
 	};
 
 private:
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 public:
 #endif
 	std::vector<FullEdge> all_edges;
@@ -480,11 +480,11 @@ public:
 
 
 	void drawFull(bool showWeights = false, bool force_draw=false) {
-#ifdef NDEBUG
+#ifndef DEBUG_DGL
 		if(!force_draw)
 			return;
 #endif
-//#ifndef NDEBUG
+//#ifdef DEBUG_DGL
 		printf("digraph{\n");
 		for (int i = 0; i < num_nodes; i++) {
 			printf("n%d\n", i);

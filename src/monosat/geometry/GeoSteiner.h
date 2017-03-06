@@ -177,7 +177,7 @@ public:
 	}
 	
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		
 #endif
 		return true;

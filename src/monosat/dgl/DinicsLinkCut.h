@@ -134,7 +134,7 @@ public:
 
 	void dbg_print_graph(int from, int to) {
 		
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 	/*	return;
 		
 		printf("digraph{\n");
@@ -230,7 +230,7 @@ public:
 		return dist[dst] >= 0;
 	}
 	bool dbg_hasLink(int u) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (auto e : toLink) {
 			if (e.u == u)
 				return true;
@@ -239,7 +239,7 @@ public:
 		return false;
 	}
 	bool dbg_isLinkRoot(int v) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		int u = src;
 		int i = 0;
 		while (true) {
@@ -968,7 +968,7 @@ public:
 			}
 		}
 		cut.resize(j);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;

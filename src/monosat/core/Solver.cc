@@ -325,7 +325,7 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 void Solver::attachClause(CRef cr) {
 	const Clause& c = ca[cr];
 	assert(c.size() > 1);
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 	for (int p = 0; p <= 1; p++)
 		if (value(c[p]) == l_False && level(var(c[p])) == 0) {
 			//then c[0] must not have been propagated yet - it must be after qhead. Otherwise this clause will never be enforced
@@ -634,7 +634,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 	cancelUntil(maxlev);//use of lazily enqueued literals can trigger conflicts at earlier decision levels
 	// Generate conflict clause:
 	//
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 	assert(!seen.contains(1));
 #endif
 	bool possibly_missed_1uip=false;
@@ -722,7 +722,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 		return;
 	}
 
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 	for (Lit p : out_learnt)
 		assert(value(p)==l_False);
 
@@ -778,7 +778,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 		out_learnt[1] = p;
 		out_btlevel = level(var(p));
 	}
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 	for (Lit p : out_learnt){
 		assert(var(p)!=var(theoryDecision));
 		assert(value(p)==l_False);
@@ -787,7 +787,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 
 	for (int j = 0; j < analyze_toclear.size(); j++)
 		seen[var(analyze_toclear[j])] = 0;    // ('seen[]' is now cleared)
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 	assert(!seen.contains(1));
 #endif
 }
@@ -1271,7 +1271,7 @@ CRef Solver::propagate(bool propagate_theories) {
 
 			if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 				bool has_conflict=true;
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 				for(Lit l:theory_conflict)
 					assert(value(l)!=l_Undef);
 #endif
@@ -1776,7 +1776,7 @@ bool Solver::addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) 
 			}
 		}
 		
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 		if (conflicting) {
 			for (int j = 0; j < ps.size(); j++)
 				assert(value(ps[j])==l_False);
@@ -2372,6 +2372,12 @@ lbool Solver::solve_() {
 	if(!shown_warning){
 		shown_warning=true;
 		fprintf(stderr,"Warning: MonoSAT compiled without -DNDEBUG (will be very slow!).\n");
+	}
+#endif
+#if  defined(DEBUG_MONOSAT) || defined(DEBUG_CORE) || defined(DEBUG_SOLVER) || defined(DEBUG_DGL) || defined(DEBUG_BV) || defined(DEBUG_GRAPH) || defined(DEBUG_THEORY)  || defined(DEBUG_GEOMETRY)  || defined(DEBUG_PB) || defined(DEBUG_FSM)
+	if(!shown_warning){
+		shown_warning=true;
+		fprintf(stderr,"Warning: MonoSAT was compiled with DEBUG_* (will be very slow!).\n");
 	}
 #endif
 	clearInterrupt();

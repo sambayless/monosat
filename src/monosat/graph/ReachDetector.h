@@ -339,7 +339,7 @@ public:
 	}
 	
 	bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph<Weight>  & graph, int source, int node) {
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		
 		DynamicGraph<int>  t;
 		for (int i = 0; i < graph.nodes(); i++)

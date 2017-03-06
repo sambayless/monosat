@@ -714,7 +714,7 @@ public:
 		requiresPropagation = true;
 		//printf("enqueue %d\n", dimacs(l));
 		
-/*#ifndef NDEBUG
+/*#ifdef DEBUG_FSM
 		{
 			for (int i = 0; i < trail.size(); i++) {
 				assert(trail[i].var != v);

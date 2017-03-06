@@ -493,7 +493,7 @@ bool ConvexHullDetector<D, T>::propagate(vec<Lit> & conflict) {
 	 }
 	 printf("\n");*/
 
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	cout << "Round " << iter << ", " << getID() << ":\n";
 	cout << "enabled_" << getID() << " = [";
 	for (int i = 0; i < under.size(); i++) {
@@ -660,7 +660,7 @@ bool ConvexHullDetector<D, T>::propagate(vec<Lit> & conflict) {
 		}
 	}
 	if (pointOnHullLits.size()) {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		for (bool b : under_hull_members)
 			assert(!b);
 		for (bool b : over_hull_members)
@@ -1218,7 +1218,7 @@ void ConvexHullDetector<D, T>::buildPointNotOnHullOrDisabledReason2d(Var pointVa
 	conflict.push(~enabledLit);
 	//AND, it is because there exist three other enabled points that form a triangle that contain this point:
 	ConvexPolygon<2, T> &hull = under_hull->getHull();
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	for (auto & p : hull)
 		assert(p.getID() != s.getID());
 #endif

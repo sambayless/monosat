@@ -90,7 +90,7 @@ public:
 	}
 	
 	void dbg_print() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		std::vector<bool> seen;
 		seen.resize(nodes);
 		for (int n = 0; n < nodes; n++) {

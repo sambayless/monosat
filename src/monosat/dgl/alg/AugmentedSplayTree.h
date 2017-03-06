@@ -72,7 +72,7 @@ public:
 public:
 	_node * prev() {
 #ifdef linked
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		_node*exp = prev_slow();
 #endif
 		assert(_prev == prev_slow());
@@ -84,7 +84,7 @@ public:
 	
 	_node * next() {
 #ifdef linked
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		_node*exp = next_slow();
 #endif
 		assert(_next == next_slow());
@@ -269,7 +269,7 @@ private:
 	}
 public:
 	int dbg_checkSubtreeSize(Node * x) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		if (!x)
 			return 0;
 		
@@ -280,7 +280,7 @@ public:
 		return 0;
 	}
 	void dbg_checkNextSucc(Node * x) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		if (!x)
 			return;
 		x->next();

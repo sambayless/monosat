@@ -197,7 +197,7 @@ public:
 	}
 	
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		//std::vector<Point<D,T>>& vertices  = toBound.getVertices();
 		Point<D, T> dbg_max;
 		Point<D, T> dbg_min;

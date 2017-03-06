@@ -34,7 +34,7 @@
 #include "ConvexHullDetector.h"
 #include "ConvexHullCollisionDetector.h"
 
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 #include <cstdio>
 #endif
 
@@ -349,7 +349,7 @@ public:
 	}
 	
 	bool dbg_propgation(Lit l) {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		static vec<Lit> c;
 		c.clear();
 		for (int i = 0; i < S->trail.size(); i++) {
@@ -371,7 +371,7 @@ public:
 	}
 	
 	void dbg_sync() {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		return;
 		int sz = vars.size();
 		for (int i = 0; i < vars.size(); i++) {
@@ -386,7 +386,7 @@ public:
 #endif
 	}
 	void dbg_full_sync() {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		dbg_sync();
 		
 		for (int i = 0; i < points.size(); i++) {
@@ -613,7 +613,7 @@ public:
 		assert(assigns[var(l)]==l_Undef);
 		assigns[var(l)] = sign(l) ? l_False : l_True;
 		
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		/*{
 		 for(int i = 0;i<trail.size();i++){
 		 assert(trail[i].var !=v);
@@ -739,7 +739,7 @@ public:
 			}
 		}
 		
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		/*for(int i = 0;i<detectors.size();i++){
 		 assert(detectors[i]->checkSatisfied());
 		 }*/

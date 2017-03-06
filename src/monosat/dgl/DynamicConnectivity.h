@@ -272,7 +272,7 @@ public:
 		assert(transitive_closure[0][sources[0]].reachable);
 	}
 	
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 	DisjointSets dbg_sets;
 #endif
 	int iteration;
@@ -293,7 +293,7 @@ public:
 		setNodes(g.nodes());
 		hasPrev = false;
 		
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		dbg_sets.Reset();
 		
 		dbg_sets.AddElements(g.nodes());
@@ -357,7 +357,7 @@ public:
 			}
 			
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < g.edges(); i++) {
 			if (g.all_edges[i].id >= 0) {
 				assert(t.edges[i].edgeID == g.all_edges[i].id);
@@ -389,7 +389,7 @@ public:
 			}
 		}
 		changes.clear();
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		{
 			for (std::vector<ClosureData> & v : transitive_closure)
 				for (ClosureData & c : v)
@@ -447,7 +447,7 @@ public:
 	}
 	
 	void dbg_transitive_closure() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < sources.size(); i++) {
 			int source = sources[i];
 			assert(transitive_closure[i][source].reachable);
@@ -461,7 +461,7 @@ public:
 #endif
 	}
 	void dbg_path_edges(int from, int to, std::vector<int> & path) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		assert(path.size());
 		int n = from;
 		
@@ -482,7 +482,7 @@ public:
 #endif
 	}
 	void dbg_path(int from, int to, std::vector<int> & path) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		assert(path.size());
 		assert(path[0] == from);
 		assert(path.back() == to);

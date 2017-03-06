@@ -144,7 +144,7 @@ private:
 			if (testLine.whichSide(point) != testLine.whichSide(b)) {
 				findContainingTriangle2d_helper(polygon, first_vertex, mid_point, point, triangle_out, inclusive);
 			} else {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 				Line<2, T> dbgLine(b, c);
 				assert(dbgLine.whichSide(point) != 0);			 //else we would have already found the point
 				assert(dbgLine.whichSide(point) != dbgLine.whichSide(a));
@@ -411,7 +411,7 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 				}
 			}
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		if (c.under_intersecting_polygon_1.size()) {
 			assert(c.under_intersecting_polygon_1.intersects(c.under_intersecting_polygon_2, true));
 		}

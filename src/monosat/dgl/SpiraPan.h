@@ -93,7 +93,7 @@ public:
 	std::vector<int> empty_components; //list of component ids with no member nodes
 	std::vector<int> components;
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 	Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> dbg;
 #endif
 public:
@@ -112,7 +112,7 @@ public:
 	SpiraPan(DynamicGraph<Weight> & graph,  Status & status, int reportPolarity = 0) :
 			g(graph),  status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 					0), last_history_clear(0), INF(0), reportPolarity(reportPolarity), Q(VertLt(component_edge_weight))
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 					, dbg(g,  MinimumSpanningTree<Weight>::nullStatus, 0)
 #endif
 	{
@@ -140,9 +140,9 @@ public:
 	}
 
 	void dbg_printSpanningTree(bool showWeights=true){
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		printf("graph{\n");
 	/*	for (int i = 0; i < g.nodes(); i++) {
 			printf("n%d\n", i);
@@ -222,14 +222,14 @@ public:
 	 }*/
 
 	bool dbg_is_largest_edge_on_path(int edge, int from, int to) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		
 #endif
 		return true;
 	}
 	
 	void dbg_parents() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		//check that the parents don't cycle
 		for (int i = 0; i < g.nodes(); i++) {
 			int p = i;
@@ -308,7 +308,7 @@ public:
 			}
 
 			if (component_needs_visit[old_c]) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 				bool found = false;
 				for (int i : components_to_visit) {
 					if (i == old_c)
@@ -545,7 +545,7 @@ public:
 			}
 			component_needs_visit[c] = false;			//because we just visited this component
 			assert(c >= 0);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			for (auto w : component_edge_weight) {
 				assert(w == INF);
 			}
@@ -638,7 +638,7 @@ public:
 					seen[s] = false;
 				}
 				q.clear();
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 				for (bool b : q)
 					assert(!b);
 #endif
@@ -728,7 +728,7 @@ public:
 			}
 			//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for(int i = 0;i<g.edges();i++)
 			assert(g.edgeEnabled(i)==edge_enabled[i]);
 #endif
@@ -737,7 +737,7 @@ public:
 		//g.drawFull(true);
 		dbg_parents();
 		//dbg_printSpanningTree();
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight expect = dbg.forestWeight();
 		//dbg.dbg_printSpanningTree();
 		assert(min_weight == dbg.forestWeight());
@@ -835,7 +835,7 @@ public:
 	}
 	
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		
 		dbg_parents();
 		//int n_components = 0;
@@ -877,7 +877,7 @@ public:
 	;
 	
 	/*
-	 #ifndef NDEBUG
+	 #ifdef DEBUG_DGL
 	 int rootcount =0;
 	 for(int i = 0;i<parents.size();i++){
 	 if(parents[i]==-1)
