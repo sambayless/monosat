@@ -32,6 +32,7 @@
 #include "monosat/mtl/Rnd.h"
 #include "monosat/mtl/Vec.h"
 #include "monosat/utils/Options.h"
+#include <monosat/graph/GraphHeuristic.h>
 //#include "monosat/dgl/UnweightedDistance.h"
 #include <cassert>
 #include <cstdlib>
@@ -166,7 +167,9 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 	
 	unweighted_underprop_marker = outer->newReasonMarker(getID());
 	unweighted_overprop_marker = outer->newReasonMarker(getID());
-	
+
+	default_heuristic = new GraphHeuristic<Weight>(outer,this);
+
 
 }
 

@@ -26,6 +26,7 @@
 #include <monosat/dgl/Reach.h>
 #include <monosat/dgl/BFS.h>
 #include <monosat/graph/GraphTheory.h>
+#include <monosat/graph/GraphHeuristic.h>
 //#include "monosat/dgl/KohliTorr.h"
 using namespace Monosat;
 
@@ -140,6 +141,9 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 	first_reach_var = var_Undef;
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
+
+    default_heuristic = new GraphHeuristic<Weight>(outer,this);
+
 }
 
 

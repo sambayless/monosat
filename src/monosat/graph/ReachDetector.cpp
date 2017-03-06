@@ -26,6 +26,7 @@
 #include "monosat/core/Config.h"
 #include "monosat/dgl/DynamicConnectivity.h"
 #include "monosat/dgl/TarjansSCC.h"
+#include <monosat/graph/GraphHeuristic.h>
 using namespace Monosat;
 template<typename Weight>
 ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
@@ -212,6 +213,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
 	forced_edge_marker = outer->newReasonMarker(getID());
+
+    default_heuristic = new GraphHeuristic<Weight>(outer,this);
+
 }
 template<typename Weight>
 void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within_steps) {
@@ -1389,7 +1393,9 @@ Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
 
 
 
-	if (to_decide.size() && last_decision_status == over_path->numUpdates()) {
+	if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
+		// are assigned true, as the over approx graph will always register as having been updated.
+		//instead, check the history of the dynamic graph to see if any of the edges on the path have been assigned false, and only recompute in that case.
 		while (to_decide.size()) {
 			Lit l = to_decide.last();
 			to_decide.pop();
@@ -1441,6 +1447,8 @@ Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
 	//ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
 	//this can be obviously more efficient
 	//for(int j = 0;j<nNodes();j++){
+
+	//replace this system with a separate decision heuristic for each reach literal.
 	while (order_vec.size() < reach_lits.size()) {
 		order_vec.push(order_vec.size());
 	}

@@ -25,6 +25,8 @@
 #include "GraphTheoryTypes.h"
 #include "monosat/mtl/Vec.h"
 #include "monosat/core/Config.h"
+#include "monosat/core/Heuristic.h"
+
 #include <cstdio>
 #include <iostream>
 namespace Monosat {
@@ -58,7 +60,7 @@ public:
 	int64_t n_stats_vsids_decisions=0;
 	int64_t stats_under_clause_length = 0;
 	int64_t stats_over_clause_length = 0;
-
+	Heuristic * default_heuristic=nullptr;
 	int getID() {
 		return detectorID;
 	}
@@ -157,6 +159,11 @@ public:
 
 
 	}
+
+	virtual Heuristic * getConflictingHeuristic(){
+		return default_heuristic;
+	}
+
 	virtual void unassignBV(int bvID) {
 
 	}
@@ -168,7 +175,8 @@ public:
 	}
 	//virtual vec<int> & getLitMap();
 	Detector(int detectorID) :
-			detectorID(detectorID), unassigned_positives(0), unassigned_negatives(0) {
+			detectorID(detectorID) {
+
 	}
 	;
 	virtual ~Detector() {
