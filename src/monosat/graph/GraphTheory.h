@@ -2374,7 +2374,7 @@ public:
 	}
 
 	bool dbg_graphsUpToDate() {
-#ifdef DEBUG_GRAPH
+#ifdef DEBUG_GRAPH2
 		for(int i = 0;i<edge_list.size();i++) {
 			if(edge_list[i].v<0)
 			continue;
@@ -2743,7 +2743,7 @@ public:
 
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
-			if(edge_num==10236){
+			if(edge_num==764){
 				int a=1;
 			}
 			assert(edge_list[edge_num].v == var(l));
@@ -3643,19 +3643,80 @@ public:
 				throw std::runtime_error("All edge sets must be instantiated before any graph predicates.");
 			}
 			assert(S->decisionLevel()==0);
-			while(g_over_edgeset.nodes()<g_over.nodes()){
-				g_over_edgeset.addNode();
-				g_over_weights_under_edgeset.addNode();
-			}
-			while(g_over.edges()>g_over_edgeset.edges()){
-				int edgeID = g_over_edgeset.edges();
+            if(g_over_edgeset.nodes()==0) {
+                //initialize the edgset graphs
+                while (g_over_edgeset.nodes() < g_over.nodes()) {
+                    g_over_edgeset.addNode();
+                    g_over_weights_under_edgeset.addNode();
+                }
+                while (g_over.edges() > g_over_edgeset.edges()) {
+                    int edgeID = g_over_edgeset.edges();
+					if(edgeID==764){
+						int a=1;
+					}
+                    int c = g_over_edgeset.addEdge(g_over.getEdge(edgeID).from, g_over.getEdge(edgeID).to, edgeID,
+                                           g_over.getWeight(edgeID));
+					assert(c==edgeID);
+                    g_over_weights_under_edgeset.addEdge(g_over.getEdge(edgeID).from, g_over.getEdge(edgeID).to, edgeID,
+														 g_under.getWeight(edgeID));
 
-				g_over_edgeset.addEdge(g_over.getEdge(edgeID).from, g_over.getEdge(edgeID).to,edgeID,g_over.getWeight(edgeID));
-				g_over_weights_under_edgeset.addEdge(g_over.getEdge(edgeID).from, g_over.getEdge(edgeID).to,edgeID,g_over.getWeight(edgeID));
-				g_over_edgeset.setEdgeEnabled(edgeID,g_over.edgeEnabled(edgeID));
-				g_over_weights_under_edgeset.setEdgeEnabled(edgeID,g_over.edgeEnabled(edgeID));
-			}
+                }
+                //for(auto & assign:trail){
+                //    Lit l =assign.
+                for(int dlev = 0;dlev<=decisionLevel();dlev++){
+                    //as we backtrack, we need to remove and add edges in the two graphs accordingly.
+                    Var v = getDecision(dlev);
+					Var start = v;
+                    //for (int i = trail.size() - 1; i >= trail_lim[untilLevel]; i--) {
+                    while(v!=var_Undef){
+                        Lit l = mkLit(v, value(v)==l_False);
+                        assert(assigns[v]!=l_Undef);
+                        int edge_num = getEdgeID(var(l));
+						if(edge_num==764){
+							int a=1;
+						}
+                        assert(edge_list[edge_num].v == var(l));
+                        int edgeSetID = getEdgeSetID(edge_num);
 
+                        int from = edge_list[edge_num].from;
+                        int to = edge_list[edge_num].to;
+                        if (!sign(l)) {
+                            if(edgeSetID>-1){
+                                EdgeSet & set = *edge_sets[edgeSetID];
+                                if (set.isAssigned() && invalid_edgeset_lit==lit_Undef){
+                                    invalid_edgeset_lit=l;
+                                }
+                                set.assignEdge(edge_num);
+                                g_over_edgeset.enableEdge(edge_num);
+                                g_over_edgeset.setEdgeWeight(edge_num,g_over.getEdgeWeight(edge_num));
+                            }
+                        } else {
+                            if(edgeSetID>-1){
+                                EdgeSet & set =* edge_sets[edgeSetID];
+                                assert(!g_over_edgeset.edgeEnabled(edge_num));
+                                assert(g_over_edgeset.getEdgeWeight(edge_num)==0);
+                                if (!set.isAssigned()){
+                                    g_over.disableEdge(edge_num);
+                                }
+                            }else{
+
+                               g_over_edgeset.disableEdge(edge_num);
+                            }
+                        }
+
+
+                        Var p = _getNext(v);
+						if (p==start)
+							break;
+                        v=p;
+                    }
+
+                }
+
+
+
+            }
+            assert(g_over_edgeset.nodes()==g_over.nodes());
 			int edge_setID=edge_sets.size();
 			edge_sets.push(new EdgeSet(*this));
 			assert(edge_setID<edge_sets.size());
@@ -3670,6 +3731,7 @@ public:
 				g_over_edgeset.setEdgeWeight(edgeID,0);
 
 			}
+			assert(dbg_graphsUpToDate());
 		}
 		vec<Lit> edge_lits;
 		for(int edgeID:edges){
@@ -3686,6 +3748,7 @@ public:
 				amo->addVar(v);
 			}
 		}
+		;
 	}
 
 
