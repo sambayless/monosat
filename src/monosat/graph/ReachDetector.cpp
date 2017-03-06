@@ -419,12 +419,13 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
     ReachDetector<Weight> * r;
     vec<Lit> to_decide;
     int last_decision_status = -1;
-    vec<int> order_vec;
+
     WeightedDijkstra<Weight,double> * rnd_path = nullptr;
     std::vector<double> rnd_weight;
     GraphTheorySolver<Weight> *outer;
+    Lit reach_lit = lit_Undef;
 public:
-    ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r): GraphHeuristic<Weight>(outer,r), r(r),outer(outer) {
+    ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, Lit reach_lit): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit) {
         if (opt_use_random_path_for_decisions) {
             rnd_weight.clear();
             rnd_path = new WeightedDijkstra<Weight,double>(r->source, r->g_over, rnd_weight);
@@ -536,20 +537,13 @@ public:
         //this can be obviously more efficient
         //for(int j = 0;j<nNodes();j++){
 
-        //replace this system with a separate decision heuristic for each reach literal.
-        while (order_vec.size() < r->reach_lits.size()) {
-            order_vec.push(order_vec.size());
-        }
-        if (opt_rnd_order_graph_decisions) {
-            randomShuffle(r->rnd_seed, order_vec);
-        }
 
         if (opt_sort_graph_decisions == 0) {
 
-            for (int k = 0; k < r->reach_lits.size(); k++) {
-                Lit l = r->reach_lits[order_vec[k]];
-                if (l == lit_Undef)
-                    continue;
+             {
+                Lit l = reach_lit;
+                assert (l != lit_Undef);
+
                 int j = r->getNode(var(l));
                 if (outer->value(l) == l_True && opt_decide_graph_pos) {
                     //if(S->level(var(l))>0)
@@ -693,52 +687,51 @@ public:
 
             int shortest_incomplete_path = -1;
             int edgeID_to_assign = -1;
-            for (int k = 0; k <  r->reach_lits.size(); k++) {
-                Lit l =  r->reach_lits[order_vec[k]];
-                if (l == lit_Undef)
-                    continue;
-                int j =  r->getNode(var(l));
-                if (outer->value(l) == l_True && opt_decide_graph_pos) {
-                    //if(S->level(var(l))>0)
-                    //	continue;
-                    assert(over_path->connected(j));
-                    if (over_reach->connected(j) && !under_reach->connected(j)) {
-                        //then lets try to connect this
-                        assert(over_path->connected(j));					//Else, we would already be in conflict
-                        int p = j;
-                        int last_edge = -1;
-                        int last = j;
-                        //ok, read back the path from the over to find a candidate edge we can decide
-                        //find the earliest unconnected node on this path
-                        int dist = 0;
-                        over_path->update();
-                        p = j;
-                        last = j;
-                        while (!under_reach->connected(p)) {
-                            dist++;
-                            last = p;
-                            assert(p !=  r->source);
-                            last_edge = over_path->incomingEdge(p);
-                            assert(outer->value( outer->edge_list[last_edge].v)==l_Undef);
-                            int prev = over_path->previous(p);
-                            p = prev;
 
-                        }
-                        assert(dist > 0);
-                        if (opt_sort_graph_decisions == 1) {
-                            if (shortest_incomplete_path < 0 || dist < shortest_incomplete_path) {
-                                shortest_incomplete_path = dist;
-                                edgeID_to_assign = last_edge;
-                            }
-                        } else {
-                            if (dist > shortest_incomplete_path) {
-                                shortest_incomplete_path = dist;
-                                edgeID_to_assign = last_edge;
-                            }
-                        }
-                    }
-                }
-            }
+			Lit l = reach_lit;
+			assert (l != lit_Undef);
+			int j =  r->getNode(var(l));
+			if (outer->value(l) == l_True && opt_decide_graph_pos) {
+				//if(S->level(var(l))>0)
+				//	continue;
+				assert(over_path->connected(j));
+				if (over_reach->connected(j) && !under_reach->connected(j)) {
+					//then lets try to connect this
+					assert(over_path->connected(j));					//Else, we would already be in conflict
+					int p = j;
+					int last_edge = -1;
+					int last = j;
+					//ok, read back the path from the over to find a candidate edge we can decide
+					//find the earliest unconnected node on this path
+					int dist = 0;
+					over_path->update();
+					p = j;
+					last = j;
+					while (!under_reach->connected(p)) {
+						dist++;
+						last = p;
+						assert(p !=  r->source);
+						last_edge = over_path->incomingEdge(p);
+						assert(outer->value( outer->edge_list[last_edge].v)==l_Undef);
+						int prev = over_path->previous(p);
+						p = prev;
+
+					}
+					assert(dist > 0);
+					if (opt_sort_graph_decisions == 1) {
+						if (shortest_incomplete_path < 0 || dist < shortest_incomplete_path) {
+							shortest_incomplete_path = dist;
+							edgeID_to_assign = last_edge;
+						}
+					} else {
+						if (dist > shortest_incomplete_path) {
+							shortest_incomplete_path = dist;
+							edgeID_to_assign = last_edge;
+						}
+					}
+				}
+			}
+
 
             if (edgeID_to_assign >= 0) {
                 assert(outer->edge_list[edgeID_to_assign].edgeID == edgeID_to_assign);
@@ -807,7 +800,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		buildSATConstraints(false);
 	}
     if(opt_decide_theories && opt_allow_reach_decisions && overapprox_reach_detector){
-        Heuristic * h = new ReachHeuristic<Weight>(outer,this);
+        Heuristic * h = new ReachHeuristic<Weight>(outer,this,reachLit);
 
     }
 	if (opt_conflict_min_cut || opt_adaptive_conflict_mincut) {

@@ -1383,13 +1383,6 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 	std::vector<int> & changed_edges = overapprox_conflict_detector->getChangedEdges();
 
 
-	if (opt_decide_theories && opt_rnd_order_graph_decisions) {
-		/*			static vec<int> tmp_changed;
-		 tmp_changed.clear();
-		 for(int edge:changed_edges):
-		 tmp_changed.p*/
-		randomShuffle(rnd_seed, changed_edges);
-	}
 	//for(int j = 0;j<changed_edges.size();j++){
 	//			int edgeid = changed_edges[j];
 
