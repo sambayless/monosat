@@ -32,11 +32,14 @@ public:
         return outer->getTheoryIndex();
     }
     virtual Lit decide(CRef &decision_reason){
-        detector->decide(decision_reason);
+        return detector->decide(decision_reason);
     }
 
     Lit decideTheory(CRef &decision_reason) override {
-        //first, give the main graph theory a chance to make a decision
+
+
+
+            //first, give the main graph theory a chance to make a decision
         outer->dbg_full_sync();
         if (opt_lazy_backtrack && outer->supportsLazyBacktracking() && opt_lazy_backtrack_decisions &&
             outer->detectors.size()) {//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
@@ -62,6 +65,13 @@ public:
         //if(l!=lit_Undef)
         //    return l;
         decision_reason = CRef_Undef;
+        bool require_edge_set_detector=(outer->hasEdgeSets() && outer->allEdgeSetsAssigned());
+        if (require_edge_set_detector && !detector->is_edge_set_detector) {
+           return lit_Undef;//let the edge set detector make this decision
+        }else if (!require_edge_set_detector && detector->is_edge_set_detector) {
+           return lit_Undef;//let the regular detector make this decision
+        }
+
         //Detector *r = (edge_set_detector && outer->hasEdgeSets() && outer->allEdgeSetsAssigned()) ? edge_set_detector
         //: normal_detector;
         if (outer->satisfied_detectors[detector->getID()])

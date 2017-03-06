@@ -71,12 +71,11 @@ public:
 	vec<Lit> reach_lits;
 	vec<Lit> cnf_reach_lits;
 	Var first_reach_var;
-	vec<int> order_vec;
+
 	vec<int> reach_lit_map;
 	vec<int> force_reason;
 
-	vec<Lit> to_decide;
-	int last_decision_status = -1;
+
 	/*
 	 struct DistLit{
 	 Lit l;
@@ -146,8 +145,7 @@ public:
 	MaxFlow<int64_t> * conflict_flow = nullptr;
 	std::vector<MaxFlow<int64_t> *> conflict_flows;
 
-	WeightedDijkstra<Weight,double> * rnd_path = nullptr;
-	std::vector<double> rnd_weight;
+
 	/*struct OptimalWeightEdgeStatus{
 	 ReachDetector & detector;
 	 int operator [] (int edge) const ;
@@ -264,9 +262,7 @@ public:
 		return reach_lit_map[index];
 	}
 	void backtrack(int level) override{
-		to_decide.clear();
-		last_decision_status = -1;
-		
+
 	}
 	/*	Lit getLit(int node){
 
@@ -291,8 +287,7 @@ public:
 	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			int _source, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 	virtual ~ReachDetector() {
-		if (rnd_path)
-			delete rnd_path;
+
 		if (chokepoint_detector)
 			delete chokepoint_detector;
 		if (cutgraph_detector)

@@ -33,7 +33,6 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		DynamicGraph<Weight>  &_antig, int from, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), within(-1), source(from), rnd_seed(seed) { //,chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
 
-	rnd_path = nullptr;
 	//opt_path=nullptr;
 	chokepoint_detector = nullptr;
 	cutgraph_detector = nullptr;
@@ -68,16 +67,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		cutgraph_detector = new UnweightedRamalReps<Weight,Reach::NullStatus>(from, cutgraph, Reach::nullStatus, 0);
 	}
 	
-	if (opt_use_random_path_for_decisions) {
-		rnd_weight.clear();
-		rnd_path = new WeightedDijkstra<Weight,double>(from, _antig, rnd_weight);
-		for (int i = 0; i < outer->edge_list.size(); i++) {
-			double w = drand(rnd_seed);
-			
-			rnd_weight.push_back(w);
-		}
-		
-	}
+
 	
 	/* if(opt_use_optimal_path_for_decisions){
 	 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
@@ -214,7 +204,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	overprop_marker = outer->newReasonMarker(getID());
 	forced_edge_marker = outer->newReasonMarker(getID());
 
-    default_heuristic = new GraphHeuristic<Weight>(outer,this);
+
 
 }
 template<typename Weight>
@@ -424,6 +414,351 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 
 }
 template<typename Weight>
+class ReachHeuristic : public GraphHeuristic<Weight>{
+
+    ReachDetector<Weight> * r;
+    vec<Lit> to_decide;
+    int last_decision_status = -1;
+    vec<int> order_vec;
+    WeightedDijkstra<Weight,double> * rnd_path = nullptr;
+    std::vector<double> rnd_weight;
+    GraphTheorySolver<Weight> *outer;
+public:
+    ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r): GraphHeuristic<Weight>(outer,r), r(r),outer(outer) {
+        if (opt_use_random_path_for_decisions) {
+            rnd_weight.clear();
+            rnd_path = new WeightedDijkstra<Weight,double>(r->source, r->g_over, rnd_weight);
+            for (int i = 0; i < outer->edge_list.size(); i++) {
+                double w = drand(r->rnd_seed);
+
+                rnd_weight.push_back(w);
+            }
+
+        }
+
+    }
+
+    Lit decide(CRef &decision_reason)override{
+        double startdecidetime = rtime(2);
+        auto * over_reach = r->overapprox_reach_detector;
+        auto * under_reach = r->underapprox_detector;
+
+        if (!under_reach) {
+            under_reach = r->underapprox_fast_detector;
+        }
+
+        auto * over_path = r->overapprox_path_detector;
+        auto * under_path = r->underapprox_detector;
+        if (!under_path) {
+            under_path = r->underapprox_path_detector;
+        }
+        assert(under_path);
+        assert(over_path);
+        assert(over_reach);
+        assert(under_reach);
+
+        {
+            //Routing ideas from Alex Nadel's FMCAD16 paper
+            //1) After a path is established, consider deciding remaining edges to false (only appropriate for some problem domains)
+            //2) When searching for a shortest path, consider setting the weight of already decided edges to 0, to encourage re-use
+            //3) The edge encoding in Alex's paper would be similar to an explicit 'at-most-one-graph-per-edge' framework,
+            //   allowing some learned clauses to be more more efficiently encoded (?).
+            //4)Net swapping. When a reach constraint E is violated, it may be because of decisions made to connect another reach constraint (B).
+            // If we have reach constraints {A,B,C,D,E}, decided in that order, and D is in conflict because of edge assignments made for B,
+            // then net swapping will change the reach decision order as follows: {A,D,B,C,E}. Questions: How does this compare to VSIDS approach,
+            // and how is the conflicting reach constraint (B) determined?
+            // "A reach constraint B blocks reach constraint D, if any edge on the separating cut that is blocking D, is an edge
+            // connecting reach constraint B." Is it the case that at most one reach constraint can be a blocking reach constraint?
+            // Unclear, if more than just two reach constraints are considered.
+            //5) Net restarting. Associate a conflict ocunter with each reach constraint. When it reaches a threshold T ( 10 by default),
+            // restart and place that reach constraint at the front of the reach decision order (and set all conflict ocunters to 0). This
+            // is similar to the current vsids approach.
+
+            //Things from FMCAD16 that do not need to be done: Early net conflict detection - that is already handled by SMMT
+            //
+
+        }
+
+
+
+        if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
+            // are assigned true, as the over approx graph will always register as having been updated.
+            //instead, check the history of the dynamic graph to see if any of the edges on the path have been assigned false, and only recompute in that case.
+            while (to_decide.size()) {
+                Lit l = to_decide.last();
+                to_decide.pop();
+                if (outer->value(l) == l_Undef) {
+                    //stats_decide_time += rtime(2) - startdecidetime;
+                    return l;
+                }
+            }
+        }
+
+        /*if(opt_decide_graph_chokepoints){
+
+         //we are going to detect chokepoints as follows. For each node that is reachable in over but that is NOT reachable in the under approximation,
+         //we will remove its incoming edge. If there are no other paths to that node with that edge removed, then we have found a
+         for(int k = 0;k<reach_lits.size();k++){
+         Lit l =reach_lits[k];
+         if(l==lit_Undef)
+         continue;
+         int j =getNode(var(l));
+         if(outer->value(l)==l_True ){
+
+         assert(over->connected(j));
+         if(over->connected(j) && !under->connected(j)){
+         //then check to see if there is a chokepoint leading to j, by knocking out the incoming edge and seeing if it is still connected.
+         assert(chokepoint_detector->connected(j));//Else, we would already be in conflict
+         int edgeID=over->incomingEdge(j);
+         assert(edgeID>=0);
+         assert(outer->edge_list[edgeID].edgeID==edgeID);
+         Var v = outer->edge_list[edgeID].v;
+         if(outer->value(v)==l_Undef){
+
+         antig.disableEdge(outer->edge_list[edgeID].from, outer->edge_list[edgeID].to, edgeID);
+         bool connected = chokepoint_detector->connected(j);
+         bool succeed = antig.rewindHistory(1);
+         assert(succeed);
+         if(!connected){
+         //then edgeID was an unassigned edge that was also a chokepoint leading up to j.
+         return mkLit(v,false);
+         }
+         }
+         }
+
+         }
+         }
+         return lit_Undef;
+         }*/
+
+        //we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
+        //ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
+        //this can be obviously more efficient
+        //for(int j = 0;j<nNodes();j++){
+
+        //replace this system with a separate decision heuristic for each reach literal.
+        while (order_vec.size() < r->reach_lits.size()) {
+            order_vec.push(order_vec.size());
+        }
+        if (opt_rnd_order_graph_decisions) {
+            randomShuffle(r->rnd_seed, order_vec);
+        }
+
+        if (opt_sort_graph_decisions == 0) {
+
+            for (int k = 0; k < r->reach_lits.size(); k++) {
+                Lit l = r->reach_lits[order_vec[k]];
+                if (l == lit_Undef)
+                    continue;
+                int j = r->getNode(var(l));
+                if (outer->value(l) == l_True && opt_decide_graph_pos) {
+                    //if(S->level(var(l))>0)
+                    //	continue;
+
+                    if (over_reach->connected(j) && !under_reach->connected(j)) {
+                        //then lets try to connect this
+
+                        to_decide.clear();
+                        last_decision_status = over_path->numUpdates();
+
+                        assert(over_path->connected(j));			//Else, we would already be in conflict
+                        int p = j;
+                        int last_edge = -1;
+                        int last = j;
+                        if (!opt_use_random_path_for_decisions) {
+                            /*if(opt_use_optimal_path_for_decisions){
+                             //ok, read back the path from the over to find a candidate edge we can decide
+                             //find the earliest unconnected node on this path
+                             opt_path->update();
+                             p = j;
+                             last = j;
+                             while(!under->connected(p)){
+
+                             last=p;
+                             assert(p!=source);
+                             last_edge=opt_path->incomingEdge(p);
+                             int prev = opt_path->previous(p);
+                             p = prev;
+
+                             }
+                             }else*/{
+                                //ok, read back the path from the over to find a candidate edge we can decide
+                                //find the earliest unconnected node on this path
+                                over_path->update();
+                                last_decision_status = over_path->numUpdates();
+                                p = j;
+                                last = j;
+                                while (!under_reach->connected(p)) {
+
+                                    last = p;
+                                    assert(p != r->source);
+                                    last_edge = over_path->incomingEdge(p);
+                                    Var edge_var = outer->getEdgeVar(last_edge);
+                                    if (outer->value(edge_var) == l_Undef) {
+                                        to_decide.push(mkLit(edge_var, false));
+                                    }
+                                    int prev = over_path->previous(p);
+                                    p = prev;
+
+                                }
+                            }
+                        } else {
+                            //Randomly re-weight the graph sometimes
+                            if (drand(r->rnd_seed) < opt_decide_graph_re_rnd) {
+
+                                for (int i = 0; i < outer->edge_list.size(); i++) {
+                                    double w = drand(r->rnd_seed);
+                                    /* w-=0.5;
+                                     w*=w;*/
+                                    //printf("%f (%f),",w,rnd_seed);
+                                    //rnd_path->setWeight(i,w);
+                                    rnd_weight[i] = w;
+                                }
+                            }
+                            rnd_path->update();
+                            //derive a random path in the graph
+                            p = j;
+                            last = j;
+                            assert(rnd_path->connected(p));
+                            while (!under_reach->connected(p)) {
+
+                                last = p;
+                                assert(p !=  r->source);
+                                last_edge = rnd_path->incomingEdge(p);
+                                Var edge_var = outer->getEdgeVar(last_edge);
+                                if (outer->value(edge_var) == l_Undef) {
+                                    to_decide.push(mkLit(edge_var, false));
+                                }
+                                int prev = rnd_path->previous(p);
+                                p = prev;
+                                assert(p >= 0);
+                            }
+
+                        }
+                        if (to_decide.size() && last_decision_status == over_path->numUpdates()) {
+                            while (to_decide.size()) {
+                                Lit l = to_decide.last();
+                                to_decide.pop();
+                                if (outer->value(l) == l_Undef) {
+                                    //stats_decide_time += rtime(2) - startdecidetime;
+                                    return l;
+                                }
+                            }
+                        }
+
+                    }
+                } else if (outer->value(l) == l_False && opt_decide_graph_neg) {
+
+                    //for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
+                    assert(!under_path->connected(j));
+                    over_path->update();
+                    if (over_reach->connected(j) && !under_reach->connected(j)) {
+                        //then lets try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
+                        //(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
+
+                        to_decide.clear();
+                        last_decision_status = over_path->numUpdates();
+                        int p = j;
+                        int last = j;
+                        while (!under_reach->connected(p)) {
+                            last = p;
+                            assert(p !=  r->source);
+                            int prev = over_path->previous(p);
+                            int incoming_edge = over_path->incomingEdge(p);
+                            Var v = outer->edge_list[incoming_edge].v;
+                            if (outer->value(v) == l_Undef) {
+                                to_decide.push(mkLit(v, true));
+                            } else {
+                                assert(outer->value(v)!=l_False);
+                            }
+                            p = prev;
+                        }
+                        if (to_decide.size() && last_decision_status == over_path->numUpdates()) {
+                            while (to_decide.size()) {
+                                Lit l = to_decide.last();
+                                to_decide.pop();
+                                if (outer->value(l) == l_Undef) {
+                                    //stats_decide_time += rtime(2) - startdecidetime;
+                                    return l;
+                                }
+                            }
+                        }
+
+                    }
+
+                }
+
+            }
+        } else {
+
+            int shortest_incomplete_path = -1;
+            int edgeID_to_assign = -1;
+            for (int k = 0; k <  r->reach_lits.size(); k++) {
+                Lit l =  r->reach_lits[order_vec[k]];
+                if (l == lit_Undef)
+                    continue;
+                int j =  r->getNode(var(l));
+                if (outer->value(l) == l_True && opt_decide_graph_pos) {
+                    //if(S->level(var(l))>0)
+                    //	continue;
+                    assert(over_path->connected(j));
+                    if (over_reach->connected(j) && !under_reach->connected(j)) {
+                        //then lets try to connect this
+                        assert(over_path->connected(j));					//Else, we would already be in conflict
+                        int p = j;
+                        int last_edge = -1;
+                        int last = j;
+                        //ok, read back the path from the over to find a candidate edge we can decide
+                        //find the earliest unconnected node on this path
+                        int dist = 0;
+                        over_path->update();
+                        p = j;
+                        last = j;
+                        while (!under_reach->connected(p)) {
+                            dist++;
+                            last = p;
+                            assert(p !=  r->source);
+                            last_edge = over_path->incomingEdge(p);
+                            assert(outer->value( outer->edge_list[last_edge].v)==l_Undef);
+                            int prev = over_path->previous(p);
+                            p = prev;
+
+                        }
+                        assert(dist > 0);
+                        if (opt_sort_graph_decisions == 1) {
+                            if (shortest_incomplete_path < 0 || dist < shortest_incomplete_path) {
+                                shortest_incomplete_path = dist;
+                                edgeID_to_assign = last_edge;
+                            }
+                        } else {
+                            if (dist > shortest_incomplete_path) {
+                                shortest_incomplete_path = dist;
+                                edgeID_to_assign = last_edge;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (edgeID_to_assign >= 0) {
+                assert(outer->edge_list[edgeID_to_assign].edgeID == edgeID_to_assign);
+                Var v = outer->edge_list[edgeID_to_assign].v;
+                if (outer->value(v) == l_Undef) {
+                    //stats_decide_time += rtime(2) - startdecidetime;
+                    return mkLit(v, false);
+                } else {
+                    assert(outer->value(v)!=l_True);
+                }
+            }
+
+        }
+        //stats_decide_time += rtime(2) - startdecidetime;
+        return lit_Undef;
+    }
+};
+
+
+template<typename Weight>
 void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 	while (reach_lits.size() < g_under.nodes())
 		reach_lits.push(lit_Undef);
@@ -471,6 +806,10 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 	if (!overapprox_reach_detector) {
 		buildSATConstraints(false);
 	}
+    if(opt_decide_theories && opt_allow_reach_decisions && overapprox_reach_detector){
+        Heuristic * h = new ReachHeuristic<Weight>(outer,this);
+
+    }
 	if (opt_conflict_min_cut || opt_adaptive_conflict_mincut) {
 		if (!opt_reach_detector_combined_maxflow) {
 			conflict_flows.resize(g_under.nodes(), nullptr);
@@ -1349,323 +1688,8 @@ void ReachDetector<Weight>::dbg_sync_reachability() {
 
 template<typename Weight>
 Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
-	if (!opt_allow_reach_decisions)
-		return lit_Undef;
-	double startdecidetime = rtime(2);
-	auto * over_reach = overapprox_reach_detector;
-	auto * under_reach = underapprox_detector;
-
-	if (!under_reach) {
-		under_reach = underapprox_fast_detector;
-	}
-	
-	auto * over_path = overapprox_path_detector;
-	auto * under_path = underapprox_detector;
-	if (!under_path) {
-		under_path = underapprox_path_detector;
-	}
-	assert(under_path);
-	assert(over_path);
-	assert(over_reach);
-	assert(under_reach);
-
-	{
-		//Routing ideas from Alex Nadel's FMCAD16 paper
-		//1) After a path is established, consider deciding remaining edges to false (only appropriate for some problem domains)
-		//2) When searching for a shortest path, consider setting the weight of already decided edges to 0, to encourage re-use
-		//3) The edge encoding in Alex's paper would be similar to an explicit 'at-most-one-graph-per-edge' framework,
-		//   allowing some learned clauses to be more more efficiently encoded (?).
-		//4)Net swapping. When a reach constraint E is violated, it may be because of decisions made to connect another reach constraint (B).
-		// If we have reach constraints {A,B,C,D,E}, decided in that order, and D is in conflict because of edge assignments made for B,
-		// then net swapping will change the reach decision order as follows: {A,D,B,C,E}. Questions: How does this compare to VSIDS approach,
-		// and how is the conflicting reach constraint (B) determined?
-		// "A reach constraint B blocks reach constraint D, if any edge on the separating cut that is blocking D, is an edge
-		// connecting reach constraint B." Is it the case that at most one reach constraint can be a blocking reach constraint?
-		// Unclear, if more than just two reach constraints are considered.
-		//5) Net restarting. Associate a conflict ocunter with each reach constraint. When it reaches a threshold T ( 10 by default),
-		// restart and place that reach constraint at the front of the reach decision order (and set all conflict ocunters to 0). This
-		// is similar to the current vsids approach.
-
-		//Things from FMCAD16 that do not need to be done: Early net conflict detection - that is already handled by SMMT
-		//
-
-	}
-
-
-
-	if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
-		// are assigned true, as the over approx graph will always register as having been updated.
-		//instead, check the history of the dynamic graph to see if any of the edges on the path have been assigned false, and only recompute in that case.
-		while (to_decide.size()) {
-			Lit l = to_decide.last();
-			to_decide.pop();
-			if (outer->value(l) == l_Undef) {
-				stats_decide_time += rtime(2) - startdecidetime;
-				return l;
-			}
-		}
-	}
-	
-	/*if(opt_decide_graph_chokepoints){
-
-	 //we are going to detect chokepoints as follows. For each node that is reachable in over but that is NOT reachable in the under approximation,
-	 //we will remove its incoming edge. If there are no other paths to that node with that edge removed, then we have found a
-	 for(int k = 0;k<reach_lits.size();k++){
-	 Lit l =reach_lits[k];
-	 if(l==lit_Undef)
-	 continue;
-	 int j =getNode(var(l));
-	 if(outer->value(l)==l_True ){
-
-	 assert(over->connected(j));
-	 if(over->connected(j) && !under->connected(j)){
-	 //then check to see if there is a chokepoint leading to j, by knocking out the incoming edge and seeing if it is still connected.
-	 assert(chokepoint_detector->connected(j));//Else, we would already be in conflict
-	 int edgeID=over->incomingEdge(j);
-	 assert(edgeID>=0);
-	 assert(outer->edge_list[edgeID].edgeID==edgeID);
-	 Var v = outer->edge_list[edgeID].v;
-	 if(outer->value(v)==l_Undef){
-
-	 antig.disableEdge(outer->edge_list[edgeID].from, outer->edge_list[edgeID].to, edgeID);
-	 bool connected = chokepoint_detector->connected(j);
-	 bool succeed = antig.rewindHistory(1);
-	 assert(succeed);
-	 if(!connected){
-	 //then edgeID was an unassigned edge that was also a chokepoint leading up to j.
-	 return mkLit(v,false);
-	 }
-	 }
-	 }
-
-	 }
-	 }
-	 return lit_Undef;
-	 }*/
-
-	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
-	//ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
-	//this can be obviously more efficient
-	//for(int j = 0;j<nNodes();j++){
-
-	//replace this system with a separate decision heuristic for each reach literal.
-	while (order_vec.size() < reach_lits.size()) {
-		order_vec.push(order_vec.size());
-	}
-	if (opt_rnd_order_graph_decisions) {
-		randomShuffle(rnd_seed, order_vec);
-	}
-
-	if (opt_sort_graph_decisions == 0) {
-
-		for (int k = 0; k < reach_lits.size(); k++) {
-			Lit l = reach_lits[order_vec[k]];
-			if (l == lit_Undef)
-				continue;
-			int j = getNode(var(l));
-			if (outer->value(l) == l_True && opt_decide_graph_pos) {
-				//if(S->level(var(l))>0)
-				//	continue;
-
-				if (over_reach->connected(j) && !under_reach->connected(j)) {
-					//then lets try to connect this
-
-					to_decide.clear();
-					last_decision_status = over_path->numUpdates();
-					
-					assert(over_path->connected(j));			//Else, we would already be in conflict
-					int p = j;
-					int last_edge = -1;
-					int last = j;
-					if (!opt_use_random_path_for_decisions) {
-						/*if(opt_use_optimal_path_for_decisions){
-						 //ok, read back the path from the over to find a candidate edge we can decide
-						 //find the earliest unconnected node on this path
-						 opt_path->update();
-						 p = j;
-						 last = j;
-						 while(!under->connected(p)){
-
-						 last=p;
-						 assert(p!=source);
-						 last_edge=opt_path->incomingEdge(p);
-						 int prev = opt_path->previous(p);
-						 p = prev;
-
-						 }
-						 }else*/{
-							//ok, read back the path from the over to find a candidate edge we can decide
-							//find the earliest unconnected node on this path
-							over_path->update();
-							last_decision_status = over_path->numUpdates();
-							p = j;
-							last = j;
-							while (!under_reach->connected(p)) {
-								
-								last = p;
-								assert(p != source);
-								last_edge = over_path->incomingEdge(p);
-								Var edge_var = outer->getEdgeVar(last_edge);
-								if (outer->value(edge_var) == l_Undef) {
-									to_decide.push(mkLit(edge_var, false));
-								}
-								int prev = over_path->previous(p);
-								p = prev;
-								
-							}
-						}
-					} else {
-						//Randomly re-weight the graph sometimes
-						if (drand(rnd_seed) < opt_decide_graph_re_rnd) {
-							
-							for (int i = 0; i < outer->edge_list.size(); i++) {
-								double w = drand(rnd_seed);
-								/* w-=0.5;
-								 w*=w;*/
-								//printf("%f (%f),",w,rnd_seed);
-								//rnd_path->setWeight(i,w);
-								rnd_weight[i] = w;
-							}
-						}
-						rnd_path->update();
-						//derive a random path in the graph
-						p = j;
-						last = j;
-						assert(rnd_path->connected(p));
-						while (!under_reach->connected(p)) {
-							
-							last = p;
-							assert(p != source);
-							last_edge = rnd_path->incomingEdge(p);
-							Var edge_var = outer->getEdgeVar(last_edge);
-							if (outer->value(edge_var) == l_Undef) {
-								to_decide.push(mkLit(edge_var, false));
-							}
-							int prev = rnd_path->previous(p);
-							p = prev;
-							assert(p >= 0);
-						}
-						
-					}
-					if (to_decide.size() && last_decision_status == over_path->numUpdates()) {
-						while (to_decide.size()) {
-							Lit l = to_decide.last();
-							to_decide.pop();
-							if (outer->value(l) == l_Undef) {
-								stats_decide_time += rtime(2) - startdecidetime;
-								return l;
-							}
-						}
-					}
-					
-				}
-			} else if (outer->value(l) == l_False && opt_decide_graph_neg) {
-				
-				//for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
-				assert(!under_path->connected(j));
-				over_path->update();
-				if (over_reach->connected(j) && !under_reach->connected(j)) {
-					//then lets try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
-					//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
-					
-					to_decide.clear();
-					last_decision_status = over_path->numUpdates();
-					int p = j;
-					int last = j;
-					while (!under_reach->connected(p)) {
-						last = p;
-						assert(p != source);
-						int prev = over_path->previous(p);
-						int incoming_edge = over_path->incomingEdge(p);
-						Var v = outer->edge_list[incoming_edge].v;
-						if (outer->value(v) == l_Undef) {
-							to_decide.push(mkLit(v, true));
-						} else {
-							assert(outer->value(v)!=l_False);
-						}
-						p = prev;
-					}
-					if (to_decide.size() && last_decision_status == over_path->numUpdates()) {
-						while (to_decide.size()) {
-							Lit l = to_decide.last();
-							to_decide.pop();
-							if (outer->value(l) == l_Undef) {
-								stats_decide_time += rtime(2) - startdecidetime;
-								return l;
-							}
-						}
-					}
-					
-				}
-				
-			}
-			
-		}
-	} else {
-		
-		int shortest_incomplete_path = -1;
-		int edgeID_to_assign = -1;
-		for (int k = 0; k < reach_lits.size(); k++) {
-			Lit l = reach_lits[order_vec[k]];
-			if (l == lit_Undef)
-				continue;
-			int j = getNode(var(l));
-			if (outer->value(l) == l_True && opt_decide_graph_pos) {
-				//if(S->level(var(l))>0)
-				//	continue;
-				assert(over_path->connected(j));
-				if (over_reach->connected(j) && !under_reach->connected(j)) {
-					//then lets try to connect this
-					assert(over_path->connected(j));					//Else, we would already be in conflict
-					int p = j;
-					int last_edge = -1;
-					int last = j;
-					//ok, read back the path from the over to find a candidate edge we can decide
-					//find the earliest unconnected node on this path
-					int dist = 0;
-					over_path->update();
-					p = j;
-					last = j;
-					while (!under_reach->connected(p)) {
-						dist++;
-						last = p;
-						assert(p != source);
-						last_edge = over_path->incomingEdge(p);
-						assert(outer->value( outer->edge_list[last_edge].v)==l_Undef);
-						int prev = over_path->previous(p);
-						p = prev;
-						
-					}
-					assert(dist > 0);
-					if (opt_sort_graph_decisions == 1) {
-						if (shortest_incomplete_path < 0 || dist < shortest_incomplete_path) {
-							shortest_incomplete_path = dist;
-							edgeID_to_assign = last_edge;
-						}
-					} else {
-						if (dist > shortest_incomplete_path) {
-							shortest_incomplete_path = dist;
-							edgeID_to_assign = last_edge;
-						}
-					}
-				}
-			}
-		}
-		
-		if (edgeID_to_assign >= 0) {
-			assert(outer->edge_list[edgeID_to_assign].edgeID == edgeID_to_assign);
-			Var v = outer->edge_list[edgeID_to_assign].v;
-			if (outer->value(v) == l_Undef) {
-				stats_decide_time += rtime(2) - startdecidetime;
-				return mkLit(v, false);
-			} else {
-				assert(outer->value(v)!=l_True);
-			}
-		}
-		
-	}
-	stats_decide_time += rtime(2) - startdecidetime;
 	return lit_Undef;
+
 }
 ;
 

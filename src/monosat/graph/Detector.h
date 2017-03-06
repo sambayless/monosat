@@ -35,9 +35,9 @@ namespace Monosat {
 //atached to the central graph theory. This allows them to share their edge atoms and a lot of other infrastructure.
 class Detector {
 public:
-	
-	int detectorID;
 
+	int detectorID;
+	bool is_edge_set_detector=false;
 	int unassigned_positives = 0;
 	int unassigned_negatives = 0;
 
