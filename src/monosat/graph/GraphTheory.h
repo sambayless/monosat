@@ -3565,9 +3565,7 @@ public:
                         Lit l = mkLit(v, value(v)==l_False);
                         assert(assigns[v]!=l_Undef);
                         int edge_num = getEdgeID(var(l));
-						if(edge_num==764){
-							int a=1;
-						}
+
                         assert(edge_list[edge_num].v == var(l));
                         int edgeSetID = getEdgeSetID(edge_num);
 

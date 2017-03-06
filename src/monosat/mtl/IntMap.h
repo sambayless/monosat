@@ -55,7 +55,7 @@ namespace Monosat {
     };
 
 
-    template<class K, class MkIndex = MkIndexDefault<K> >
+    template<class K=int, class MkIndex = MkIndexDefault<K> >
     class IntSet
     {
         IntMap<K, char, MkIndex> in_set;
@@ -88,6 +88,16 @@ namespace Monosat {
         	}
         }
         bool     has         (K k) { in_set.reserve(k, 0); return in_set[k]; }
+
+        //stl-style begin and end, to support C++11 range-based for loops
+        K* begin() const {
+            return xs.begin();
+        }
+
+        K* end() const {
+            return xs.end();
+        }
+
     };
 
     #if 0

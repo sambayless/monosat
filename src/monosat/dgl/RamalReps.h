@@ -49,12 +49,12 @@ public:
 	Status & status;
 	int reportPolarity;
 	bool reportDistance;
-	int last_modification;
-	int last_addition;
-	int last_deletion;
-	int history_qhead;
+	int last_modification=-1;
+	int last_addition=-1;
+	int last_deletion=-1;
+	int history_qhead=0;
 
-	int last_history_clear;
+	int last_history_clear=0;
 
 	int source;
 	Weight INF;
@@ -815,12 +815,12 @@ public:
 	Status & status;
 	int reportPolarity;
 	bool reportDistance;
-	int last_modification;
-	int last_addition;
-	int last_deletion;
-	int history_qhead;
+	int last_modification=-1;
+	int last_addition=-1;
+	int last_deletion=-1;
+	int history_qhead=0;
 
-	int last_history_clear;
+	int last_history_clear=0;
 
 	int source;
 	int INF=-1;
