@@ -424,17 +424,25 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
     std::vector<double> rnd_weight;
     GraphTheorySolver<Weight> *outer;
     Lit reach_lit = lit_Undef;
-	int last_modification=-1;
-	int last_addition=-1;
-	int last_deletion=-1;
-	int history_qhead=0;
+	int last_over_modification=-1;
+	int last_over_addition=-1;
+	int last_over_deletion=-1;
+	int over_history_qhead=0;
+	int last_over_history_clear=0;
 
-	int last_history_clear=0;
-	DynamicGraph<Weight> & g;
+    int last_under_history_clear=0;
+    int under_history_qhead=0;
+    int last_under_modification=-1;
+    int last_under_addition=-1;
+    int last_under_deletion=-1;
+
+	DynamicGraph<Weight> & g_over;
+    DynamicGraph<Weight> & g_under;
 	IntSet<int> path_edges;
 	bool path_is_cut=false;
+    int dest_node=-1;
 public:
-    ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, Lit reach_lit): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit),g(r->g_over) {
+    ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, Lit reach_lit,int dest_node): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit),g_over(r->g_over),g_under(r->g_under),dest_node(dest_node) {
         if (opt_use_random_path_for_decisions) {
             rnd_weight.clear();
             rnd_path = new WeightedDijkstra<Weight,double>(r->source, r->g_over, rnd_weight);
@@ -514,14 +522,15 @@ public:
 							last_decision_status = over_path->numUpdates();
 							p = j;
 							last = j;
-							while (!under_reach->connected(p)) {
-
+							//while (!under_reach->connected(p)) {
+                            while(p!=r->source){
 								last = p;
 								assert(p != r->source);
 								last_edge = over_path->incomingEdge(p);
+                                path_edges.insert(last_edge);
 								Var edge_var = outer->getEdgeVar(last_edge);
 								if (outer->value(edge_var) == l_Undef) {
-									path_edges.insert(last_edge);
+
 									to_decide.push(mkLit(edge_var, false));
 								}
 								int prev = over_path->previous(p);
@@ -552,9 +561,10 @@ public:
 							last = p;
 							assert(p !=  r->source);
 							last_edge = rnd_path->incomingEdge(p);
+                            path_edges.insert(last_edge);
 							Var edge_var = outer->getEdgeVar(last_edge);
 							if (outer->value(edge_var) == l_Undef) {
-								path_edges.insert(last_edge);
+
 								to_decide.push(mkLit(edge_var, false));
 							}
 							int prev = rnd_path->previous(p);
@@ -577,6 +587,9 @@ public:
 					path_is_cut=true;
 					to_decide.clear();
 					last_decision_status = over_path->numUpdates();
+
+                    //FIXME: The below walks back along the path to find unassigned edges, when it should instead be finding a cut of unassigned edges.
+
 					int p = j;
 					int last = j;
 					while (!under_reach->connected(p)) {
@@ -584,9 +597,10 @@ public:
 						assert(p !=  r->source);
 						int prev = over_path->previous(p);
 						int incoming_edge = over_path->incomingEdge(p);
+
 						Var v = outer->edge_list[incoming_edge].v;
 						if (outer->value(v) == l_Undef) {
-							path_edges.insert(incoming_edge);
+                            path_edges.insert(incoming_edge);
 							to_decide.push(mkLit(v, true));
 						} else {
 							assert(outer->value(v)!=l_False);
@@ -612,56 +626,151 @@ public:
 
 
 		//check if any edges on the path have been removed since the last update
-		if (last_modification > 0 && g.modifications == last_modification){
+		if (last_over_modification > 0 && g_over.modifications == last_over_modification && last_under_modification > 0 && g_under.modifications == last_under_modification){
 			return false;
 		}
-		if (last_modification <= 0 || g.changed()) {//Note for the future: there is probably room to improve this further.
+		if (last_over_modification <= 0 || g_over.changed() || last_under_modification <= 0 || g_under.changed()) {//Note for the future: there is probably room to improve this further.
 			return true;
 		}
 
-		if (last_history_clear != g.historyclears) {
-			history_qhead = g.historySize();
-			last_history_clear = g.historyclears;
+		if (last_over_history_clear != g_over.historyclears || last_under_history_clear != g_under.historyclears) {
+			over_history_qhead = g_over.historySize();
+			last_over_history_clear = g_over.historyclears;
+            under_history_qhead = g_under.historySize();
+            last_under_history_clear = g_under.historyclears;
+            to_decide.clear();
 			for(int edgeID:path_edges){
 				if(!path_is_cut) {
-					if (!g.edgeEnabled(edgeID))
+					if (!g_over.edgeEnabled(edgeID))
 						return true;
+                    Var edge_var = outer->getEdgeVar(edgeID);
+                    if (outer->value(edge_var) == l_Undef) {
+                        to_decide.push(mkLit(edge_var, false));
+                    }
 				}else{
-					if (g.edgeEnabled(edgeID))
+					if (g_under.edgeEnabled(edgeID))
 						return true;
+                    Var edge_var = outer->getEdgeVar(edgeID);
+                    if (outer->value(edge_var) == l_Undef) {
+                        to_decide.push(mkLit(edge_var, true));
+                    }
 				}
 			}
-			/*for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
-				if (g.edgeEnabled(edgeid)) {
-
-				} else {
-					if (path_edges.has(edgeid)){
-						return true;
-					}
-				}
-			}*/
 		}
 
-		for (int i = history_qhead; i < g.historySize(); i++) {
-			int edgeid = g.getChange(i).id;
-			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-				if(path_is_cut) {
-					if (path_edges.has(edgeid)) {
-						return true;
-					}
-				}
-			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
+		for (int i = over_history_qhead; i < g_over.historySize(); i++) {
+			int edgeid = g_over.getChange(i).id;
+			if (g_over.getChange(i).addition && g_over.edgeEnabled(edgeid)) {
+
+			} else if (!g_over.getChange(i).addition && !g_over.edgeEnabled(edgeid)) {
 				if(!path_is_cut) {
 					if (path_edges.has(edgeid)) {
 						return true;
 					}
-				}
+				}else{
+                    Var edge_var = outer->getEdgeVar(edgeid);
+                    if (outer->value(edge_var) == l_Undef) {
+                        to_decide.push(mkLit(edge_var, true));
+                    }
+                }
 			}
 		}
 
+        for (int i = under_history_qhead; i < g_under.historySize(); i++) {
+            int edgeid = g_under.getChange(i).id;
+            if (path_edges.has(edgeid)) {
+                if (g_under.getChange(i).addition && g_under.edgeEnabled(edgeid)) {
+                    if (!path_is_cut) {
+                        Var edge_var = outer->getEdgeVar(edgeid);
+                        if (outer->value(edge_var) == l_Undef) {
+                            to_decide.push(mkLit(edge_var, false));
+                        }
+                    }else {
+                        if (path_edges.has(edgeid)) {
+                            return true;
+                        }
+                    }
+                } else if (!g_under.getChange(i).addition && !g_under.edgeEnabled(edgeid)) {
 
+                }
+            }
+        }
 		return false;
 	}
+
+    void drawGrid(DynamicGraph<Weight> & g, bool only_path=false){
+        int width =10;
+        int height = 10;
+        bool found_source = false;
+        bool found_dest = false;
+        printf("\n");
+        for(int y = 0;y<height;y++) {
+            for (int x = 0; x < width; x++){
+                int f_node = y*height + x;
+                if (f_node == r->source){
+                    found_source=true;
+                    printf("*");
+                }else if (f_node == dest_node){
+                    found_dest=true;
+                    printf("@");
+                }else{
+                    printf(" ");
+                }
+                if (x<width-1) {
+                    int t_node = y*height+x+1;
+                    //assert(g.hasEdge(f_node,t_node));
+                    if(g.hasEdge(f_node, t_node)){
+                        if(only_path){
+                            int edgea =    g.getEdge(f_node, t_node);
+                            int edgeb =    g.getEdge(t_node, f_node);
+                            if(path_edges.has(edgea) || path_edges.has(edgeb)){
+                                printf("-");
+                            }else{
+                                printf(" ");
+                            }
+                        }else {
+                            //int to_edge = g.getEdge(f_node,t_node);
+                            //if(g.edgeEnabled(to_edge)){
+                            printf("-");
+                        }
+                    }else{
+                        printf(" ");
+                    }
+                }
+            }
+            printf("\n");
+            for (int x = 0; x < width; x++) {
+                int f_node = y*height + x;
+                if (y < height - 1) {
+                    int t_node = (y + 1) * height + x;
+                    //assert(g.hasEdge(f_node, t_node));
+                    if(g.hasEdge(f_node, t_node)){
+                    //int to_edge = g.getEdge(f_node, t_node);
+                    //if(g.edgeEnabled(to_edge)){
+                        if(only_path){
+                            int edgea =    g.getEdge(f_node, t_node);
+                            int edgeb =    g.getEdge(t_node, f_node);
+                            if(path_edges.has(edgea) || path_edges.has(edgeb)){
+                                printf("| ");
+                            }else{
+                                printf("  ");
+                            }
+                        }else {
+                            //int to_edge = g.getEdge(f_node,t_node);
+                            //if(g.edgeEnabled(to_edge)){
+                            printf("| ");
+                        }
+                    }else{
+                        printf("  ");
+                    }
+                }
+            }
+            printf("\n");
+        }
+        printf("\n");
+        assert(found_source);
+        assert(found_dest);
+    }
 
     Lit decide(CRef &decision_reason)override{
 		if (outer->value(reach_lit)==l_Undef){
@@ -691,14 +800,25 @@ public:
         }
 
 		if(needsRecompute()){
+            r->stats_heuristic_recomputes++;
 			computePath();
 
-			last_modification = g.modifications;
-			last_deletion = g.deletions;
-			last_addition = g.additions;
-			history_qhead = g.historySize();
-			last_history_clear = g.historyclears;
-		}
+            drawGrid(g_over);
+            drawGrid(g_under);
+            drawGrid(g_over,true);
+			last_over_modification = g_over.modifications;
+			last_over_deletion = g_over.deletions;
+			last_over_addition = g_over.additions;
+			over_history_qhead = g_over.historySize();
+			last_over_history_clear = g_over.historyclears;
+
+            last_under_modification = g_under.modifications;
+            last_under_deletion = g_under.deletions;
+            last_under_addition = g_under.additions;
+            under_history_qhead = g_under.historySize();
+            last_under_history_clear = g_under.historyclears;
+
+        }
 
 		if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
             // are assigned true, as the over approx graph will always register as having been updated.
@@ -737,7 +857,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 	g_over.invalidate();
 	
 	Var reach_var = outer->newVar(outer_reach_var, getID());
-	
+
 	if (first_reach_var == var_Undef) {
 		first_reach_var = reach_var;
 	} else {
@@ -767,8 +887,9 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		buildSATConstraints(false);
 	}
     if(opt_decide_theories && opt_allow_reach_decisions && overapprox_reach_detector){
-        Heuristic * h = new ReachHeuristic<Weight>(outer,this,reachLit);
-
+        Heuristic * h = new ReachHeuristic<Weight>(outer,this,reachLit,to);
+        reach_heuristics.growTo(to+1,nullptr);
+        reach_heuristics[to]=h;
     }
 	if (opt_conflict_min_cut || opt_adaptive_conflict_mincut) {
 		if (!opt_reach_detector_combined_maxflow) {
@@ -1380,7 +1501,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 	if (++iter == 87) {
 		int a = 1;
 	}
-
+    conflictingHeuristic=nullptr;
 	bool skipped_positive = false;
 	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
 		double startdreachtime = rtime(2);
@@ -1454,7 +1575,9 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 				outer->enqueue(l, overprop_marker);
 		} else if (outer->value(l) == l_False) {
 			conflict.push(l);
-			
+            conflictingHeuristic= u < reach_heuristics.size() ?  reach_heuristics[u]:nullptr;
+            drawGrid(g_over,u);
+            drawGrid(g_under, u);
 			if (reach) {
 				
 				//conflict

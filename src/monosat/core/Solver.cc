@@ -1927,6 +1927,7 @@ lbool Solver::search(int nof_conflicts) {
 
 			if (learnt_clause.size()>1 && conflicting_heuristic && opt_theory_order_swapping){
 				//nadel-style theory order swapping
+                assert(decision_heuristics.contains(conflicting_heuristic));
 				int start_size = decision_heuristics.size();
 				//check to see if the analyzed conflict includes any literals
 				//that were either decided or forced by a theory solver

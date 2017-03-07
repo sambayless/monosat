@@ -74,7 +74,7 @@ public:
 
 	vec<int> reach_lit_map;
 	vec<int> force_reason;
-
+    vec<Heuristic*> reach_heuristics;
 
 	/*
 	 struct DistLit{
@@ -106,13 +106,77 @@ public:
 	int stats_num_skipable_deletions = 0;
 	int stats_learnt_components = 0;
 	int stats_learnt_components_sz = 0;
+    long stats_heuristic_recomputes=0;
 	double mod_percentage = 0.2;
 	int stats_pure_skipped = 0;
 	int stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
+    Heuristic * conflictingHeuristic=nullptr;
 
-	void printStats() {
+    Heuristic * getConflictingHeuristic()override{
+        return conflictingHeuristic;
+    }
+
+    void drawGrid(DynamicGraph<Weight> & g, int dest_node){
+        int width =10;
+        int height = 10;
+        bool found_source = false;
+        bool found_dest = false;
+        printf("\n");
+        for(int y = 0;y<height;y++) {
+            for (int x = 0; x < width; x++){
+                int f_node = y*height + x;
+                if (f_node == source){
+                    found_source=true;
+                    printf("*");
+                }else if (f_node == dest_node){
+                    found_dest=true;
+                    printf("@");
+                }else{
+                    printf(" ");
+                }
+                if (x<width-1) {
+                    int t_node = y*height+x+1;
+                    //assert(g.hasEdge(f_node,t_node));
+                    if(g.hasEdge(f_node, t_node)){
+                        {
+                            //int to_edge = g.getEdge(f_node,t_node);
+                            //if(g.edgeEnabled(to_edge)){
+                            printf("-");
+                        }
+                    }else{
+                        printf(" ");
+                    }
+                }
+            }
+            printf("\n");
+            for (int x = 0; x < width; x++) {
+                int f_node = y*height + x;
+                if (y < height - 1) {
+                    int t_node = (y + 1) * height + x;
+                    //assert(g.hasEdge(f_node, t_node));
+                    if(g.hasEdge(f_node, t_node)){
+                        //int to_edge = g.getEdge(f_node, t_node);
+                        //if(g.edgeEnabled(to_edge)){
+                        {
+                            //int to_edge = g.getEdge(f_node,t_node);
+                            //if(g.edgeEnabled(to_edge)){
+                            printf("| ");
+                        }
+                    }else{
+                        printf("  ");
+                    }
+                }
+            }
+            printf("\n");
+        }
+        printf("\n");
+        assert(found_source);
+        assert(found_dest);
+    }
+
+    void printStats() {
 		//printf("Reach detector\n");
 		Detector::printStats();
 		if (opt_detect_pure_theory_lits)
@@ -124,6 +188,9 @@ public:
 			printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
 					stats_learnt_components_sz / (float) stats_learnt_components);
 		}
+        if(opt_decide_theories){
+            printf("\t%d heuristic path recomputations\n",stats_heuristic_recomputes);
+        }
 	}
 	
 	struct ReachStatus {

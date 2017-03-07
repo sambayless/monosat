@@ -727,7 +727,7 @@ public:
 	int64_t stats_pure_skipped = 0;
 	int64_t stats_mc_calls = 0;
 	int64_t stats_propagations_skipped = 0;
-	long dbg_6=0;
+
 	int64_t stats_lazy_decisions = 0;
 	vec<Lit> reach_cut;
 
@@ -2770,23 +2770,7 @@ public:
 			}
 		}
 #endif
-		if(getTheoryIndex()==6){
-			dbg_6++;
 
-			/*Lit l1 = toLit(10860);
-			Lit l2 = toLit(10858);
-			if(nVars()>= var(l1)) {
-
-				Lit t1 = toSolver(l1);
-				Lit t2 = toSolver(l2);
-				if (value(l1) != S->value(t1)) {
-					exit(2);
-				}
-				if (value(l2) != S->value(t2)) {
-					exit(2);
-				}
-			}*/
-		}
 		if(invalid_edgeset_lit!=lit_Undef){
 			return true;
 		}
