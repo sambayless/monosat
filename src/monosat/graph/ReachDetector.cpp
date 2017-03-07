@@ -802,10 +802,10 @@ public:
 		if(needsRecompute()){
             r->stats_heuristic_recomputes++;
 			computePath();
-
+            /*
             drawGrid(g_over);
             drawGrid(g_under);
-            drawGrid(g_over,true);
+            drawGrid(g_over,true);*/
 			last_over_modification = g_over.modifications;
 			last_over_deletion = g_over.deletions;
 			last_over_addition = g_over.additions;
@@ -1576,8 +1576,8 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		} else if (outer->value(l) == l_False) {
 			conflict.push(l);
             conflictingHeuristic= u < reach_heuristics.size() ?  reach_heuristics[u]:nullptr;
-            drawGrid(g_over,u);
-            drawGrid(g_under, u);
+           // drawGrid(g_over,u);
+           // drawGrid(g_under, u);
 			if (reach) {
 				
 				//conflict

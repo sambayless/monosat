@@ -155,7 +155,7 @@ public:
 		decision_heuristics.push(t);
 		theory_order_heap.insert(t);
 		theory_conflict_counters.growTo(all_decision_heuristics.size(),0);
-
+		first_heuristic_decision_level.growTo(all_decision_heuristics.size(),-1);
 		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
 	}
@@ -570,6 +570,8 @@ public:
 	vec<int> post_satisfied_theory_trail_pos;
 	vec<Heuristic*> decision_heuristics;
 	vec<Heuristic*> all_decision_heuristics;
+	vec<int> first_heuristic_decision_level;//the first decision made by each decision heuristic (other than vsids)
+	vec<Heuristic*> decision_heuristic_trail;//trail of decisions made by decision heuristics (other than vsids)
 	vec<int> theory_conflict_counters;
     int theory_decision_round_robin=0;
 	Heuristic * decisionTheory=nullptr;//for opt_vsids_solver_as_theory

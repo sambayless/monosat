@@ -449,6 +449,11 @@ void Solver::cancelUntil(int lev) {
 			throw std::runtime_error("Internal error in backtracking");
 		}
 
+        while(decision_heuristic_trail.size() && first_heuristic_decision_level[decision_heuristic_trail.last()->getHeuristicIndex()]> decisionLevel()){
+            first_heuristic_decision_level[decision_heuristic_trail.last()->getHeuristicIndex()]=-1;
+            decision_heuristic_trail.pop();
+        }
+
 		for (int i = 0; i < theories.size(); i++) {
 			int theoryID = theories[i]->getTheoryIndex();
 			int c = trail.size() - 1;
@@ -1923,7 +1928,7 @@ lbool Solver::search(int nof_conflicts) {
 			learnt_clause.clear();
 			analyze(confl, learnt_clause, backtrack_level);
 			cancelUntil(backtrack_level);
-
+            int lowest_conflicting_decision_level=decisionLevel();
 
 			if (learnt_clause.size()>1 && conflicting_heuristic && opt_theory_order_swapping){
 				//nadel-style theory order swapping
@@ -1966,6 +1971,10 @@ lbool Solver::search(int nof_conflicts) {
 						if(i<lowest_involved_position){
 							lowest_involved_position=i;
 						}
+                        int conflict_level = first_heuristic_decision_level[t->getHeuristicIndex()];
+                        if(conflict_level>=0 && conflict_level < lowest_conflicting_decision_level){
+                            lowest_conflicting_decision_level=conflict_level;//use this to backtrack past the earliest decision made by one of the conflicting heuristics.
+                        }
 					}else if (lowest_involved_position==decision_heuristics.size()){
 						swapping_uninvolved_pre_theories.push(t);
 					}else{
@@ -1979,6 +1988,7 @@ lbool Solver::search(int nof_conflicts) {
 				decision_heuristics.extend(swapping_involved_theory_order);
 				decision_heuristics.extend(swapping_uninvolved_post_theories);
 				assert(decision_heuristics.size()==start_size);
+
 			}
 
 			//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
@@ -2060,7 +2070,11 @@ lbool Solver::search(int nof_conflicts) {
 				}
 			}
 
-			if(!opt_theory_propagate_assumptions && backtrack_level>0 && backtrack_level<assumptions.size()){
+            if(lowest_conflicting_decision_level > 0 && lowest_conflicting_decision_level<decisionLevel()){
+                cancelUntil(lowest_conflicting_decision_level-1);
+            }
+
+			if(!opt_theory_propagate_assumptions && decisionLevel()>0 && decisionLevel()<assumptions.size()){
 				//improve this in the future!
 				//if we backtracked past the assumption level, AND if theory propagate was disabled while assigning assumptions
 				//then some theories (notably, the bv theory) currently require us to re-propagate all theory literals of that bv,
@@ -2245,6 +2259,13 @@ lbool Solver::search(int nof_conflicts) {
 						assigns[var(theoryDecision)]=l_Undef;
 					}
 					last_decision_was_theory=true;
+
+                    if(decision_reason!=CRef_Undef){
+                        Heuristic * h = getHeuristic(decision_reason);
+                        if(h && first_heuristic_decision_level[h->getHeuristicIndex()]<0){
+                            first_heuristic_decision_level[h->getHeuristicIndex()]=decisionLevel();
+                        }
+                    }
 				}
 			}
 			
