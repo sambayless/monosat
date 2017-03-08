@@ -850,8 +850,8 @@ public:
 		}
 		if(needsRecompute()){
             r->stats_heuristic_recomputes++;
+			computePath();
             if(opt_verb>=4) {
-                computePath();
                 printf("Over:\n");
                 drawGrid(g_over);
                 printf("Under:\n");
