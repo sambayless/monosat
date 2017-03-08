@@ -53,7 +53,8 @@ extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
 extern BoolOption opt_theory_internal_vsids_fsm;
 extern DoubleOption opt_random_theory_vsids_freq;
-extern BoolOption opt_randomize_theory_order;
+extern DoubleOption opt_randomize_theory_order_freq;
+extern BoolOption opt_theory_order_initial_sort;
 extern BoolOption opt_randomize_theory_order_all;
 extern BoolOption opt_theory_decision_round_robin;
 
@@ -111,6 +112,7 @@ extern IntOption opt_theory_order_conflict_restart;
 extern BoolOption opt_theory_order_conflict_restart_sort;
 extern IntOption opt_theory_order_swapping_max_invovled;
 extern BoolOption opt_theory_order_swapping_luby;
+extern BoolOption opt_theory_order_swapping_prioritize_last_decision;
 
 extern BoolOption opt_monolothic_theory_decisions;
 extern BoolOption opt_vsids_both;

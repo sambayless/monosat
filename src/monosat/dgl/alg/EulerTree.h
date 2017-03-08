@@ -470,7 +470,9 @@ public:
 					next_next = f->node->prev();
 				
 				if (next_next->value->contains(node)) {
+#ifdef DEBUG_DGL
 					assert(other->dbg_parent == node);
+#endif
 					f = next;				//We want to cut AFTER returning to node.
 				} else {
 					//node is the leaf, so f is the correct place to cut.

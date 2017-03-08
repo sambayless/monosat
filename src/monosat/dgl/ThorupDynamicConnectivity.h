@@ -518,13 +518,16 @@ public:
 		 dbg.dbg_print();
 		 dbg_print();
 		 }*/
-#endif
 		assert(et.back().connected(u, v) == dbg.connected(u, v));
+#endif
+
 		return et.back().connected(u, v);
 	}
 	
 	int numComponents() {
+#ifdef DEBUG_DGL
 		assert(et.back().numComponents() == dbg.numComponents());
+#endif
 		return et.back().numComponents();
 	}
 	

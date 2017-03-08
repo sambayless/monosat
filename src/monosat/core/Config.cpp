@@ -105,14 +105,15 @@ DoubleOption Monosat::opt_random_theory_vsids_freq(_cat, "rnd-theory-vsids-freq"
 		"The frequency with which the decision theory uses vsids to make decisions, if theory-order-vsids is enabled", 1,
 		DoubleRange(0, true, 1, true));
 
-BoolOption Monosat::opt_randomize_theory_order(_cat, "rnd-theory-order",
-		"If theory decisions are used, randomize the order that theories are decided at each restart", false);
+DoubleOption Monosat::opt_randomize_theory_order_freq(_cat_theory, "theory-order-rnd-freq",
+										  "Frequency with which to randomize the decision heuristic order (on restarts)", 0,
+										  DoubleRange(0, true, 1, true));
 
 BoolOption Monosat::opt_optimization_init_solve(_cat, "optimize-init-solve",
 										  "Perform an initial, free solving round before applying optimization (this is potentially expensive, but also gives the solver a chance to find good initial bounds)", true);
 BoolOption Monosat::opt_decide_objectives_first(_cat, "decide-objectives-first",
 												"Decide any free variables in objective functions first, when performing optimization", true);
-
+BoolOption Monosat::opt_theory_order_initial_sort(_cat_theory,"theory-order-initial-sort","",true);
 
 BoolOption Monosat::opt_randomize_theory_order_all(_cat, "rnd-theory-order-all",
 "If theory decisions are used, randomize the order that theories are decided at every decision (not just every restart)", false);
@@ -208,7 +209,7 @@ BoolOption  Monosat::opt_theory_order_swapping(_cat_theory, "theory-order-swappi
 IntOption  Monosat::opt_theory_order_conflict_restart(_cat_theory, "theory-order-conflict-restart", "Use Alex Nadel-style theory order conflict counter-driven theory order restarts; restart the theory order after this many conflicts have occured in a theory (0 to disable)",0, IntRange(0, INT32_MAX));
 BoolOption Monosat::opt_theory_order_conflict_restart_sort(_cat_theory, "theory-order-restart-sorting", "Sort decision heuristics by conflict counter on restarts",false);
 BoolOption Monosat::opt_monolothic_theory_decisions(_cat_theory,"theory-combined-decisions","Make heuristic decisions within theories all at once, rather than individually per predicate.",false);
-
+BoolOption Monosat::opt_theory_order_swapping_prioritize_last_decision(_cat_theory,"theory-order-swapping-last-decision","Prioritize the last decision heuristic when analyzing conflicts", false);
 IntOption Monosat::opt_theory_order_swapping_max_invovled(_cat_theory,"theory-order-swapping-max","Maximum number of heuristics to treat as involved in a heuristic conflict.", 2, IntRange(2, INT32_MAX));
 BoolOption Monosat::opt_theory_order_swapping_luby(_cat_theory,"theory-order-swapping-luby","Use Luby series to set the maximum number of heuristics involved in a heuristic conflict.", false);
 BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids", "Use vsids decision heuristic within theory solvers",false);

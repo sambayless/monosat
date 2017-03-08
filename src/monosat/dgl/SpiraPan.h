@@ -661,8 +661,10 @@ public:
 		}
 
 		if (last_modification > 0 && g.modifications == last_modification) {
+#ifdef DEBUG_DGL
 			assert(min_weight == dbg.forestWeight());
 			assert(num_sets == dbg.numComponents());
+#endif
 			return;
 		}
 
@@ -752,10 +754,14 @@ public:
 			//Note: for the tree edge detector, polarity is effectively reversed.
 			if (reportPolarity < 1 && (!g.edgeEnabled(i) || in_tree[i])) {
 				status.inMinimumSpanningTree(i, true);
+#ifdef DEBUG_DGL
 				assert(!g.edgeEnabled(i) || dbg.edgeInTree(i));
+#endif
 			} else if (reportPolarity > -1 && (g.edgeEnabled(i) && !in_tree[i])) {
 				status.inMinimumSpanningTree(i, false);
+#ifdef DEBUG_DGL
 				assert(!dbg.edgeInTree(i));
+#endif
 			}
 		}
 		assert(dbg_uptodate());

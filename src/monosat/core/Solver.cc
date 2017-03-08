@@ -602,7 +602,7 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 		theories[theoryID]->enqueueTheory(getTheoryLit(p));
 	}
 }
-void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics){
+void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics, int minimimum_involved_decision_priority){
 	if(conflicting_heuristics.size()>=max_involved_heuristics)
 		return;
 
@@ -646,7 +646,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
             //do nothing
         }else if(isDecisionReason(confl)){
             Heuristic * h = getHeuristic(confl);
-            if(!conflicting_heuristics.has(h->getHeuristicIndex())) {
+            if(!conflicting_heuristics.has(h->getHeuristicIndex()) && h->getPriority()>=minimimum_involved_decision_priority) {
                 conflicting_heuristics.insert(h->getHeuristicIndex());
 				if(conflicting_heuristics.size()>=max_involved_heuristics){
                     for(int i = 0;i<=index+1;i++){
@@ -664,7 +664,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
             assert(t);
             //this is not quite right...
             if(t->getHeuristicIndex()>=0){
-                if(!conflicting_heuristics.has(t->getHeuristicIndex())) {
+                if(!conflicting_heuristics.has(t->getHeuristicIndex()) && t->getPriority()>=minimimum_involved_decision_priority) {
                     conflicting_heuristics.insert(t->getHeuristicIndex());
 					if(conflicting_heuristics.size()>=max_involved_heuristics){
                         for(int i = 0;i<=index+1;i++){
@@ -691,7 +691,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
 
         }else if(isDecisionReason(confl)){
             Heuristic * h = getHeuristic(confl);
-            if(!conflicting_heuristics.has(h->getHeuristicIndex())) {
+            if(!conflicting_heuristics.has(h->getHeuristicIndex()) && h->getPriority()>=minimimum_involved_decision_priority ) {
                 conflicting_heuristics.insert(h->getHeuristicIndex());
             }
 
@@ -701,7 +701,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
                 assert(t);
                 //this is not quite right...
                 if(t->getHeuristicIndex()>=0){
-                    if(!conflicting_heuristics.has(t->getHeuristicIndex())) {
+                    if(!conflicting_heuristics.has(t->getHeuristicIndex()) && t->getPriority()>=minimimum_involved_decision_priority) {
                         conflicting_heuristics.insert(t->getHeuristicIndex());
                     }
                 }
@@ -1998,6 +1998,8 @@ lbool Solver::search(int nof_conflicts) {
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
 	bool using_theory_vsids= opt_decide_theories && opt_theory_order_vsids && drand(random_seed) < opt_random_theory_vsids_freq;
 
+
+
 	if(decisionLevel()==0 && initialPropagate && opt_detect_pure_lits && !simplify()){
 		return l_False;//if using pure literal detection, and the theories haven't been propagated yet, run simpify
 	}
@@ -2038,7 +2040,7 @@ lbool Solver::search(int nof_conflicts) {
 			analyze(confl, learnt_clause, backtrack_level);
 
             int lowest_conflicting_decision_level=decisionLevel();
-            if(!conflicting_heuristic){
+            if(last_decision_heuristic && (!conflicting_heuristic || conflicting_heuristic->getPriority()<last_decision_heuristic->getPriority())){
                 conflicting_heuristic=last_decision_heuristic;
             }
 			if (learnt_clause.size()>1 && last_decision_heuristic && opt_theory_order_swapping){
@@ -2053,7 +2055,6 @@ lbool Solver::search(int nof_conflicts) {
                     printf("\n");
                 }
 
-
                 assert(decision_heuristics.contains(conflicting_heuristic));
 				int start_size = decision_heuristics.size();
 				//check to see if the analyzed conflict includes any literals
@@ -2067,7 +2068,8 @@ lbool Solver::search(int nof_conflicts) {
                    // swapping_involved_theories.insert(last_decision_heuristic->getHeuristicIndex());
                 //}
 				//note: the last decision heuristic can in some cases be the conflicting heuristic, so these can be the same
-				swapping_involved_theories.insert(last_decision_heuristic->getHeuristicIndex());
+				if(opt_theory_order_swapping_prioritize_last_decision && conflicting_heuristic!=last_decision_heuristic)
+					swapping_involved_theories.insert(last_decision_heuristic->getHeuristicIndex());
 				swapping_involved_theories.insert(conflicting_heuristic->getHeuristicIndex());
 
 				int max_involved = opt_theory_order_swapping_max_invovled;
@@ -2076,58 +2078,69 @@ lbool Solver::search(int nof_conflicts) {
 					max_involved *= luby(restart_inc, heuristic_swapping_restarts++);
 				}
 				assert(max_involved>=2);
-                analyzeHeuristicDecisions(confl,swapping_involved_theories, max_involved);
+                analyzeHeuristicDecisions(confl,swapping_involved_theories, max_involved,conflicting_heuristic->getPriority());
+				if(!swapping_involved_theories.has(last_decision_heuristic->getHeuristicIndex())){
+					int a=1;
+				}
+				if(swapping_involved_theories.size()>1) {
+					int lowest_involved_position = decision_heuristics.size();
+					for (int i = 0; i < decision_heuristics.size(); i++) {
+						Heuristic *t = decision_heuristics[i];
+						if (t == conflicting_heuristic) {
 
-				int lowest_involved_position=decision_heuristics.size();
-				for (int i = 0; i < decision_heuristics.size(); i++) {
-					Heuristic * t = decision_heuristics[i];
-					if(t==conflicting_heuristic){
+							if (i < lowest_involved_position) {
+								lowest_involved_position = i;
+							}
+							int conflict_level = first_heuristic_decision_level[t->getHeuristicIndex()];
+							if (conflict_level >= 0 && conflict_level < lowest_conflicting_decision_level) {
+								lowest_conflicting_decision_level = conflict_level;//use this to backtrack past the earliest decision made by one of the conflicting heuristics.
+							}
+						} else if (swapping_involved_theories.has(t->getHeuristicIndex())) {
+							swapping_involved_theory_order.push(t);
+							if (i < lowest_involved_position) {
+								lowest_involved_position = i;
+							}
+							int conflict_level = first_heuristic_decision_level[t->getHeuristicIndex()];
+							if (conflict_level >= 0 && conflict_level < lowest_conflicting_decision_level) {
+								lowest_conflicting_decision_level = conflict_level;//use this to backtrack past the earliest decision made by one of the conflicting heuristics.
+							}
+						} else if (lowest_involved_position == decision_heuristics.size()) {
+							swapping_uninvolved_pre_theories.push(t);
+						} else {
+							swapping_uninvolved_post_theories.push(t);
+						}
+					}
 
-						if(i<lowest_involved_position){
-							lowest_involved_position=i;
+					if(opt_verb>=3) {
+						printf("Uninvolved pre theories: ");
+						for (Heuristic *h:swapping_uninvolved_pre_theories) {
+							printf("%d, ", h->getHeuristicIndex());
 						}
-                        int conflict_level = first_heuristic_decision_level[t->getHeuristicIndex()];
-                        if(conflict_level>=0 && conflict_level < lowest_conflicting_decision_level){
-                            lowest_conflicting_decision_level=conflict_level;//use this to backtrack past the earliest decision made by one of the conflicting heuristics.
-                        }
-					}else if (swapping_involved_theories.has(t->getHeuristicIndex())){
-						swapping_involved_theory_order.push(t);
-						if(i<lowest_involved_position){
-							lowest_involved_position=i;
+						printf("\nInvolved theories: ");
+						printf("%d, ", conflicting_heuristic->getHeuristicIndex());
+						for (Heuristic *h:swapping_involved_theory_order) {
+							printf("%d, ", h->getHeuristicIndex());
 						}
-                        int conflict_level = first_heuristic_decision_level[t->getHeuristicIndex()];
-                        if(conflict_level>=0 && conflict_level < lowest_conflicting_decision_level){
-                            lowest_conflicting_decision_level=conflict_level;//use this to backtrack past the earliest decision made by one of the conflicting heuristics.
-                        }
-					}else if (lowest_involved_position==decision_heuristics.size()){
-						swapping_uninvolved_pre_theories.push(t);
-					}else{
-						swapping_uninvolved_post_theories.push(t);
+						printf("\nUninvolved post theories: ");
+						for (Heuristic *h:swapping_uninvolved_post_theories) {
+							printf("%d, ", h->getHeuristicIndex());
+						}
+						printf("\nConflcit level %d, lowest involved theory level %d\n", backtrack_level,
+							   lowest_conflicting_decision_level);
+					}
+					decision_heuristics.clear();
+					swapping_uninvolved_pre_theories.copyTo(decision_heuristics);
+					decision_heuristics.push(conflicting_heuristic);
+					decision_heuristics.extend(swapping_involved_theory_order);
+					decision_heuristics.extend(swapping_uninvolved_post_theories);
+					if(opt_verb>=3) {
+						printf("New decision order: ");
+						for (Heuristic *h:decision_heuristics) {
+							printf("%d, ", h->getHeuristicIndex());
+						}
+						printf("\n");
 					}
 				}
-                if(opt_verb>=3) {
-                    printf("Uninvolved pre theories: ");
-                    for (Heuristic *h:swapping_uninvolved_pre_theories) {
-                        printf("%d, ", h->getHeuristicIndex());
-                    }
-                    printf("\nInvolved theories: ");
-                    printf("%d, ", conflicting_heuristic->getHeuristicIndex());
-                    for (Heuristic *h:swapping_involved_theory_order) {
-                        printf("%d, ", h->getHeuristicIndex());
-                    }
-                    printf("\nUninvolved post theories: ");
-                    for (Heuristic *h:swapping_uninvolved_post_theories) {
-                        printf("%d, ", h->getHeuristicIndex());
-                    }
-                    printf("\nConflcit level %d, lowest involved theory level %d\n", backtrack_level,
-                           lowest_conflicting_decision_level);
-                }
-				decision_heuristics.clear();
-				swapping_uninvolved_pre_theories.copyTo(decision_heuristics);
-				decision_heuristics.push(conflicting_heuristic);
-				decision_heuristics.extend(swapping_involved_theory_order);
-				decision_heuristics.extend(swapping_uninvolved_post_theories);
-
 				assert(decision_heuristics.size()==start_size);
 
 			}
@@ -2192,7 +2205,7 @@ lbool Solver::search(int nof_conflicts) {
 
 					if(opt_theory_order_conflict_restart_sort){
 						//sort the heuristics by their conflict counter value, putting the highest value first
-						sort(decision_heuristics,[&](Heuristic * a ,Heuristic * b)->bool{return theory_conflict_counters[a->getHeuristicIndex()]>=theory_conflict_counters[b->getHeuristicIndex()];});
+						sort(decision_heuristics,[&](Heuristic * a ,Heuristic * b)->bool{return theory_conflict_counters[a->getHeuristicIndex()]>theory_conflict_counters[b->getHeuristicIndex()];});
 						assert(decision_heuristics[0]==conflicting_heuristic);
 					}else {
 						//reorder the conflicting theories to put the decision theory first.
@@ -2567,10 +2580,20 @@ lbool Solver::solve_() {
 			for (int i = 0; i < nVars(); i++)
 				polarity[i] = irand(random_seed, 1);
 		}
-		if (opt_decide_theories &&  opt_randomize_theory_order) {
-			randomShuffle(random_seed, decision_heuristics);
+		if(opt_decide_theories) {
+			if ( opt_randomize_theory_order_freq > 0 && drand(random_seed)<opt_randomize_theory_order_freq) {
+				randomShuffle(random_seed, decision_heuristics);
+			}else if (opt_theory_order_initial_sort){
+				sort(decision_heuristics,TheoryOrderLt());
+			}
+			if(opt_verb>=3){
+				printf("Initial theory order: ");
+				for (Heuristic *h:decision_heuristics) {
+					printf("%d, ", h->getHeuristicIndex());
+				}
+				printf("\n");
+			}
 		}
-
 
 
 		status = search(rest_base * restart_first);

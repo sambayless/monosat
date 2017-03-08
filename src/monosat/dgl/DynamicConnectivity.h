@@ -432,9 +432,9 @@ public:
 		 }
 		 }
 		 */
-
+#ifdef DEBUG_DGL
 		assert(dbg_sets.NumSets() == t.numComponents());
-		
+#endif
 		num_updates++;
 		last_modification = g.modifications;
 		last_deletion = g.deletions;

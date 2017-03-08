@@ -232,7 +232,7 @@ public:
 					stats_learnt_components_sz / (float) stats_learnt_components);
 		}
         if(opt_decide_theories){
-            printf("\t%d heuristic path recomputations\n",stats_heuristic_recomputes);
+            printf("\t%ld heuristic path recomputations\n",stats_heuristic_recomputes);
         }
 	}
 	

@@ -156,7 +156,7 @@ public:
 		theory_order_heap.insert(t);
 		theory_conflict_counters.growTo(all_decision_heuristics.size(),0);
 		first_heuristic_decision_level.growTo(all_decision_heuristics.size(),-1);
-		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
+		t->setActivity(opt_randomize_theory_order_freq>0 ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
 	}
 	void theoryPropagated(Theory * t)override {
@@ -912,7 +912,7 @@ protected:
 		tmp_conflict.clear();
 	}
 
-    void analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics);
+    void analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics,int minimimum_involved_decision_priority);
 	bool litRedundant(Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
 	lbool search(int nof_conflicts);                                     // Search for a given number of conflicts.
 	lbool solve_();                                           // Main solve method (assumptions given in 'assumptions').
