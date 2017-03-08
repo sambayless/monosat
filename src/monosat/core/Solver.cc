@@ -601,7 +601,115 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 		theories[theoryID]->enqueueTheory(getTheoryLit(p));
 	}
 }
+void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, bool quit_on_first_new_heuristic){
+    int pathC = 0;
+    CRef original_confl = confl;
+    Lit p = lit_Undef;
+    assert(confl != CRef_Undef);
 
+#ifdef DEBUG_CORE
+    assert(!seen.contains(1));
+#endif
+
+    int index = trail.size() - 1;
+    bool found_any=false;
+    do {
+        if (confl != CRef_Undef) {
+            assert(!isTheoryCause(confl));
+            Clause& c = ca[confl];
+
+            for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
+                Lit q = c[j];
+                if (!seen[var(q)] && level(var(q)) > 0) {
+                    seen[var(q)] = 1;
+
+                    pathC++;
+                }
+            }
+        }
+        confl=CRef_Undef;
+
+
+        // Select next clause to look at:
+        while (index>= 0 && (!seen[var(trail[index--])]));
+        assert(index >= -1);
+        p = trail[index + 1];
+
+        assert(var(p)!=var(theoryDecision));
+
+        confl = reasonOrDecision(var(p));
+        if(confl==CRef_Undef) {
+            //do nothing
+        }else if(isDecisionReason(confl)){
+            Heuristic * h = getHeuristic(confl);
+            if(!conflicting_heuristics.has(h->getHeuristicIndex())) {
+                conflicting_heuristics.insert(h->getHeuristicIndex());
+                if(quit_on_first_new_heuristic){
+                    for(int i = 0;i<=index+1;i++){
+                        seen[var(trail[i])]=false;
+                    }
+#ifdef DEBUG_CORE
+                    assert(!seen.contains(1));
+#endif
+                    return;
+                }
+            }
+            confl = CRef_Undef;
+        }else if (isTheoryCause(confl)) {
+            Theory * t = getTheory(confl);
+            assert(t);
+            //this is not quite right...
+            if(t->getHeuristicIndex()>=0){
+                if(!conflicting_heuristics.has(t->getHeuristicIndex())) {
+                    conflicting_heuristics.insert(t->getHeuristicIndex());
+                    if(quit_on_first_new_heuristic){
+                        for(int i = 0;i<=index+1;i++){
+                            seen[var(trail[i])]=false;
+                        }
+#ifdef DEBUG_CORE
+                        assert(!seen.contains(1));
+#endif
+                        return;
+                    }
+                }
+            }
+            confl = CRef_Undef;
+        }
+
+        seen[var(p)] = 0;
+        pathC--;
+    } while (pathC > 0);
+
+    if(p!=lit_Undef){
+        confl = reasonOrDecision(var(p));
+        if(confl==CRef_Undef) {
+            //do nothing
+
+        }else if(isDecisionReason(confl)){
+            Heuristic * h = getHeuristic(confl);
+            if(!conflicting_heuristics.has(h->getHeuristicIndex())) {
+                conflicting_heuristics.insert(h->getHeuristicIndex());
+            }
+
+        }else {
+            if (isTheoryCause(confl)) {
+                Theory * t = getTheory(confl);
+                assert(t);
+                //this is not quite right...
+                if(t->getHeuristicIndex()>=0){
+                    if(!conflicting_heuristics.has(t->getHeuristicIndex())) {
+                        conflicting_heuristics.insert(t->getHeuristicIndex());
+                    }
+                }
+
+            }
+        }
+    }
+
+#ifdef DEBUG_CORE
+    assert(!seen.contains(1));
+#endif
+}
 
 /*_________________________________________________________________________________________________
  |
@@ -661,9 +769,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 					assert(value(q)==l_False);assert(var(q)!=var(theoryDecision));
 					varBumpActivity(var(q));
 					seen[var(q)] = 1;
-					if(var(q)==10){
-						int a=1;
-					}
+
 					if (level(var(q)) >= decisionLevel())
 						pathC++;
 					else
@@ -681,9 +787,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt, int& out_btlevel) {
 			while (index>= stop && (!seen[var(trail[index--])] || (level(var(trail[index+1]))<decisionLevel())));
 			assert(index >= -1);
 			p = trail[index + 1];
-			if(var(p)==10){
-				int a=1;
-			}
+
 			assert(var(p)!=var(theoryDecision));
 			confl = reason(var(p));
 			int was_at_level = level(var(p));
@@ -1883,7 +1987,8 @@ lbool Solver::search(int nof_conflicts) {
 	int backtrack_level;
 	int conflictC = 0;
 	vec<Lit> learnt_clause;
-	bool last_decision_was_theory=false;
+
+    Heuristic * last_decision_heuristic=nullptr;
 	starts++;
 	static int decision_iter=0;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
@@ -1913,7 +2018,7 @@ lbool Solver::search(int nof_conflicts) {
 			// CONFLICT
 			conflicts++;
 			conflictC++;
-			if(last_decision_was_theory){
+			if(last_decision_heuristic){
 				n_theory_conflicts++;
 				consecutive_theory_conflicts++;
 				if(opt_theory_conflict_max && consecutive_theory_conflicts>=opt_theory_conflict_max){
@@ -1927,11 +2032,24 @@ lbool Solver::search(int nof_conflicts) {
 				return l_False;
 			learnt_clause.clear();
 			analyze(confl, learnt_clause, backtrack_level);
-			cancelUntil(backtrack_level);
-            int lowest_conflicting_decision_level=decisionLevel();
 
-			if (learnt_clause.size()>1 && conflicting_heuristic && opt_theory_order_swapping){
+            int lowest_conflicting_decision_level=decisionLevel();
+            if(!conflicting_heuristic){
+                conflicting_heuristic=last_decision_heuristic;
+            }
+			if (learnt_clause.size()>1 && last_decision_heuristic && opt_theory_order_swapping){
 				//nadel-style theory order swapping
+                if(opt_verb>=3) {
+                    printf("Last decision: %d, conflicting decision %d\n", last_decision_heuristic->getHeuristicIndex(),
+                           conflicting_heuristic->getHeuristicIndex());
+                    printf("Old decision order: ");
+                    for (Heuristic *h:decision_heuristics) {
+                        printf("%d, ", h->getHeuristicIndex());
+                    }
+                    printf("\n");
+                }
+
+
                 assert(decision_heuristics.contains(conflicting_heuristic));
 				int start_size = decision_heuristics.size();
 				//check to see if the analyzed conflict includes any literals
@@ -1941,22 +2059,13 @@ lbool Solver::search(int nof_conflicts) {
 				swapping_uninvolved_post_theories.clear();
 				swapping_involved_theory_order.clear();
 				//vec<int> involved_theories;
-				swapping_involved_theories.insert(conflicting_heuristic->getHeuristicIndex());
-				for(Lit l:learnt_clause){
-					CRef r = reasonOrDecision(var(l));
-					if(r!=CRef_Undef){
-						if(isDecisionReason(r)){
-							Heuristic * h = getHeuristic(r);
-							swapping_involved_theories.insert(h->getHeuristicIndex());
-						}else if (isTheoryCause(r)){
-                            Theory* theory = getTheory(r);
-                            if(theory->supportsDecisions() && theory->getHeuristicIndex()>=0) {
-                                swapping_involved_theories.insert(theory->getHeuristicIndex());//yes, intentionalyl getting the heuristic index here
-                            }
-                        }
-					}
-				}
-
+                /*if(!opt_theory_order_swapping_last_only) {
+                    swapping_involved_theories.insert(last_decision_heuristic->getHeuristicIndex());
+                }*/
+                if(conflicting_heuristic) {
+                    swapping_involved_theories.insert(conflicting_heuristic->getHeuristicIndex());
+                }
+                analyzeHeuristicDecisions(confl,swapping_involved_theories, opt_theory_order_swapping_last_only);
 
 				int lowest_involved_position=decision_heuristics.size();
 				for (int i = 0; i < decision_heuristics.size(); i++) {
@@ -1966,6 +2075,10 @@ lbool Solver::search(int nof_conflicts) {
 						if(i<lowest_involved_position){
 							lowest_involved_position=i;
 						}
+                        int conflict_level = first_heuristic_decision_level[t->getHeuristicIndex()];
+                        if(conflict_level>=0 && conflict_level < lowest_conflicting_decision_level){
+                            lowest_conflicting_decision_level=conflict_level;//use this to backtrack past the earliest decision made by one of the conflicting heuristics.
+                        }
 					}else if (swapping_involved_theories.has(t->getHeuristicIndex())){
 						swapping_involved_theory_order.push(t);
 						if(i<lowest_involved_position){
@@ -1981,15 +2094,34 @@ lbool Solver::search(int nof_conflicts) {
 						swapping_uninvolved_post_theories.push(t);
 					}
 				}
-
+                if(opt_verb>=3) {
+                    printf("Uninvolved pre theories: ");
+                    for (Heuristic *h:swapping_uninvolved_pre_theories) {
+                        printf("%d, ", h->getHeuristicIndex());
+                    }
+                    printf("\nInvolved theories: ");
+                    printf("%d, ", conflicting_heuristic->getHeuristicIndex());
+                    for (Heuristic *h:swapping_involved_theory_order) {
+                        printf("%d, ", h->getHeuristicIndex());
+                    }
+                    printf("\nUninvolved post theories: ");
+                    for (Heuristic *h:swapping_uninvolved_post_theories) {
+                        printf("%d, ", h->getHeuristicIndex());
+                    }
+                    printf("\nConflcit level %d, lowest involved theory level %d\n", backtrack_level,
+                           lowest_conflicting_decision_level);
+                }
 				decision_heuristics.clear();
 				swapping_uninvolved_pre_theories.copyTo(decision_heuristics);
 				decision_heuristics.push(conflicting_heuristic);
 				decision_heuristics.extend(swapping_involved_theory_order);
 				decision_heuristics.extend(swapping_uninvolved_post_theories);
+
 				assert(decision_heuristics.size()==start_size);
 
 			}
+
+            cancelUntil(backtrack_level);
 
 			//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
 			//The learnt clause may not be asserting.
@@ -2043,7 +2175,7 @@ lbool Solver::search(int nof_conflicts) {
 				assert(theory_conflict_counters.size()>conflicting_heuristic->getHeuristicIndex());
 				theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]++;
 				if(opt_theory_order_conflict_restart>0 && theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]>=opt_theory_order_conflict_restart){
-
+                    cancelUntil(0);
 
 
 
@@ -2057,6 +2189,7 @@ lbool Solver::search(int nof_conflicts) {
 						for(int i = 0;i<decision_heuristics.size();i++){
 							if(decision_heuristics[i]==conflicting_heuristic){
 								theory_conflict_pos = i;
+                                break;
 							}
 						}
 						assert(theory_conflict_pos>=0);
@@ -2145,7 +2278,7 @@ lbool Solver::search(int nof_conflicts) {
 			if (learnts.size() - nAssigns() >= max_learnts)
 				// Reduce the set of learnt clauses:
 				reduceDB();
-			last_decision_was_theory=false;
+            last_decision_heuristic=nullptr;
 			bool assumps_processed=false;
 			Lit next = lit_Undef;
             CRef decision_reason = CRef_Undef;  //If a theory makes a decision, then it can supply a 'reason' for that decision.
@@ -2218,6 +2351,7 @@ lbool Solver::search(int nof_conflicts) {
 
 							}
 							next =h->decideTheory(decision_reason);
+                            last_decision_heuristic=h;
 						}
 						if(next==lit_Undef){
 							theory_order_heap.removeMin();
@@ -2245,6 +2379,7 @@ lbool Solver::search(int nof_conflicts) {
 						Heuristic * t = decision_heuristics[j];
 						if (!heuristicSatisfied(t) &&  t->getPriority()>=next_var_priority) {
 							next = t->decideTheory(decision_reason);
+                            last_decision_heuristic=t;
 						}
 					}
                     if(opt_theory_decision_round_robin){
@@ -2258,7 +2393,6 @@ lbool Solver::search(int nof_conflicts) {
 					if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
 						assigns[var(theoryDecision)]=l_Undef;
 					}
-					last_decision_was_theory=true;
 
                     if(decision_reason!=CRef_Undef){
                         Heuristic * h = getHeuristic(decision_reason);
@@ -2266,7 +2400,9 @@ lbool Solver::search(int nof_conflicts) {
                             first_heuristic_decision_level[h->getHeuristicIndex()]=decisionLevel();
                         }
                     }
-				}
+				}else{
+                    last_decision_heuristic=nullptr;
+                }
 			}
 			
 			if (next == lit_Undef) {

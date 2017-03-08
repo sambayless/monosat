@@ -39,7 +39,7 @@ static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
 IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 0, IntRange(0, 3));
-IntOption Monosat::opt_verb_optimize("MAIN", "verb-opt", "Verbosity level for optimization (0=silent, 1=some, 2=more).",0, IntRange(0, 3));
+IntOption Monosat::opt_verb_optimize("MAIN", "verb-opt", "Verbosity level for optimization (0=silent, 1=some, 2=more).",0, IntRange(0, 5));
 
 DoubleOption Monosat::opt_var_decay(_cat, "var-decay", "The variable activity decay factor", 0.95,
 		DoubleRange(0, false, 1, false));
@@ -208,6 +208,8 @@ BoolOption  Monosat::opt_theory_order_swapping(_cat_theory, "theory-order-swappi
 IntOption  Monosat::opt_theory_order_conflict_restart(_cat_theory, "theory-order-conflict-restart", "Use Alex Nadel-style theory order conflict counter-driven theory order restarts; restart the theory order after this many conflicts have occured in a theory (0 to disable)",0, IntRange(0, INT32_MAX));
 BoolOption Monosat::opt_theory_order_conflict_restart_sort(_cat_theory, "theory-order-restart-sorting", "Sort decision heuristics by conflict counter on restarts",false);
 BoolOption Monosat::opt_monolothic_theory_decisions(_cat_theory,"theory-combined-decisions","Make heuristic decisions within theories all at once, rather than individually per predicate.",false);
+
+BoolOption Monosat::opt_theory_order_swapping_last_only(_cat_theory,"theory-order-swapping-last-only","",true);
 
 BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids", "Use vsids decision heuristic within theory solvers",false);
 BoolOption Monosat::opt_theory_internal_vsids_fsm(_cat_fsm, "theory-internal-vsids-fsm", "Use vsids decision heuristic within fsm theory solvers",true);

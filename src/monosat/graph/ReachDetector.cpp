@@ -850,9 +850,15 @@ public:
 		}
 		if(needsRecompute()){
             r->stats_heuristic_recomputes++;
-			computePath();
-
-
+            if(opt_verb>=4) {
+                computePath();
+                printf("Over:\n");
+                drawGrid(g_over);
+                printf("Under:\n");
+                drawGrid(g_under);
+                printf("Path:\n");
+                drawGrid(g_over, true);
+            }
 			last_over_modification = g_over.modifications;
 			last_over_deletion = g_over.deletions;
 			last_over_addition = g_over.additions;
@@ -878,12 +884,7 @@ public:
 				assert(!g_under.edgeEnabled(edgeID));
 			}
 		}
-		printf("Over:\n");
-		drawGrid(g_over);
-		printf("Under:\n");
-		drawGrid(g_under);
-		printf("Path:\n");
-		drawGrid(g_over,true);
+
 
 		if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
             // are assigned true, as the over approx graph will always register as having been updated.
@@ -1641,8 +1642,10 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		} else if (outer->value(l) == l_False) {
 			conflict.push(l);
             conflictingHeuristic= u < reach_heuristics.size() ?  reach_heuristics[u]:nullptr;
-            drawGrid(g_over,u);
-            drawGrid(g_under, u);
+            if(opt_verb>=4){
+                drawGrid(g_over, u);
+                drawGrid(g_under, u);
+            }
 			if (reach) {
 				
 				//conflict

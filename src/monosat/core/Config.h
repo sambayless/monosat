@@ -160,6 +160,7 @@ extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
 
+extern BoolOption opt_theory_order_swapping_last_only;
 extern BoolOption opt_decide_fsm_neg;
 extern BoolOption opt_decide_fsm_pos;
 
