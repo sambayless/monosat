@@ -413,6 +413,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 	}
 
 }
+
 template<typename Weight>
 class ReachHeuristic : public GraphHeuristic<Weight>{
 
@@ -443,7 +444,8 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
     int dest_node=-1;
 public:
     ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, Lit reach_lit,int dest_node): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit),g_over(r->g_over),g_under(r->g_under),dest_node(dest_node) {
-        if (opt_use_random_path_for_decisions) {
+		this->setPriority(outer->getSolver()->getDecisionPriority(var(outer->toSolver(reach_lit))));
+		if (opt_use_random_path_for_decisions) {
             rnd_weight.clear();
             rnd_path = new WeightedDijkstra<Weight,double>(r->source, r->g_over, rnd_weight);
             for (int i = 0; i < outer->edge_list.size(); i++) {

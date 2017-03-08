@@ -313,6 +313,12 @@ private:
 				}
 				solves++;
 				solve=true;
+			}else if (match(b,"priority")) {
+				int parsed_int = parseInt(b);
+				int var = abs(parsed_int)-1;
+				var = mapVar(S,var);
+				int priority = parseInt(b);
+				S.setDecisionPriority(var, priority);
 			}else if (match(b,"clear_opt")) {
 				objectives.clear();
 			}else if (match(b,"minimize bv")){

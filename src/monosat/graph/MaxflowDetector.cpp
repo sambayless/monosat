@@ -1768,7 +1768,6 @@ void MaxflowDetector<Weight>::suggestDecision(Lit l){
 template<typename Weight>
 Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
 	//all constraints are already satisfied
-	return lit_Undef;
 	if(n_satisfied_lits==flow_lits.size())
 		return lit_Undef;
 

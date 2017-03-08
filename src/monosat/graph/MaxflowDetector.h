@@ -99,7 +99,7 @@ public:
 	double stats_flow_calc_time = 0;
 	double stats_flow_recalc_time = 0;
 	double stats_redecide_time = 0;
-
+	long stats_heuristic_recomputes=0;
 	Lit last_decision_lit = lit_Undef;
 
 	//vec<Lit> decisions;
@@ -369,6 +369,15 @@ public:
 		is_potential_decision.growTo(g_under.edges(), false);
 
 		in_decision_q.growTo(g_under.edges(), false);
+		int max_decision_priority=-1;
+		for(int i =0;i<flow_lits.size();i++){
+			Lit l = flow_lits[i].l;
+			int priority = outer->getSolver()->getDecisionPriority(var(outer->toSolver(l)));
+			if(priority>max_decision_priority){
+				max_decision_priority=priority;
+			}
+		}
+		default_heuristic->setPriority(max_decision_priority);
 	}
 	
 private:

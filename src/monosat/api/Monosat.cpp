@@ -872,6 +872,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	 S->setDecisionVar(var,decidable);
  }
  void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority){
+	 write_out(S,"priority %d %d\n",var+1,priority);//add 1 for dimacs
 	 S->setDecisionPriority(var,priority);
  }
  bool isDecisionVar(Monosat::SimpSolver * S,int var){
