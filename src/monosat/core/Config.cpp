@@ -209,8 +209,8 @@ IntOption  Monosat::opt_theory_order_conflict_restart(_cat_theory, "theory-order
 BoolOption Monosat::opt_theory_order_conflict_restart_sort(_cat_theory, "theory-order-restart-sorting", "Sort decision heuristics by conflict counter on restarts",false);
 BoolOption Monosat::opt_monolothic_theory_decisions(_cat_theory,"theory-combined-decisions","Make heuristic decisions within theories all at once, rather than individually per predicate.",false);
 
-BoolOption Monosat::opt_theory_order_swapping_last_only(_cat_theory,"theory-order-swapping-last-only","",true);
-
+IntOption Monosat::opt_theory_order_swapping_max_invovled(_cat_theory,"theory-order-swapping-max","Maximum number of heuristics to treat as involved in a heuristic conflict.", 2, IntRange(2, INT32_MAX));
+BoolOption Monosat::opt_theory_order_swapping_luby(_cat_theory,"theory-order-swapping-luby","Use Luby series to set the maximum number of heuristics involved in a heuristic conflict.", false);
 BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids", "Use vsids decision heuristic within theory solvers",false);
 BoolOption Monosat::opt_theory_internal_vsids_fsm(_cat_fsm, "theory-internal-vsids-fsm", "Use vsids decision heuristic within fsm theory solvers",true);
 BoolOption Monosat::opt_theory_prioritize_conflicts(_cat_graph, "theory-prioritize-conflicts", "",false);

@@ -22,6 +22,7 @@
  **************************************************************************************************/
 
 #include <math.h>
+#include "monosat/mtl/Alg.h"
 #include <algorithm>
 #include "monosat/mtl/Sort.h"
 #include "monosat/graph/GraphTheory.h"
@@ -601,8 +602,11 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 		theories[theoryID]->enqueueTheory(getTheoryLit(p));
 	}
 }
-void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, bool quit_on_first_new_heuristic){
-    int pathC = 0;
+void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics){
+	if(conflicting_heuristics.size()>=max_involved_heuristics)
+		return;
+
+	int pathC = 0;
     CRef original_confl = confl;
     Lit p = lit_Undef;
     assert(confl != CRef_Undef);
@@ -644,7 +648,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
             Heuristic * h = getHeuristic(confl);
             if(!conflicting_heuristics.has(h->getHeuristicIndex())) {
                 conflicting_heuristics.insert(h->getHeuristicIndex());
-                if(quit_on_first_new_heuristic){
+				if(conflicting_heuristics.size()>=max_involved_heuristics){
                     for(int i = 0;i<=index+1;i++){
                         seen[var(trail[i])]=false;
                     }
@@ -662,7 +666,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
             if(t->getHeuristicIndex()>=0){
                 if(!conflicting_heuristics.has(t->getHeuristicIndex())) {
                     conflicting_heuristics.insert(t->getHeuristicIndex());
-                    if(quit_on_first_new_heuristic){
+					if(conflicting_heuristics.size()>=max_involved_heuristics){
                         for(int i = 0;i<=index+1;i++){
                             seen[var(trail[i])]=false;
                         }
@@ -679,7 +683,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
         seen[var(p)] = 0;
         pathC--;
     } while (pathC > 0);
-
+	assert(conflicting_heuristics.size()<max_involved_heuristics);
     if(p!=lit_Undef){
         confl = reasonOrDecision(var(p));
         if(confl==CRef_Undef) {
@@ -1987,7 +1991,7 @@ lbool Solver::search(int nof_conflicts) {
 	int backtrack_level;
 	int conflictC = 0;
 	vec<Lit> learnt_clause;
-
+	long heuristic_swapping_restarts = 0;
     Heuristic * last_decision_heuristic=nullptr;
 	starts++;
 	static int decision_iter=0;
@@ -2059,13 +2063,20 @@ lbool Solver::search(int nof_conflicts) {
 				swapping_uninvolved_post_theories.clear();
 				swapping_involved_theory_order.clear();
 				//vec<int> involved_theories;
-                /*if(!opt_theory_order_swapping_last_only) {
-                    swapping_involved_theories.insert(last_decision_heuristic->getHeuristicIndex());
-                }*/
-                if(conflicting_heuristic) {
-                    swapping_involved_theories.insert(conflicting_heuristic->getHeuristicIndex());
-                }
-                analyzeHeuristicDecisions(confl,swapping_involved_theories, opt_theory_order_swapping_last_only);
+               // if(!opt_theory_order_swapping_last_only) {
+                   // swapping_involved_theories.insert(last_decision_heuristic->getHeuristicIndex());
+                //}
+				//note: the last decision heuristic can in some cases be the conflicting heuristic, so these can be the same
+				swapping_involved_theories.insert(last_decision_heuristic->getHeuristicIndex());
+				swapping_involved_theories.insert(conflicting_heuristic->getHeuristicIndex());
+
+				int max_involved = opt_theory_order_swapping_max_invovled;
+				assert(max_involved>=2);
+				if(opt_theory_order_swapping_luby){
+					max_involved *= luby(restart_inc, heuristic_swapping_restarts++);
+				}
+				assert(max_involved>=2);
+                analyzeHeuristicDecisions(confl,swapping_involved_theories, max_involved);
 
 				int lowest_involved_position=decision_heuristics.size();
 				for (int i = 0; i < decision_heuristics.size(); i++) {
@@ -2475,36 +2486,6 @@ double Solver::progressEstimate() const {
 	return progress / nVars();
 }
 
-/*
- Finite subsequences of the Luby-sequence:
-
- 0: 1
- 1: 1 1 2
- 2: 1 1 2 1 1 2 4
- 3: 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8
- ...
-
-
- */
-
-static double luby(double y, int x) {
-	assert(x>=0);
-	// Find the finite subsequence that contains index 'x', and the
-	// size of that subsequence:
-	int size, seq;
-	for (size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1);
-
-	assert(size>x);
-	while (size - 1 != x) {
-		size = (size - 1) >> 1;
-		seq--;
-		//According to Coverity: size can be zero at this line, leading to a mod by zero...
-		//However, since size must be >= x+1 above, and always > x in this loop, and x is positive, this is safe.
-		x = x % size;
-	}
-	
-	return pow(y, seq);
-}
 
 bool Solver::propagateAssignment(const vec<Lit> & assumps){
 	only_propagate_assumptions=true;

@@ -911,7 +911,8 @@ protected:
 		out_conflict.clear();out_conflict.insertAll(tmp_conflict);
 		tmp_conflict.clear();
 	}
-    void analyzeHeuristicDecisions(CRef confl, IntSet<int> & heuristics, bool quit_on_first_new_heuristic=false);
+
+    void analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics);
 	bool litRedundant(Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
 	lbool search(int nof_conflicts);                                     // Search for a given number of conflicts.
 	lbool solve_();                                           // Main solve method (assumptions given in 'assumptions').

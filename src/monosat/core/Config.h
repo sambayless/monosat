@@ -109,6 +109,9 @@ extern BoolOption opt_theory_order_vsids;
 extern BoolOption opt_theory_order_swapping;
 extern IntOption opt_theory_order_conflict_restart;
 extern BoolOption opt_theory_order_conflict_restart_sort;
+extern IntOption opt_theory_order_swapping_max_invovled;
+extern BoolOption opt_theory_order_swapping_luby;
+
 extern BoolOption opt_monolothic_theory_decisions;
 extern BoolOption opt_vsids_both;
 extern DoubleOption opt_theory_vsids_balance;
@@ -160,7 +163,7 @@ extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
 
-extern BoolOption opt_theory_order_swapping_last_only;
+
 extern BoolOption opt_decide_fsm_neg;
 extern BoolOption opt_decide_fsm_pos;
 
