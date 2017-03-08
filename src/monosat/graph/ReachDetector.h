@@ -119,27 +119,70 @@ public:
     }
 
     void drawGrid(DynamicGraph<Weight> & g, int dest_node){
-        int width =10;
-        int height = 10;
+        int width =60;
+        int height = 60;
         bool found_source = false;
         bool found_dest = false;
-        printf("\n");
-        for(int y = 0;y<height;y++) {
-            for (int x = 0; x < width; x++){
-                int f_node = y*height + x;
-                if (f_node == source){
-                    found_source=true;
-                    printf("*");
-                }else if (f_node == dest_node){
-                    found_dest=true;
-                    printf("@");
-                }else{
-                    printf(" ");
-                }
+
+		int sourcenodes[] = {43, 46, 57, 55, 53, 55, 46, 12, 9, 1, 2, 7, 50, 19, 23, 46, 0, 6, 52, 16, 11, 8, 27, 9, 2, 50, 2, 43, 7, 55, 29, 42, 42, 18, 29, 27, 13, 16, 31, 22, 9, 33, 21, 59, 44, 37, 38, 44, 35, 30, 53, 46, 31, 20, 56, 33, 16, 1, 45, 45, 44, 27, 56, 5, 46, 9, 13, 17, 24, 15, 42, 45, 14, 27, 14, 44, 3, 50, 7, 48};
+		vec<int> startsX;
+		vec<int> endsX;
+		vec<int> startsY;
+		vec<int> endsY;
+
+		/*IntSet<int> startsX;
+		IntSet<int> endsX;
+		IntSet<int> startsY;
+		IntSet<int> endsY;*/
+		vec<std::pair<int,int>> starts;
+		vec<std::pair<int,int>> ends;
+		for(int i = 0;i<80;i+=4){
+			int sY = sourcenodes[i];
+			int sX = sourcenodes[i+1];
+			int eY = sourcenodes[i+2];
+			int eX = sourcenodes[i+3];
+			startsX.push(sX);
+			startsY.push(sY);
+			endsX.push(eX);
+			endsY.push(eY);
+			starts.push();
+			starts.last().first = sX;
+			starts.last().second = sY;
+			ends.push();
+			ends.last().first = eX;
+			ends.last().second = eY;
+		}
+
+
+		printf("\n");
+		for(int y = 0;y<height;y++) {
+			for (int x = 0; x < width; x++){
+				int f_node = y*height + x;
+				std::pair <int, int> p = std::make_pair(x,y);
+				if (f_node == source){
+					assert(starts.contains(p));
+					found_source=true;
+					printf("*");
+				}else if (f_node == dest_node){
+					assert(ends.contains(p));
+					found_dest=true;
+					printf("@");
+				}else{
+
+					if(starts.contains(p)){
+						int id = starts.indexOf(p)%10;
+						printf("%d",id);
+					}else if(ends.contains(p)){
+						int id = ends.indexOf(p)%10;
+						printf("%d",id);
+					}else {
+						printf("+");
+					}
+				}
                 if (x<width-1) {
                     int t_node = y*height+x+1;
                     //assert(g.hasEdge(f_node,t_node));
-                    if(g.hasEdge(f_node, t_node)){
+					if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
                         {
                             //int to_edge = g.getEdge(f_node,t_node);
                             //if(g.edgeEnabled(to_edge)){
@@ -156,7 +199,7 @@ public:
                 if (y < height - 1) {
                     int t_node = (y + 1) * height + x;
                     //assert(g.hasEdge(f_node, t_node));
-                    if(g.hasEdge(f_node, t_node)){
+					if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
                         //int to_edge = g.getEdge(f_node, t_node);
                         //if(g.edgeEnabled(to_edge)){
                         {

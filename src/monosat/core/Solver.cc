@@ -1896,7 +1896,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  10) {//3150 //3144
+		if (++iter ==  315) {//3150 //3144
 			int a = 1;
 		}
 		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();

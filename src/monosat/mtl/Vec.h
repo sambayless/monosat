@@ -185,6 +185,16 @@ public:
 		return false;
 	}
 
+	//returns size if the element is not found
+	int indexOf(const T& element)const{
+		for (int i = 0; i < sz; i++) {
+			if (data[i] == element) {
+				return i;
+			}
+		}
+		return size();
+	}
+
 	int count(const T& element) const {
 		int c = 0;
 		for (int i = 0; i < size(); i++) {
