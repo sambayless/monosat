@@ -56,6 +56,7 @@
 #include "core/Optimize.h"
 #include "core/Config.h"
 #include "pb/Config_pb.h"
+#include "monosat/Version.h"
 using namespace Monosat;
 using namespace std;
 //=================================================================================================
@@ -509,6 +510,13 @@ int main(int argc, char** argv) {
 		IntOption opt_conflict_limit("MAIN","conflict-limit","",0,IntRange(0,INT32_MAX));
 
 		parseOptions(argc, argv, true);
+
+        if(opt_show_version_and_quit){
+            printf("MonoSAT, Version %s\n",MONOSAT_VERSION_STR);
+            return 0;
+        }
+
+
 		Monosat::opt_record=strlen(opt_record_file)>0;
 
 		if(strlen(opt_debug_learnt_clauses)>0){

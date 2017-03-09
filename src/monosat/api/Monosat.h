@@ -66,6 +66,7 @@ typedef int64_t Weight;
   int litToVar(int lit){
 	  return lit/2;
   }
+ const char * getVersion();
   SolverPtr newSolver();
   SolverPtr newSolver_arg(char*argv);
 #ifndef JNA

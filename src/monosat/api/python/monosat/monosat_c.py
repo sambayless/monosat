@@ -118,6 +118,10 @@ class Monosat(metaclass=Singleton):
         self._int_array2 = (c_int * (1024))()
         self._long_array= (c_long * (1024))()
         #Set the return types for each function
+
+        self.monosat_c.getVersion.argtypes=[]
+        self.monosat_c.getVersion.restype=c_char_p
+
         self.monosat_c.newSolver.argtypes=[]
         self.monosat_c.newSolver.restype=c_solver_p
         
@@ -428,7 +432,10 @@ class Monosat(metaclass=Singleton):
         if self.solver is not None:
             self.solver.delete()        
         return self.newSolver(arguments)
-    
+
+    def getVersion(self):
+        return self.monosat_c.getVersion()
+
     #Until a better system is created, this can be used to re-initialize Monosat with a new configuration.    
     def newSolver(self,arguments=None):
         self.solver = Solver(self.monosat_c,arguments)

@@ -38,6 +38,8 @@ static const char* _cat_amo = "AMO";
 static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
+
+BoolOption Monosat::opt_show_version_and_quit("MAIN","version","Display version information and quit",false);
 IntOption Monosat::opt_verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 0, IntRange(0, 3));
 IntOption Monosat::opt_verb_optimize("MAIN", "verb-opt", "Verbosity level for optimization (0=silent, 1=some, 2=more).",0, IntRange(0, 5));
 

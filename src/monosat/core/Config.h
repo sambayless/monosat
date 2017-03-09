@@ -24,6 +24,7 @@
 #include "monosat/utils/Options.h"
 #include "monosat/utils/System.h"
 namespace Monosat {
+extern BoolOption opt_show_version_and_quit;
 extern IntOption opt_verb;
 extern IntOption opt_verb_optimize;
 extern BoolOption opt_pre;

@@ -35,6 +35,7 @@
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
+#include "monosat/Version.h"
 #include <csignal>
 #include <set>
 #include <iostream>
@@ -43,6 +44,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cstdint>
+
 
 using namespace Monosat;
 using namespace std;
@@ -403,6 +405,10 @@ void setOutputFile(Monosat::SimpSolver * S, char * output){
 	if(S->const_true!=lit_Undef){
 		write_out(S,"%d 0\n",dimacs(S->True()));
 	}
+}
+
+const char * getVersion(){
+	return MONOSAT_VERSION_STR;
 }
 
 Monosat::SimpSolver * newSolver(){

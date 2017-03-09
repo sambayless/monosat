@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
 set (PB_SUPPORT 1)
+set (SHOW_GIT_VERSION 1)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++14 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB" ) # -DDEBUG_BV
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT" ) # -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG -O2") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG") #it is _critically_ important that release builds specify -DNDEBUG!
@@ -47,6 +48,8 @@ MARK_AS_ADVANCED(
 include_directories(src/)
 
 set(SOURCE_FILES
+        src/monosat/Version.h
+        src/monosat/Version.cpp
         src/monosat/amo/AMOParser.h
         src/monosat/amo/AMOTheory.h
         src/monosat/api/Circuit.h
@@ -244,6 +247,7 @@ set(SOURCE_FILES
         src/monosat/core/Heuristic.h
         src/monosat/api/Logic.h
         src/monosat/graph/GraphHeuristic.h
+
         )
 
 
@@ -284,6 +288,38 @@ if (${PB_SUPPORT})
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_FILES_PB})
 endif (${PB_SUPPORT})
 
+if (${SHOW_GIT_VERSION})
+
+    #add_custom_command(
+
+
+    #)
+    #set_property(SOURCE src/monosat/Version.cpp APPEND PROPERTY OBJECT_DEPENDS dummy)
+
+    #add_custom_target(
+    #        make_version
+    #        COMMAND make Version.mk
+    #        WORKING_DIRECTORY src/monosat/
+    #)
+    #add_executable(myexecutable myexcutable.c)
+    #target_link_libraries(myexecutable full_path_to_generated_library)
+    #add_dependencies(monosat make_version)
+    #add_dependencies(monosat_static make_version)
+    #add_dependencies(libmonosat make_version)
+    #add_dependencies(libmonosat_static make_version)
+    SET(_definitions -DMONOSAT_VERSION=\"$$\(shell git describe --abbrev=4 --dirty --always --tags\)\")
+    set_source_files_properties(src/monosat/Version.cpp VERBATIM PROPERTIES COMPILE_FLAGS "-DMONOSAT_VERSION=\"$\(shell git describe --abbrev=4 --dirty --always --tags\)\"")
+    #add_dependencies(src/monosat/Version.cpp __header.h)
+    add_custom_command(
+            OUTPUT
+                ${CMAKE_CURRENT_BINARY_DIR}/__Version.cpp #fake file to force that Version.cpp is always rebuilt
+                src/monosat/Version.cpp
+            COMMAND echo
+            ARGS \"MonoSAT build version: $\(shell git describe --abbrev=4 --dirty --always --tags\)\"
+    )
+    #set_source_files_properties(src/monosat/api/Monosat.cpp VERBATIM PROPERTIES COMPILE_DEFINITIONS "${_definitions}")
+endif (${SHOW_GIT_VERSION})
+
 add_executable(monosat ${SOURCE_FILES})
 set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
 target_link_libraries(monosat z)
@@ -311,7 +347,7 @@ if (${UNIX})
     target_link_libraries(monosat_static rt) #not static
 endif (${UNIX})
 
-add_library(libmonosat SHARED ${SOURCE_FILES})
+add_library(libmonosat SHARED ${SOURCE_FILES} )
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 target_link_libraries(libmonosat m)
