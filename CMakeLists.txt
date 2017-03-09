@@ -289,35 +289,20 @@ if (${PB_SUPPORT})
 endif (${PB_SUPPORT})
 
 if (${SHOW_GIT_VERSION})
+    #only attempt to load the git version if the git repo is found in the source directory
+    if( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" )
+        MESSAGE( STATUS "Found git repo" )
+        SET(_definitions -DMONOSAT_VERSION=\"$$\(shell git describe --abbrev=4 --dirty --always --tags\)\")
+        set_source_files_properties(src/monosat/Version.cpp VERBATIM PROPERTIES COMPILE_FLAGS "-DMONOSAT_VERSION=\"$\(shell git describe --abbrev=4 --dirty --always --tags\)\"")
 
-    #add_custom_command(
-
-
-    #)
-    #set_property(SOURCE src/monosat/Version.cpp APPEND PROPERTY OBJECT_DEPENDS dummy)
-
-    #add_custom_target(
-    #        make_version
-    #        COMMAND make Version.mk
-    #        WORKING_DIRECTORY src/monosat/
-    #)
-    #add_executable(myexecutable myexcutable.c)
-    #target_link_libraries(myexecutable full_path_to_generated_library)
-    #add_dependencies(monosat make_version)
-    #add_dependencies(monosat_static make_version)
-    #add_dependencies(libmonosat make_version)
-    #add_dependencies(libmonosat_static make_version)
-    SET(_definitions -DMONOSAT_VERSION=\"$$\(shell git describe --abbrev=4 --dirty --always --tags\)\")
-    set_source_files_properties(src/monosat/Version.cpp VERBATIM PROPERTIES COMPILE_FLAGS "-DMONOSAT_VERSION=\"$\(shell git describe --abbrev=4 --dirty --always --tags\)\"")
-    #add_dependencies(src/monosat/Version.cpp __header.h)
-    add_custom_command(
-            OUTPUT
-                ${CMAKE_CURRENT_BINARY_DIR}/__Version.cpp #fake file to force that Version.cpp is always rebuilt
-                src/monosat/Version.cpp
-            COMMAND echo
-            ARGS \"MonoSAT build version: $\(shell git describe --abbrev=4 --dirty --always --tags\)\"
-    )
-    #set_source_files_properties(src/monosat/api/Monosat.cpp VERBATIM PROPERTIES COMPILE_DEFINITIONS "${_definitions}")
+        add_custom_command(
+                OUTPUT
+                    ${CMAKE_CURRENT_BINARY_DIR}/__Version.cpp #fake file to force that Version.cpp is always rebuilt
+                    src/monosat/Version.cpp
+                COMMAND echo
+                ARGS \"MonoSAT build version: $\(shell git describe --abbrev=4 --dirty --always --tags\)\"
+        )
+    endif()
 endif (${SHOW_GIT_VERSION})
 
 add_executable(monosat ${SOURCE_FILES})
