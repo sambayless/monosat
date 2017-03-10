@@ -247,9 +247,7 @@ set(SOURCE_FILES
         src/monosat/core/Heuristic.h
         src/monosat/api/Logic.h
         src/monosat/graph/GraphHeuristic.h
-
         )
-
 
 set(SOURCE_FILES_PB
         src/monosat/pb/Pb.h
