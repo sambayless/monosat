@@ -419,7 +419,7 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
 
     ReachDetector<Weight> * r;
     vec<Lit> to_decide;
-    int last_decision_status = -1;
+
 
     WeightedDijkstra<Weight,double> * rnd_path = nullptr;
     std::vector<double> rnd_weight;
@@ -495,7 +495,7 @@ public:
 					//then lets try to connect this
 
 					to_decide.clear();
-					last_decision_status = over_path->numUpdates();
+
 
 					assert(over_path->connected(j));			//Else, we would already be in conflict
 					int p = j;
@@ -521,7 +521,7 @@ public:
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
 							over_path->update();
-							last_decision_status = over_path->numUpdates();
+
 							p = j;
 							last = j;
 							//while (!under_reach->connected(p)) {
@@ -588,7 +588,7 @@ public:
 					//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
 					path_is_cut=true;
 					to_decide.clear();
-					last_decision_status = over_path->numUpdates();
+
 
                     //FIXME: The below walks back along the path to find unassigned edges, when it should instead be finding a cut of unassigned edges.
 
@@ -847,9 +847,7 @@ public:
             //
 
         }
-		if(this->getHeuristicIndex()==3){
-			int a=1;
-		}
+
 		if(needsRecompute()){
             r->stats_heuristic_recomputes++;
 			computePath();

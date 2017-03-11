@@ -2079,10 +2079,11 @@ lbool Solver::search(int nof_conflicts) {
 				}
 				assert(max_involved>=2);
                 analyzeHeuristicDecisions(confl,swapping_involved_theories, max_involved,conflicting_heuristic->getPriority());
-				if(!swapping_involved_theories.has(last_decision_heuristic->getHeuristicIndex())){
-					int a=1;
-				}
-				if(swapping_involved_theories.size()>1) {
+				assert(swapping_involved_theories.has(conflicting_heuristic->getHeuristicIndex()));
+				assert(swapping_involved_theories.size()>=1);
+				if(swapping_involved_theories.size()>1 || opt_theory_order_swapping_first_on_unit) {
+					//if opt_theory_order_swapping_first_on_unit is set, then on a unit conflict, move the conflict heuristic to the begining (without changing the rest of the decision order).
+					bool unit = (swapping_involved_theories.size()==1 && opt_theory_order_swapping_first_on_unit);
 					int lowest_involved_position = decision_heuristics.size();
 					for (int i = 0; i < decision_heuristics.size(); i++) {
 						Heuristic *t = decision_heuristics[i];
@@ -2104,7 +2105,7 @@ lbool Solver::search(int nof_conflicts) {
 							if (conflict_level >= 0 && conflict_level < lowest_conflicting_decision_level) {
 								lowest_conflicting_decision_level = conflict_level;//use this to backtrack past the earliest decision made by one of the conflicting heuristics.
 							}
-						} else if (lowest_involved_position == decision_heuristics.size()) {
+						} else if (lowest_involved_position == decision_heuristics.size() && !unit) {
 							swapping_uninvolved_pre_theories.push(t);
 						} else {
 							swapping_uninvolved_post_theories.push(t);
@@ -2198,16 +2199,21 @@ lbool Solver::search(int nof_conflicts) {
 			if(conflicting_heuristic){
 				assert(theory_conflict_counters.size()>conflicting_heuristic->getHeuristicIndex());
 				theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]++;
-				if(opt_theory_order_conflict_restart>0 && theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]>=opt_theory_order_conflict_restart){
-                    cancelUntil(0);
+				if(opt_theory_order_conflict_restart>0 && decision_heuristics[0]!=conflicting_heuristic && theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]>=opt_theory_order_conflict_restart){
+					//restart the solver
+					cancelUntil(0);
 
-
-
-					if(opt_theory_order_conflict_restart_sort){
+					if(opt_theory_order_conflict_sort_counter){
 						//sort the heuristics by their conflict counter value, putting the highest value first
 						sort(decision_heuristics,[&](Heuristic * a ,Heuristic * b)->bool{return theory_conflict_counters[a->getHeuristicIndex()]>theory_conflict_counters[b->getHeuristicIndex()];});
 						assert(decision_heuristics[0]==conflicting_heuristic);
 					}else {
+
+						if (opt_theory_order_conflict_sort_vsids){
+							//before moving the highest conflict counter to the beginning, sort all heuristics by their activity/priority
+							sort(decision_heuristics,TheoryOrderLt());
+						}
+
 						//reorder the conflicting theories to put the decision theory first.
 						int theory_conflict_pos = -1;
 						for(int i = 0;i<decision_heuristics.size();i++){
@@ -2217,9 +2223,21 @@ lbool Solver::search(int nof_conflicts) {
 							}
 						}
 						assert(theory_conflict_pos>=0);
+						assert(decision_heuristics[theory_conflict_pos]==conflicting_heuristic);
 						if (theory_conflict_pos > 0) {
-							std::swap(decision_heuristics[0], decision_heuristics[theory_conflict_pos]);
+							if(opt_theory_order_swapping_preserve_order){
+								//Preserve the previous order of the heuristics, except for moving this one to the begining.
+								Heuristic * h = decision_heuristics[theory_conflict_pos];
+								for(int i = theory_conflict_pos;i>=1;i--){
+									assert(i>=1);
+									decision_heuristics[i] = decision_heuristics[i-1];
+								}
+								decision_heuristics[0]=h;
+							}else {
+								std::swap(decision_heuristics[0], decision_heuristics[theory_conflict_pos]);
+							}
 						}
+						assert(decision_heuristics[0]==conflicting_heuristic);
 					}
 					for(int i = 0;i<theory_conflict_counters.size();i++){
 						theory_conflict_counters[i]=0;
