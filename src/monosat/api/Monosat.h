@@ -223,6 +223,7 @@ typedef int64_t Weight;
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
   void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges, bool enforceEdgeAssignment);
+  void useFlowAsDecision(SolverPtr S,GraphTheorySolver_long G, int reach_literal, int flow_literal);
 
   //theory interface for finite state machines
   FSMTheorySolverPtr initFSMTheory(SolverPtr S);

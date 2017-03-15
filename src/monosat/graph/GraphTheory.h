@@ -4256,6 +4256,17 @@ public:
 		}
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
+
+	void useFlowAsDecision(Lit reach_lit, Lit flow_lit){
+		Var vr = S->getTheoryVar(var(reach_lit));
+		Var vf = S->getTheoryVar(var(flow_lit));
+		ReachDetector<Weight> * r = (ReachDetector<Weight>*) detectors[getDetector(vr)];
+		MaxflowDetector<Weight> * mf = (MaxflowDetector<Weight>*) detectors[getDetector(vf)];
+
+		r->useFlowAsDecision(reach_lit, flow_lit,mf);
+
+	}
+
 	void maxflow(int from, int to,Var v, Weight  max_flow,  bool inclusive=true) {
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();

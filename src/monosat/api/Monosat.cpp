@@ -1456,6 +1456,14 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  G->newEdgeSet(edge_set,enforceEdgeAssignment);
  }
 
+
+ void useFlowAsDecision(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int reach_literal, int flow_literal){
+	 Lit r =toLit(reach_literal);
+	 Lit mf =toLit(flow_literal);
+	 write_out(S,"use_flow_decision %d %d %d\n", G->getGraphID(), dimacs(toLit(reach_literal)),dimacs(toLit(flow_literal)));
+	 G->useFlowAsDecision(r,mf);
+ }
+
 //FSM Interface
 
  Monosat::FSMTheorySolver * initFSMTheory(Monosat::SimpSolver * S){

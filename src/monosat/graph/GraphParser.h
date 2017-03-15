@@ -57,6 +57,7 @@ struct SteinerStruct {
 template<class B, class Solver>
 class GraphParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
+	using Parser<B, Solver>::mapLit;
 	using Parser<B, Solver>::mapBV;
 	bool precise;
 	BVTheorySolver<int64_t>*& bvTheory;
@@ -149,6 +150,15 @@ class GraphParser: public Parser<B, Solver> {
 		vec<int> edges;
 	};
 	vec<ParseEdgeSet> edge_sets;
+
+	struct FlowDecision{
+		int graphID;
+		Lit reachLit;
+		Lit flowLit;
+	};
+
+	vec<FlowDecision> flowDecisions;
+
 
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
@@ -264,6 +274,31 @@ class GraphParser: public Parser<B, Solver> {
 
 		}
 	}
+
+	void readFlowDecision(B& in, Solver& S){
+		int graphID = parseInt(in);
+
+		int parsed_lit = parseInt(in);
+		if (parsed_lit == 0)
+			parse_errorf("PARSE ERROR! Bad flow decision: %d, %d\n", graphID, parsed_lit);
+		Var var =  abs(parsed_lit) - 1;
+		Lit reach_lit =(parsed_lit > 0) ? mkLit(var) : ~mkLit(var);
+
+
+		parsed_lit = parseInt(in);
+		if (parsed_lit == 0)
+			parse_errorf("PARSE ERROR! Bad flow decision: %d, %d\n", graphID, parsed_lit);
+		var =  abs(parsed_lit) - 1;
+		Lit flow_lit =(parsed_lit > 0) ? mkLit(var) : ~mkLit(var);
+
+
+		flowDecisions.push();
+		flowDecisions.last().graphID=graphID;
+		flowDecisions.last().reachLit = reach_lit;
+		flowDecisions.last().flowLit = flow_lit;
+
+	}
+
 	void readEdgeSet(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -1062,6 +1097,9 @@ public:
 		}else if (match(in, "edge_set")) {
 			readEdgeSet(in,S);
 			return true;
+		}else if (match(in, "use_flow_decision")) {
+			readFlowDecision(in,S);
+			return true;
 		}else if (match(in, "edge_bv")) {
 			count++;
 			readEdgeBV(in, S);
@@ -1254,6 +1292,16 @@ public:
 			}*/
 		}
 		edgePriorities.clear();
+
+		for (auto & f:flowDecisions) {
+			int graphID = f.graphID;
+			edgeset.clear();
+			assert(graphID > -1);
+
+			f.reachLit = mapLit(S, f.reachLit);
+			f.flowLit = mapLit(S, f.flowLit);
+		}
+
 		for (int i = 0; i < graphs.size(); i++) {
 			if (graphs[i])
 				graphs[i]->implementConstraints();
@@ -1266,6 +1314,26 @@ public:
 			if (graphs_rational[i])
 				graphs_rational[i]->implementConstraints();
 		}
+
+		for (auto & f:flowDecisions) {
+			int graphID = f.graphID;
+			edgeset.clear();
+			assert(graphID>-1);
+			if(graphs[graphID]){
+				graphs[graphID]->useFlowAsDecision(f.reachLit, f.flowLit);
+			}else if (graphs_float[graphID]){
+				graphs_float[graphID]->useFlowAsDecision(f.reachLit, f.flowLit);
+			}else if (graphs_rational[graphID]){
+				graphs_rational[graphID]->useFlowAsDecision(f.reachLit, f.flowLit);
+			}else{
+				parse_errorf("PARSE ERROR! Undefined graph %d for flow decision\n", graphID);
+			}
+
+
+		}
+		flowDecisions.clear();
+
+
 		if (pbtheory)
 			pbtheory->implementConstraints();
 	}

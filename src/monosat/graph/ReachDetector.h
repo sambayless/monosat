@@ -39,6 +39,7 @@
 
 #include "monosat/utils/System.h"
 #include "Detector.h"
+#include "monosat/graph/MaxflowDetector.h"
 using namespace dgl;
 namespace Monosat {
 template<typename Weight>
@@ -481,6 +482,9 @@ public:
 #endif
 		return true;
 	}
+
+    //Use paths from a maximum flow constraint as decisions for a reachability constraint
+    void useFlowAsDecision(Lit outer_reach_lit, Lit outer_flow_literal, MaxflowDetector<Weight> * mf);
 
 	//Return the path (in terms of nodes)
 	bool getModel_Path(int node, std::vector<int> & store_path);

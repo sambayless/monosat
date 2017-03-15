@@ -62,6 +62,10 @@ public:
 		return dimacsParser->mapVar(S,v);
 	}
 
+	Lit mapLit(Solver & S, Lit l){
+		Var m = mapVar(S,var(l));
+		return mkLit(m,sign(l));
+	}
 	void setDimacs(DimacsMap * dimacs){
 		this->dimacsParser=dimacs;
 	}

@@ -143,7 +143,10 @@ class Graph():
             return self._monosat.getModel_AcyclicEdgeFlow(self.graph,flowlit.getLit(),edgelit.getLit())
         else:
             return self._monosat.getModel_EdgeFlow(self.graph,flowlit.getLit(),edgelit.getLit())
-    
+
+    def useFlowAsDecision(self,reachLit, flowLit):
+        self._monosat.useFlowAsDecision(self.graph,reachLit.getLit(),flowLit.getLit())
+
     """
     Get a path in the graph that satisfies the reachability or shortest path lit, if the shortest path lit is true in the model
     If 'return_edge_lits' is True, then return the path as a list of edge literals. Otherwise, returns the path as a list of nodes.

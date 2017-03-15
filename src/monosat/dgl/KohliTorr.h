@@ -39,7 +39,7 @@ template<typename Weight>
 class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	Weight f = 0;
 	DynamicGraph<Weight>& g;
-
+	DynamicGraph<Weight> * flow_graph=nullptr;//optional graph that can be used to record the edges in the actual flow
 	/**
 	 * Note: The Kohli Torr implementation does _not_ support multiple edges between the same nodes.
 	 */
@@ -144,6 +144,24 @@ public:
 	}
 	int getSink() const {
 		return sink;
+	}
+
+	DynamicGraph<Weight> * getFlowGraph() override{
+		if(!flow_graph){
+			flow_graph = new DynamicGraph<Weight>();
+			while(flow_graph->nodes()<g.nodes()){
+				flow_graph->addNode();
+			}
+			while(flow_graph->edges()<g.edges()){
+				int edgeID = flow_graph->edges();
+				int f = g.getEdge(edgeID).from;
+				int t = g.getEdge(edgeID).to;
+				flow_graph->addEdge(f,t,edgeID,0);
+				flow_graph->disableEdge(edgeID);
+			}
+		}
+
+		return flow_graph;
 	}
 
 	void updateMaxCapacity(Weight new_max_capacity){
@@ -644,6 +662,11 @@ public:
 		history_qhead = g.historySize();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
+
+		if(flow_graph){
+			getChangedEdges();//keep the flow graph up to date, if it is defined
+		}
+
 		return f;
 	}
 	
@@ -658,6 +681,16 @@ public:
 				assert(arc_map[edgeID]==arc);
 			//for (int edgeID =  : edge_map[arc]) {
 				changed_edges.push_back(edgeID);
+				if(flow_graph) {
+					Weight f = getEdgeFlow(edgeID);
+					if(f>0) {
+						flow_graph->enableEdge(edgeID);
+						flow_graph->setEdgeWeight(edgeID, f);
+					}else{
+						flow_graph->disableEdge(edgeID);
+						flow_graph->setEdgeWeight(edgeID, 0);
+					}
+				}
 			}
 		}
 		return changed_edges;

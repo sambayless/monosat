@@ -27,6 +27,7 @@
 #include "monosat/dgl/DynamicConnectivity.h"
 #include "monosat/dgl/TarjansSCC.h"
 #include <monosat/graph/GraphHeuristic.h>
+#include "monosat/graph/MaxflowDetector.h"
 using namespace Monosat;
 template<typename Weight>
 ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
@@ -442,6 +443,7 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
 	IntSet<int> path_edges;
 	bool path_is_cut=false;
     int dest_node=-1;
+    Heuristic * sub_heuristic=nullptr;
 public:
     ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, Lit reach_lit,int dest_node): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit),g_over(r->g_over),g_under(r->g_under),dest_node(dest_node) {
 		this->setPriority(outer->getSolver()->getDecisionPriority(var(outer->toSolver(reach_lit))));
@@ -458,6 +460,9 @@ public:
 
     }
 
+    void setSubHeuristic(Heuristic* h){
+        sub_heuristic=h;
+    }
 
 	void computePath(){
 		path_is_cut=false;
@@ -822,6 +827,13 @@ public:
     }
 
     Lit decide(CRef &decision_reason)override{
+
+        if(sub_heuristic){
+            Lit l = sub_heuristic->decideTheory(decision_reason);
+            if (l!=lit_Undef)
+                return l;
+        }
+
 		if (outer->value(reach_lit)==l_Undef){
 			return lit_Undef;//if the reach lit is unassigned, do not make any decisions here
 		}
@@ -1844,6 +1856,422 @@ Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
 }
 ;
 
+
+
+
+template<typename Weight>
+class FlowPathHeuristic : public Heuristic{
+
+    ReachDetector<Weight> * r;
+    MaxflowDetector<Weight> * mf;
+    vec<Lit> to_decide;
+
+    GraphTheorySolver<Weight> *outer;
+    Lit reach_lit = lit_Undef;
+    int last_over_modification=-1;
+    int last_over_addition=-1;
+    int last_over_deletion=-1;
+    int over_history_qhead=0;
+    int last_over_history_clear=0;
+
+    int last_under_history_clear=0;
+    int under_history_qhead=0;
+    int last_under_modification=-1;
+    int last_under_addition=-1;
+    int last_under_deletion=-1;
+
+    DynamicGraph<Weight> & g_over;
+    DynamicGraph<Weight> & g_under;
+    DynamicGraph<Weight> & f_over;
+    DynamicGraph<Weight> & f_under;
+    IntSet<int> path_edges;
+    bool path_is_cut=false;
+    int dest=-1;
+    int  source=-1;
+    vec<int> q;
+    vec<char> seen;
+    vec<int> prev;
+    DynamicGraph<Weight> * flow_graph;
+    UnweightedRamalReps<Weight> * flow_reach;
+
+public:
+    FlowPathHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, MaxflowDetector<Weight> * mf, Lit reach_lit, Lit maxflow_lit,int dest_node): r(r),mf(mf),outer(outer),reach_lit(reach_lit),g_over(r->g_over),g_under(r->g_under),f_over(mf->g_over),f_under(mf->g_under),dest(dest_node) {
+        this->setPriority(outer->getSolver()->getDecisionPriority(var(outer->toSolver(reach_lit))));
+        source = r->source;
+        assert(f_under.nodes()>source);
+        assert(f_under.nodes()>dest);
+
+        MaxFlow<Weight> *  overapprox = mf->overapprox_conflict_detector;
+        flow_graph = overapprox->getFlowGraph();
+        flow_reach = new UnweightedRamalReps<Weight>(source,*flow_graph);
+
+    }
+
+
+    void computePath(){
+        path_is_cut=false;
+
+        //plan:
+        //1) assume that the maxflow graph has the same (or a superset) of the edges/nodes as the reach graph, even if they are different graph theory instances
+        //2) IF the maxflow overapprox flow happens to have a path from s to t, then we're going to attempt to treat that as the reach decision path
+        MaxFlow<Weight> *  overapprox = mf->overapprox_conflict_detector;
+
+        to_decide.clear();
+        path_edges.clear();
+
+
+        {
+            Lit l = reach_lit;
+            assert (l != lit_Undef);
+
+            int j = r->getNode(var(l));
+            if (outer->value(l) == l_True) {
+                overapprox->update();
+                flow_reach->update();
+
+
+                    //then lets try to connect this
+
+                    to_decide.clear();
+
+
+                    if(flow_reach->connected(j)) {
+                        int p = j;
+                        int last_edge = -1;
+                        int last = j;
+
+                        {
+                            //ok, read back the path from the over to find a candidate edge we can decide
+                            //find the earliest unconnected node on this path
+
+
+                            p = j;
+                            last = j;
+                            //while (!under_reach->connected(p)) {
+                            while (p != source) {
+                                last = p;
+                                assert(p != source);
+                                last_edge = flow_reach->incomingEdge(p);
+                                assert(last_edge>=0);
+                                int expected_from = f_over.getEdge(last_edge).from;
+                                int expected_to = f_over.getEdge(last_edge).to;
+
+                                if (!g_over.hasEdge(last_edge) || expected_from!= g_over.getEdge(last_edge).from || expected_to!= g_over.getEdge(last_edge).to){
+                                    throw std::runtime_error("Missing edge for flow heuristic");
+                                }
+
+                                path_edges.insert(last_edge);
+                                Var edge_var = outer->getEdgeVar(last_edge);
+                                if (outer->value(edge_var) == l_Undef) {
+
+                                    to_decide.push(mkLit(edge_var, false));
+                                }
+                                int prev = flow_reach->previous(p);
+                                p = prev;
+
+                            }
+                        }
+
+
+                    }
+
+            }
+
+        }
+
+    }
+
+    bool needsRecompute(){
+        if (outer->value(reach_lit) != l_False && path_is_cut) {
+            return true;
+        }else if (outer->value(reach_lit) != l_True && !path_is_cut) {
+            return true;
+        }
+
+
+        //check if any edges on the path have been removed since the last update
+        if (last_over_modification > 0 && g_over.modifications == last_over_modification && last_under_modification > 0 && g_under.modifications == last_under_modification){
+            return false;
+        }
+        if (last_over_modification <= 0 || g_over.changed() || last_under_modification <= 0 || g_under.changed()) {//Note for the future: there is probably room to improve this further.
+            return true;
+        }
+
+        if (last_over_history_clear != g_over.historyclears || last_under_history_clear != g_under.historyclears) {
+            over_history_qhead = g_over.historySize();
+            last_over_history_clear = g_over.historyclears;
+            under_history_qhead = g_under.historySize();
+            last_under_history_clear = g_under.historyclears;
+            to_decide.clear();
+            for(int edgeID:path_edges){
+                if(!path_is_cut) {
+                    if (!g_over.edgeEnabled(edgeID))
+                        return true;
+                    Var edge_var = outer->getEdgeVar(edgeID);
+                    if (outer->value(edge_var) == l_Undef) {
+                        to_decide.push(mkLit(edge_var, false));
+                    }
+                }else{
+                    if (g_under.edgeEnabled(edgeID))
+                        return true;
+                    Var edge_var = outer->getEdgeVar(edgeID);
+                    if (outer->value(edge_var) == l_Undef) {
+                        to_decide.push(mkLit(edge_var, true));
+                    }
+                }
+            }
+        }
+
+        for (int i = over_history_qhead; i < g_over.historySize(); i++) {
+            int edgeid = g_over.getChange(i).id;
+            if (g_over.getChange(i).addition && g_over.edgeEnabled(edgeid)) {
+
+            } else if (!g_over.getChange(i).addition && !g_over.edgeEnabled(edgeid)) {
+                if(!path_is_cut) {
+                    if (path_edges.has(edgeid)) {
+                        return true;
+                    }
+                }else{
+                    Var edge_var = outer->getEdgeVar(edgeid);
+                    if (outer->value(edge_var) == l_Undef) {
+                        to_decide.push(mkLit(edge_var, true));
+                    }
+                }
+            }
+        }
+
+        for (int i = under_history_qhead; i < g_under.historySize(); i++) {
+            int edgeid = g_under.getChange(i).id;
+            if (path_edges.has(edgeid)) {
+                if (g_under.getChange(i).addition && g_under.edgeEnabled(edgeid)) {
+                    if (!path_is_cut) {
+                        Var edge_var = outer->getEdgeVar(edgeid);
+                        if (outer->value(edge_var) == l_Undef) {
+                            to_decide.push(mkLit(edge_var, false));
+                        }
+                    }else {
+                        if (path_edges.has(edgeid)) {
+                            return true;
+                        }
+                    }
+                } else if (!g_under.getChange(i).addition && !g_under.edgeEnabled(edgeid)) {
+
+                }
+            }
+        }
+        return false;
+    }
+
+    void drawGrid(DynamicGraph<Weight> & g, bool only_path=false){
+        int width =60;
+        int height = 60;
+
+
+        int sourcenodes[] = {43, 46, 57, 55, 53, 55, 46, 12, 9, 1, 2, 7, 50, 19, 23, 46, 0, 6, 52, 16, 11, 8, 27, 9, 2, 50, 2, 43, 7, 55, 29, 42, 42, 18, 29, 27, 13, 16, 31, 22, 9, 33, 21, 59, 44, 37, 38, 44, 35, 30, 53, 46, 31, 20, 56, 33, 16, 1, 45, 45, 44, 27, 56, 5, 46, 9, 13, 17, 24, 15, 42, 45, 14, 27, 14, 44, 3, 50, 7, 48};
+        vec<int> startsX;
+        vec<int> endsX;
+        vec<int> startsY;
+        vec<int> endsY;
+
+        /*IntSet<int> startsX;
+        IntSet<int> endsX;
+        IntSet<int> startsY;
+        IntSet<int> endsY;*/
+        vec<std::pair<int,int>> starts;
+        vec<std::pair<int,int>> ends;
+        for(int i = 0;i<80;i+=4){
+            int sY = sourcenodes[i];
+            int sX = sourcenodes[i+1];
+            int eY = sourcenodes[i+2];
+            int eX = sourcenodes[i+3];
+            startsX.push(sX);
+            startsY.push(sY);
+            endsX.push(eX);
+            endsY.push(eY);
+            starts.push();
+            starts.last().first = sX;
+            starts.last().second = sY;
+            ends.push();
+            ends.last().first = eX;
+            ends.last().second = eY;
+        }
+
+        bool found_source = false;
+        bool found_dest = false;
+        printf("\n");
+        for(int y = 0;y<height;y++) {
+            for (int x = 0; x < width; x++){
+                int f_node = y*height + x;
+                std::pair <int, int> p = std::make_pair(x,y);
+                if (f_node == r->source){
+                    assert(starts.contains(p));
+                    found_source=true;
+                    printf("*");
+                }else if (f_node == dest){
+                    found_dest=true;
+                    assert(ends.contains(p));
+                    printf("@");
+                }else{
+
+                    if(starts.contains(p)){
+                        int id = starts.indexOf(p)%10;
+                        printf("%d",id);
+                    }else if(ends.contains(p)){
+                        //printf("%%");
+                        int id = ends.indexOf(p)%10;
+                        printf("%d",id);
+                    }else {
+                        printf("+");
+                    }
+                }
+                if (x<width-1) {
+                    int t_node = y*height+x+1;
+                    //assert(g.hasEdge(f_node,t_node));
+                    if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
+                        if(only_path){
+                            int edgea =    g.getEdge(f_node, t_node);
+                            int edgeb =    g.getEdge(t_node, f_node);
+                            if(path_edges.has(edgea) || path_edges.has(edgeb)){
+                                printf("-");
+                            }else{
+                                printf(" ");
+                            }
+                        }else {
+                            //int to_edge = g.getEdge(f_node,t_node);
+                            //if(g.edgeEnabled(to_edge)){
+                            printf("-");
+                        }
+                    }else{
+                        printf(" ");
+                    }
+                }
+            }
+            printf("\n");
+            for (int x = 0; x < width; x++) {
+                int f_node = y*height + x;
+                if (y < height - 1) {
+                    int t_node = (y + 1) * height + x;
+                    //assert(g.hasEdge(f_node, t_node));
+                    if(only_path) {
+                        int edgea = g.getEdge(f_node, t_node);
+                        int edgeb = g.getEdge(t_node, f_node);
+
+                        if (path_edges.has(edgea)) {
+                            assert(g.hasEdge(edgea));
+                            printf("| ");
+                        }else if  (path_edges.has(edgeb)){
+                            assert(g.hasEdge(edgeb));
+                            printf("| ");
+                        } else {
+                            printf("  ");
+                        }
+                    }else if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
+                        //int to_edge = g.getEdge(f_node, t_node);
+                        //if(g.edgeEnabled(to_edge)){
+                        //int to_edge = g.getEdge(f_node,t_node);
+                        //if(g.edgeEnabled(to_edge)){
+                        printf("| ");
+                    }else{
+                        printf("  ");
+                    }
+                }
+            }
+            printf("\n");
+        }
+        printf("\n");
+        assert(found_source);
+        assert(found_dest);
+    }
+
+    Lit decideTheory(CRef &decision_reason)override{
+        if (outer->value(reach_lit)==l_Undef){
+            return lit_Undef;//if the reach lit is unassigned, do not make any decisions here
+        }
+
+
+
+        if(needsRecompute()){
+            r->stats_heuristic_recomputes++;
+            computePath();
+            if(opt_verb>=4) {
+                printf("Over:\n");
+                drawGrid(g_over);
+                printf("Under:\n");
+                drawGrid(g_under);
+                printf("Path:\n");
+                drawGrid(g_over, true);
+            }
+            last_over_modification = g_over.modifications;
+            last_over_deletion = g_over.deletions;
+            last_over_addition = g_over.additions;
+            over_history_qhead = g_over.historySize();
+            last_over_history_clear = g_over.historyclears;
+
+            last_under_modification = g_under.modifications;
+            last_under_deletion = g_under.deletions;
+            last_under_addition = g_under.additions;
+            under_history_qhead = g_under.historySize();
+            last_under_history_clear = g_under.historyclears;
+
+        }
+        for(Lit l:to_decide){
+            assert(outer->value(l)!=l_False);
+        }
+        if(!path_is_cut){
+            for(int edgeID:path_edges){
+                assert(g_over.edgeEnabled(edgeID));
+            }
+        }else{
+            for(int edgeID:path_edges){
+                assert(!g_under.edgeEnabled(edgeID));
+            }
+        }
+
+
+        if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
+            // are assigned true, as the over approx graph will always register as having been updated.
+            //instead, check the history of the dynamic graph to see if any of the edges on the path have been assigned false, and only recompute in that case.
+            while (to_decide.size()) {
+                Lit l = to_decide.last();
+                to_decide.pop();
+                if (outer->value(l) == l_Undef) {
+                    //stats_decide_time += rtime(2) - startdecidetime;
+                    return l;
+                }
+            }
+        }
+
+        return lit_Undef;
+    }
+};
+
+template<typename Weight>
+void ReachDetector<Weight>::useFlowAsDecision(Lit outer_reach_lit, Lit outer_flow_literal, MaxflowDetector<Weight> * mf){
+
+
+    if(!mf) {
+        throw std::runtime_error("Undefined reach literal for flow heuristic");
+    }
+    int to = -1;
+    for(int i = 0;i<reach_lits.size();i++){
+        Lit l = reach_lits[i];
+        if(l !=lit_Undef && var(outer->toSolver(l))==var(outer_reach_lit)){
+            assert(reach_heuristics[i]);
+            int to_node = i;
+            ReachHeuristic<Weight> * h = (ReachHeuristic<Weight>*) reach_heuristics[i];
+            assert(h);
+
+            Heuristic * f = new FlowPathHeuristic<Weight>(outer, this,mf,l, outer_flow_literal, to_node);
+            h->setSubHeuristic(f);
+        }
+    }
+    if(to<0){
+        throw std::runtime_error("Undefined reach literal for flow heuristic");
+    }
+
+
+
+}
 
 //Return the path (in terms of nodes)
 template<typename Weight>
