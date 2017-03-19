@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
 set (PB_SUPPORT 1)
-set (SHOW_GIT_VERSION 1)
-
+if(NOT SHOW_GIT_VERSION)
+    set (SHOW_GIT_VERSION 1)
+endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++14 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT" ) # -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT -DDEBUG_GRAPH" ) # -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG -O2") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG") #it is _critically_ important that release builds specify -DNDEBUG!
@@ -290,15 +291,15 @@ if (${SHOW_GIT_VERSION})
     #only attempt to load the git version if the git repo is found in the source directory
     if( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" )
         MESSAGE( STATUS "Found git repo" )
-        SET(_definitions -DMONOSAT_VERSION=\"$$\(shell git describe --abbrev=4 --dirty --always --tags\)\")
-        set_source_files_properties(src/monosat/Version.cpp VERBATIM PROPERTIES COMPILE_FLAGS "-DMONOSAT_VERSION=\"$\(shell git describe --abbrev=4 --dirty --always --tags\)\"")
+        SET(_definitions -DMONOSAT_VERSION=\"$CMAKE_BUILD_TYPE $$\(shell git describe --abbrev=4 --dirty --always --tags\)\")
+        set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/monosat/Version.cpp VERBATIM PROPERTIES COMPILE_FLAGS "-DMONOSAT_BUILD=${CMAKE_BUILD_TYPE} -DMONOSAT_VERSION=\"$\(shell git describe --abbrev=4 --dirty --always --tags\)\"")
 
         add_custom_command(
                 OUTPUT
                     ${CMAKE_CURRENT_BINARY_DIR}/__Version.cpp #fake file to force that Version.cpp is always rebuilt
-                    src/monosat/Version.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/src/monosat/Version.cpp
                 COMMAND echo
-                ARGS \"MonoSAT build version: $\(shell git describe --abbrev=4 --dirty --always --tags\)\"
+                ARGS \"MonoSAT ${CMAKE_BUILD_TYPE} build, version: $\(shell git describe --abbrev=4 --dirty --always --tags\)\"
         )
     endif()
 endif (${SHOW_GIT_VERSION})

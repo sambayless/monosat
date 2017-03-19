@@ -5765,19 +5765,9 @@ public:
 	};
 
 	bool decidableBV(Comparison op, int bvID, Weight to) {
-		if(under_approx[bvID] ==over_approx[bvID])
-			return false;
-		switch (op) {
-			case Comparison::gt:
-				return !(under_approx[bvID] > to);
-			case Comparison::geq:
-				return !(under_approx[bvID] >= to);
-			case Comparison::lt:
-				return !(over_approx[bvID] < to);
-			case Comparison::leq:
-			default:
-				return !(over_approx[bvID] <= to);
-		}
+		//is this too slow?
+		Lit l = decideBV(op,bvID, to);
+		return l!=lit_Undef && S->value(l)==l_Undef;
 	}
 
 	Lit decideBV(Comparison op, int bvID, Weight to) {

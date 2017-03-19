@@ -212,7 +212,7 @@ BoolOption Monosat::opt_theory_order_swapping_preserve_order(_cat_theory, "theor
 IntOption  Monosat::opt_theory_order_conflict_restart(_cat_theory, "theory-order-conflict-restart", "Use Alex Nadel-style theory order conflict counter-driven theory order restarts; restart the theory order after this many conflicts have occured in a theory (0 to disable)",0, IntRange(0, INT32_MAX));
 BoolOption Monosat::opt_theory_order_conflict_sort_counter(_cat_theory, "theory-order-restart-sorting", "Sort decision heuristics by conflict counter on restarts",false);
 BoolOption Monosat::opt_theory_order_conflict_sort_vsids(_cat_theory, "theory-order-conflict-sort-vsids", "Sort decision heuristics by vsids on conflict counter restarts, while putting the highest conflict counter first",false);
-
+BoolOption Monosat::opt_decide_theories_only_prop_decision(_cat_theory, "only-prop-theories-on-heuristic-change", "",false);
 BoolOption Monosat::opt_theory_order_swapping_first_on_unit(_cat_theory, "theory-order-swapping-first-on-unit", "Move a decision heuristic to the begining of the heuristics if it is involved in a lone conflict",false);
 
 

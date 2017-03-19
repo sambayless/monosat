@@ -419,8 +419,8 @@ template<typename Weight>
 class ReachHeuristic : public GraphHeuristic<Weight>{
 
     ReachDetector<Weight> * r;
-    vec<Lit> to_decide;
 
+    LSet to_decide;
 
     WeightedDijkstra<Weight,double> * rnd_path = nullptr;
     std::vector<double> rnd_weight;
@@ -640,6 +640,10 @@ public:
 			return true;
 		}
 
+		if(!path_edges.size()){
+			return true;
+		}
+
 		if (last_over_history_clear != g_over.historyclears || last_under_history_clear != g_under.historyclears) {
 			over_history_qhead = g_over.historySize();
 			last_over_history_clear = g_over.historyclears;
@@ -651,15 +655,20 @@ public:
 					if (!g_over.edgeEnabled(edgeID))
 						return true;
                     Var edge_var = outer->getEdgeVar(edgeID);
+                    Lit l = mkLit(edge_var, false);
+
                     if (outer->value(edge_var) == l_Undef) {
-                        to_decide.push(mkLit(edge_var, false));
+
+                        to_decide.push(l);
                     }
 				}else{
 					if (g_under.edgeEnabled(edgeID))
 						return true;
                     Var edge_var = outer->getEdgeVar(edgeID);
+                    Lit l = mkLit(edge_var, true);
                     if (outer->value(edge_var) == l_Undef) {
-                        to_decide.push(mkLit(edge_var, true));
+
+                        to_decide.push(l);
                     }
 				}
 			}
@@ -667,41 +676,67 @@ public:
 
 		for (int i = over_history_qhead; i < g_over.historySize(); i++) {
 			int edgeid = g_over.getChange(i).id;
-			if (g_over.getChange(i).addition && g_over.edgeEnabled(edgeid)) {
 
+			if (g_over.getChange(i).addition && g_over.edgeEnabled(edgeid)) {
+                if(!path_is_cut) {
+
+                }else{
+                    Var edge_var = outer->getEdgeVar(edgeid);
+                    Lit l = mkLit(edge_var, true);
+                    if (outer->value(edge_var) == l_Undef) {
+
+                        to_decide.push(mkLit(edge_var, true));
+                    }
+                }
 			} else if (!g_over.getChange(i).addition && !g_over.edgeEnabled(edgeid)) {
 				if(!path_is_cut) {
 					if (path_edges.has(edgeid)) {
 						return true;
 					}
 				}else{
-                    Var edge_var = outer->getEdgeVar(edgeid);
-                    if (outer->value(edge_var) == l_Undef) {
-                        to_decide.push(mkLit(edge_var, true));
-                    }
+
                 }
 			}
 		}
 
         for (int i = under_history_qhead; i < g_under.historySize(); i++) {
             int edgeid = g_under.getChange(i).id;
+
             if (path_edges.has(edgeid)) {
-                if (g_under.getChange(i).addition && g_under.edgeEnabled(edgeid)) {
+                if (!g_under.getChange(i).addition && !g_under.edgeEnabled(edgeid)) {
                     if (!path_is_cut) {
                         Var edge_var = outer->getEdgeVar(edgeid);
+                        Lit l = mkLit(edge_var, false);
                         if (outer->value(edge_var) == l_Undef) {
+
                             to_decide.push(mkLit(edge_var, false));
                         }
+                    }else {
+
+                    }
+                } else if (g_under.getChange(i).addition && g_under.edgeEnabled(edgeid)) {
+                    if (!path_is_cut) {
+
                     }else {
                         if (path_edges.has(edgeid)) {
                             return true;
                         }
                     }
-                } else if (!g_under.getChange(i).addition && !g_under.edgeEnabled(edgeid)) {
-
                 }
             }
         }
+
+        last_over_modification = g_over.modifications;
+        last_over_deletion = g_over.deletions;
+        last_over_addition = g_over.additions;
+        over_history_qhead = g_over.historySize();
+        last_over_history_clear = g_over.historyclears;
+
+        last_under_modification = g_under.modifications;
+        last_under_deletion = g_under.deletions;
+        last_under_addition = g_under.additions;
+        under_history_qhead = g_under.historySize();
+        last_under_history_clear = g_under.historyclears;
 		return false;
 	}
 
@@ -837,6 +872,10 @@ public:
 		if (outer->value(reach_lit)==l_Undef){
 			return lit_Undef;//if the reach lit is unassigned, do not make any decisions here
 		}
+        static int iter = 0;
+        if(++iter==1119){
+            int a=1;
+        }
 
         {
             //Routing ideas from Alex Nadel's FMCAD16 paper
@@ -884,30 +923,50 @@ public:
             last_under_history_clear = g_under.historyclears;
 
         }
+#ifdef DEBUG_GRAPH
 		for(Lit l:to_decide){
 			assert(outer->value(l)!=l_False);
 		}
+
 		if(!path_is_cut){
 			for(int edgeID:path_edges){
 				assert(g_over.edgeEnabled(edgeID));
+				Lit l = mkLit(outer->getEdgeVar(edgeID));
+                if(outer->value(l)==l_Undef){
+                    assert(to_decide.contains(l));
+                }
 			}
+
 		}else{
 			for(int edgeID:path_edges){
 				assert(!g_under.edgeEnabled(edgeID));
+                Lit l = mkLit(outer->getEdgeVar(edgeID));
+                if(outer->value(l)==l_Undef){
+                    assert(to_decide.contains(~l));
+                }
 			}
 		}
-
+#endif
 
 		if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
             // are assigned true, as the over approx graph will always register as having been updated.
             //instead, check the history of the dynamic graph to see if any of the edges on the path have been assigned false, and only recompute in that case.
             while (to_decide.size()) {
                 Lit l = to_decide.last();
-                to_decide.pop();
+
                 if (outer->value(l) == l_Undef) {
                     //stats_decide_time += rtime(2) - startdecidetime;
                     return l;
-                }
+                }else if(outer->value(l)==l_True){
+					//only pop a decision that was actually made
+					to_decide.pop();
+				}else if(outer->value(l)==l_False){
+					//is this even a reachable state? it probably shouldn't be.
+					to_decide.clear();
+					path_edges.clear();
+					//needs recompute!
+					return decide(decision_reason);
+				}
             }
         }
 

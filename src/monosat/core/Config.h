@@ -117,6 +117,7 @@ extern BoolOption opt_theory_order_conflict_sort_counter;
 extern IntOption opt_theory_order_swapping_max_invovled;
 extern BoolOption opt_theory_order_swapping_luby;
 extern BoolOption opt_theory_order_swapping_prioritize_last_decision;
+extern BoolOption opt_decide_theories_only_prop_decision;
 
 extern BoolOption opt_monolothic_theory_decisions;
 extern BoolOption opt_vsids_both;

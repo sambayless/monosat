@@ -483,10 +483,11 @@ void Solver::cancelUntil(int lev) {
 		if (decisionLevel() < track_min_level) {
 			track_min_level = decisionLevel();
 		}
-		for (int i : theory_queue) {
+        //you cannot necesarily remove a theory from the theory queue on backtracking; it should only be removed following a successful propagate.
+		/*for (int i : theory_queue) {
 			in_theory_queue[i] = false;
 		}
-		theory_queue.clear();
+		theory_queue.clear();*/
 
 		int lowest_re_enqueue=-1;
 		for (int i = 0; i < theories.size(); i++) {
@@ -1379,8 +1380,6 @@ CRef Solver::propagate(bool propagate_theories) {
 			theory_conflict.clear();
 			//todo: ensure that the bv theory comes first, as otherwise dependent theories may have to be propagated twice...
 			int theoryID = theory_queue.last();
-			theory_queue.pop();
-			in_theory_queue[theoryID] = false;
 
 			if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 				bool has_conflict=true;
@@ -1398,7 +1397,21 @@ CRef Solver::propagate(bool propagate_theories) {
 
 					return confl;
 				}
-			}
+			}else{
+                //only remove theory from propagation queue if it does not conflict
+                //there is a complication here, which is that in certain cases a new theory id may have been pushed into the queue
+                //during theory propagation.
+                assert(in_theory_queue[theoryID]);
+
+                if (theory_queue.last() == theoryID) {
+                    theory_queue.pop();
+                } else {
+                    theory_queue.remove(theoryID);
+                }
+                assert(!theory_queue.contains(theoryID));
+                in_theory_queue[theoryID] = false;
+
+            }
 		}
 		
 		//solve theories if this solver is completely assigned
@@ -1993,6 +2006,7 @@ lbool Solver::search(int nof_conflicts) {
 	vec<Lit> learnt_clause;
 	long heuristic_swapping_restarts = 0;
     Heuristic * last_decision_heuristic=nullptr;
+    bool decision_heuristic_changed = false;
 	starts++;
 	static int decision_iter=0;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
@@ -2003,20 +2017,25 @@ lbool Solver::search(int nof_conflicts) {
 	if(decisionLevel()==0 && initialPropagate && opt_detect_pure_lits && !simplify()){
 		return l_False;//if using pure literal detection, and the theories haven't been propagated yet, run simpify
 	}
+    bool last_propagation_was_conflict=false;
     CRef confl = CRef_Undef;
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  315) {//3150 //3144
+		if (++iter ==  279) {//3150 //3144
 			int a = 1;
 		}
-		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
+        propagate:
 
-		bool propagate_theories = (!disable_theories) && (opt_theory_propagate_assumptions  || decisionLevel() ==0 ||   all_assumptions_assigned);
+		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
+		bool propagate_theories = (!disable_theories) && (opt_theory_propagate_assumptions || decisionLevel() ==0 ||   all_assumptions_assigned);
+        if(opt_decide_theories_only_prop_decision && propagate_theories && decisionLevel()>0 && !last_propagation_was_conflict   && last_decision_heuristic && ! decision_heuristic_changed){
+            propagate_theories =false;
+        }
 		if(!propagate_theories){
 			stats_skipped_theory_prop_rounds++;
 		}
-		propagate:
+
         confl = propagate(propagate_theories);
 
 		conflict:
@@ -2287,9 +2306,11 @@ lbool Solver::search(int nof_conflicts) {
 							(double) learnts_literals / nLearnts(), stats_removed_clauses);
 			}
 			conflicting_heuristic=nullptr;
+            last_propagation_was_conflict=true;
 		} else {
+            last_propagation_was_conflict=false;
 			assert(theory_queue.size() == 0 || !propagate_theories);
-			
+
 			if (!addDelayedClauses(confl))
 				goto conflict;
 			
@@ -2320,7 +2341,9 @@ lbool Solver::search(int nof_conflicts) {
 			if (learnts.size() - nAssigns() >= max_learnts)
 				// Reduce the set of learnt clauses:
 				reduceDB();
-            last_decision_heuristic=nullptr;
+            Heuristic * next_decision_heuristic =nullptr;
+            decision_heuristic_changed = false;
+
 			bool assumps_processed=false;
 			Lit next = lit_Undef;
             CRef decision_reason = CRef_Undef;  //If a theory makes a decision, then it can supply a 'reason' for that decision.
@@ -2393,7 +2416,7 @@ lbool Solver::search(int nof_conflicts) {
 
 							}
 							next =h->decideTheory(decision_reason);
-                            last_decision_heuristic=h;
+                            next_decision_heuristic=h;
 						}
 						if(next==lit_Undef){
 							theory_order_heap.removeMin();
@@ -2421,7 +2444,7 @@ lbool Solver::search(int nof_conflicts) {
 						Heuristic * t = decision_heuristics[j];
 						if (!heuristicSatisfied(t) &&  t->getPriority()>=next_var_priority) {
 							next = t->decideTheory(decision_reason);
-                            last_decision_heuristic=t;
+                            next_decision_heuristic=t;
 						}
 					}
                     if(opt_theory_decision_round_robin){
@@ -2443,7 +2466,7 @@ lbool Solver::search(int nof_conflicts) {
                         }
                     }
 				}else{
-                    last_decision_heuristic=nullptr;
+                    next_decision_heuristic=nullptr;
                 }
 			}
 			
@@ -2478,6 +2501,19 @@ lbool Solver::search(int nof_conflicts) {
 					return l_True;
 				}
 			}
+			{
+
+                bool has_last_heuristic = last_decision_heuristic;
+                decision_heuristic_changed= has_last_heuristic && last_decision_heuristic!=next_decision_heuristic;
+                if(opt_decide_theories_only_prop_decision && decision_heuristic_changed && !propagate_theories && has_last_heuristic){
+					assert(trail_lim.size()>0);
+					cancelUntil(decisionLevel()-1);
+                    goto propagate;
+                }else {
+                    //update the last decision heuristic only if the above condition was not triggered
+                    last_decision_heuristic = next_decision_heuristic;
+                }
+            }
 			//last_dec = var(next);
 			// Increase decision level and enqueue 'next'
 			assert(next!=lit_Undef);

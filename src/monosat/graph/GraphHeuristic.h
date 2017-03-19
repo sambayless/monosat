@@ -1,6 +1,23 @@
-//
-// Created by sam on 06/03/17.
-//
+/****************************************************************************************[Solver.h]
+ The MIT License (MIT)
+
+ Copyright (c) 2017, Sam Bayless
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in all copies or
+ substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
 
 #ifndef MONOSAT_GRAPHHEURISTIC_H
 #define MONOSAT_GRAPHHEURISTIC_H
@@ -36,7 +53,10 @@ public:
     }
 
     Lit decideTheory(CRef &decision_reason) override {
-
+        static int iter = 0;
+        if(++iter==27){
+            int a=1;
+        };
 
 
             //first, give the main graph theory a chance to make a decision
@@ -129,13 +149,13 @@ public:
                     }
                 }
             }
-            assert(l == lit_Undef || outer->value(l) == l_Undef);
+            //assert(l == lit_Undef || outer->value(l) == l_Undef);
             assert(l == lit_Undef || S->value(outer->toSolver(l)) == l_Undef);
             outer->stats_decisions++;
             detector->stats_decisions++;
 
 
-            assert(l == lit_Undef || outer->value(l) == l_Undef);
+            //assert(l == lit_Undef || outer->value(l) == l_Undef);
             assert(l == lit_Undef || S->value(outer->toSolver(l)) == l_Undef);
             return outer->toSolver(l);
         }
