@@ -597,13 +597,19 @@ public:
 		}else{
 
 			if (last_history_clear != g.historyclears) {
-				history_qhead = g.historySize();
-				last_history_clear = g.historyclears;
-				for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
-					if (g.edgeEnabled(edgeid)) {
-						GRRInc(edgeid);
-					} else {
-						GRRDec(edgeid);
+				if (!g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize()){
+					//no information was lost in the history clear
+					history_qhead = 0;
+					last_history_clear = g.historyclears;
+				}else {
+					history_qhead = g.historySize();
+					last_history_clear = g.historyclears;
+					for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
+						if (g.edgeEnabled(edgeid)) {
+							GRRInc(edgeid);
+						} else {
+							GRRDec(edgeid);
+						}
 					}
 				}
 			}
@@ -1440,6 +1446,7 @@ public:
 					}
 				}
 			}
+			last_history_clear=-1;
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
 			delta.resize(g.nodes());
@@ -1455,15 +1462,21 @@ public:
 				}
 			}
 		}
-		
+
 		if (last_history_clear != g.historyclears) {
-			history_qhead = g.historySize();
-			last_history_clear = g.historyclears;
-			for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
-				if (g.edgeEnabled(edgeid)) {
-					GRRInc(edgeid);
-				} else {
-					GRRDec(edgeid);
+			if (!g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize()){
+				//no information was lost in the history clear
+				history_qhead = 0;
+				last_history_clear = g.historyclears;
+			}else {
+				history_qhead = g.historySize();
+				last_history_clear = g.historyclears;
+				for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
+					if (g.edgeEnabled(edgeid)) {
+						GRRInc(edgeid);
+					} else {
+						GRRDec(edgeid);
+					}
 				}
 			}
 		}

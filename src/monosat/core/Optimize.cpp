@@ -913,7 +913,7 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 			if(leq(new_value,min_val,invert)){
 				  //this can only happen if a budget was used and the solver quit early.
 				  min_val=new_value;
-                assert(gt(min_val,getApprox(bvTheory,bvID,invert,true),invert)); //assert(min_val>=bvTheory->getUnderApprox(bvID,true));
+                assert(geq(min_val,getApprox(bvTheory,bvID,invert,true),invert)); //assert(min_val>=bvTheory->getUnderApprox(bvID,true));
 			  }
 			  if(opt_verb>=1 || opt_verb_optimize>=1){
 				  printf("\rBest bv%d = %ld",bvID,max_val);

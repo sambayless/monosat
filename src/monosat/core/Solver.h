@@ -156,7 +156,7 @@ public:
 		theory_order_heap.insert(t);
 		theory_conflict_counters.growTo(all_decision_heuristics.size(),0);
 		first_heuristic_decision_level.growTo(all_decision_heuristics.size(),-1);
-		t->setActivity(opt_randomize_theory_order_freq>0 ? drand(random_seed) * 0.00001 : 0);
+		t->setActivity(opt_randomize_theory_order_restart_freq>0 ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
 	}
 	void theoryPropagated(Theory * t)override {
@@ -247,6 +247,9 @@ public:
 
         
 		printf("restarts              : %" PRIu64 "\n", starts);
+		if(opt_theory_order_conflict_restart && stats_theory_conflict_counter_restarts>0){
+			printf("conflict counter restarts:     %" PRIu64 "\n",stats_theory_conflict_counter_restarts);
+		}
 		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%ld theory learnts), %" PRId64 " removed)\n", conflicts,
 				conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
@@ -569,6 +572,10 @@ public:
 	vec<int> satisfied_theory_trail_pos;
 	vec<int> post_satisfied_theory_trail_pos;
 	vec<Heuristic*> decision_heuristics;
+
+	int decision_heuristic_qhead=0;
+	vec<int> decision_heuristic_trail_lim;
+
 	vec<Heuristic*> all_decision_heuristics;
 	vec<int> first_heuristic_decision_level;//the first decision made by each decision heuristic (other than vsids)
 	vec<Heuristic*> decision_heuristic_trail;//trail of decisions made by decision heuristics (other than vsids)
@@ -659,11 +666,12 @@ public:
     uint64_t pure_literal_detections=0;
     uint64_t stats_removed_clauses=0;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
-	long stats_skipped_theory_prop_rounds=0;
-	long stats_theory_conflicts =0;
+	uint64_t stats_skipped_theory_prop_rounds=0;
+	uint64_t stats_theory_conflict_counter_restarts=0;
+	uint64_t stats_theory_conflicts =0;
 	long dbg=0;
-	long stats_solver_preempted_decisions=0;
-	long stats_theory_decisions=0;
+	uint64_t stats_solver_preempted_decisions=0;
+	uint64_t stats_theory_decisions=0;
 	double stats_pure_lit_time=0;
 	uint64_t n_theory_conflicts=0;
 	int consecutive_theory_conflicts=0;
@@ -735,20 +743,38 @@ protected:
 				activity(act), priority(pri) {
 		}
 	};
-	struct TheoryOrderLt {
-			//const vec<Heuristic*> & theories;
+	struct HeuristicOrderLt {
+
 			bool operator ()(Heuristic* x, Heuristic* y) const {
-				if (x->getPriority()  == y->getPriority() )
-					return x->getActivity() > y->getActivity();
-				else {
+				if (x->getPriority()  == y->getPriority() ) {
+					if(x->getHeuristicOrder() == y->getHeuristicOrder()) {
+						return x->getActivity() > y->getActivity();
+					}else{
+						return x->getHeuristicOrder() < y->getHeuristicOrder();//lower ordered heuristic goes earlier
+					}
+				}else {
 					return x->getPriority() >y->getPriority();
 				}
 			}
-			TheoryOrderLt() {
-				//theories(theories){
+			HeuristicOrderLt() {
+
 			}
 		};
+	struct HeuristicActivityOrderLt {
 
+		bool operator ()(Heuristic* x, Heuristic* y) const {
+			if (x->getPriority()  == y->getPriority() ) {
+				//ignore heuristic order, even if it is set
+				return x->getActivity() > y->getActivity();
+
+			}else {
+				return x->getPriority() >y->getPriority();
+			}
+		}
+		HeuristicActivityOrderLt() {
+
+		}
+	};
 	struct TheoryData {
 		union {
 			struct {
@@ -801,7 +827,7 @@ protected:
 		int operator()(Heuristic * h) const { return h->getHeuristicIndex(); }
 	};
 
-	Heap<Heuristic*,TheoryOrderLt,HeuristicToInt> theory_order_heap;
+	Heap<Heuristic*,HeuristicOrderLt,HeuristicToInt> theory_order_heap;
 	vec<std::pair<Heuristic*,int>> theory_decision_trail;
 	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.
 	double progress_estimate;       // Set by 'search()'.

@@ -546,7 +546,7 @@ public:
 	const Weight update() {
 		int s = source;
 		int t = sink;
-		if(same_source_sink)
+		if (same_source_sink)
 			return INF;
 		//see http://cstheory.stackexchange.com/a/10186
 		static int it = 0;
@@ -561,19 +561,23 @@ public:
 
 
 		//C.resize(g.nodes());
-
+		bool any_changed=false;
 		if (last_modification > 0 && g.modifications == last_modification) {
 #ifdef DEBUG_MAXFLOW2
-			EdmondsKarpDynamic<Weight> ek(g,source,sink);
-			Weight expected_flow =ek.maxFlow(source,sink);
-			assert(curflow==expected_flow);
-			bassert(curflow == expected_flow);
+            EdmondsKarpDynamic<Weight> ek(g,source,sink);
+            Weight expected_flow =ek.maxFlow(source,sink);
+            assert(curflow==expected_flow);
+            bassert(curflow == expected_flow);
 #endif
 			return curflow;
 		} else if (!kt || last_modification <= 0 || kt->get_node_num() != g.nodes()
-				|| edge_enabled.size() != g.edges()) {
+				   || edge_enabled.size() != g.edges()) {
 			initKT();
-		} else if (g.historyclears != last_history_clear || g.changed()) {
+		} else if(! g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize() ){
+				//no information was lost in the history clear
+				history_qhead = 0;
+				last_history_clear = g.historyclears;
+		}else if (g.historyclears != last_history_clear || g.changed()) {
 			stats_reinits++;
 			flow_needs_recalc = true;
 			for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
@@ -604,7 +608,7 @@ public:
 			}
 			history_qhead = g.historySize();
 		}
-		flow_needs_recalc = true;
+
 		assert(kt);
 		
 		for (int i = history_qhead; i < g.historySize(); i++) {
@@ -612,7 +616,7 @@ public:
 			if (g.selfLoop(edgeid))
 				continue; //skip self loops
 			if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
-				
+				flow_needs_recalc = true;
 				assert(local_weight(edgeid)==0);
 				edge_enabled[edgeid] = true;
 				set_local_weight(edgeid,g.getWeight(edgeid));
@@ -620,10 +624,12 @@ public:
 				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
 
 			}else if ((g.getChange(i).weight_increase || g.getChange(i).weight_decrease) && g.edgeEnabled(edgeid) && edge_enabled[edgeid] && g.getWeight(edgeid) != local_weight(edgeid)){
+				flow_needs_recalc = true;
 				Weight dif = g.getWeight(edgeid)-local_weight(edgeid);
 				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0,getArc(edgeid));
 				set_local_weight(edgeid, g.getWeight(edgeid));
 			}else if (g.getChange(i).deletion && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
+				flow_needs_recalc = true;
 				assert(edge_enabled[edgeid]);
 				edge_enabled[edgeid] = false;
 				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,getArc(edgeid));

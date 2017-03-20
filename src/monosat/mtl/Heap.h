@@ -76,7 +76,7 @@ public:
 	int  size      ()          const { return heap.size(); }
 	bool empty     ()          const { return heap.size() == 0; }
 	bool inHeap    (K k)       const { return indices.has(k) && indices[k] >= 0; }
-	int  operator[](int index) const { assert(index < heap.size()); return heap[index]; }
+	K&  operator[](int index)  { assert(index < heap.size()); return heap[index]; }
 
 	void decrease  (K k) { assert(inHeap(k)); percolateUp  (indices[k]); }
 	void increase  (K k) { assert(inHeap(k)); percolateDown(indices[k]); }

@@ -57,7 +57,7 @@ Solver::Solver() :
 				0), stats_pure_theory_lits(0), pure_literal_detections(0), stats_removed_clauses(0), dec_vars(0), clauses_literals(
 				0), learnts_literals(0), max_literals(0), tot_literals(0), stats_pure_lit_time(0),  ok(
 				true), cla_inc(1), var_inc(1), theory_inc(1), watches(WatcherDeleted(ca)), qhead(0), simpDB_assigns(-1), simpDB_props(
-				0), order_heap(VarOrderLt(activity, priority)),theory_order_heap(TheoryOrderLt(),HeuristicToInt()), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
+				0), order_heap(VarOrderLt(activity, priority)),theory_order_heap(HeuristicOrderLt(),HeuristicToInt()), progress_estimate(0), remove_satisfied(true) //lazy_heap( LazyLevelLt(this)),
 
 		// Resource constraints:
 		//
@@ -542,8 +542,9 @@ void Solver::cancelUntil(int lev) {
 		//If opt_theory_order_vsids is enabled, need to add back into the theory decision heap theories that may now be able to make decisions again.
 		while(theory_decision_trail.size() && theory_decision_trail.last().second>=decisionLevel()){
 			Heuristic * h = theory_decision_trail.last().first;
-			assert(!theory_order_heap.inHeap(h));
-			theory_order_heap.insert(h);
+			if(!theory_order_heap.inHeap(h)) {
+				theory_order_heap.insert(h);
+			}
 			theory_decision_trail.pop();
 		}
 
@@ -2010,7 +2011,7 @@ lbool Solver::search(int nof_conflicts) {
 	starts++;
 	static int decision_iter=0;
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
-	bool using_theory_vsids= opt_decide_theories && opt_theory_order_vsids && drand(random_seed) < opt_random_theory_vsids_freq;
+	bool using_theory_order_heap= opt_decide_theories && (opt_theory_order_vsids || opt_theory_order_swapping) && drand(random_seed) < opt_random_theory_order_freq;
 
 
 
@@ -2062,6 +2063,8 @@ lbool Solver::search(int nof_conflicts) {
             if(last_decision_heuristic && (!conflicting_heuristic || conflicting_heuristic->getPriority()<last_decision_heuristic->getPriority())){
                 conflicting_heuristic=last_decision_heuristic;
             }
+			bool multiple_involved_theories=false;
+            bool order_changed=false;
 			if (learnt_clause.size()>1 && last_decision_heuristic && opt_theory_order_swapping){
 				//nadel-style theory order swapping
                 if(opt_verb>=3) {
@@ -2100,7 +2103,9 @@ lbool Solver::search(int nof_conflicts) {
                 analyzeHeuristicDecisions(confl,swapping_involved_theories, max_involved,conflicting_heuristic->getPriority());
 				assert(swapping_involved_theories.has(conflicting_heuristic->getHeuristicIndex()));
 				assert(swapping_involved_theories.size()>=1);
+				multiple_involved_theories = swapping_involved_theories.size()>1;
 				if(swapping_involved_theories.size()>1 || opt_theory_order_swapping_first_on_unit) {
+                    order_changed=true;
 					//if opt_theory_order_swapping_first_on_unit is set, then on a unit conflict, move the conflict heuristic to the begining (without changing the rest of the decision order).
 					bool unit = (swapping_involved_theories.size()==1 && opt_theory_order_swapping_first_on_unit);
 					int lowest_involved_position = decision_heuristics.size();
@@ -2153,6 +2158,9 @@ lbool Solver::search(int nof_conflicts) {
 					decision_heuristics.push(conflicting_heuristic);
 					decision_heuristics.extend(swapping_involved_theory_order);
 					decision_heuristics.extend(swapping_uninvolved_post_theories);
+                    for(int i = 0;i<decision_heuristics.size();i++){
+                        decision_heuristics[i]->setHeuristicOrder(i);
+                    }
 					if(opt_verb>=3) {
 						printf("New decision order: ");
 						for (Heuristic *h:decision_heuristics) {
@@ -2166,6 +2174,16 @@ lbool Solver::search(int nof_conflicts) {
 			}
 
             cancelUntil(backtrack_level);
+
+            if(opt_theory_order_swapping && order_changed){
+                //rebuild the theory order queue
+                theory_order_heap.build(decision_heuristics);
+#ifdef DEBUG_CORE
+				for(int i = 0;i<theory_order_heap.size();i++){
+					assert(theory_order_heap[i]->getHeuristicOrder()==i);
+				}
+#endif
+            }
 
 			//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
 			//The learnt clause may not be asserting.
@@ -2215,22 +2233,22 @@ lbool Solver::search(int nof_conflicts) {
 			varDecayActivity();
 			claDecayActivity();
 
-			if(conflicting_heuristic){
+			if(conflicting_heuristic && (opt_theory_order_conflict_on_unit || multiple_involved_theories)){
 				assert(theory_conflict_counters.size()>conflicting_heuristic->getHeuristicIndex());
 				theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]++;
-				if(opt_theory_order_conflict_restart>0 && decision_heuristics[0]!=conflicting_heuristic && theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]>=opt_theory_order_conflict_restart){
+				if(opt_theory_order_conflict_restart>0  && (!opt_theory_order_conflict_conservative || decision_heuristics[0]!=conflicting_heuristic) &&  theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]>=opt_theory_order_conflict_restart){
 					//restart the solver
 					cancelUntil(0);
-
+					stats_theory_conflict_counter_restarts++;
 					if(opt_theory_order_conflict_sort_counter){
 						//sort the heuristics by their conflict counter value, putting the highest value first
 						sort(decision_heuristics,[&](Heuristic * a ,Heuristic * b)->bool{return theory_conflict_counters[a->getHeuristicIndex()]>theory_conflict_counters[b->getHeuristicIndex()];});
-						assert(decision_heuristics[0]==conflicting_heuristic);
+						//assert(decision_heuristics[0]==conflicting_heuristic);
 					}else {
 
 						if (opt_theory_order_conflict_sort_vsids){
 							//before moving the highest conflict counter to the beginning, sort all heuristics by their activity/priority
-							sort(decision_heuristics,TheoryOrderLt());
+							sort(decision_heuristics,HeuristicActivityOrderLt());
 						}
 
 						//reorder the conflicting theories to put the decision theory first.
@@ -2242,7 +2260,7 @@ lbool Solver::search(int nof_conflicts) {
 							}
 						}
 						assert(theory_conflict_pos>=0);
-						assert(decision_heuristics[theory_conflict_pos]==conflicting_heuristic);
+						//assert(decision_heuristics[theory_conflict_pos]==conflicting_heuristic);
 						if (theory_conflict_pos > 0) {
 							if(opt_theory_order_swapping_preserve_order){
 								//Preserve the previous order of the heuristics, except for moving this one to the begining.
@@ -2261,6 +2279,15 @@ lbool Solver::search(int nof_conflicts) {
 					for(int i = 0;i<theory_conflict_counters.size();i++){
 						theory_conflict_counters[i]=0;
 					}
+					for(int i = 0;i<decision_heuristics.size();i++){
+						decision_heuristics[i]->setHeuristicOrder(i);
+					}
+					theory_order_heap.build(decision_heuristics);
+#ifdef DEBUG_CORE
+					for(int i = 0;i<theory_order_heap.size();i++){
+						assert(theory_order_heap[i]->getHeuristicOrder()==i);
+					}
+#endif
 				}
 			}
 
@@ -2395,7 +2422,7 @@ lbool Solver::search(int nof_conflicts) {
 					//printf("Vars %d,%d have assignment %d,%d\n", 91569,91580,value(91569),value(91580));
 				}
 
-				if(opt_theory_order_vsids && using_theory_vsids){
+				if(((opt_theory_order_vsids || opt_theory_order_swapping ) && using_theory_order_heap)){
 					while (next==lit_Undef && !theory_order_heap.empty() && theory_order_heap.peekMin()->getPriority()>=next_var_priority) {
 						Heuristic * h = theory_order_heap.peekMin();
 						++decision_iter;
@@ -2416,11 +2443,28 @@ lbool Solver::search(int nof_conflicts) {
 
 							}
 							next =h->decideTheory(decision_reason);
-                            next_decision_heuristic=h;
+							if(next!=lit_Undef) {
+								next_decision_heuristic = h;
+//#ifdef DEBUG_CORE
+                                for (int i = 0; i < decision_heuristics.size();i++){
+                                    Heuristic * hv = decision_heuristics[i];
+                                    if(hv==h){
+                                        break;
+                                    }else{
+                                        CRef ignore;
+                                        Lit n2 = hv->decideTheory(ignore);
+                                        assert(n2==lit_Undef);
+                                        /*if(n2!=lit_Undef){
+                                            throw std::runtime_error("Bad heuristic order!");
+                                        }*/
+                                    }
+                                }
+//#endif
+							}
 						}
 						if(next==lit_Undef){
 							theory_order_heap.removeMin();
-							if(decisionLevel()>0)
+							if(decisionLevel()>0)//this isn't quite right... just because a heuristic cannot suggest anything at level 0, does not mean it cannot suggest something at a later level...
 								theory_decision_trail.push({h,decisionLevel()});
 						}else{
 							assert(var(next)>=0);
@@ -2431,7 +2475,7 @@ lbool Solver::search(int nof_conflicts) {
 							}
 						}
 					}
-				}else{
+				}else if(opt_randomize_theory_order_all || opt_theory_decision_round_robin){
                     if (opt_randomize_theory_order_all) {
                         randomShuffle(random_seed, decision_heuristics);
                     }
@@ -2451,8 +2495,22 @@ lbool Solver::search(int nof_conflicts) {
                         theory_decision_round_robin++;
                         theory_decision_round_robin%=decision_heuristics.size();
                     }
-				}
+				}/*else{
 
+
+                    for (decision_heuristic_qhead < decision_heuristics.size() && next == lit_Undef; decision_heuristic_qhead++) {
+                        //j only differs from i if round robin theory decisions are enabled
+
+                        assert(decision_heuristic_qhead>=0);assert(decision_heuristic_qhead<=decision_heuristics.size());
+                        Heuristic * t = decision_heuristics[decision_heuristic_qhead];
+                        if (!heuristicSatisfied(t) &&  t->getPriority()>=next_var_priority) {
+                            next = t->decideTheory(decision_reason);
+                            next_decision_heuristic=t;
+                        }
+                    }
+
+                }
+*/
 				if (next!=lit_Undef){
 					stats_theory_decisions++;
 					if(theoryDecision !=lit_Undef && var(next)==var(theoryDecision)){
@@ -2642,11 +2700,24 @@ lbool Solver::solve_() {
 				polarity[i] = irand(random_seed, 1);
 		}
 		if(opt_decide_theories) {
-			if ( opt_randomize_theory_order_freq > 0 && drand(random_seed)<opt_randomize_theory_order_freq) {
-				randomShuffle(random_seed, decision_heuristics);
-			}else if (opt_theory_order_initial_sort){
-				sort(decision_heuristics,TheoryOrderLt());
+			if(opt_theory_order_conflict_restart && opt_theory_order_conflict_clear_on_restart){
+				theory_conflict_counters.clear();
+				theory_conflict_counters.growTo(all_decision_heuristics.size());
 			}
+			if ( opt_randomize_theory_order_restart_freq > 0 && drand(random_seed)<opt_randomize_theory_order_restart_freq) {
+				randomShuffle(random_seed, decision_heuristics);
+				for(int i = 0;i<decision_heuristics.size();i++){
+					decision_heuristics[i]->setHeuristicOrder(i);
+				}
+				theory_order_heap.build(decision_heuristics);
+			}else if (opt_theory_order_initial_sort){
+				sort(decision_heuristics,HeuristicActivityOrderLt());
+				for(int i = 0;i<decision_heuristics.size();i++){
+					decision_heuristics[i]->setHeuristicOrder(i);
+				}
+				theory_order_heap.build(decision_heuristics);
+			}
+
 			if(opt_verb>=3){
 				printf("Initial theory order: ");
 				for (Heuristic *h:decision_heuristics) {

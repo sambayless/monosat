@@ -77,6 +77,7 @@ public:
 	int deletions=0;
 	int edge_increases = 0;
 	int edge_decreases = 0;
+	int64_t previous_history_size=0;
 	int64_t historyclears=0;
 	int64_t skipped_historyclears=0;
 	struct Edge {
@@ -604,7 +605,7 @@ public:
 					return;
 				}
 			}
-
+			previous_history_size=history.size();
 			history_offset=0;
 			history.clear();
 			historyclears++;
@@ -630,7 +631,9 @@ public:
 		}
 
 	}
-	
+	int64_t getPreviousHistorySize()const{
+		return previous_history_size;
+	}
 	void markChanged() {
 		is_changed = true;
 

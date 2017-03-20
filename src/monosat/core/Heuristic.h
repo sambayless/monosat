@@ -31,6 +31,7 @@ class Heuristic {
     int priority=0;
     double activity=0;
     int heuristic_index=-1;
+    int heuristic_order=0;
 public:
 
 
@@ -43,7 +44,12 @@ public:
     void setPriority(int p){
         priority=p;
     }
-
+    int getHeuristicOrder()const{
+        return heuristic_order;
+    }
+    void setHeuristicOrder(int p){
+        heuristic_order=p;
+    }
     double & getActivity(){
         return activity;
     }

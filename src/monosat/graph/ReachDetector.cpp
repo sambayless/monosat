@@ -496,7 +496,7 @@ public:
 				//if(S->level(var(l))>0)
 				//	continue;
 
-				if (over_reach->connected(j) && !under_reach->connected(j)) {
+				if (over_reach->connected(j)) { // && !under_reach->connected(j) //this check is not needed
 					//then lets try to connect this
 
 					to_decide.clear();

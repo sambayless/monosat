@@ -103,11 +103,11 @@ DoubleOption Monosat::opt_random_theory_freq(_cat, "rnd-theory-freq",
 		"The frequency with which the decision theory solvers are selected to make decisions", 1,
 		DoubleRange(0, true, 1, true));
 
-DoubleOption Monosat::opt_random_theory_vsids_freq(_cat, "rnd-theory-vsids-freq",
+DoubleOption Monosat::opt_random_theory_order_freq(_cat, "rnd-theory-rnd-freq",
 		"The frequency with which the decision theory uses vsids to make decisions, if theory-order-vsids is enabled", 1,
 		DoubleRange(0, true, 1, true));
 
-DoubleOption Monosat::opt_randomize_theory_order_freq(_cat_theory, "theory-order-rnd-freq",
+DoubleOption Monosat::opt_randomize_theory_order_restart_freq(_cat_theory, "theory-order-rnd-restart-freq",
 										  "Frequency with which to randomize the decision heuristic order (on restarts)", 0,
 										  DoubleRange(0, true, 1, true));
 
@@ -214,7 +214,9 @@ BoolOption Monosat::opt_theory_order_conflict_sort_counter(_cat_theory, "theory-
 BoolOption Monosat::opt_theory_order_conflict_sort_vsids(_cat_theory, "theory-order-conflict-sort-vsids", "Sort decision heuristics by vsids on conflict counter restarts, while putting the highest conflict counter first",false);
 BoolOption Monosat::opt_decide_theories_only_prop_decision(_cat_theory, "only-prop-theories-on-heuristic-change", "",false);
 BoolOption Monosat::opt_theory_order_swapping_first_on_unit(_cat_theory, "theory-order-swapping-first-on-unit", "Move a decision heuristic to the begining of the heuristics if it is involved in a lone conflict",false);
-
+BoolOption Monosat::opt_theory_order_conflict_clear_on_restart(_cat_theory, "theory-order-conflict-restart-clear","",false);
+BoolOption Monosat::opt_theory_order_conflict_conservative(_cat_theory, "theory-order-conflict-restart-conservative","",true);
+BoolOption Monosat::opt_theory_order_conflict_on_unit(_cat_theory, "theory-order-conflict-on-unit","",true);
 
 BoolOption Monosat::opt_monolothic_theory_decisions(_cat_theory,"theory-combined-decisions","Make heuristic decisions within theories all at once, rather than individually per predicate.",false);
 BoolOption Monosat::opt_theory_order_swapping_prioritize_last_decision(_cat_theory,"theory-order-swapping-last-decision","Prioritize the last decision heuristic when analyzing conflicts", false);
