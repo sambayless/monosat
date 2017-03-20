@@ -2469,7 +2469,19 @@ lbool Solver::search(int nof_conflicts) {
                     next_decision_heuristic=nullptr;
                 }
 			}
-			
+            {
+
+                bool has_last_heuristic = last_decision_heuristic;
+                decision_heuristic_changed= has_last_heuristic && last_decision_heuristic!=next_decision_heuristic;
+                if(opt_decide_theories_only_prop_decision && decision_heuristic_changed && !propagate_theories && has_last_heuristic){
+                    assert(trail_lim.size()>0);
+                    cancelUntil(decisionLevel()-1);
+                    goto propagate;
+                }else {
+                    //update the last decision heuristic only if the above condition was not triggered
+                    last_decision_heuristic = next_decision_heuristic;
+                }
+            }
 			if (next == lit_Undef) {
 				// New variable decision:
 
@@ -2482,6 +2494,13 @@ lbool Solver::search(int nof_conflicts) {
 					
 					//solve theories if this solver is completely assigned
 					if(!disable_theories){
+                        if (!propagate_theories){
+                            //if for any reason theories were not propagated on the last run, then attempt to propagate them again
+                            confl = propagate(true);
+                            if(confl!=CRef_Undef){
+                                goto conflict;
+                            }
+                        }
 						for (int i = 0; i < theories.size(); i++) {
 							if (opt_subsearch == 3 && track_min_level < initial_level)
 								continue; //Disable attempting to solve sub-solvers if we've backtracked past the super solver's decision level
@@ -2501,19 +2520,7 @@ lbool Solver::search(int nof_conflicts) {
 					return l_True;
 				}
 			}
-			{
 
-                bool has_last_heuristic = last_decision_heuristic;
-                decision_heuristic_changed= has_last_heuristic && last_decision_heuristic!=next_decision_heuristic;
-                if(opt_decide_theories_only_prop_decision && decision_heuristic_changed && !propagate_theories && has_last_heuristic){
-					assert(trail_lim.size()>0);
-					cancelUntil(decisionLevel()-1);
-                    goto propagate;
-                }else {
-                    //update the last decision heuristic only if the above condition was not triggered
-                    last_decision_heuristic = next_decision_heuristic;
-                }
-            }
 			//last_dec = var(next);
 			// Increase decision level and enqueue 'next'
 			assert(next!=lit_Undef);

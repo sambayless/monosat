@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
 set (PB_SUPPORT 1)
-if(NOT SHOW_GIT_VERSION)
+if(NOT NO_GIT_VERSION)
     set (SHOW_GIT_VERSION 1)
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++14 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
