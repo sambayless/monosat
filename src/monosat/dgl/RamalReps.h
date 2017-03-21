@@ -74,7 +74,7 @@ public:
 		}
 		;
 	};
-	Heap<DistCmp> q;
+    alg::Heap<DistCmp> q;
 
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
@@ -193,7 +193,7 @@ public:
 			}
 			;
 		};
-		Heap<DistCmp> q(dbg_dist);
+		alg::Heap<DistCmp> q(dbg_dist);
 		
 		q.insert(getSource());
 		
@@ -950,7 +950,7 @@ public:
 			}
 			;
 		};
-		Heap<DistCmp> q(dbg_dist);
+		alg::Heap<DistCmp> q(dbg_dist);
 		
 		q.insert(getSource());
 		

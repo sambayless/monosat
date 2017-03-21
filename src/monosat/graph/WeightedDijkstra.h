@@ -62,7 +62,7 @@ public:
 		}
 		;
 	};
-	dgl::Heap<DistCmp> q;
+	dgl::alg::Heap<DistCmp> q;
 
 public:
 	//stats

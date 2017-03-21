@@ -83,7 +83,7 @@ public:
 		}
 	};
 
-	Heap<VertLt> Q;
+	alg::Heap<VertLt> Q;
 
 	std::vector<bool> seen;
 

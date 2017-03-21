@@ -26,8 +26,9 @@
 #include "monosat/core/Config.h"
 #include "monosat/dgl/DynamicConnectivity.h"
 #include "monosat/dgl/TarjansSCC.h"
-#include <monosat/graph/GraphHeuristic.h>
+#include "monosat/graph/GraphHeuristic.h"
 #include "monosat/graph/MaxflowDetector.h"
+#include "monosat/dgl/CachedReach.h"
 using namespace Monosat;
 template<typename Weight>
 ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
@@ -173,7 +174,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	}
 	if (underapprox_detector && !underapprox_fast_detector)
 		underapprox_fast_detector = underapprox_detector;
-	
+
 	if (opt_reach_detector_combined_maxflow) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
 			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
@@ -196,6 +197,24 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
 		}
 	}
+
+	if(opt_graph_cache_propagation){
+		if(underapprox_detector){
+			Reach* original_underapprox_detector = underapprox_detector;
+			underapprox_detector = new CachedReach<Weight>(original_underapprox_detector, _g);
+
+		}
+		if(overapprox_reach_detector){
+			Reach* original_overapprox_detector = overapprox_reach_detector;
+			overapprox_reach_detector = new CachedReach<Weight>(original_overapprox_detector, _antig);
+			if(overapprox_path_detector==original_overapprox_detector){
+				overapprox_path_detector=overapprox_reach_detector;
+			}else{
+				overapprox_path_detector= new CachedReach<Weight>(overapprox_path_detector, _antig);
+			}
+		}
+	}
+
 	if (underapprox_detector)
 		underapprox_detector->setSource(source);
 	if (overapprox_reach_detector)
@@ -873,7 +892,7 @@ public:
 			return lit_Undef;//if the reach lit is unassigned, do not make any decisions here
 		}
         static int iter = 0;
-        if(++iter==1119){
+        if(++iter==11){
             int a=1;
         }
 
@@ -1008,7 +1027,15 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		reach_lit_map.push(-1);
 	}
 	reach_lit_map[reach_var - first_reach_var] = to;
-	
+	if(underapprox_detector){
+		underapprox_detector->addDestination(to);
+	}
+	if(overapprox_reach_detector){
+		overapprox_reach_detector->addDestination(to);
+	}
+	if(overapprox_path_detector!=overapprox_reach_detector){
+		overapprox_path_detector->addDestination(to);
+	}
 	assert(from == source);
 	if (opt_encode_reach_underapprox_as_sat || !underapprox_detector) {
 		buildSATConstraints(true);
@@ -1028,6 +1055,8 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
         reach_heuristics.growTo(to+1,nullptr);
         reach_heuristics[to]=h;
     }
+
+
 	if (opt_conflict_min_cut || opt_adaptive_conflict_mincut) {
 		if (!opt_reach_detector_combined_maxflow) {
 			conflict_flows.resize(g_under.nodes(), nullptr);
@@ -1635,7 +1664,7 @@ void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 template<typename Weight>
 bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
-	if (++iter == 87) {
+	if (++iter == 18) {
 		int a = 1;
 	}
     conflictingHeuristic=nullptr;

@@ -65,6 +65,12 @@ public:
 	/*	virtual void setMaxDistance(int maxDistance){
 
 	 }*/
+	virtual void addDestination(int node){
+
+	}
+	virtual void removeDestination(int node){
+
+	}
 };
 }
 ;

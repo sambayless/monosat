@@ -240,6 +240,7 @@ extern BoolOption opt_learn_acyclic_flows;
 extern IntOption opt_min_edgeset;
 extern BoolOption opt_only_prop_edgeset;
 
+extern BoolOption opt_graph_cache_propagation;
 
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT

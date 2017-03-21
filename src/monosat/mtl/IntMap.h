@@ -85,10 +85,6 @@ namespace Monosat {
             in_set[xs.last()]=0;
             xs.pop();
         }
-        // NOTE: it seems possible that overflow can happen in the 'sz+1' expression of 'push()', but
-        // in fact it can not since it requires that 'cap' is equal to INT_MAX. This in turn can not
-        // happen given the way capacities are calculated (below). Essentially, all capacities are
-        // even, but INT_MAX is odd.
 
         const K& last(void) const {
             return xs.last();
@@ -113,7 +109,7 @@ namespace Monosat {
         }
         bool     has         (K k) { in_set.reserve(k, 0); return in_set[k]; }
         bool     contains         (K k) { return has(k);}
-       
+
         //stl-style begin and end, to support C++11 range-based for loops
         K* begin() const {
             return xs.begin();

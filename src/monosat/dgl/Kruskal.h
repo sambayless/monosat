@@ -71,7 +71,7 @@ public:
 		}
 	};
 
-	Heap<EdgeLt> edge_heap;
+	alg::Heap<EdgeLt> edge_heap;
 	std::vector<int> edge_list;
 
 	std::vector<int> prev;

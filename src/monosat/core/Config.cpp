@@ -418,6 +418,8 @@ IntOption Monosat::opt_width("GRAPH", "width", "Width of graph.\n", 0, IntRange(
 IntOption Monosat::opt_height("GRAPH", "height", "Height of graph.\n", 0, IntRange(0, INT32_MAX));
 IntOption Monosat::opt_bits("GRAPH", "bits", "Bits per position in graph.\n", 1, IntRange(0, INT32_MAX));
 
+BoolOption Monosat::opt_graph_cache_propagation(_cat_graph,"cache-graph-propagation","",false);
+
 BoolOption Monosat::opt_csv("GRAPH", "csv", "Output in CSV format", false);
 
 MinCutAlg Monosat::mincutalg = MinCutAlg::ALG_EDMONSKARP;

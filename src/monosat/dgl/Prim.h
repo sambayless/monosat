@@ -75,7 +75,7 @@ public:
 		}
 	};
 	//bool hasComponents;
-	Heap<VertLt> Q;
+	alg::Heap<VertLt> Q;
 
 	std::vector<int> mst;
 	std::vector<int> prev;
