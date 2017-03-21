@@ -202,16 +202,24 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		if(underapprox_detector){
 			Reach* original_underapprox_detector = underapprox_detector;
 			underapprox_detector = new CachedReach<Weight>(original_underapprox_detector, _g);
-
+            if(opt_graph_use_cache_for_decisions) {
+                if (underapprox_path_detector == original_underapprox_detector) {
+                    underapprox_path_detector = original_underapprox_detector;
+                } else {
+                    underapprox_path_detector = new CachedReach<Weight>(underapprox_path_detector, _g);
+                }
+            }
 		}
 		if(overapprox_reach_detector){
 			Reach* original_overapprox_detector = overapprox_reach_detector;
 			overapprox_reach_detector = new CachedReach<Weight>(original_overapprox_detector, _antig);
-			if(overapprox_path_detector==original_overapprox_detector){
-				overapprox_path_detector=overapprox_reach_detector;
-			}else{
-				overapprox_path_detector= new CachedReach<Weight>(overapprox_path_detector, _antig);
-			}
+            if(opt_graph_use_cache_for_decisions) {
+                if (overapprox_path_detector == original_overapprox_detector) {
+                    overapprox_path_detector = overapprox_reach_detector;
+                } else {
+                    overapprox_path_detector = new CachedReach<Weight>(overapprox_path_detector, _antig);
+                }
+            }
 		}
 	}
 
@@ -515,7 +523,7 @@ public:
 				//if(S->level(var(l))>0)
 				//	continue;
 
-				if (over_reach->connected(j)) { // && !under_reach->connected(j) //this check is not needed
+				if (over_path->connected(j)) { // && !under_reach->connected(j) //this check is not needed
 					//then lets try to connect this
 
 					to_decide.clear();

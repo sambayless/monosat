@@ -2023,7 +2023,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  279) {//3150 //3144
+		if (++iter ==  7644 || iter==7624) {//3150 //3144
 			int a = 1;
 		}
         propagate:
@@ -2044,6 +2044,9 @@ lbool Solver::search(int nof_conflicts) {
 			// CONFLICT
 			conflicts++;
 			conflictC++;
+			if(conflicts==281){
+				int a=1;
+			}
 			if(last_decision_heuristic){
 				n_theory_conflicts++;
 				consecutive_theory_conflicts++;
@@ -2178,11 +2181,7 @@ lbool Solver::search(int nof_conflicts) {
             if(opt_theory_order_swapping && order_changed){
                 //rebuild the theory order queue
                 theory_order_heap.build(decision_heuristics);
-#ifdef DEBUG_CORE
-				for(int i = 0;i<theory_order_heap.size();i++){
-					assert(theory_order_heap[i]->getHeuristicOrder()==i);
-				}
-#endif
+
             }
 
 			//this is now slightly more complicated, if there are multiple lits implied by the super solver in the current decision level:
@@ -2283,11 +2282,7 @@ lbool Solver::search(int nof_conflicts) {
 						decision_heuristics[i]->setHeuristicOrder(i);
 					}
 					theory_order_heap.build(decision_heuristics);
-#ifdef DEBUG_CORE
-					for(int i = 0;i<theory_order_heap.size();i++){
-						assert(theory_order_heap[i]->getHeuristicOrder()==i);
-					}
-#endif
+
 				}
 			}
 
@@ -2445,12 +2440,15 @@ lbool Solver::search(int nof_conflicts) {
 							next =h->decideTheory(decision_reason);
 							if(next!=lit_Undef) {
 								next_decision_heuristic = h;
-//#ifdef DEBUG_CORE
+#ifdef DEBUG_CORE
                                 for (int i = 0; i < decision_heuristics.size();i++){
                                     Heuristic * hv = decision_heuristics[i];
                                     if(hv==h){
                                         break;
                                     }else{
+										if(iter==7645 && hv->getHeuristicIndex()==8){
+											int a=1;
+										}
                                         CRef ignore;
                                         Lit n2 = hv->decideTheory(ignore);
                                         assert(n2==lit_Undef);
@@ -2459,10 +2457,13 @@ lbool Solver::search(int nof_conflicts) {
                                         }*/
                                     }
                                 }
-//#endif
+#endif
 							}
 						}
 						if(next==lit_Undef){
+							if(theory_order_heap.peekMin()->getHeuristicIndex()==8){
+								printf("%d\n",iter);
+							}
 							theory_order_heap.removeMin();
 							if(decisionLevel()>0)//this isn't quite right... just because a heuristic cannot suggest anything at level 0, does not mean it cannot suggest something at a later level...
 								theory_decision_trail.push({h,decisionLevel()});
