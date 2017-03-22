@@ -4332,6 +4332,7 @@ public:
             paired_edge_set_detectors[non_edgeset_detector->getID()] = detector;
             paired_edge_set_detectors[detector->getID()] = non_edgeset_detector;
             detector->is_edge_set_detector=true;
+            non_edgeset_detector->setEdgeSetDetector(detector);
             /*if(!opt_monolothic_theory_decisions) {
                 DetectorHeuristic *h = heuristics[non_edgeset_detector->getID()];
                 h->setEdgeSetDetector(detector);

@@ -2023,7 +2023,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  7644 || iter==7624) {//3150 //3144
+		if (++iter ==  15501) {//3150 //3144
 			int a = 1;
 		}
         propagate:
@@ -2044,9 +2044,7 @@ lbool Solver::search(int nof_conflicts) {
 			// CONFLICT
 			conflicts++;
 			conflictC++;
-			if(conflicts==281){
-				int a=1;
-			}
+
 			if(last_decision_heuristic){
 				n_theory_conflicts++;
 				consecutive_theory_conflicts++;
@@ -2446,9 +2444,6 @@ lbool Solver::search(int nof_conflicts) {
                                     if(hv==h){
                                         break;
                                     }else{
-										if(iter==7645 && hv->getHeuristicIndex()==8){
-											int a=1;
-										}
                                         CRef ignore;
                                         Lit n2 = hv->decideTheory(ignore);
                                         assert(n2==lit_Undef);
@@ -2461,9 +2456,6 @@ lbool Solver::search(int nof_conflicts) {
 							}
 						}
 						if(next==lit_Undef){
-							if(theory_order_heap.peekMin()->getHeuristicIndex()==8){
-								printf("%d\n",iter);
-							}
 							theory_order_heap.removeMin();
 							if(decisionLevel()>0)//this isn't quite right... just because a heuristic cannot suggest anything at level 0, does not mean it cannot suggest something at a later level...
 								theory_decision_trail.push({h,decisionLevel()});

@@ -1058,7 +1058,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 	if (!overapprox_reach_detector) {
 		buildSATConstraints(false);
 	}
-    if(opt_decide_theories && opt_allow_reach_decisions && overapprox_reach_detector){
+    if(opt_decide_theories && opt_allow_reach_decisions && overapprox_reach_detector && !is_edge_set_detector){
         Heuristic * h = new ReachHeuristic<Weight>(outer,this,reachLit,to);
         reach_heuristics.growTo(to+1,nullptr);
         reach_heuristics[to]=h;

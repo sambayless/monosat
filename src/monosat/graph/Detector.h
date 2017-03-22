@@ -38,6 +38,13 @@ public:
 
 	int detectorID;
 	bool is_edge_set_detector=false;
+	Detector * edge_set_detector=nullptr;
+	void setEdgeSetDetector(Detector * d){
+		edge_set_detector=d;
+	}
+	Detector * getEdgeSetDetector() const{
+		return edge_set_detector;
+	}
 	int unassigned_positives = 0;
 	int unassigned_negatives = 0;
 

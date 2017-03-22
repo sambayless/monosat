@@ -58,7 +58,8 @@ public:
             int a=1;
         };
 
-
+        if (detector->is_edge_set_detector)
+            return lit_Undef;
             //first, give the main graph theory a chance to make a decision
         outer->dbg_full_sync();
         if (opt_lazy_backtrack && outer->supportsLazyBacktracking() && opt_lazy_backtrack_decisions &&
@@ -86,19 +87,25 @@ public:
         //    return l;
         decision_reason = CRef_Undef;
         bool require_edge_set_detector=(outer->hasEdgeSets() && outer->allEdgeSetsAssigned());
-        if (require_edge_set_detector && !detector->is_edge_set_detector) {
-           return lit_Undef;//let the edge set detector make this decision
-        }else if (!require_edge_set_detector && detector->is_edge_set_detector) {
+        /*else if (!require_edge_set_detector && detector->is_edge_set_detector) {
            return lit_Undef;//let the regular detector make this decision
-        }
+        }*/
 
         //Detector *r = (edge_set_detector && outer->hasEdgeSets() && outer->allEdgeSetsAssigned()) ? edge_set_detector
         //: normal_detector;
-        if (outer->satisfied_detectors[detector->getID()])
-            return lit_Undef;
-
+        Lit l = lit_Undef;
         decision_reason = local_decision_reason;
-        Lit l = decide(decision_reason);
+        if (require_edge_set_detector && !detector->is_edge_set_detector) {
+            Detector * edge_set_detector =detector->getEdgeSetDetector();
+            if (outer->satisfied_detectors[edge_set_detector->getID()])
+                return lit_Undef;
+            l = edge_set_detector->decide(decision_reason);
+        }else {
+            if (outer->satisfied_detectors[detector->getID()])
+                return lit_Undef;
+            l = decide(decision_reason);
+        }
+
         if (l != lit_Undef) {
 
             if (opt_decide_graph_bv && !sign(l) && outer->isEdgeVar(var(l)) &&
