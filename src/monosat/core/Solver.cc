@@ -1012,10 +1012,6 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 }
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
-	/*if(var(p)>=103451 && var(p)<=103463){
-		int a=1;
-		printf("Enqueing %d to %s at level %d of %d\n", var(p), sign(p)?"F":"T", decisionLevel(), assumptions.size());
-	}*/
 	assert(value(p) == l_Undef);
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
@@ -2023,7 +2019,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  15501) {//3150 //3144
+		if (++iter ==  16662) {//3150 //3144
 			int a = 1;
 		}
         propagate:
@@ -2040,6 +2036,46 @@ lbool Solver::search(int nof_conflicts) {
         confl = propagate(propagate_theories);
 
 		conflict:
+
+#ifdef DEBUG_CORE
+        {
+            for (int i = 0; i < decision_heuristics.size(); i++) {
+                Heuristic *hv = decision_heuristics[i];
+                {
+                    CRef ignore;
+                    Lit n2 = hv->decideTheory(ignore);
+                    if (n2 != lit_Undef) {
+						if(!theory_order_heap.inHeap(hv)){
+							Lit n3 = hv->decideTheory(ignore);
+						}
+                        assert(theory_order_heap.inHeap(hv));
+                    }
+                }
+            }
+
+            vec<Heuristic *> order;
+            theory_order_heap.copyTo(order, true);
+            IntSet<int> seen_in_order;
+
+            for (Heuristic *h:order) {
+                seen_in_order.insert(h->getHeuristicIndex());
+                for (int i = 0; i < decision_heuristics.size(); i++) {
+                    Heuristic *hv = decision_heuristics[i];
+                    if (hv == h) {
+                        break;
+                    } else {
+                        CRef ignore;
+                        if (!seen_in_order.has(hv->getHeuristicIndex())) {
+                            Lit n2 = hv->decideTheory(ignore);
+                            assert(n2 == lit_Undef);
+                        }
+                    }
+                }
+            }
+        }
+#endif
+
+
         if (!okay() || (confl != CRef_Undef)) {
 			// CONFLICT
 			conflicts++;
@@ -2457,8 +2493,9 @@ lbool Solver::search(int nof_conflicts) {
 						}
 						if(next==lit_Undef){
 							theory_order_heap.removeMin();
-							if(decisionLevel()>0)//this isn't quite right... just because a heuristic cannot suggest anything at level 0, does not mean it cannot suggest something at a later level...
-								theory_decision_trail.push({h,decisionLevel()});
+							if(decisionLevel()>0) {//this isn't quite right... just because a heuristic cannot suggest anything at level 0, does not mean it cannot suggest something at a later level...
+                                theory_decision_trail.push({h, decisionLevel()});
+                            }
 						}else{
 							assert(var(next)>=0);
 							assert(var(next)<nVars());

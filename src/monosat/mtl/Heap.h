@@ -20,7 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "monosat/mtl/Vec.h"
 #include "monosat/mtl/IntMap.h"
-
+#include "monosat/mtl/Sort.h"
 namespace Monosat {
 
 //=================================================================================================
@@ -76,6 +76,9 @@ public:
 	int  size      ()          const { return heap.size(); }
 	bool empty     ()          const { return heap.size() == 0; }
 	bool inHeap    (K k)       const { return indices.has(k) && indices[k] >= 0; }
+
+    //Note: This operator accesses the contents of the heap in no particular order
+    //To access the contents in order, use copyTo(destination, true)
 	K&  operator[](int index)  { assert(index < heap.size()); return heap[index]; }
 
 	void decrease  (K k) { assert(inHeap(k)); percolateUp  (indices[k]); }
@@ -159,6 +162,14 @@ public:
 			indices[heap[i]] = -1;
 		heap.clear(dispose);
 	}
+
+    void copyTo(vec<K> & dest, bool sorted){
+        heap.copyTo(dest);
+        if(sorted){
+            sort(dest,lt);
+        }
+    }
+
 };
 
 

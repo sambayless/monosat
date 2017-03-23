@@ -6145,9 +6145,7 @@ public:
 	}
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-		if(toInt(l)==5610 || toInt(l)==5611){
-			int a =1;
-		}
+
 		rewind_trail_pos(trail.size());
 		int lev = level(v);
 		while (lev > trail_lim.size()) {
@@ -6765,7 +6763,7 @@ public:
 				alteredBV[bvID] = false;
 				continue;
 			}
-			if(bvID==565 || bvID==2){
+			if(bvID==50){
 				int a=1;
 			}
 			//for(int bvID = 0;bvID<bitvectors.size();bvID++){

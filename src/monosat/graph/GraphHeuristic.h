@@ -54,7 +54,7 @@ public:
 
     Lit decideTheory(CRef &decision_reason) override {
         static int iter = 0;
-        if(++iter==2444){
+        if(++iter==67749){
             int a=1;
         };
 

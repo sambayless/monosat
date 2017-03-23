@@ -202,7 +202,7 @@ bool PbSolver::normalizePb(vec<Lit> &ps, vec<Int> &Cs, Int &C) {
 
     // Sort literals on growing constant values:
     //
-    sort(Csps);     // (use lexicographical order of 'Pair's here)
+    PB::sort(Csps);     // (use lexicographical order of 'Pair's here)
     Int sum = 0;
     for (int i = 0; i < Csps.size(); i++) {
         Cs[i] = Csps[i].fst, ps[i] = Csps[i].snd, sum += Cs[i];

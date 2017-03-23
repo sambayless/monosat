@@ -1143,7 +1143,7 @@ public:
 	
 
 	inline bool edgeWeightDecidable(int edgeID,DetectorComparison op, Weight edgeWeight) {
-		if (! hasBitVector(edgeID))
+		if (! hasBitVector(edgeID) || !opt_decide_graph_bv)
 			return false;
 		int bvID = getEdgeBV(edgeID).getID();
 		Comparison bvOp;
@@ -2067,7 +2067,7 @@ public:
             int a=1;
         }
 
-        dbg_full_sync();
+        //dbg_full_sync();
         if(opt_lazy_backtrack && supportsLazyBacktracking() && opt_lazy_backtrack_decisions && detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
             //assert(n_decisions<=decisionLevel());
             //printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
@@ -2377,6 +2377,7 @@ public:
         }
 		requiresPropagation=true;
 		S->needsPropagation(getTheoryIndex());
+
 		if(isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
 			if(edgeID==11){
@@ -2447,6 +2448,7 @@ public:
 		while(bvtrail.size() && bvtrail.last().bvID==bvID && bvtrail.last().bvTrail+1==bvTheory->trail.size()){
 			bvtrail.pop();
 		}
+
 		if (isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
 			for (int i = 0; i < detectors.size(); i++) {
@@ -2698,10 +2700,16 @@ public:
 			}
 		} else {
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
-			detectors[getDetector(var(l))]->assign(l);
+            int id = getDetector(var(l));
+			detectors[id]->assign(l);
+            if(detectors[id]->default_heuristic){
+                activateHeuristic(detectors[id]->default_heuristic);
+            }
 		}
 	}
-
+    void activateHeuristic(Heuristic * h) override{
+        S->activateHeuristic(h);
+    }
 /*
 	bool backtrackWhileConflicting(Detector * d,vec<Lit> & conflict){
 		conflict.clear();

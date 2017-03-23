@@ -348,7 +348,7 @@ public:
 		}
 		
 	};
-	void unassign(Lit l) {
+	void unassign(Lit l) override{
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;
 		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index] != -1) {
@@ -364,7 +364,13 @@ public:
 			}
 		}
 	}
-	
+	void assign(Lit l) override{
+		Detector::assign(l);
+		int index = var(l) - first_reach_var;
+		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index] != -1 && reach_heuristics[index]) {
+			outer->activateHeuristic(reach_heuristics[index]);
+		}
+	}
 	int getNode(Var reachVar) {
 		assert(reachVar >= first_reach_var);
 		int index = reachVar - first_reach_var;

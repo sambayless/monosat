@@ -225,7 +225,7 @@ public:
 
 	 }*/
 
-	void unassign(Lit l) {
+	void unassign(Lit l) override{
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;
 		
@@ -242,6 +242,7 @@ public:
 			}
 		}
 	}
+
 	void preprocess();
 	bool propagate(vec<Lit> & conflict);
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);

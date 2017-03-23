@@ -142,7 +142,7 @@ public:
 		cancelUntil(0);
 		resetInitialPropagation();
 	}
-	void addHeuristic(Heuristic*t) {
+	void addHeuristic(Heuristic*t)override {
 		if(t->getHeuristicIndex()>=0) {
 			assert(t->getHeuristicIndex()<all_decision_heuristics.size());
 			assert(all_decision_heuristics[t->getHeuristicIndex()]==t);
@@ -159,6 +159,13 @@ public:
 		t->setActivity(opt_randomize_theory_order_restart_freq>0 ? drand(random_seed) * 0.00001 : 0);
 		t->setPriority(0);
 	}
+    void activateHeuristic(Heuristic*h)override{
+        assert(all_decision_heuristics.contains(h));
+        if(h->getHeuristicIndex()>all_decision_heuristics.size() || h->getHeuristicIndex()<0 || all_decision_heuristics[h->getHeuristicIndex()] !=h){
+            throw std::runtime_error("Unknown decision heuristic");
+        }
+        theory_order_heap.update(h);
+    }
 	void theoryPropagated(Theory * t)override {
 		int theoryID = t->getTheoryIndex();
 		if (decisionLevel() > 0 && theory_init_prop_trail_pos[theoryID] >= 0 && theory_reprop_trail_pos[theoryID] < 0) {

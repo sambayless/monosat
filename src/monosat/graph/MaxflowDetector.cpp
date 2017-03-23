@@ -1398,11 +1398,12 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		//if (!is_potential_decision[edgeid]) {
 			Lit l = mkLit(outer->getEdgeVar(edgeid), false);
 			if(opt_maxflow_decisions_type==1){
-				if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeid) )) ){
+				if((outer->decidable(l) || outer->level(var(l))>0) || ( outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeid) )) ){
 					if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0) {
 
 						is_potential_decision[edgeid] = true;
 						if(!in_decision_q[edgeid]){
+
 							in_decision_q[edgeid]=true;
 							if (opt_maxflow_decisions_q == 0) {
 								potential_decisions_q.insertBack(edgeid);
@@ -1426,6 +1427,9 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 					}
 				}
 			}
+            if(potential_decisions_q.size()){
+                outer->activateHeuristic(default_heuristic);
+            }
 		}
 		//}
 		if (opt_conflict_min_cut_maxflow) {
@@ -1489,7 +1493,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 					Lit l = mkLit(outer->getEdgeVar(edgeid), false);
 					if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  g_under.getWeight(edgeid) )) ){
 						if (overapprox_conflict_detector->isOnCut(edgeid)) {
-
+           
 							is_potential_decision[edgeid] = true;
 							if(!in_decision_q[edgeid]){
 								in_decision_q[edgeid]=true;
@@ -1701,6 +1705,9 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
 			}
 		}
 	}
+    if(potential_decisions_q.size()){
+        outer->activateHeuristic(default_heuristic);
+    }
 }
 
 template<typename Weight>
@@ -1742,7 +1749,7 @@ bool MaxflowDetector<Weight>::detectorIsSatisfied(){
 template<typename Weight>
 void MaxflowDetector<Weight>::undecide(Lit l) {
 	static int iter = 0;
-
+    Detector::unassign(l);
 	if(outer->isEdgeVar(var(l))){
 		++iter;
 		int edgeid = outer->getEdgeID(var(l));
@@ -1772,7 +1779,7 @@ Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
 		return lit_Undef;
 
 	static int it = 0;
-	if (++it == 1320) {
+	if (++it == 51085) {
 		int a = 1;
 	}
 	double startdecidetime = rtime(2);
@@ -1818,30 +1825,45 @@ Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
 #ifdef DEBUG_GRAPH
 		if(opt_maxflow_decisions_type==1){
 			if(outer->hasBitVectorEdges()){
-			for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
-				if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
-					Var v = outer->getEdgeVar(edgeID);
-					lbool val = outer->value(v);
-					Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
-					int bvID = outer->getEdgeBV(edgeID).getID();
-					Weight over_weight = outer->getEdgeBV(edgeID).getOver();
-					Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
-					if(opt_decide_graph_bv){
-						if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
-							if(!in_decision_q[edgeID]){
-								throw std::runtime_error("Error in maxflow");
-							}
-						}
-					}else{
-						if((val==l_Undef && flow>0)){
-							if(!in_decision_q[edgeID]){
-								throw std::runtime_error("Error in maxflow");
-							}
-						}
-					}
-				}
-			}
-			}
+                for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
+                    if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
+                        Var v = outer->getEdgeVar(edgeID);
+                        lbool val = outer->value(v);
+                        Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
+                        int bvID = outer->getEdgeBV(edgeID).getID();
+                        Weight over_weight = outer->getEdgeBV(edgeID).getOver();
+                        Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
+                        if(opt_decide_graph_bv){
+                            if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
+                                if(!in_decision_q[edgeID]){
+                                    throw std::runtime_error("Error in maxflow");
+                                }
+                            }
+                        }else{
+                            if((val==l_Undef && flow>0)){
+                                if(!in_decision_q[edgeID]){
+                                    throw std::runtime_error("Error in maxflow");
+                                }
+                            }
+                        }
+                    }
+                }
+			}else{
+                for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
+                    if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
+                        Var v = outer->getEdgeVar(edgeID);
+                        lbool val = outer->value(v);
+                        Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
+
+                        if((val==l_Undef && flow>0)){
+                            if(!in_decision_q[edgeID]){
+                                throw std::runtime_error("Error in maxflow");
+                            }
+                        }
+
+                    }
+                }
+            }
 		}
 #endif
 
