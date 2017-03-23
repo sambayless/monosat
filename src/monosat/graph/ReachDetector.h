@@ -75,6 +75,7 @@ public:
 
 	vec<int> reach_lit_map;
 	vec<int> force_reason;
+	vec<Heuristic*> all_reach_heuristics;
     vec<Heuristic*> reach_heuristics;
 
 	/*
@@ -364,12 +365,20 @@ public:
 			}
 		}
 	}
+	void activateHeuristic()override{
+		for(Heuristic * h:all_reach_heuristics){
+			outer->activateHeuristic(h);
+		}
+	}
 	void assign(Lit l) override{
 		Detector::assign(l);
 		int index = var(l) - first_reach_var;
-		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index] != -1 && reach_heuristics[index]) {
-			outer->activateHeuristic(reach_heuristics[index]);
-		}
+        if(index>=0 && index< reach_lit_map.size()) {
+            int to = reach_lit_map[index];
+            if (to >=0 && to < reach_heuristics.size() && reach_heuristics[to]) {
+                outer->activateHeuristic(reach_heuristics[to]);
+            }
+        }
 	}
 	int getNode(Var reachVar) {
 		assert(reachVar >= first_reach_var);

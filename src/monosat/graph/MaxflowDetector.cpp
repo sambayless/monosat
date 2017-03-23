@@ -1427,9 +1427,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 					}
 				}
 			}
-            if(potential_decisions_q.size()){
-                outer->activateHeuristic(default_heuristic);
-            }
+
 		}
 		//}
 		if (opt_conflict_min_cut_maxflow) {
@@ -1493,7 +1491,7 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 					Lit l = mkLit(outer->getEdgeVar(edgeid), false);
 					if((outer->decidable(l) || outer->level(var(l))>0) || (outer->edgeWeightDecidable(edgeid, DetectorComparison::geq,  g_under.getWeight(edgeid) )) ){
 						if (overapprox_conflict_detector->isOnCut(edgeid)) {
-           
+
 							is_potential_decision[edgeid] = true;
 							if(!in_decision_q[edgeid]){
 								in_decision_q[edgeid]=true;
@@ -1517,7 +1515,9 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 		overapprox_conflict_detector->clearChangedPartition();
 	}
 
-
+	if(potential_decisions_q.size()){
+		outer->activateHeuristic(default_heuristic);
+	}
 	dbg_decisions();
 }
 
@@ -1886,7 +1886,7 @@ Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
 				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 				lbool val = outer->value(l);
 
-				if ((outer->decidable(l) || (opt_decide_graph_bv &&  outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && over->getEdgeFlow(edgeID) > 0) ){
+				if ((outer->decidable(l) || (opt_decide_graph_bv &&  outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID))))  && over->getEdgeFlow(edgeID) > 0 ){
 					//decideEdge(edgeID, true);
 
 					decision = l;

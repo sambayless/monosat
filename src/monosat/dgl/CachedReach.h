@@ -75,7 +75,7 @@ public:
     alg::IntSet<int> edge_in_path;
     //std::vector<bool> edge_in_path;
     std::vector<bool> has_path_to;
-
+    std::vector<int> previous_edge;
     bool has_non_reach_destinations=false;
 
      void addDestination(int node) override{
@@ -89,8 +89,10 @@ public:
     }
     void recompute(){
         reach->update();
+        //do not need to reset previous_edge vector here; instead we allow it to contain incorrect values on the assumption they will be corrected before being accessed
         edge_in_path.clear();//clear and rebuild the path tree
         int source = getSource();
+        assert(previous_edge[source]==-1);
         has_non_reach_destinations=false;
         for(int d:destinations){
 
@@ -107,17 +109,21 @@ public:
                 int p = d;
                 while(!edge_in_path.has(edgeID)){
                     assert(edgeID>=0);
+                    previous_edge[p] = edgeID;//do not need to reset previous_edge vector here; instead we allow it to contain incorrect values on the assumption they will be corrected before being accessed
 
                     edge_in_path.insert(edgeID);
                     p = reach->previous(p);
                     if(p==source){
+                        edgeID=-1;
                         break;
                     }
                     edgeID = reach->incomingEdge(p);
                     assert(edgeID>=0);
                 }
+                assert(previous_edge[p] == edgeID);
             }else{
                 has_path_to[d]=false;
+                previous_edge[d]=-1;
                 has_non_reach_destinations=true;
             }
         }
@@ -145,6 +151,8 @@ public:
             //edge_in_path.resize(g.edges(),false);
             has_path_to.clear();
             has_path_to.resize(g.nodes(),false);
+            previous_edge.clear();
+            previous_edge.resize(g.nodes(),-1);
            // prev_edge.clear();
             //prev_edge.resize(g.nodes(),-1);
             needs_recompute=true;
@@ -237,10 +245,15 @@ public:
             return -1;
     }
     int incomingEdge(int t) {
-        return reach->incomingEdge(t);
+        assert(previous_edge[t]>=0);
+        return previous_edge[t]; //reach->incomingEdge(t);
     }
     int previous(int t) {
-        return reach->previous(t);
+        int edgeID = incomingEdge(t);
+        assert(edgeID>=0);
+        assert(g.edgeEnabled(edgeID));
+        assert(g.getEdge(edgeID).to==t);
+        return g.getEdge(edgeID).from;
     }
 
 };

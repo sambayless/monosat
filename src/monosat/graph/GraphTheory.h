@@ -1699,9 +1699,6 @@ public:
 				int edge_num = getEdgeID(v); //e.var-min_edge_var;
 				int edgeSetID = getEdgeSetID(edge_num);
 				assert(assigns[v]!=l_Undef);
-				if(edge_num==10236){
-					int a=1;
-				}
 				if (assign==l_True) {
 					g_under.disableEdge(edge_num);
 					if(edgeSetID>-1){
@@ -1711,6 +1708,22 @@ public:
 						EdgeSet & edge_set = *edge_sets[edgeSetID];
 						if(edge_set.assigned_edge==edge_num){
 							edge_set.unassignEdge(edge_num);
+							for(int i =0;i<edge_set_detectors.size();i++){
+								if(edge_set_detectors[i]){
+									Detector * e =edge_set_detectors[i];
+									e->activateHeuristic();
+									if(e->default_heuristic){
+										activateHeuristic(e->default_heuristic);
+									}
+									if(paired_edge_set_detectors[e->getID()]){
+										Detector * p = paired_edge_set_detectors[e->getID()];
+										p->activateHeuristic();
+										if(p->default_heuristic){
+											activateHeuristic(p->default_heuristic);
+										}
+									}
+								}
+							}
 						}
 					}
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -2656,7 +2669,22 @@ public:
 					g_over_edgeset.enableEdge(edge_num);
 					g_over_edgeset.setEdgeWeight(edge_num,g_over.getEdgeWeight(edge_num));
 
-
+					for(int i =0;i<edge_set_detectors.size();i++){
+						if(edge_set_detectors[i]){
+							Detector * e =edge_set_detectors[i];
+							e->activateHeuristic();
+							if(e->default_heuristic){
+								activateHeuristic(e->default_heuristic);
+							}
+							if(paired_edge_set_detectors[e->getID()]){
+								Detector * p = paired_edge_set_detectors[e->getID()];
+								p->activateHeuristic();
+								if(p->default_heuristic){
+									activateHeuristic(p->default_heuristic);
+								}
+							}
+						}
+					}
 				}
 
 			} else {

@@ -2038,8 +2038,8 @@ lbool Solver::search(int nof_conflicts) {
 		conflict:
 
 #ifdef DEBUG_CORE
-        {
-            for (int i = 0; i < decision_heuristics.size(); i++) {
+        /*{
+           for (int i = 0; i < decision_heuristics.size(); i++) {
                 Heuristic *hv = decision_heuristics[i];
                 {
                     CRef ignore;
@@ -2072,7 +2072,7 @@ lbool Solver::search(int nof_conflicts) {
                     }
                 }
             }
-        }
+        }*/
 #endif
 
 
@@ -2475,7 +2475,7 @@ lbool Solver::search(int nof_conflicts) {
 							if(next!=lit_Undef) {
 								next_decision_heuristic = h;
 #ifdef DEBUG_CORE
-                                for (int i = 0; i < decision_heuristics.size();i++){
+                           /*     for (int i = 0; i < decision_heuristics.size();i++){
                                     Heuristic * hv = decision_heuristics[i];
                                     if(hv==h){
                                         break;
@@ -2483,11 +2483,9 @@ lbool Solver::search(int nof_conflicts) {
                                         CRef ignore;
                                         Lit n2 = hv->decideTheory(ignore);
                                         assert(n2==lit_Undef);
-                                        /*if(n2!=lit_Undef){
-                                            throw std::runtime_error("Bad heuristic order!");
-                                        }*/
+
                                     }
-                                }
+                                }*/
 #endif
 							}
 						}
@@ -2495,6 +2493,11 @@ lbool Solver::search(int nof_conflicts) {
 							theory_order_heap.removeMin();
 							if(decisionLevel()>0) {//this isn't quite right... just because a heuristic cannot suggest anything at level 0, does not mean it cannot suggest something at a later level...
                                 theory_decision_trail.push({h, decisionLevel()});
+								/*if(h->getHeuristicIndex()==7){
+									printf("%d %d\n",h->getHeuristicIndex(),decisionLevel());
+									CRef ignore;
+									Lit n2 = h->decideTheory(ignore);
+								}*/
                             }
 						}else{
 							assert(var(next)>=0);

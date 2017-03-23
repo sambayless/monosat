@@ -500,6 +500,11 @@ public:
 			under_reach = r->underapprox_fast_detector;
 		}
 
+		static int iter = 0;
+		if(++iter==109){
+			int a=1;
+		};
+
 		auto * over_path = r->overapprox_path_detector;
 		auto * under_path = r->underapprox_detector;
 		if (!under_path) {
@@ -1062,6 +1067,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
         Heuristic * h = new ReachHeuristic<Weight>(outer,this,reachLit,to);
         reach_heuristics.growTo(to+1,nullptr);
         reach_heuristics[to]=h;
+        all_reach_heuristics.push(h);
     }
 
 

@@ -106,7 +106,9 @@ public:
 	virtual bool propagate(vec<Lit> & conflict	, bool backtrackOnly, Lit & conflictLit){
 		return propagate(conflict);
 	}
+    virtual void activateHeuristic(){
 
+    }
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
 	virtual void preprocess() {
