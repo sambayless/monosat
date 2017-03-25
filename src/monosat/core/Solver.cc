@@ -1283,6 +1283,7 @@ CRef Solver::propagate(bool propagate_theories) {
 		
 		while (qhead < trail.size()) {
 			if (opt_early_theory_prop) {
+				double start_t = rtime(1);//this might be too expensive, even with rtime disabled...
 				//propagate theories;
 				while (propagate_theories && theory_queue.size() && confl == CRef_Undef) {
 					theory_conflict.clear();
@@ -1293,10 +1294,12 @@ CRef Solver::propagate(bool propagate_theories) {
 					if (!theories[theoryID]->propagateTheory(theory_conflict)) {
 						if (!addConflictClause(theory_conflict, confl)) {
 							qhead = trail.size();
+							stats_theory_conflict_time+= (rtime(1)-start_t);
 							return confl;
 						}
 					}
 				}
+				stats_theory_prop_time+= (rtime(1)-start_t);
 			}
 			
 			Lit p = trail[qhead++];     // 'p' is enqueued fact to propagate.
@@ -1374,6 +1377,7 @@ CRef Solver::propagate(bool propagate_theories) {
 		//propagate theories;
 		while (propagate_theories && theory_queue.size() && (opt_early_theory_prop || qhead == trail.size())
 				&& confl == CRef_Undef) {
+			double start_t = rtime(1);
 			theory_conflict.clear();
 			//todo: ensure that the bv theory comes first, as otherwise dependent theories may have to be propagated twice...
 			int theoryID = theory_queue.last();
@@ -1391,7 +1395,7 @@ CRef Solver::propagate(bool propagate_theories) {
                     }
 					qhead = trail.size();
 					stats_theory_conflicts++;
-
+					stats_theory_conflict_time+= (rtime(1)-start_t);
 					return confl;
 				}
 			}else{
@@ -1407,8 +1411,8 @@ CRef Solver::propagate(bool propagate_theories) {
                 }
                 assert(!theory_queue.contains(theoryID));
                 in_theory_queue[theoryID] = false;
-
             }
+			stats_theory_prop_time+= (rtime(1)-start_t);
 		}
 		
 		//solve theories if this solver is completely assigned

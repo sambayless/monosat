@@ -278,7 +278,12 @@ public:
 			printf("pure literals     : %" PRId64 " (%" PRId64 " theory lits) (%" PRId64 " rounds, %f time)\n", stats_pure_lits,
 					stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
 		}
-
+        if(stats_theory_prop_time>0) {
+			printf("Time spent in theory propagation: %f\n", stats_theory_prop_time);
+		}
+		if(stats_theory_conflict_time>0){
+			printf("Time spent in theory conflicts: %f\n",stats_theory_conflict_time);
+        }
 		if(opt_check_solution){
 			printf("Solution double-checking time (disable with -no-check-solution): %f s\n",stats_solution_checking_time);
 		}
@@ -417,10 +422,11 @@ public:
         assert(t);
 		assert(hasTheory(p));
 		theory_reason.clear();
-		if(p.x==269 ){
-			int a =1;
-		}
+
+        double start_t = rtime(1);
 		t->buildReason(getTheoryLit(p), theory_reason, cr);
+
+        stats_theory_conflict_time+= (rtime(1)-start_t);
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);
 
@@ -676,6 +682,8 @@ public:
 	uint64_t stats_skipped_theory_prop_rounds=0;
 	uint64_t stats_theory_conflict_counter_restarts=0;
 	uint64_t stats_theory_conflicts =0;
+    double stats_theory_prop_time =0;
+    double stats_theory_conflict_time=0;
 	long dbg=0;
 	uint64_t stats_solver_preempted_decisions=0;
 	uint64_t stats_theory_decisions=0;
