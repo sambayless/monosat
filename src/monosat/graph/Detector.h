@@ -25,6 +25,8 @@
 #include "GraphTheoryTypes.h"
 #include "monosat/mtl/Vec.h"
 #include "monosat/core/Config.h"
+#include "monosat/core/Heuristic.h"
+
 #include <cstdio>
 #include <iostream>
 namespace Monosat {
@@ -48,6 +50,8 @@ public:
 	int64_t stats_over_conflicts = 0;
 	double stats_under_conflict_time = 0;
 	double stats_over_conflict_time = 0;
+	int64_t stats_skipped_satisfied_updates = 0;
+
 	int64_t stats_skipped_under_updates = 0;
 	int64_t stats_skipped_over_updates = 0;
 	int64_t stats_decisions = 0;
@@ -56,7 +60,7 @@ public:
 	int64_t n_stats_vsids_decisions=0;
 	int64_t stats_under_clause_length = 0;
 	int64_t stats_over_clause_length = 0;
-
+	Heuristic * default_heuristic=nullptr;
 	int getID() {
 		return detectorID;
 	}
@@ -75,6 +79,9 @@ public:
 			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,
 					stats_skipped_over_updates, (double) stats_over_update_time,
 					(double) stats_over_update_time / (double) (stats_over_updates + 1));
+			if(stats_skipped_satisfied_updates>0){
+				printf("\tUpdates skipped because atoms were marked as satisfied %ld\n", stats_skipped_satisfied_updates);
+			}
 			printf("\tTheory Decisions: %ld (%f s total, %f s avg, %ld priority)\n", stats_decisions, (double) stats_decide_time,
 					(double) stats_decide_time / (double) (stats_decisions + 1),n_stats_priority_decisions);
 			printf(
@@ -92,7 +99,9 @@ public:
 	virtual bool propagate(vec<Lit> & conflict	, bool backtrackOnly, Lit & conflictLit){
 		return propagate(conflict);
 	}
+    virtual void activateHeuristic(){
 
+    }
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
 	virtual void preprocess() {
@@ -111,7 +120,7 @@ public:
 
 	}
 
-	virtual Lit decide()=0;
+	virtual Lit decide(CRef &decision_reason)=0;
 	virtual bool supportsEdgeDecisions(){
 		return false;
 	}
@@ -148,9 +157,28 @@ public:
 		else
 			unassigned_positives++;
 	}
+	virtual void assignBV(int bvID) {
+
+
+	}
+
+	virtual Heuristic * getConflictingHeuristic(){
+		return default_heuristic;
+	}
+
+	virtual void unassignBV(int bvID) {
+
+	}
+	virtual void setSatisfied(Lit l, bool isSatisfied){
+
+	}
+	virtual bool detectorIsSatisfied(){
+		return false;
+	}
 	//virtual vec<int> & getLitMap();
 	Detector(int detectorID) :
-			detectorID(detectorID), unassigned_positives(0), unassigned_negatives(0) {
+			detectorID(detectorID) {
+
 	}
 	;
 	virtual ~Detector() {
@@ -165,6 +193,11 @@ public:
 		unassigned_negatives++;
 		unassigned_positives++;
 	}
+
+	virtual void debug_decidable(Var v){
+
+	}
+
 };
 
 enum class DetectorComparison{

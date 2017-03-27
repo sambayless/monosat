@@ -25,12 +25,11 @@
 #include "monosat/utils/System.h"
 #include "monosat/core/Theory.h"
 #include "monosat/dgl/DynamicGraph.h"
-#include "DynamicFSM.h"
-#include "FSMAcceptDetector.h"
-#include "FSMGeneratesDetector.h"
-#include "FSMTransducesDetector.h"
-#include "FSMGeneratorAcceptorDetector.h"
-
+#include "monosat/fsm/DynamicFSM.h"
+#include "monosat/fsm/FSMAcceptDetector.h"
+#include "monosat/fsm/FSMGeneratesDetector.h"
+#include "monosat/fsm/FSMTransducesDetector.h"
+#include "monosat/fsm/FSMGeneratorAcceptorDetector.h"
 #include "monosat/core/SolverTypes.h"
 #include "monosat/mtl/Map.h"
 
@@ -62,11 +61,15 @@ public:
 		int outputchar;
 	};
 	struct Assignment {
-		bool isEdge :1;
-		bool assign :1;
-		int edgeID:30;
+		int isEdge :1;
+		int assign :1;
+		int isSat  :1;
+		int edgeID:29;
 		Var var;
-		Assignment(bool isEdge, bool assign, int edgeID, Var v):isEdge(isEdge),assign(assign),edgeID(edgeID),var(v){
+		Assignment(bool isEdge, bool assign, int edgeID, Var v):isEdge(isEdge),assign(assign),isSat(false),edgeID(edgeID),var(v){
+
+		}
+		Assignment(bool isEdge, bool assign, bool issat, int edgeID, Var v):isEdge(isEdge),assign(assign),isSat(issat),edgeID(edgeID),var(v){
 
 		}
 	};
@@ -105,7 +108,42 @@ public:
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 
+	vec<FSMGeneratorAcceptorDetector*> gen_accept_lit_map;
+	/*struct PairHash {
+		uint32_t operator()(const std::pair<int,int> & x) const {
+			return (uint32_t) std::hash<int>()(x.first) ^ std::hash<int>()(x.second);
+		}
+	};*/
 
+
+
+	template<typename... TTypes>
+	class tuple_hash
+	{
+	private:
+		typedef std::tuple<TTypes...> Tuple;
+
+		template<int N>
+		size_t operator()(const Tuple & value) const { return 0; }
+
+		template<int N, typename THead, typename... TTail>
+		size_t operator()(const Tuple & value) const
+		{
+			constexpr int Index = N - sizeof...(TTail) - 1;
+			return hash_combine(std::hash<THead>()(std::get<Index>(value)), operator()<N, TTail...>(value));
+		}
+		// adapted from boost::hash_combine
+		static std::size_t hash_combine(const std::size_t& h, const std::size_t& v)
+		{
+			return h^(v + 0x9e3779b9 + (h << 6) + (h >> 2));
+		}
+	public:
+		size_t operator()(const Tuple & value) const
+		{
+			return operator()<sizeof...(TTypes), TTypes...>(value);
+		}
+	};
+	Map<std::tuple<int,int,int,int,bool>,FSMGeneratorAcceptorDetector*,tuple_hash<int,int,int,int,bool>> gen_accept_map;
 public:
 	vec<FSMDetector*> detectors;
 	vec<FSMAcceptDetector*> reach_detectors;
@@ -125,7 +163,8 @@ public:
 		int isEdge :1;
 		int occursPositive :1;
 		int occursNegative :1;
-		int detector_edge :29;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int isSatisfied:1;
+		int detector_edge :28;	//the detector this variable belongs to, or its edge number, if it is an edge variable
 		int input;
 		int output;
 		int fsmID;
@@ -166,10 +205,11 @@ public:
 			S(S_), id(_id){
 		strings = new vec<vec<int>>();
 		rnd_seed = opt_random_seed;
+		S->addTheory(this);
 	}
 	~FSMTheorySolver(){
 		if(this->strings){
-			delete(this->strings);
+			//delete(this->strings);//why is this problematic?
 		}
 		for (DynamicFSM * f:g_unders){
 			delete(f);
@@ -182,12 +222,15 @@ public:
 		return S;
 	}
 	void printStats(int detailLevel) {
+		printf("FSM %d stats:\n", getGraphID());
+		if(stats_decisions>0){
+			printf("FSM decisions: %ld\n",stats_decisions);
+		}
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)
 				d->printStats();
 		}
-		
-		printf("FSM %d stats:\n", getGraphID());
+
 
 		fflush(stdout);
 	}
@@ -200,7 +243,7 @@ public:
 		}
 	}
 	
-	inline int getTheoryIndex() {
+	inline int getTheoryIndex()const {
 		return theory_index;
 	}
 	inline void setTheoryIndex(int id) {
@@ -354,6 +397,9 @@ public:
 		vars[v].solverVar = solverVar;
 		vars[v].input=label;
 		vars[v].output = output;
+		vars[v].isSatisfied=0;
+		vars[v].occursPositive=0;
+		vars[v].occursNegative=0;
 		assigns.push(l_Undef);
 		if (connectToTheory) {
 			S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -458,7 +504,12 @@ public:
 				
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
-				if (e.isEdge) {
+				if (e.isSat){
+					Lit l = mkLit(e.var, !e.assign);
+					vars[var(l)].isSatisfied=0;
+					detectors[getDetector(e.var)]->setSatisfied(l,false);
+
+				}else if (e.isEdge) {
 					assert(dbg_value(e.var)==value(e.var));
 					int fsmID = getFsmID(e.var);
 					int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
@@ -502,7 +553,8 @@ public:
 	virtual bool supportsDecisions() {
 		return true;
 	}
-	Lit decideTheory() {
+	Lit decideTheory(CRef & decision_reason) {
+		decision_reason=CRef_Undef;
 		if (!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
@@ -531,7 +583,11 @@ public:
 				assert(sign(p) != e.assign);
 				break;
 			}
-			if (e.isEdge) {
+			if (e.isSat){
+				Lit l = mkLit(e.var, !e.assign);
+				vars[var(l)].isSatisfied=0;
+				detectors[getDetector(e.var)]->setSatisfied(l,false);
+			}else if (e.isEdge) {
 				int fsmID = getFsmID(e.var);
 				int edgeID = getEdgeID(e.var); //e.var-min_edge_var;
 				int input = getInput(e.var);
@@ -552,7 +608,8 @@ public:
 		
 		trail.shrink(trail.size() - (i + 1));
 		//if(i>0){
-		requiresPropagation = true;
+		requiresPropagation = true;//is this really needed?
+
 		/*			g.markChanged();
 		 antig.markChanged();
 		 cutGraph.markChanged();*/
@@ -613,11 +670,16 @@ public:
 		if (isEdgeVar(var(l))) {
 			//don't do anything
 		} else {
+			if(!sign(l)){
+				vars[var(l)].occursPositive=occurs;
+			}else{
+				vars[var(l)].occursNegative=occurs;
+			}
 			//this is a graph property detector var
-			if (!sign(l) && vars[var(l)].occursPositive != occurs)
+			//if (!sign(l) && vars[var(l)].occursPositive != occurs)
 				detectors[getDetector(var(l))]->setOccurs(l, occurs);
-			else if (sign(l) && vars[var(l)].occursNegative != occurs)
-				detectors[getDetector(var(l))]->setOccurs(l, occurs);
+			//else if (sign(l) && vars[var(l)].occursNegative != occurs)
+			//	detectors[getDetector(var(l))]->setOccurs(l, occurs);
 		}
 		
 	}
@@ -641,14 +703,14 @@ public:
 		requiresPropagation = true;
 		//printf("enqueue %d\n", dimacs(l));
 		
-#ifndef NDEBUG
+/*#ifdef DEBUG_FSM
 		{
 			for (int i = 0; i < trail.size(); i++) {
 				assert(trail[i].var != v);
 			}
 		}
 #endif
-		
+		*/
 
 		
 		if (isEdgeVar(var(l))) {
@@ -660,7 +722,7 @@ public:
 			int output = getOutput(var(l));
 			assert(getTransition(fsmID,edgeID,input,output).v == var(l));
 
-			trail.push( { true, !sign(l),edgeID, v });
+			trail.push( Assignment( true, !sign(l),edgeID, v ));
 
 			if (!sign(l)) {
 				g_unders[fsmID]->enableTransition(edgeID,input,output);
@@ -670,13 +732,39 @@ public:
 			
 		} else {
 			
-			trail.push( { false, !sign(l),-1, v });
+			trail.push( Assignment(false, !sign(l),-1, v ));
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
+
 		}
 		
 	}
-	;
+
+	//mark an atom as satisfied in the theory, so it doens't need to be tracked in the future
+	void enqueueSat(Lit l){
+		assert(assigns[var(l)]!=l_Undef);//the literal must be assigned
+		trail.push(Assignment(false,!sign(l),true,-1,var(l)));
+		vars[var(l)].isSatisfied=1;
+		detectors[getDetector(var(l))]->setSatisfied(l,false);
+	}
+	bool isSatisfied(Lit l){
+		assert(!(vars[var(l)].isSatisfied && value(l)!=l_True ));//if the var is marked satisfied, it SHOULD be the case
+		//that it is assigned true.
+		return vars[var(l)].isSatisfied;
+	}
+
+	bool literalOccurs(Lit l){
+		if(!sign(l)){
+			return vars[var(l)].occursPositive || (value(l)==l_False);//false, not true, here
+		}else{
+			return vars[var(l)].occursNegative  || (value(l)==l_False);
+		}
+	}
+
+	bool litIsRelevant(Lit l){
+		return literalOccurs(~l) && !isSatisfied(l);
+	}
+
 	bool propagateTheory(vec<Lit> & conflict) {
 		return propagateTheory(conflict,false);
 	}
@@ -751,10 +839,10 @@ public:
 	bool solveTheory(vec<Lit> & conflict) {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict,true);
-		if(ret){
+/*		if(ret){
 			requiresPropagation = true;
 			assert(propagateTheory(conflict,true));
-		}
+		}*/
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
 		assert(ret || opt_fsm_prop_skip>1);
 		return ret;
@@ -765,6 +853,14 @@ public:
 		
 	}
 	
+	void drawFSM(int fsmID,int source,int dest, bool over) {
+		if(over){
+			g_overs[fsmID]->draw(source,dest);
+		}else{
+			g_unders[fsmID]->draw(source,dest);
+		}
+	}
+
 	bool check_solved() {
 		for(int fsmID = 0;fsmID<nFsms();fsmID++){
 			if(!g_unders[fsmID])
@@ -837,12 +933,15 @@ public:
 	int nEdges(int fsmID) {
 		return edge_labels[fsmID].size();
 	}
-	CRef newReasonMarker(int detectorID) {
-		CRef reasonMarker = S->newReasonMarker(this);
+	CRef newReasonMarker(int detectorID,bool is_decision=false) {
+		CRef reasonMarker = S->newReasonMarker(this,is_decision);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
 		marker_map[mnum] = detectorID;
 		return reasonMarker;
+	}
+	bool hasFSM(int fsmID){
+		return fsmID>=0 && fsmID < g_unders.size()&& g_unders[fsmID] !=nullptr;
 	}
 	int newFSM(int fsmID=-1){
 		if(fsmID<0){
@@ -935,6 +1034,12 @@ public:
 		assert(g_unders[fsmID]);
 		DynamicFSM & g_under = *g_unders[fsmID];
 		DynamicFSM & g_over = *g_overs[fsmID];
+		for(int i = 0;i<(*strings)[strID].size();i++){
+			int l = (*strings)[strID][i];
+			if(l<0 || l>=g_overs[fsmID]->inAlphabet()){
+				throw std::runtime_error("String has letter " + std::to_string(l) + " out of range for fsm " + std::to_string(fsmID));
+			}
+		}
 		accepts.growTo(source+1);
 		if(!accepts[source]){
 			accepts[source] = new FSMAcceptDetector(detectors.size(), this, g_under,g_over, source,*strings,drand(rnd_seed));
@@ -965,7 +1070,7 @@ public:
 		}
 		transduces[source]->addTransducesLit(dest,strID,strID2,outer_var);
 	}
-	void addComposeAcceptLit(int fsmID1,int fsmID2,int from1,int to1,int from2,int to2, int strID,Var reachVar){
+	void addComposeAcceptLit(int fsmID1,int fsmID2,int from1,int to1,int from2,int to2, int strID,Var reachVar, bool generator_is_deterministic=false){
 		//for now, only linear generator/acceptor compositions are supported
 		if(strID>=0){
 			throw std::invalid_argument("String inputs are not yet supported in compositions");
@@ -995,10 +1100,38 @@ public:
 		if (g_overs[fsmID1]->out_alphabet != g_overs[fsmID2]->in_alphabet){
 			throw std::invalid_argument("Size of output alphabet of first fsm (was " + std::to_string(g_overs[fsmID1]->out_alphabet) + ") must match size of input alphabet of second fsm (was " + std::to_string(g_overs[fsmID2]->in_alphabet) + ")");
 		}
-		FSMGeneratorAcceptorDetector * d = new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[fsmID1],*g_overs[fsmID1], *g_unders[fsmID2],*g_overs[fsmID2], from1,from2,drand(rnd_seed));
+
+		FSMGeneratorAcceptorDetector * d=nullptr;
+		auto key = std::tuple<int,int,int,int,bool>(fsmID1,fsmID2,from1,from2,generator_is_deterministic);
+		if (gen_accept_map.has(key)){
+			d=gen_accept_map[key];
+		}else {
+
+			d= new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[fsmID1], *g_overs[fsmID1],
+											   *g_unders[fsmID2], *g_overs[fsmID2], from1, from2, drand(rnd_seed));
 		detectors.push(d);
+			if (generator_is_deterministic) {
+				d->setGeneratorDeterministic(true);
+			}
+			gen_accept_map.insert(key,d);
+		}
+
 		d->addAcceptLit(to1,to2,reachVar);
+		gen_accept_lit_map.growTo(reachVar+1,nullptr);
+		gen_accept_lit_map[reachVar]=d;
 	}
+	void addComposeAcceptSuffixFSM(Var composeAcceptVar,int suffix_fsmID){
+		assert(composeAcceptVar<gen_accept_lit_map.size());
+		assert(gen_accept_lit_map[composeAcceptVar]);
+		gen_accept_lit_map[composeAcceptVar]->setSuffixGenerator(this->g_overs[suffix_fsmID]);
+	}
+	void addComposeAcceptSuffixLit(Var composeAcceptVar, int startSuffixState, int acceptSuffixState, Var suffixVar){
+		assert(composeAcceptVar<gen_accept_lit_map.size());
+		assert(gen_accept_lit_map[composeAcceptVar]);
+		Var v = this->S->getTheoryVar(composeAcceptVar);
+		gen_accept_lit_map[composeAcceptVar]->addSuffixLit(mkLit(v),startSuffixState,acceptSuffixState,suffixVar);
+	}
+
 };
 
 }

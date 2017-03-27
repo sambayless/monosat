@@ -28,7 +28,7 @@
 
 namespace dgl {
 class NaiveDynamicConnectivity: public DynamicConnectivityImpl {
-	
+
 	struct Edge {
 		int edgeID;
 		int from;
@@ -40,15 +40,15 @@ class NaiveDynamicConnectivity: public DynamicConnectivityImpl {
 	int nodes;
 
 private:
-	
+
 	bool needsRebuild;
 
 	void rebuild() {
 		needsRebuild = false;
 		sets.Reset();
-		
+
 		sets.AddElements(nodes);
-		
+
 		for (int i = 0; i < edges.size(); i++) {
 			if (edges[i].enabled) {
 				insert(i);
@@ -56,13 +56,13 @@ private:
 		}
 		assert(!needsRebuild);
 	}
-	
+
 	void insert(int edgeID) {
 		if (!needsRebuild) {
 			sets.UnionElements(edges[edgeID].from, edges[edgeID].to);
 		}
 	}
-	
+
 	void cut(int edgeID) {
 		if (sets.FindSet(edges[edgeID].from) == sets.FindSet(edges[edgeID].to)) {
 			needsRebuild = true;
@@ -70,27 +70,27 @@ private:
 			//do nothing
 		}
 	}
-	
+
 public:
-	
+
 	NaiveDynamicConnectivity() {
 		needsRebuild = false;
 		nodes = 0;
 	}
-	
+
 	bool connected(int u, int v) {
 		if (needsRebuild) {
 			rebuild();
 		}
 		return sets.FindSet(u) == sets.FindSet(v);
 	}
-	
+
 	int numComponents() {
 		return sets.NumSets();
 	}
-	
+
 	void dbg_print() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		std::vector<bool> seen;
 		seen.resize(nodes);
 		for (int n = 0; n < nodes; n++) {
@@ -122,13 +122,13 @@ public:
 		}
 #endif
 	}
-	
+
 	void addNode() {
 		nodes++;
 		edges.push_back( { });
 		sets.AddElements(1);
 	}
-	
+
 	void addEdge(int from, int to, int edgeID) {
 		if (edges.size() <= edgeID)
 			edges.resize(edgeID + 1);
@@ -136,11 +136,11 @@ public:
 		edges[edgeID].to = to;
 		edges[edgeID].enabled = false;
 	}
-	
+
 	bool edgeEnabled(int edgeid) const {
 		return edges[edgeid].enabled;
 	}
-	
+
 	bool setEdgeEnabled(int from, int to, int edgeid, bool enabled) {
 		if (enabled && !edges[edgeid].enabled) {
 			edges[edgeid].enabled = true;
@@ -153,7 +153,7 @@ public:
 		}
 		return false;
 	}
-	
+
 };
 }
 ;

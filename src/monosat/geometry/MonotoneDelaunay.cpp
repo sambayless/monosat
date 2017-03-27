@@ -99,18 +99,18 @@ void  MonotoneDelaynay<2,double>::buildMonotonePolygons(){
 				//start from the vertex that is farthest to the top and left in the polygon.
 				//the polygon interior must be down and to the right of that vertex
 
-				 Point<2,double> & prev =polygon[pointID-1];
-				 Point<2,double> & p = polygon[pointID];
-				 Point<2,double> & next = polygon[pointID+1];
-				 int prevIndex = monotonePolygons.size()-1;
-				 int index =  monotonePolygons.size();
-				 int nextIndex = monotonePolygons.size()+1;
-				 monotonePolygons.push_back(MonotoneVertex(polygonID,pointID,prevIndex,nextIndex));
+				Point<2,double> & prev =polygon[pointID-1];
+				Point<2,double> & p = polygon[pointID];
+				Point<2,double> & next = polygon[pointID+1];
+				int prevIndex = monotonePolygons.size()-1;
+				int index =  monotonePolygons.size();
+				int nextIndex = monotonePolygons.size()+1;
+				monotonePolygons.push_back(MonotoneVertex(polygonID,pointID,prevIndex,nextIndex));
 
-				 double det = (p[0]*prev[1] - prev[0]*p[1]);
-				 VertexType type;
-				 bool prevBelow = cmp(prev,p);
-				 bool nextBelow = cmp(next,p);
+				double det = (p[0]*prev[1] - prev[0]*p[1]);
+				VertexType type;
+				bool prevBelow = cmp(prev,p);
+				bool nextBelow = cmp(next,p);
 				if(prevBelow && nextBelow){
 					//a vertex is a start vertex if both neighbours are below it and the interior angle in the polygon is less than pi
 					//the interior angle is less than pi if
@@ -163,108 +163,108 @@ void  MonotoneDelaynay<2,double>::buildMonotonePolygons(){
 
 		switch(v.type){
 			case START:
-				{
-					//Insert ei in T and set helper(ei) to vi.
-					edgeTree.insert({v.polygonID,v.pointID});
-					helpers[v.polygonID][v.pointID] = v;
-				}
+			{
+				//Insert ei in T and set helper(ei) to vi.
+				edgeTree.insert({v.polygonID,v.pointID});
+				helpers[v.polygonID][v.pointID] = v;
+			}
 				break;
 			case END:
-				{
-					//if helper(ei-1) is a merge vertex
-					if(helpers[v.polygonID][prevID].type==MERGE) {
-						//Insert the diagonal connecting vi to helper(ei-1) in D.
-						addDiagonal(v.index,helpers[v.polygonID][prevID].index);
-					}
-					//Delete ei-1 from T
-					edgeTree.erase({v.polygonID,prevID});
+			{
+				//if helper(ei-1) is a merge vertex
+				if(helpers[v.polygonID][prevID].type==MERGE) {
+					//Insert the diagonal connecting vi to helper(ei-1) in D.
+					addDiagonal(v.index,helpers[v.polygonID][prevID].index);
 				}
+				//Delete ei-1 from T
+				edgeTree.erase({v.polygonID,prevID});
+			}
 				break;
 
 			case SPLIT:
 				//Search in T to find the edge e j directly left of vi.
-				{
-					Edge ei{v.polygonID,v.pointID};
-					auto edgeIter = edgeTree.lower_bound(ei);
-					assert(edgeIter != edgeTree.begin());
+			{
+				Edge ei{v.polygonID,v.pointID};
+				auto edgeIter = edgeTree.lower_bound(ei);
+				assert(edgeIter != edgeTree.begin());
 
-					Edge prevEdge = *(edgeIter--);
-					//Insert the diagonal connecting vi to helper(ej) in D.
+				Edge prevEdge = *(edgeIter--);
+				//Insert the diagonal connecting vi to helper(ej) in D.
 
-					int helperIndex =  helpers[prevEdge.polygonID][prevEdge.fromPointID].index;
-					monotonePolygons[v.index].next =helperIndex;
-					monotonePolygons[helperIndex].prev = v.index;
+				int helperIndex =  helpers[prevEdge.polygonID][prevEdge.fromPointID].index;
+				monotonePolygons[v.index].next =helperIndex;
+				monotonePolygons[helperIndex].prev = v.index;
 
-					helpers[prevEdge.polygonID][prevEdge.fromPointID] = v;
-					helpers[v.polygonID][v.pointID] = v;
-					//Insert ei in T and set helper(ei) to vi.
-					edgeTree.insert(ei);
+				helpers[prevEdge.polygonID][prevEdge.fromPointID] = v;
+				helpers[v.polygonID][v.pointID] = v;
+				//Insert ei in T and set helper(ei) to vi.
+				edgeTree.insert(ei);
 
-				}
+			}
 				break;
 
 			case MERGE:
-				{
+			{
+				//if helper(ei-1) is a merge vertex
+				if(helpers[v.polygonID][prevID].type==MERGE){
+					int helperIndex =  helpers[v.polygonID][prevID].index;
+					monotonePolygons[v.index].next =helperIndex;
+					monotonePolygons[helperIndex].prev = v.index;
+				}
+				//Delete ei-1 from T.
+				edgeTree.erase({v.polygonID,prevID});
+				//Search in T to find the edge e j directly left of vi.
+				auto edgeIter = edgeTree.lower_bound({v.polygonID,v.polygonID});
+				assert(edgeIter != edgeTree.begin());
+
+				Edge prevEdge = *(edgeIter--);
+				if(helpers[prevEdge.polygonID][prevEdge.fromPointID].type==MERGE){
+					int helperIndex =  helpers[prevEdge.polygonID][prevEdge.fromPointID].index;
+					monotonePolygons[v.index].next =helperIndex;
+					monotonePolygons[helperIndex].prev = v.index;
+				}
+
+				//helper(e j)vi
+				helpers[prevEdge.polygonID][prevEdge.fromPointID] = v;
+			}
+				break;
+
+			case REGULAR:
+			{
+				//if the interior of P lies to the right of vi
+
+				//if the interior of P lies to the right of vi
+				if(Below(p,prev)) {
 					//if helper(ei-1) is a merge vertex
-					if(helpers[v.polygonID][prevID].type==MERGE){
+					if(helpers[v.polygonID][prevID].type==MERGE) {
+						//Insert the diagonal connecting vi to helper(ei-1) in D.
 						int helperIndex =  helpers[v.polygonID][prevID].index;
 						monotonePolygons[v.index].next =helperIndex;
 						monotonePolygons[helperIndex].prev = v.index;
 					}
 					//Delete ei-1 from T.
 					edgeTree.erase({v.polygonID,prevID});
-					//Search in T to find the edge e j directly left of vi.
+					//Insert ei in T and set helper(ei) to vi.
+					helpers[v.polygonID][v.pointID] = v;
+					//Insert ei in T and set helper(ei) to vi.
+					edgeTree.insert({v.polygonID,v.pointID});
+					//SAM: this if/else condition may be incorrect, according to the text book... the text book has unclear indentation for this if/else block
+				} else {
+					//Search in T to find the edge ej directly left of vi.
 					auto edgeIter = edgeTree.lower_bound({v.polygonID,v.polygonID});
 					assert(edgeIter != edgeTree.begin());
-
-					Edge prevEdge = *(edgeIter--);
-					if(helpers[prevEdge.polygonID][prevEdge.fromPointID].type==MERGE){
-						int helperIndex =  helpers[prevEdge.polygonID][prevEdge.fromPointID].index;
+					edgeIter--;
+					Edge ej =*edgeIter;
+					if(helpers[ej.polygonID][ej.fromPointID].type==MERGE){
+						int helperIndex =  helpers[ej.polygonID][ej.fromPointID].index;
 						monotonePolygons[v.index].next =helperIndex;
 						monotonePolygons[helperIndex].prev = v.index;
 					}
 
 					//helper(e j)vi
-					helpers[prevEdge.polygonID][prevEdge.fromPointID] = v;
+					helpers[ej.polygonID][ej.fromPointID]=v;
 				}
-				break;
-
-			case REGULAR:
-				{
-					//if the interior of P lies to the right of vi
-
-						//if the interior of P lies to the right of vi
-					if(Below(p,prev)) {
-						//if helper(ei-1) is a merge vertex
-						if(helpers[v.polygonID][prevID].type==MERGE) {
-							//Insert the diagonal connecting vi to helper(ei-1) in D.
-							int helperIndex =  helpers[v.polygonID][prevID].index;
-							monotonePolygons[v.index].next =helperIndex;
-							monotonePolygons[helperIndex].prev = v.index;
-						}
-						//Delete ei-1 from T.
-						edgeTree.erase({v.polygonID,prevID});
-						//Insert ei in T and set helper(ei) to vi.
-						helpers[v.polygonID][v.pointID] = v;
-						//Insert ei in T and set helper(ei) to vi.
-						edgeTree.insert({v.polygonID,v.pointID});
-					//SAM: this if/else condition may be incorrect, according to the text book... the text book has unclear indentation for this if/else block
-					} else {
-						//Search in T to find the edge ej directly left of vi.
-						auto edgeIter = edgeTree.lower_bound({v.polygonID,v.polygonID});
-						assert(edgeIter != edgeTree.begin());
-						edgeIter--;
-						Edge ej =*edgeIter;
-						if(helpers[ej.polygonID][ej.fromPointID].type==MERGE){
-							int helperIndex =  helpers[ej.polygonID][ej.fromPointID].index;
-							monotonePolygons[v.index].next =helperIndex;
-							monotonePolygons[helperIndex].prev = v.index;
-						}
-
-						//helper(e j)vi
-						helpers[ej.polygonID][ej.fromPointID]=v;
-					}
-				}
+			}
 				break;
 		}
 	}
@@ -274,22 +274,22 @@ void  MonotoneDelaynay<2,double>::buildMonotonePolygons(){
 
 template<>
 void  MonotoneDelaynay<2,double>::addDiagonal(int fromIndex, int toIndex){
-		/*
-		//Following the polypartition implementation, we are going to do this by creating two NEW vertices
-		//which will then end up in separate partitioned polygons
-		MonotoneVertex & from = monotonePolygons[fromIndex];
-		MonotoneVertex & to = monotonePolygons[toIndex];
-		from.next = to.index;
-		to.prev = from.index;
-		*/
-		monotonePolygons[fromIndex].diagonals.push(toIndex);
-		//monotonePolygons[toIndex].diagonals.push(fromIndex);//this is not needed
+	/*
+    //Following the polypartition implementation, we are going to do this by creating two NEW vertices
+    //which will then end up in separate partitioned polygons
+    MonotoneVertex & from = monotonePolygons[fromIndex];
+    MonotoneVertex & to = monotonePolygons[toIndex];
+    from.next = to.index;
+    to.prev = from.index;
+    */
+	monotonePolygons[fromIndex].diagonals.push(toIndex);
+	//monotonePolygons[toIndex].diagonals.push(fromIndex);//this is not needed
 }
 
 template<>
 void  MonotoneDelaynay<2,double>::triangulate(){
 	buildMonotonePolygons();
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	for(auto & v:monotonePolygons)
 		assert(!v.seen);
 #endif

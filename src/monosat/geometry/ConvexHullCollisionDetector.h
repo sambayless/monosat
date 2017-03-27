@@ -41,14 +41,14 @@ class ConvexHullCollisionDetector: public GeometryDetector {
 public:
 	GeometryTheorySolver<D, T> * outer;
 	//int within;
-	
+
 	std::vector<PointSet<D, T>> & under_sets;
 	std::vector<PointSet<D, T>> & over_sets;
 	std::vector<ConvexHullDetector<D, T>*> & convexHullDetectors;
 
 	double rnd_seed;
 	//Intersection means they don't just collide, but also pass through each other
-	
+
 	//Collision includes the case where one or more points are exactly shared between the two hulls
 	CRef hulls_collision_marker;
 	CRef hulls_not_collision_marker;
@@ -82,40 +82,40 @@ public:
 
 	void addCollisionDetectorLit(int pointSet1, int pointSet2, Var outerVar, bool inclusive);
 	ConvexHullCollisionDetector(int detectorID, GeometryTheorySolver<D, T> * outer,
-			std::vector<PointSet<D, T>> & under_sets, std::vector<PointSet<D, T>> & over_sets,
-			std::vector<ConvexHullDetector<D, T>*> & convexHullDetectors, double seed);
+								std::vector<PointSet<D, T>> & under_sets, std::vector<PointSet<D, T>> & over_sets,
+								std::vector<ConvexHullDetector<D, T>*> & convexHullDetectors, double seed);
 
 private:
-	
+
 	void buildCollisionReason2d(vec<Lit> & conflict, int pointSet1, int pointSet2, bool inclusive);
 	void buildNotCollisionReason2d(vec<Lit> & conflict, int pointSet1, int pointSet2, bool inclusive);
 	bool findSeparatingAxis(ConvexPolygon<D, T> & h1, ConvexPolygon<D, T> & h2, PointSet<D, T> & pointset1,
-			PointSet<D, T> & pointset2, std::vector<std::pair<Point<D, T>, T>> &projection_out1,
-			std::vector<std::pair<Point<D, T>, T>> &projection_out2, bool inclusive) {
+							PointSet<D, T> & pointset2, std::vector<std::pair<Point<D, T>, T>> &projection_out1,
+							std::vector<std::pair<Point<D, T>, T>> &projection_out2, bool inclusive) {
 		if (D == 2) {
 			return findSeparatingAxis2d((ConvexPolygon<2, T> &) h1, (ConvexPolygon<2, T> &) h2,
-					(PointSet<2, T> &) pointset1, (PointSet<2, T> &) pointset2,
-					(std::vector<std::pair<Point<2, T>, T>> &) projection_out1,
-					(std::vector<std::pair<Point<2, T>, T>> &) projection_out2, inclusive);
+										(PointSet<2, T> &) pointset1, (PointSet<2, T> &) pointset2,
+										(std::vector<std::pair<Point<2, T>, T>> &) projection_out1,
+										(std::vector<std::pair<Point<2, T>, T>> &) projection_out2, inclusive);
 		} else {
 			assert(false);
 		}
 		return false;
 	}
-	
+
 	bool findSeparatingAxis2d(ConvexPolygon<2, T> & h1, ConvexPolygon<2, T> & h2, PointSet<2, T> & pointset1,
-			PointSet<2, T> & pointset2, std::vector<std::pair<Point<2, T>, T>> &projection_out1,
-			std::vector<std::pair<Point<2, T>, T>> &projection_out2, bool inclusive);
+							  PointSet<2, T> & pointset2, std::vector<std::pair<Point<2, T>, T>> &projection_out1,
+							  std::vector<std::pair<Point<2, T>, T>> &projection_out2, bool inclusive);
 
 	void findContainingTriangle2d_helper(ConvexPolygon<2, T> & polygon, int first_vertex, int last_vertex,
-			const Point<2, T> & point, NConvexPolygon<2, T> & triangle_out, bool inclusive) {
+										 const Point<2, T> & point, NConvexPolygon<2, T> & triangle_out, bool inclusive) {
 		//recurse on this segment of the polygon, finding a triangle that contains the point.
 		//precondition: the point is contained in this convex segment of the polygon
-		
+
 		//Noah's algorithm: pick 3 vertices in the polygon. 2 of them are adjacent, and the third is arbitrary (but should probably be the index that is farthest in both directions from the adjacent vertices)
 		//Check if they contain the point; if they do, return them.
 		//Else, check which of the two sides of the triangle with the non-adjacent vertex the point is on. Recurse on that sub polygon.
-		
+
 		//When recursing, 2 of the three vertices are already selected (they are the vertices from the existing triangle), so we only have to pick one more vertex.
 		//Since we already know that the point isn't on the other side of those two vertices, we only have to check two sides in the case where the point is not contained.
 		assert(first_vertex != last_vertex);
@@ -134,17 +134,17 @@ private:
 		triangle_out.addVertexUnchecked(a);
 		triangle_out.addVertexUnchecked(b);
 		triangle_out.addVertexUnchecked(c);
-		
+
 		if (triangle_out.contains(point, inclusive))
 			return;			 //we are done
 		else {
 			Line<2, T> testLine(a, c);
 			assert(testLine.whichSide(point) != 0);			 //else we would have already found the point
-					
+
 			if (testLine.whichSide(point) != testLine.whichSide(b)) {
 				findContainingTriangle2d_helper(polygon, first_vertex, mid_point, point, triangle_out, inclusive);
 			} else {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 				Line<2, T> dbgLine(b, c);
 				assert(dbgLine.whichSide(point) != 0);			 //else we would have already found the point
 				assert(dbgLine.whichSide(point) != dbgLine.whichSide(a));
@@ -152,42 +152,42 @@ private:
 				findContainingTriangle2d_helper(polygon, mid_point, last_vertex, point, triangle_out, inclusive);
 			}
 		}
-		
+
 	}
-	
+
 	void findContainingTriangle2d(ConvexPolygon<D, T> & polygon, const Point<D, T> & point,
-			NConvexPolygon<D, T> & triangle_out, bool inclusive) {
+								  NConvexPolygon<D, T> & triangle_out, bool inclusive) {
 		assert(polygon.contains(point, inclusive));
-		
+
 		findContainingTriangle2d_helper(polygon, 0, polygon.size() - 1, point, triangle_out, inclusive);
 	}
-	
+
 	bool checkIntersectingPolygons(NConvexPolygon<D, T> & intersecting_polygon1,
-			NConvexPolygon<D, T> & intersecting_polygon2, PointSet<D, T> & pointset1, PointSet<D, T> & pointset2,
-			ConvexPolygon<D, T> & hull1, ConvexPolygon<D, T> & hull2, bool inclusive);
-	
+								   NConvexPolygon<D, T> & intersecting_polygon2, PointSet<D, T> & pointset1, PointSet<D, T> & pointset2,
+								   ConvexPolygon<D, T> & hull1, ConvexPolygon<D, T> & hull2, bool inclusive);
+
 };
 
 template<unsigned int D, class T>
 ConvexHullCollisionDetector<D, T>::ConvexHullCollisionDetector(int detectorID, GeometryTheorySolver<D, T> * outer,
-		std::vector<PointSet<D, T>> & under_sets, std::vector<PointSet<D, T>> & over_sets,
-		std::vector<ConvexHullDetector<D, T>*> & convexHullDetectors, double seed) :
+															   std::vector<PointSet<D, T>> & under_sets, std::vector<PointSet<D, T>> & over_sets,
+															   std::vector<ConvexHullDetector<D, T>*> & convexHullDetectors, double seed) :
 		GeometryDetector(detectorID), outer(outer), under_sets(under_sets), over_sets(over_sets), convexHullDetectors(
-				convexHullDetectors), rnd_seed(seed) {
+		convexHullDetectors), rnd_seed(seed) {
 	hulls_collision_marker = outer->newReasonMarker(detectorID);
 	hulls_not_collision_marker = outer->newReasonMarker(detectorID);
-	
+
 }
 template<unsigned int D, class T>
 void ConvexHullCollisionDetector<D, T>::addCollisionDetectorLit(int pointSet1, int pointSet2, Var outerVar,
-		bool inclusive) {
+																bool inclusive) {
 	if (pointSet1 == pointSet2) {
 		outer->makeTrueInSolver(mkLit(outerVar));
 		return;
 	} else if (pointSet1 > pointSet2) {
 		std::swap(pointSet1, pointSet2);
 	}
-	
+
 	for (auto & p : collisionLits) {
 		if (p.pointSet1 == pointSet1 && p.pointSet2 == pointSet2) {
 			if (inclusive && p.inclusiveLit != lit_Undef) {
@@ -216,7 +216,7 @@ void ConvexHullCollisionDetector<D, T>::addCollisionDetectorLit(int pointSet1, i
 		collisionLits.push_back( { pointSet1, pointSet2, lit_Undef, l });
 	}
 	assert(pointSet2 > pointSet1);
-	
+
 	while (has_collision_detector.size() <= pointSet2)
 		has_collision_detector.push_back(false);
 	if (!has_collision_detector[pointSet1]) {
@@ -228,8 +228,8 @@ void ConvexHullCollisionDetector<D, T>::addCollisionDetectorLit(int pointSet1, i
 }
 template<unsigned int D, class T>
 bool ConvexHullCollisionDetector<D, T>::checkIntersectingPolygons(NConvexPolygon<D, T> & intersecting_polygon1,
-		NConvexPolygon<D, T> & intersecting_polygon2, PointSet<D, T> & pointset1, PointSet<D, T> & pointset2,
-		ConvexPolygon<D, T> & hull1, ConvexPolygon<D, T> & hull2, bool inclusive) {
+																  NConvexPolygon<D, T> & intersecting_polygon2, PointSet<D, T> & pointset1, PointSet<D, T> & pointset2,
+																  ConvexPolygon<D, T> & hull1, ConvexPolygon<D, T> & hull2, bool inclusive) {
 	if (intersecting_polygon1.size() == 0 || intersecting_polygon2.size() == 0)
 		return false;
 	for (auto &p : intersecting_polygon1) {
@@ -259,7 +259,7 @@ bool ConvexHullCollisionDetector<D, T>::checkIntersectingPolygons(NConvexPolygon
 
 template<unsigned int D, class T>
 bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
-	
+
 	//for now, I'm just iterating through each possible collision and doing pairwise checks. In the future, it would be nice to make this more efficient.
 	for (auto & c : collisionLits) {
 		static int iter = 0;
@@ -273,18 +273,18 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 		PointSet<D, T> & under_set_2 = under_sets[c.pointSet2];
 		PointSet<D, T> & over_set_1 = over_sets[c.pointSet1];
 		PointSet<D, T> & over_set_2 = over_sets[c.pointSet2];
-		
+
 		/*		cout<<h1_under << "\n";
 		 cout << h2_under<<"\n";
 		 cout<<h1_over << "\n";
 		 cout << h2_over<<"\n";*/
 		if (c.inclusiveLit != lit_Undef) {
-			
+
 			if (checkIntersectingPolygons(c.under_intersecting_polygon_1, c.under_intersecting_polygon_2, under_set_1,
-					under_set_2, h1_under, h2_under, true)
-					|| h1_under.intersects(h2_under, &c.under_intersecting_polygon_1, &c.under_intersecting_polygon_2,
-							true)) {
-				
+										  under_set_2, h1_under, h2_under, true)
+				|| h1_under.intersects(h2_under, &c.under_intersecting_polygon_1, &c.under_intersecting_polygon_2,
+									   true)) {
+
 				//if(h1_under.intersects(h2_under, ,,true)){
 				Lit l = c.inclusiveLit;
 				if (outer->value(l) == l_True) {
@@ -299,10 +299,10 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 				//If the hulls intersect inclusively, they MAY also intersect exclusively, so we need to check that too (could probably combine much of the calculations in these checks in the future)
 				if (c.exclusiveLit != lit_Undef) {
 					if (checkIntersectingPolygons(c.under_exclusive_intersecting_polygon_1,
-							c.under_exclusive_intersecting_polygon_2, under_set_1, under_set_2, h1_under, h2_under,
-							false)
-							|| h1_under.intersects(h2_under, &c.under_exclusive_intersecting_polygon_1,
-									&c.under_exclusive_intersecting_polygon_2, false)) {
+												  c.under_exclusive_intersecting_polygon_2, under_set_1, under_set_2, h1_under, h2_under,
+												  false)
+						|| h1_under.intersects(h2_under, &c.under_exclusive_intersecting_polygon_1,
+											   &c.under_exclusive_intersecting_polygon_2, false)) {
 						Lit l = c.exclusiveLit;
 						if (outer->value(l) == l_True) {
 							//do nothing
@@ -314,9 +314,9 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 							return false;
 						}
 					} else if (!checkIntersectingPolygons(c.over_exclusive_intersecting_polygon_1,
-							c.over_exclusive_intersecting_polygon_2, over_set_1, over_set_2, h1_over, h2_over, false)
-							&& !h1_over.intersects(h2_over, &c.over_exclusive_intersecting_polygon_1,
-									&c.over_exclusive_intersecting_polygon_2, false)) {
+														  c.over_exclusive_intersecting_polygon_2, over_set_1, over_set_2, h1_over, h2_over, false)
+							   && !h1_over.intersects(h2_over, &c.over_exclusive_intersecting_polygon_1,
+													  &c.over_exclusive_intersecting_polygon_2, false)) {
 						//If the hulls DID intersect inclusively, the we need to check if they also intersect exclusively.
 						Lit l = ~c.exclusiveLit;
 						if (outer->value(l) == l_True) {
@@ -331,10 +331,10 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 					}
 				}
 			} else if (c.exclusiveLit != lit_Undef
-					&& (!checkIntersectingPolygons(c.over_exclusive_intersecting_polygon_1,
-							c.over_exclusive_intersecting_polygon_2, over_set_1, over_set_2, h1_over, h2_over, false)
-							&& !h1_over.intersects(h2_over, &c.over_exclusive_intersecting_polygon_1,
-									&c.over_exclusive_intersecting_polygon_2, false))) {
+					   && (!checkIntersectingPolygons(c.over_exclusive_intersecting_polygon_1,
+													  c.over_exclusive_intersecting_polygon_2, over_set_1, over_set_2, h1_over, h2_over, false)
+						   && !h1_over.intersects(h2_over, &c.over_exclusive_intersecting_polygon_1,
+												  &c.over_exclusive_intersecting_polygon_2, false))) {
 				//If the hulls DID intersect inclusively, the we need to check if they also intersect exclusively.
 				Lit l = ~c.exclusiveLit;
 				if (outer->value(l) == l_True) {
@@ -349,9 +349,9 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 				//If the hulls do not intersect exclusively, they may still intersect inclusively, so we need to check that.
 				//if (!h1_over.intersects(h2_over,true)){
 				if (!checkIntersectingPolygons(c.over_intersecting_polygon_1, c.over_intersecting_polygon_2, over_set_1,
-						over_set_2, h1_over, h2_over, true)
-						&& !h1_over.intersects(h2_over, &c.over_intersecting_polygon_1, &c.over_intersecting_polygon_2,
-								true)) {
+											   over_set_2, h1_over, h2_over, true)
+					&& !h1_over.intersects(h2_over, &c.over_intersecting_polygon_1, &c.over_intersecting_polygon_2,
+										   true)) {
 					Lit l = ~c.inclusiveLit;
 					if (outer->value(l) == l_True) {
 						//do nothing
@@ -364,10 +364,10 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 					}
 				}
 			} else if (c.exclusiveLit == lit_Undef
-					&& !checkIntersectingPolygons(c.over_intersecting_polygon_1, c.over_intersecting_polygon_2,
-							over_set_1, over_set_2, h1_over, h2_over, true)
-					&& !h1_over.intersects(h2_over, &c.over_intersecting_polygon_1, &c.over_intersecting_polygon_2,
-							true)) {
+					   && !checkIntersectingPolygons(c.over_intersecting_polygon_1, c.over_intersecting_polygon_2,
+													 over_set_1, over_set_2, h1_over, h2_over, true)
+					   && !h1_over.intersects(h2_over, &c.over_intersecting_polygon_1, &c.over_intersecting_polygon_2,
+											  true)) {
 				Lit l = ~c.inclusiveLit;
 				if (outer->value(l) == l_True) {
 					//do nothing
@@ -379,12 +379,12 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 					return false;
 				}
 			}
-			
+
 		} else if (c.exclusiveLit != lit_Undef) {
 			if (checkIntersectingPolygons(c.under_exclusive_intersecting_polygon_1,
-					c.under_exclusive_intersecting_polygon_2, under_set_1, under_set_2, h1_under, h2_under, false)
-					|| h1_under.intersects(h2_under, &c.under_exclusive_intersecting_polygon_1,
-							&c.under_exclusive_intersecting_polygon_2, false)) {
+										  c.under_exclusive_intersecting_polygon_2, under_set_1, under_set_2, h1_under, h2_under, false)
+				|| h1_under.intersects(h2_under, &c.under_exclusive_intersecting_polygon_1,
+									   &c.under_exclusive_intersecting_polygon_2, false)) {
 				Lit l = c.exclusiveLit;
 				if (outer->value(l) == l_True) {
 					//do nothing
@@ -396,9 +396,9 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 					return false;
 				}
 			} else if (!checkIntersectingPolygons(c.over_exclusive_intersecting_polygon_1,
-					c.over_exclusive_intersecting_polygon_2, over_set_1, over_set_2, h1_over, h2_over, false)
-					&& !h1_over.intersects(h2_over, &c.over_exclusive_intersecting_polygon_1,
-							&c.over_exclusive_intersecting_polygon_2, false)) {
+												  c.over_exclusive_intersecting_polygon_2, over_set_1, over_set_2, h1_over, h2_over, false)
+					   && !h1_over.intersects(h2_over, &c.over_exclusive_intersecting_polygon_1,
+											  &c.over_exclusive_intersecting_polygon_2, false)) {
 				Lit l = ~c.exclusiveLit;
 				if (outer->value(l) == l_True) {
 					//do nothing
@@ -411,7 +411,7 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 				}
 			}
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		if (c.under_intersecting_polygon_1.size()) {
 			assert(c.under_intersecting_polygon_1.intersects(c.under_intersecting_polygon_2, true));
 		}
@@ -433,7 +433,7 @@ bool ConvexHullCollisionDetector<D, T>::propagate(vec<Lit> & conflict) {
 template<unsigned int D, class T>
 void ConvexHullCollisionDetector<D, T>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	reason.push(p);
-	
+
 	for (auto & a : collisionLits) {
 		if (var(a.inclusiveLit) == var(p)) {
 			buildCollisionReason(reason, a.pointSet1, a.pointSet2, true);
@@ -447,7 +447,7 @@ void ConvexHullCollisionDetector<D, T>::buildReason(Lit p, vec<Lit> & reason, CR
 }
 template<unsigned int D, class T>
 void ConvexHullCollisionDetector<D, T>::buildCollisionReason(vec<Lit> & conflict, int pointSet1, int pointSet2,
-		bool inclusive) {
+															 bool inclusive) {
 	if (D == 2) {
 		buildCollisionReason2d(conflict, pointSet1, pointSet2, inclusive);
 	}
@@ -455,7 +455,7 @@ void ConvexHullCollisionDetector<D, T>::buildCollisionReason(vec<Lit> & conflict
 
 template<unsigned int D, class T>
 void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason(vec<Lit> & conflict, int pointSet1, int pointSet2,
-		bool inclusive) {
+																bool inclusive) {
 	if (D == 2) {
 		buildNotCollisionReason2d(conflict, pointSet1, pointSet2, inclusive);
 	}
@@ -463,41 +463,41 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason(vec<Lit> & confl
 
 template<unsigned int D, class T>
 void ConvexHullCollisionDetector<D, T>::buildCollisionReason2d(vec<Lit> & conflict, int pointSet1, int pointSet2,
-		bool inclusive) {
+															   bool inclusive) {
 	//If the two polygons intersect, there are two possible cases (these are not mutually exclusive)
 	//1) 1 polygon has at least one point contained in the other polygon. Learn that either that point must be disabled, or at least
 	//		one point from its containing triangle must be disabled (as in the point containment theory).
 	//2) There exists an edge (or, more generally, a line segment between any two vertices, as opposed to just an edge) from each poygon,
 	//		such that the two edges intersect. Learn that one of the end points must be disabled.
 	//Note that if we are NOT considering edge points to to collide, then these conditions can miss collisions, and we have to add the following case.
-	
+
 	//3) There exist two vertices that are shared between those hulls, such that those vertices split one of the polygons into two peices.
 	//   Find those vertices, then find two more, from the split polygon, such that the two lines these 4 vertices form cross each other.
-	
+
 	ConvexPolygon<2, T> & h1 = (ConvexPolygon<2, T> &) convexHullDetectors[pointSet1]->getConvexHull(false)->getHull();
 	ConvexPolygon<2, T> & h2 = (ConvexPolygon<2, T> &) convexHullDetectors[pointSet2]->getConvexHull(false)->getHull();
-	
+
 	assert(h1.intersects(h2, inclusive));
 	assert(h2.intersects(h1, inclusive));
-	
+
 	static NConvexPolygon<2, T> intersect1;
 	static NConvexPolygon<2, T> intersect2;
 	intersect1.clear();
 	intersect2.clear();
 	bool check = h1.intersects(h2, &intersect1, &intersect2, inclusive);
 	assert(check);
-	
+
 	for (auto & p : intersect1) {
 		conflict.push(~mkLit(outer->getPointVar(p.getID())));
 	}
 	for (auto & p : intersect2) {
 		conflict.push(~mkLit(outer->getPointVar(p.getID())));
 	}
-	
+
 	//so, first, check each edge segment to see if there is an intersecting line.
 	//I'm doing this first, on the hypothesis that these line intersection constraints may form better learned clauses.
 	//(since cases 1 and 2 overlap, we have to make a choice about which to favour...)
-	
+
 	/*//it is probably possible to improve on this quadratic time search...
 	 for(int i = 0; i<h1.size();i++){
 	 Point<2,T> & prev = h1[i-1];
@@ -595,7 +595,7 @@ void ConvexHullCollisionDetector<D, T>::buildCollisionReason2d(vec<Lit> & confli
 
 template<unsigned int D, class T>
 void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & conflict, int pointSet1, int pointSet2,
-		bool inclusive) {
+																  bool inclusive) {
 	ConvexPolygon<2, T> & h1 = (ConvexPolygon<2, T> &) convexHullDetectors[pointSet1]->getConvexHull(true)->getHull();
 	ConvexPolygon<2, T> & h2 = (ConvexPolygon<2, T> &) convexHullDetectors[pointSet2]->getConvexHull(true)->getHull();
 	PointSet<D, T> & over1 = over_sets[pointSet1];
@@ -640,13 +640,13 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & con
 		}
 		return;
 	}
-	
+
 	//the reason that the two convex hulls do NOT collide is that there exists a separating axis between them.
 	//Find that axis, and then find all the positions of the disabled points of both polygons along that axis.
 	//let h1 be left of h2.
 	//Then either some disabled point in h1 that is to the right of the rightmost point in h1 must be enabled,
 	//or some disabled point in h2 that is to the left of the leftmost point in h2 must be enabled.
-	
+
 	//Note: It may be possible to improve on this analysis!
 	std::vector<std::pair<Point<2, T>, T>> projection1;
 	std::vector<std::pair<Point<2, T>, T>> projection2;
@@ -654,13 +654,13 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & con
 	assert(check);
 	T leftmost1 = numeric<T>::infinity();
 	T rightmost1 = -numeric<T>::infinity();
-	
+
 	for (auto & p : projection1) {
 		int pID = p.first.getID();
 		int pointset = outer->getPointset(pID);
-		
+
 		int pointsetIndex = outer->getPointsetIndex(pID);
-		
+
 		if (over1.pointEnabled(pointsetIndex)) {
 			if (p.second < leftmost1)
 				leftmost1 = p.second;
@@ -668,15 +668,15 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & con
 				rightmost1 = p.second;
 		}
 	}
-	
+
 	T leftmost2 = numeric<T>::infinity();
 	T rightmost2 = -numeric<T>::infinity();
-	
+
 	for (auto & p : projection2) {
 		int pID = p.first.getID();
 		int pointset = outer->getPointset(pID);
 		int pointsetIndex = outer->getPointsetIndex(pID);
-		
+
 		if (over2.pointEnabled(pointsetIndex)) {
 			if (p.second < leftmost2)
 				leftmost2 = p.second;
@@ -684,7 +684,7 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & con
 				rightmost2 = p.second;
 		}
 	}
-	
+
 	bool h1_is_left;
 	bool h1_is_right;
 	if (inclusive) {
@@ -696,7 +696,7 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & con
 		h1_is_left = rightmost1 <= leftmost2;
 		h1_is_right = rightmost1 >= leftmost2;
 	}
-	
+
 	bool h2_is_left;
 	bool h2_is_right;
 	if (inclusive) {
@@ -706,12 +706,12 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & con
 		h2_is_left = rightmost1 >= leftmost2;
 		h2_is_right = rightmost1 <= leftmost2;
 	}
-	
+
 	for (auto & p : projection1) {
 		int pID = p.first.getID();
 		int pointset = outer->getPointset(pID);
 		int pointsetIndex = outer->getPointsetIndex(pID);
-		
+
 		if (!over1.pointEnabled(pointsetIndex)) {
 			if (h1_is_left && p.second > rightmost1) {
 				//then if we enable this point, the two hulls will move closer to each other.
@@ -731,7 +731,7 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & con
 		int pID = p.first.getID();
 		int pointset = outer->getPointset(pID);
 		int pointsetIndex = outer->getPointsetIndex(pID);
-		
+
 		if (!over2.pointEnabled(pointsetIndex)) {
 			if (h2_is_left && p.second > rightmost2) {
 				//then if we enable this point, the two hulls will move closer to each other.
@@ -750,9 +750,9 @@ void ConvexHullCollisionDetector<D, T>::buildNotCollisionReason2d(vec<Lit> & con
 }
 template<unsigned int D, class T>
 bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T> & hull1, ConvexPolygon<2, T> & hull2,
-		PointSet<2, T> & pointset1_t, PointSet<2, T> & pointset2_t,
-		std::vector<std::pair<Point<2, T>, T>> &projection_out1_t,
-		std::vector<std::pair<Point<2, T>, T>> &projection_out2_t, bool inclusive) {
+															 PointSet<2, T> & pointset1_t, PointSet<2, T> & pointset2_t,
+															 std::vector<std::pair<Point<2, T>, T>> &projection_out1_t,
+															 std::vector<std::pair<Point<2, T>, T>> &projection_out2_t, bool inclusive) {
 	ConvexPolygon<2, T> & h1 = (hull1.size() <= hull2.size()) ? hull1 : hull2;
 	ConvexPolygon<2, T> & h2 = (hull1.size() <= hull2.size()) ? hull2 : hull1;
 	std::vector<std::pair<Point<2, T>, T>> &projection_out1 =
@@ -761,7 +761,7 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 			(hull1.size() <= hull2.size()) ? projection_out2_t : projection_out1_t;
 	PointSet<2, T> & pointset1 = (hull1.size() <= hull2.size()) ? pointset1_t : pointset2_t;
 	PointSet<2, T> & pointset2 = (hull1.size() <= hull2.size()) ? pointset2_t : pointset1_t;
-	
+
 	projection_out1.clear();
 	projection_out2.clear();
 	if (h1.size() == 0 || h2.size() == 0) {
@@ -781,7 +781,7 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 		}
 		return true;
 	}
-	
+
 	//Separating Axis Theorem for collision detection between two convex polygons
 	//loop through each edge in _each_ polygon and project both polygons onto that edge's normal.
 	//If any of the projections are non-intersection, then these don't collide; else, they do collide
@@ -849,7 +849,7 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 							break;
 						}
 					}
-					
+
 				}
 			}
 			if (!(seenLeft && seenRight)) {
@@ -893,7 +893,7 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 					right = projection;
 				}
 			}
-			
+
 			bool seenLeft = false;
 			bool seenRight = false;
 			bool overlaps = false;
@@ -935,7 +935,7 @@ bool ConvexHullCollisionDetector<D, T>::findSeparatingAxis2d(ConvexPolygon<2, T>
 							break;
 						}
 					}
-					
+
 				}
 			}
 			if (!(seenLeft && seenRight)) {
@@ -970,18 +970,18 @@ bool ConvexHullCollisionDetector<D, T>::checkSatisfied() {
 		auto & h1_over = convexHullDetectors[c.pointSet1]->getConvexHull(true)->getHull();
 		auto & h2_under = convexHullDetectors[c.pointSet2]->getConvexHull(false)->getHull();
 		auto & h2_over = convexHullDetectors[c.pointSet2]->getConvexHull(true)->getHull();
-		
+
 		if (c.inclusiveLit != lit_Undef) {
 			if (outer->value(c.inclusiveLit) == l_True) {
 				if (!h1_over.intersects(h2_over, true)) {
 					cout << getID() << "Failed on hull-hull collision inclusion " << h1_over << "," << h2_over
-							<< ", inclusive " << true << "\n";
+						 << ", inclusive " << true << "\n";
 					return false;
 				}
 			} else if (outer->value(c.inclusiveLit) == l_False) {
 				if (h1_under.intersects(h2_under, true)) {
 					cout << getID() << "Failed on hull-hull collision exclusion " << h1_under << "," << h2_under
-							<< ", inclusive " << true << "\n";
+						 << ", inclusive " << true << "\n";
 					return false;
 				}
 			}
@@ -990,15 +990,15 @@ bool ConvexHullCollisionDetector<D, T>::checkSatisfied() {
 			if (outer->value(c.exclusiveLit) == l_True) {
 				if (!h1_over.intersects(h2_over, false)) {
 					cout << getID() << "Failed on hull-hull collision inclusion " << h1_over << "," << h2_over
-							<< ", inclusive " << false << "\n";
-					
+						 << ", inclusive " << false << "\n";
+
 					return false;
 				}
 			} else if (outer->value(c.exclusiveLit) == l_False) {
 				if (h1_under.intersects(h2_under, false)) {
 					cout << getID() << "Failed on hull-hull collision exclusion " << h1_under << "," << h2_under
-							<< ", inclusive " << false << "\n";
-					
+						 << ", inclusive " << false << "\n";
+
 					return false;
 				}
 			}

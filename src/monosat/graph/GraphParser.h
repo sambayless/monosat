@@ -58,6 +58,7 @@ struct SteinerStruct {
 template<class B, class Solver>
 class GraphParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
+	using Parser<B, Solver>::mapLit;
 	using Parser<B, Solver>::mapBV;
 	bool precise;
 	BVTheorySolver<int64_t>*& bvTheory;
@@ -127,7 +128,7 @@ class GraphParser: public Parser<B, Solver> {
 		Weight weight;
 	};
 
-	vec<Distance<int64_t>> distances_long;
+	vec<Distance<int64_t>> distances_int64_t;
 	vec<Distance<double>> distances_float;
 	vec<Distance<mpq_class>> distances_rational;
 
@@ -141,7 +142,7 @@ class GraphParser: public Parser<B, Solver> {
 		Weight weight;
 	};
 
-	vec<MaxFlow<int64_t>> maxflows_long;
+	vec<MaxFlow<int64_t>> maxflows_int64_t;
 	vec<MaxFlow<double>> maxflows_float;
 	vec<MaxFlow<mpq_class>> maxflows_rational;
 
@@ -176,17 +177,17 @@ class GraphParser: public Parser<B, Solver> {
 			GraphTheorySolver<int64_t> *graph = new GraphTheorySolver<int64_t>(&S);
 			graph->newNodes(n);
 			graphs[g] = graph;
-			S.addTheory(graph);
+
 		} else if (graph_type == GraphType::FLOAT) {
 			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S);
 			graph->newNodes(n);
 			graphs_float[g] = graph;
-			S.addTheory(graph);
+
 		} else if (graph_type == GraphType::RATIONAL) {
 			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S);
 			graph->newNodes(n);
 			graphs_rational[g] = graph;
-			S.addTheory(graph);
+
 		}
 		//  return ev;
 	}
@@ -501,7 +502,7 @@ class GraphParser: public Parser<B, Solver> {
 
 		if (graphs[graphID]) {
 			int weight = parseInt(in);
-			distances_long.push({graphID,from,to,reachVar,!leq,weight});
+			distances_int64_t.push({graphID,from,to,reachVar,!leq,weight});
 			//graphs[graphID]->distance(from, to, reachVar, weight);
 		} else if (graphs_float[graphID]) {
 			double weight = parseDouble(in, tmp);
@@ -726,7 +727,7 @@ class GraphParser: public Parser<B, Solver> {
 			reachVar= mapVar(S,reachVar);
 
 			if (graphs[graphID]) {
-				maxflows_long.push({graphID,s,t,reachVar,!inclusive,flow});
+				maxflows_int64_t.push({graphID,s,t,reachVar,!inclusive,flow});
 			} else if (graphs_float[graphID]) {
 				maxflows_float.push({graphID,s,t,reachVar,!inclusive,(double)flow});
 			} else if (graphs_rational[graphID]) {
@@ -764,7 +765,7 @@ class GraphParser: public Parser<B, Solver> {
 		if (graphs[graphID]) {
 			int64_t flow = parseInt(in);
 
-			maxflows_long.push({graphID,s,t,reachVar,!inclusive,flow});
+			maxflows_int64_t.push({graphID,s,t,reachVar,!inclusive,flow});
 			//graphs[graphID]->maxFlow(s, t, flow, reachVar,inclusive);
 		} else if (graphs_float[graphID]) {
 			//float can be either a plain integer, or a rational (interpreted at floating point precision) in the form '123/456', or a floating point in decimal format
@@ -1186,10 +1187,10 @@ public:
 
 
 
-		for (auto & e: distances_long){
+		for (auto & e: distances_int64_t){
 			graphs[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
 		}
-		distances_long.clear();
+		distances_int64_t.clear();
 		for (auto & e: distances_float){
 			graphs_float[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
 		}
@@ -1204,10 +1205,10 @@ public:
 		}
 		bvdistances.clear();
 
-		for (auto & e: maxflows_long){
+		for (auto & e: maxflows_int64_t){
 			graphs[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
 		}
-		maxflows_long.clear();
+		maxflows_int64_t.clear();
 		for (auto & e: maxflows_float){
 			graphs_float[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
 		}

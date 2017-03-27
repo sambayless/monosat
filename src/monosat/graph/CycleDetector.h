@@ -77,7 +77,7 @@ public:
 	//void buildForcedMinWeightReason(int reach_node, int forced_edge_id,vec<Lit> & conflict);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 	void addAcyclicLit(bool undirected, Var v);
 
 	CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
@@ -95,14 +95,6 @@ public:
 	}
 	const char* getName() {
 		return "Cycle Detector";
-	}
-	void printStats() {
-		//printf("Reach detector\n");
-		Detector::printStats();
-		if (underapprox_directed_cycle_detector && overapprox_directed_cycle_detector) {
-		printf("Cycle history clears: %ld, %ld\n", underapprox_directed_cycle_detector->stats_history_clears,
-			   overapprox_directed_cycle_detector->stats_history_clears);
-		}
 	}
 };
 }

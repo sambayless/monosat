@@ -117,12 +117,8 @@ void optimizeBase(vec<Int> &seq, int carry_ins, vec<Int> &rhs, int cost, vec<int
                 if (!(rem == 0 && rest < p) && !(rem > rest))
                     digit_important = true;
             }
-            /* <<==
-            om 'rhs' slutar p� 0:a och 'rest' inte kan overflowa, d� beh�vs inte det sorterande n�tverket f�r 'rest' ("always TRUE")
-            samma sak om 'rhs' sista siffra �r strikt st�rre �n 'rest' ("never TRUE")
-            */
         }
-        /**/pf("\n\n");
+        pf("\n\n");
 
         base.push(p);
         /**/depth++;

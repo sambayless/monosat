@@ -90,6 +90,7 @@ struct Objective{
             pb_weights.shrink(pb_weights.size()-pb_lits.size());
         pb_weights.growTo(pb_lits.size(),1);
     }
+
 };
 
 int64_t optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, int64_t & n_solves);

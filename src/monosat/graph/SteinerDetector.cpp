@@ -27,22 +27,22 @@ using namespace Monosat;
 
 template<typename Weight>
 SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,
-		 DynamicGraph<Weight>  &g, DynamicGraph<Weight>  &antig, double seed) :
+										 DynamicGraph<Weight>  &g, DynamicGraph<Weight>  &antig, double seed) :
 		Detector(detectorID), outer(outer), g_under(g), g_over(antig), rnd_seed(seed) {
 	checked_unique = false;
 	all_unique = true;
 	positiveStatus = new SteinerDetector<Weight>::SteinerStatus(*this, true);
 	negativeStatus = new SteinerDetector<Weight>::SteinerStatus(*this, false);
-	
+
 	//NOTE: the terminal sets are intentionally swapped, in order to preserve monotonicity
 	underapprox_detector = new SteinerApprox<DynamicNodes, SteinerDetector<Weight>::SteinerStatus, Weight>(g,
-			overTerminalSet, *positiveStatus, 1); //new SpiraPan<SteinerDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
+																										   overTerminalSet, *positiveStatus, 1); //new SpiraPan<SteinerDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
 	overapprox_detector = new SteinerApprox<DynamicNodes, SteinerDetector<Weight>::SteinerStatus, Weight>(antig,
-			 underTerminalSet, *negativeStatus, -1);
-	
+																										  underTerminalSet, *negativeStatus, -1);
+
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
-	
+
 	underprop_edge_marker = outer->newReasonMarker(getID());
 	overprop_edge_marker = outer->newReasonMarker(getID());
 	first_reach_var = var_Undef;
@@ -64,11 +64,11 @@ template<typename Weight>
 void SteinerDetector<Weight>::addWeightLit(Weight& min_weight, Var outer_weight_var) {
 	g_under.invalidate();
 	g_over.invalidate();
-	
+
 	//while( dist_lits[to].size()<=within_steps)
 	//	dist_lits[to].push({lit_Undef,-1});
 	Var weight_var = outer->newVar(outer_weight_var, getID());
-	
+
 	Lit reachLit = mkLit(weight_var, false);
 	bool found = false;
 	for (int i = 0; i < weight_lits.size(); i++) {
@@ -85,14 +85,14 @@ void SteinerDetector<Weight>::addWeightLit(Weight& min_weight, Var outer_weight_
 		weight_lits.push();
 		weight_lits.last().l = reachLit;
 		weight_lits.last().min_weight = min_weight;
-		
+
 		//weight_lit_map.insert(min_weight,weight_lits.size()-1);
 	}
-	
+
 }
 template<typename Weight>
 void SteinerDetector<Weight>::SteinerStatus::setMinimumSteinerTree(Weight& weight) {
-	
+
 	for (int i = 0; i < detector.weight_lits.size(); i++) {
 		Weight & min_weight = detector.weight_lits[i].min_weight;
 		Lit l = detector.weight_lits[i].l;
@@ -111,7 +111,7 @@ void SteinerDetector<Weight>::SteinerStatus::setMinimumSteinerTree(Weight& weigh
 			}
 		}
 	}
-	
+
 }
 template<typename Weight>
 void SteinerDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight, vec<Lit> & conflict) {
@@ -127,7 +127,7 @@ void SteinerDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight, vec<
 		assert(g_under.edgeEnabled(edgeID));
 		conflict.push(mkLit(outer->getEdgeVar(edgeID), true));
 	}
-	
+
 }
 
 template<typename Weight>
@@ -139,26 +139,26 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 			conflict.push(mkLit(terminal_map[i], true));
 		}
 	}
-	
+
 	//antig.drawFull(true);
-	
+
 	if (overapprox_detector->disconnected()) {
 		//Then find a separating cut between any two terminals.
-		
+
 		double starttime = rtime(2);
 		int INF = std::numeric_limits<int>::max();
-		
+
 		//IF the mst is disconnected, then we define it's weight to be infinite. In this case, the reason is a separating cut between any two disconnected components.
 		//we can find one of these by identifying any two roots
-		
+
 		int min_conflict = INF;
-		
+
 		//walk back down from the each root to find a separating cut of disabled edge.
 		//return the smallest such cut.
-		
+
 		DisjointSets sets;
 		sets.AddElements(g_over.nodes());
-		
+
 		for (int i = 0; i < g_over.edges(); i++) {
 			if (g_over.edgeEnabled(i)) {
 				int u = g_over.getEdge(i).from;
@@ -183,7 +183,7 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 			if (!underTerminalSet.nodeEnabled(i) || visited[i])
 				continue;
 			visited[i] = true;
-			
+
 			int root = i;
 			int set = sets.FindSet(root);
 			tmp_conflict.clear();
@@ -191,7 +191,7 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 			//ok, now traverse the connected component in the tree below this root.
 			visit.push(root);
 			seen.clear();
-			
+
 			seen.growTo(g_under.nodes());
 			seen[root] = true;
 			while (visit.size()) {
@@ -220,7 +220,7 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 					}
 				}
 			}
-			
+
 			if (tmp_conflict.size() < min_conflict) {
 				min_conflict = tmp_conflict.size();
 				conflict.shrink(conflict.size() - 1);//keep only the first conflict element, which is the constraint lit
@@ -233,14 +233,14 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 				break;				//stop looking as soon as we find a cut, instead of trying to find the smallest one.
 			}
 		}
-		
+
 		return;
-		
+
 	}
-	
+
 	//all pairs shortest paths
 	FloydWarshall<Weight> fw(g_over);
-	
+
 	for (int i = 0; i < g_over.edges(); i++) {
 		if (g_over.isEdge(i) && !g_over.edgeEnabled(i)) {
 			int u = g_over.getEdge(i).from;
@@ -252,7 +252,7 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 			}
 		}
 	}
-	
+
 	/*	//the only edges that need to be enabled are edges that would reduce the shortest path between two terminal nodes... or ANY two nodes?
 	 vec<Reach*> shortestPaths;
 	 //This can be made much more efficient...
@@ -278,10 +278,10 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 
 template<typename Weight>
 void SteinerDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
-	
+
 	if (marker == underprop_marker) {
 		reason.push(p);
-		
+
 		Var v = var(p);
 		Weight weight = -1;
 		//could swap this out for a map if there are lots of lits..
@@ -293,20 +293,20 @@ void SteinerDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 		}
 		assert(weight >= 0);
 		buildMinWeightTooSmallReason(weight, reason);
-		
+
 		//double elapsed = rtime(2)-startpathtime;
 		//	pathtime+=elapsed;
 	} else if (marker == overprop_marker) {
 		reason.push(p);
-		
+
 		//the reason is a cut separating p from s;
 		//We want to find a min-cut in the full graph separating, where activated edges (ie, those still in antig) are weighted infinity, and all others are weighted 1.
-		
+
 		//This is a cut that describes a minimal set of edges which are disabled in the current graph, at least one of which would need to be activated in order for s to reach p
 		//assign the mincut edge weights if they aren't already assigned.
-		
+
 		Var v = var(p);
-		
+
 		Weight weight = -1;
 		//could swap this out for a map if there are lots of lits..
 		for (int i = 0; i < weight_lits.size(); i++) {
@@ -316,12 +316,13 @@ void SteinerDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 			}
 		}
 		assert(weight >= 0);
-		
+
 		buildMinWeightTooLargeReason(weight, reason);
-		
+
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 template<typename Weight>
 bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict) {
@@ -337,7 +338,7 @@ bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict) {
 	stats_under_update_time += reachUpdateElapsed;
 	//}else
 	//	stats_skipped_under_updates++;
-	
+
 	//if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
 	double startunreachtime = rtime(2);
 	stats_over_updates++;
@@ -346,12 +347,12 @@ bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict) {
 	stats_over_update_time += unreachUpdateElapsed;
 	//}else
 	//	stats_skipped_over_updates++;
-	
+
 	for (int j = 0; j < changed_weights.size(); j++) {
 		Lit l = changed_weights[j].l;
 		//printf("mst: %d\n",dimacs(l));
 		Weight weight = changed_weights[j].weight;
-		
+
 		bool reach = !sign(l);
 		if (outer->value(l) == l_True) {
 			//do nothing
@@ -361,51 +362,51 @@ bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict) {
 				outer->enqueue(l, underprop_marker);
 			else
 				outer->enqueue(l, overprop_marker);
-			
+
 		} else if (outer->value(l) == l_False) {
 			conflict.push(l);
-			
+
 			if (reach) {
-				
+
 				//conflict
 				//The reason is a path in g from to s in d
 				buildMinWeightTooSmallReason(weight, conflict);
 				//add it to s
 				//return it as a conflict
-				
+
 			} else {
-				
+
 				buildMinWeightTooLargeReason(weight, conflict);
-				
+
 			}
-			
+			outer->toSolver(conflict);
 			return false;
 		} else {
 			int a = 1;
 		}
-		
+
 	}
-	
+
 	return true;
 }
 template<typename Weight>
 bool SteinerDetector<Weight>::checkSatisfied() {
-	
+
 	assert(underTerminalSet.numEnabled() == overTerminalSet.numEnabled());
-	
+
 	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> positive_checker(g_under,
-			overTerminalSet, SteinerTree<Weight>::nullStatus, 0);
+																								   overTerminalSet, SteinerTree<Weight>::nullStatus, 0);
 	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> negative_checker(g_over,
-			underTerminalSet, SteinerTree<Weight>::nullStatus, 0);
+																								   underTerminalSet, SteinerTree<Weight>::nullStatus, 0);
 	positive_checker.update();
 	negative_checker.update();
 	Weight & w = positive_checker.weight();
 	for (int k = 0; k < weight_lits.size(); k++) {
 		Lit l = weight_lits[k].l;
 		Weight dist = weight_lits[k].min_weight;
-		
+
 		if (l != lit_Undef) {
-			
+
 			if (outer->value(l) == l_True) {
 				if (positive_checker.weight() > dist) {
 					return false;
@@ -424,12 +425,12 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 			}
 		}
 	}
-	
+
 	return true;
 }
 template<typename Weight>
-Lit SteinerDetector<Weight>::decide() {
-	
+Lit SteinerDetector<Weight>::decide(CRef &decision_reason) {
+
 	return lit_Undef;
 }
 ;

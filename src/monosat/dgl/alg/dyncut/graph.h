@@ -92,7 +92,6 @@
 // NOTE: in UNIX you need to use -DNDEBUG preprocessor option to suppress assert's!!!
 
 namespace kohli_torr {
-
 /*
  special constants for node->parent
  */
@@ -105,14 +104,14 @@ namespace kohli_torr {
 // flowtype: type of total flow
 //
 template<typename captype, typename tcaptype, typename flowtype> class Graph {
-	
+
 	struct node;
 	struct arc;
 
 public:
 	typedef enum {
 		SOURCE = 0, SINK = 1
-	} termtype; // terminals 
+	} termtype; // terminals
 	typedef int node_id;
 	typedef arc* arc_id;
 	bool preserve_backward_order = false;
@@ -120,23 +119,23 @@ public:
 	std::vector<node_id> s_edge_nodes;//added by sam; used to find the flows on each edge
 	std::vector<int> changed_edges;//added by sam; keeps track of edges whose flows might have changed during the current call
 	std::vector<node_id> nodes_partition_changed; //added by sam: keeps track of nodes whose partition might have changed.
-											  //See also changed_list, from the original implementation, which is similar but has slightly different behaviour.
+	//See also changed_list, from the original implementation, which is similar but has slightly different behaviour.
 
 	/////////////////////////////////////////////////////////////////////////
 	//                     BASIC INTERFACE FUNCTIONS                       //
 	//              (should be enough for most applications)               //
 	/////////////////////////////////////////////////////////////////////////
-	
-	// Constructor. 
+
+	// Constructor.
 	// The first argument gives an estimate of the maximum number of nodes that can be added
 	// to the graph, and the second argument is an estimate of the maximum number of edges.
-	// The last (optional) argument is the pointer to the function which will be called 
-	// if an error occurs; an error message is passed to this function. 
+	// The last (optional) argument is the pointer to the function which will be called
+	// if an error occurs; an error message is passed to this function.
 	// If this argument is omitted, an exception will be thrown.
 	//
-	// IMPORTANT: It is possible to add more nodes to the graph than node_num_max 
-	// (and node_num_max can be zero). However, if the count is exceeded, then 
-	// the internal memory is reallocated (increased by 50%) which is expensive. 
+	// IMPORTANT: It is possible to add more nodes to the graph than node_num_max
+	// (and node_num_max can be zero). However, if the count is exceeded, then
+	// the internal memory is reallocated (increased by 50%) which is expensive.
 	// Also, temporarily the amount of allocated memory would be more than twice than needed.
 	// Similarly for edges.
 	// If you wish to avoid this overhead, you can download version 2.2, where nodes and edges are stored in blocks.
@@ -145,13 +144,13 @@ public:
 	// Destructor
 	~Graph();
 
-	// Adds node(s) to the graph. By default, one node is added (num=1); then first call returns 0, second call returns 1, and so on. 
+	// Adds node(s) to the graph. By default, one node is added (num=1); then first call returns 0, second call returns 1, and so on.
 	// If num>1, then several nodes are added, and node_id of the first one is returned.
-	// IMPORTANT: see note about the constructor 
+	// IMPORTANT: see note about the constructor
 	node_id add_node(int num = 1);
 
 	// Adds a bidirectional edge between 'i' and 'j' with the weights 'cap' and 'rev_cap'.
-	// IMPORTANT: see note about the constructor 
+	// IMPORTANT: see note about the constructor
 	int add_edge(node_id i, node_id j, captype cap, captype rev_cap);
 
 	// Adds new edges 'SOURCE->i' and 'i->SINK' with corresponding weights.
@@ -177,13 +176,13 @@ public:
 	//       ADVANCED INTERFACE FUNCTIONS       //
 	//      (provide access to the graph)       //
 	//////////////////////////////////////////////
-	
+
 	////////////////////////////
 	// 1. Reallocating graph. //
 	////////////////////////////
-	
-	// Removes all nodes and edges. 
-	// After that functions add_node() and add_edge() must be called again. 
+
+	// Removes all nodes and edges.
+	// After that functions add_node() and add_edge() must be called again.
 	//
 	// Advantage compared to deleting Graph and allocating it again:
 	// no calls to delete/new (which could be quite slow).
@@ -198,22 +197,22 @@ public:
 	//    NOTE: adding new arcs may invalidate these pointers (if reallocation    //
 	//    happens). So it's best not to add arcs while reading graph structure.   //
 	////////////////////////////////////////////////////////////////////////////////
-	
+
 	// The following two functions return arcs in the same order that they
 	// were added to the graph. NOTE: for each call add_edge(i,j,cap,cap_rev)
 	// the first arc returned will be i->j, and the second j->i.
 	// If there are no more arcs, then the function can still be called, but
 	// the returned arc_id is undetermined.
-	
+
 	arc_id get_first_arc();
 	arc_id get_arc(int index) {
 		return &arcs[index];
 	}
-	
+
 	arc* get_reverse(arc* from) {
 		return from->sister;
 	}
-	
+
 	arc_id get_next_arc(arc_id a);
 
 	// other functions for reading graph structure
@@ -225,35 +224,35 @@ public:
 		return (int) (arc_last - arcs);
 	}
 	void get_arc_ends(arc_id a, node_id& i, node_id& j); // returns i,j to that a = i->j
-			
+
 	///////////////////////////////////////////////////
 	// 3. Functions for reading residual capacities. //
 	///////////////////////////////////////////////////
-	
+
 	// returns residual capacity of SOURCE->i minus residual capacity of i->SINK
 	tcaptype get_trcap(node_id i);
 	// returns residual capacity of arc a
 	captype get_rcap(arc* a);
 	captype get_ecap(arc* a);
 	captype get_flow(arc* a);	//added by Sam
-			
+
 	/////////////////////////////////////////////////////////////////
 	// 4. Functions for setting residual capacities.               //
 	//    NOTE: If these functions are used, the value of the flow //
 	//    returned by maxflow() will not be valid!                 //
 	/////////////////////////////////////////////////////////////////
-	
+
 	void set_trcap(node_id i, tcaptype trcap);
 	void set_rcap(arc* a, captype rcap);
 
 	tcaptype getTweight(node_id i) {
 		return nodes[i].t_cap;
 	}
-	
-	// Edit capacity of t-edge when "using" tree-recycling 
+
+	// Edit capacity of t-edge when "using" tree-recycling
 	void edit_tweights(node_id i, tcaptype cap_source, tcaptype cap_sink);
 
-	// Edit capacity of t-edge when "not using" tree-recycling :		
+	// Edit capacity of t-edge when "not using" tree-recycling :
 	// If yoy are editing capacities using this function, "maxflow(false)" needs to be called
 	void edit_tweights_wt(node_id i, tcaptype cap_source, tcaptype cap_sink);
 
@@ -263,17 +262,17 @@ public:
 
 		arc *a, *a_rev;
 		a = nodes[from].first;
-		
+
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
-		
+
 		if (!a || a->head != &nodes[to]) {
 			return false;
 		} else {
 			return true;
 		}
 	}
-	
+
 	//(Added by Sam)
 	//Don't use - linear search!
 	captype get_edge_capacity(node_id from, node_id to,arc*ac=nullptr) {
@@ -285,7 +284,7 @@ public:
 			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 				a = a->next;
 		}else{
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			a = nodes[from].first;
 			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 				a = a->next;
@@ -295,7 +294,7 @@ public:
 			assert(a->head==&nodes[to]);
 
 		}
-		
+
 		if (a->head != &nodes[to]) {
 			throw std::invalid_argument("Specified edge doesn't exist");
 		} else {
@@ -307,10 +306,10 @@ public:
 	//(Added by Sam)
 	void edit_edge_inc(node_id from, node_id to, captype added_cap, captype added_rev_cap,arc*a=nullptr);
 
-	// Edit capacity of n-edge when "using" tree-recycling 
+	// Edit capacity of n-edge when "using" tree-recycling
 	void edit_edge(node_id from, node_id to, captype cap, captype rev_cap,arc*a=nullptr);
 
-	// Edit capacity of n-edge when "not using" tree-recycling :		
+	// Edit capacity of n-edge when "not using" tree-recycling :
 	// If you are editing capacities using this function, "maxflow(false)" needs to be called
 	void edit_edge_wt(node_id from, node_id to, captype cap, captype rev_cap,arc*a=nullptr);
 
@@ -320,7 +319,7 @@ public:
 	////////////////////////////////////////////////////////////////////
 	// 5. Functions related to reusing trees & list of changed nodes. //
 	////////////////////////////////////////////////////////////////////
-	
+
 	// If flag reuse_trees is true while calling maxflow(), then search trees
 	// are reused from previous maxflow computation (unless it's the first call to maxflow()).
 	// In this case BEFORE calling maxflow() the user must
@@ -330,12 +329,12 @@ public:
 	//
 	// This option makes sense only if a small part of the graph is changed.
 	// The initialization procedure goes only through marked nodes then.
-	// 
+	//
 	// mark_node(i) can either be called before or after graph modification.
 	// Can be called more than once per node, but calls after the first one
 	// do not have any effect.
-	// 
-	// NOTE: 
+	//
+	// NOTE:
 	//   1. It is not necessary to call mark_node() if the change is ``not essential'',
 	//      i.e. sign(trcap) is preserved for a node and zero/nonzero status is preserved for an arc.
 	//   2. To check that you marked all necessary nodes, you can call maxflow(true) after calling maxflow(false).
@@ -346,7 +345,7 @@ public:
 	// keeps a list of nodes which could potentially have changed their segmentation label
 	// (unless it's the first call to maxflow).
 	// In this case AFTER calling maxflow() the user must call remove_from_changed_list()
-	// for every node in the list. (Exception: this is necessary only if the next 
+	// for every node in the list. (Exception: this is necessary only if the next
 	// maxflow computation uses option reuse_trees).
 	//
 	// Nodes which are not in the list are guaranteed to keep their old segmentation label (SOURCE or SINK).
@@ -358,17 +357,17 @@ public:
 		assert(i >= 0 && i < node_num && nodes[i].is_in_changed_list);
 		nodes[i].is_in_changed_list = 0;
 	}
-	
+
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-	
+
 private:
 	// internal variables and functions
-	
+
 	struct node {
 		arc *first = nullptr;		// first outcoming arc
-		
+
 		arc *parent = nullptr;	// node's parent
 		node *next = nullptr;		// pointer to the next active node
 		//   (or to itself if it is the last node in the list)
@@ -381,8 +380,8 @@ private:
 		int in_t_edges_set :1;//added by sam
 		int in_s_edges_set :1;//added by sam
 		tcaptype tr_cap;		// if tr_cap > 0 then tr_cap is residual capacity of the arc SOURCE->node
-		// otherwise         -tr_cap is residual capacity of the arc node->SINK 
-		
+		// otherwise         -tr_cap is residual capacity of the arc node->SINK
+
 		tcaptype t_cap;
 		tcaptype con_flow;
 	};
@@ -404,13 +403,13 @@ private:
 
 	node *nodes, *node_last, *node_max; // node_last = nodes+node_num, node_max = nodes+node_num_max;
 	arc *arcs, *arc_last, *arc_max; // arc_last = arcs+2*edge_num, arc_max = arcs+2*edge_num_max;
-			
+
 	int node_num;
 
 	DBlock<nodeptr> *nodeptr_block;
 
 	flowtype flow;			// total flow
-	
+
 	// reusing trees & list of changed pixels
 	int maxflow_iteration=0; // counter
 	bool keep_changed_list=false;
@@ -420,13 +419,13 @@ private:
 	// with a corresponding error message
 	// An exception will be thrown if this is NULL.
 	/////////////////////////////////////////////////////////////////////////
-	
+
 	node *queue_first[2], *queue_last[2];	// list of active nodes
 	nodeptr *orphan_first=nullptr, *orphan_last=nullptr;		// list of pointers to orphans
 	int TIME=0;					// monotonically increasing global counter
-	
+
 	/////////////////////////////////////////////////////////////////////////
-	
+
 	void reallocate_nodes(int num); // num is the number of new nodes
 	void reallocate_arcs();
 
@@ -437,7 +436,7 @@ private:
 	// functions for processing orphans list
 	void set_orphan_front(node* i); // add to the beginning of the list
 	void set_orphan_rear(node* i);  // add to the end of the list
-			
+
 	void add_to_changed_list(node* i);
 
 	void maxflow_init();             // called if reuse_trees == false
@@ -452,16 +451,16 @@ private:
 	arc fake_arc;
 	arc fake_prev;
 	int edmonds_karp_bfs(flowtype & store_flow, int source_node, int sink_node, captype & bridge_capacity,
-			bool backward) {
+						 bool backward) {
 		prev.resize(this->get_node_num(), nullptr);
 		M.resize(this->get_node_num(), 0);
 		for (int i = 0; i < Q.size(); i++) {
 			int u = Q[i];
-			
+
 			prev[u] = nullptr;
-			
+
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < this->get_node_num(); i++)
 			assert(prev[i] == nullptr);
 #endif
@@ -499,10 +498,10 @@ private:
 				}
 			}
 		}
-		
+
 		for (int j = 0; j < Q.size(); j++) {
 			int u = Q[j];
-			
+
 			//first check if this node has capacity to the sink.
 			tcaptype & t_edge_flow = nodes[u].tr_cap;
 			if (!backward && ((source_node != sink_node && t_edge_flow > 0))) {
@@ -517,7 +516,7 @@ private:
 				store_flow = M[u]; // std::min(M[u],t_edge_flow);
 				return u;
 			}
-			
+
 			if (u == sink_node) {
 				//connect the sink node to the source node with infinite capacity
 				int to = source_node;
@@ -527,13 +526,13 @@ private:
 					Q.push_back(to);
 				}
 			}
-			
+
 			arc * a = nodes[u].first;
 			int cpos = Q.size();
 			while (a) {
 				int to = a->head - nodes;
 				if (prev[to] == nullptr) {
-					
+
 					flowtype f = a->e_cap - a->r_cap;
 					if (!backward && f > 0) {
 						prev[to] = a;
@@ -581,13 +580,13 @@ public:
 		assert(edge->might_have_flow);
 		assert(edge->sister->might_have_flow);
 	}
-	
+
 	void unmarkFlowEdge(arc * edge) {
 		edge->might_have_flow = false;
 		edge->sister->might_have_flow = false;
 	}
 
-	
+
 	//Run edmonds-karp to remove any excess flow on t-edges
 	void clear_t_edges(int source_node, int sink_node) {
 		static int iter = 0;
@@ -596,7 +595,7 @@ public:
 		}
 		flowtype total_flow = maxflow(true, nullptr);
 		flowtype f = 0;
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < get_node_num(); i++) {
 			tcaptype & t_edge_flow = nodes[i].tr_cap;
 			if (t_edge_flow < 0) {
@@ -618,14 +617,14 @@ public:
 				assert(std::find(s_edge_nodes.begin(), s_edge_nodes.end(), i) == s_edge_nodes.end());
 			}
 		}
-		
+
 #endif
 		captype bridge_capacity = -(nodes[sink_node].t_cap - nodes[sink_node].tr_cap + total_flow);
 		nodes[sink_node].tr_cap = 0; //( nodes[sink_node].t_cap-nodes[sink_node].tr_cap+ total_flow);
 		nodes[source_node].tr_cap = 0; // ( nodes[source_node].t_cap-nodes[source_node].tr_cap- total_flow);
 		while (true) {
 			int node = edmonds_karp_bfs(f, source_node, sink_node, bridge_capacity, false);
-			
+
 			if (node < 0)
 				break;
 			assert(f > 0);
@@ -644,7 +643,7 @@ public:
 				}
 				assert(edge->e_cap - edge->r_cap >= f);
 				edge->r_cap += f; //remove this flow from this edge by adding it to its remaining capacity;
-						
+
 				markFlowEdge(edge->sister);
 				assert(edge->sister->r_cap >= f);
 				edge->sister->r_cap -= f;
@@ -654,10 +653,10 @@ public:
 			assert(nodes[v].tr_cap <= -f);
 			nodes[v].tr_cap += f;
 		}
-		
+
 		while (true) {
 			int node = edmonds_karp_bfs(f, source_node, source_node, bridge_capacity, true);
-			
+
 			if (node < 0)
 				break;
 			assert(f > 0);
@@ -686,7 +685,7 @@ public:
 		}
 		while (true) {
 			int node = edmonds_karp_bfs(f, sink_node, sink_node, bridge_capacity, false);
-			
+
 			if (node < 0)
 				break;
 			assert(f > 0);
@@ -716,7 +715,7 @@ public:
 		}
 		nodes[sink_node].tr_cap = (nodes[sink_node].t_cap + total_flow);
 		nodes[source_node].tr_cap = (nodes[source_node].t_cap - total_flow);
-		
+
 		int i, j = 0;
 		for (i = 0; i < t_edge_nodes.size(); i++) {
 			int u = t_edge_nodes[i];
@@ -728,7 +727,7 @@ public:
 			}
 		}
 		t_edge_nodes.resize(j);
-		
+
 		j = 0;
 		for (i = 0; i < s_edge_nodes.size(); i++) {
 			int u = s_edge_nodes[i];
@@ -740,9 +739,9 @@ public:
 			}
 		}
 		s_edge_nodes.resize(j);
-		
+
 	}
-	
+
 	void test_consistency(node* current_node = NULL); // debug function
 };
 
@@ -753,10 +752,10 @@ public:
 template<typename captype, typename tcaptype, typename flowtype>
 inline typename Graph<captype, tcaptype, flowtype>::node_id Graph<captype, tcaptype, flowtype>::add_node(int num) {
 	assert(num > 0);
-	
+
 	if (node_last + num > node_max)
 		reallocate_nodes(num);
-	
+
 	if (num == 1) {
 		node_last->first = NULL;
 		node_last->tr_cap = 0;
@@ -771,7 +770,7 @@ inline typename Graph<captype, tcaptype, flowtype>::node_id Graph<captype, tcapt
 		return node_num++;
 	} else {
 		memset(node_last, 0, num * sizeof(node));
-		
+
 		node_id i = node_num;
 		node_num += num;
 		node_last += num;
@@ -782,7 +781,7 @@ inline typename Graph<captype, tcaptype, flowtype>::node_id Graph<captype, tcapt
 template<typename captype, typename tcaptype, typename flowtype>
 inline void Graph<captype, tcaptype, flowtype>::add_tweights(node_id i, tcaptype cap_source, tcaptype cap_sink) {
 	assert(i >= 0 && i < node_num);
-	
+
 	nodes[i].tr_cap = cap_source - cap_sink;
 	nodes[i].t_cap = cap_source - cap_sink;
 	nodes[i].con_flow = MIN(cap_source, cap_sink);
@@ -796,16 +795,16 @@ inline int Graph<captype, tcaptype, flowtype>::add_edge(node_id _i, node_id _j, 
 	assert(_i != _j);
 	assert(cap >= 0);
 	assert(rev_cap >= 0);
-	
+
 	if (arc_last == arc_max)
 		reallocate_arcs();
-	
+
 	arc *a = arc_last++;
 	arc *a_rev = arc_last++;
-	
+
 	node* i = nodes + _i;
 	node* j = nodes + _j;
-	
+
 	a->sister = a_rev;
 	a_rev->sister = a;
 	a->next = i->first;
@@ -874,7 +873,7 @@ inline void Graph<captype, tcaptype, flowtype>::set_rcap(arc* a, captype rcap) {
 
 template<typename captype, typename tcaptype, typename flowtype>
 inline typename Graph<captype, tcaptype, flowtype>::termtype Graph<captype, tcaptype, flowtype>::what_segment(node_id i,
-		termtype default_segm) {
+																											  termtype default_segm) {
 	if (nodes[i].parent) {
 		return (nodes[i].is_sink) ? SINK : SOURCE;
 	} else {
@@ -918,7 +917,7 @@ Graph<captype, tcaptype, flowtype>::Graph(int node_num_max, int edge_num_max, vo
 		node_num_max = 16;
 	if (edge_num_max < 16)
 		edge_num_max = 16;
-	
+
 	nodes = (node*) malloc(node_num_max * sizeof(node));
 	arcs = (arc*) malloc(2 * edge_num_max * sizeof(arc));
 	if (!nodes || !arcs) {
@@ -926,19 +925,19 @@ Graph<captype, tcaptype, flowtype>::Graph(int node_num_max, int edge_num_max, vo
 			(*error_function)("Not enough memory!");
 		throw  std::bad_alloc();
 	}
-	
+
 	for (int i = 0; i < node_num_max; i++) {
 		new (&nodes[i]) node();
 	}
 	for (int i = 0; i < 2 * edge_num_max; i++) {
 		new (&arcs[i]) arc();
 	}
-	
+
 	node_last = nodes;
 	node_max = nodes + node_num_max;
 	arc_last = arcs;
 	arc_max = arcs + 2 * edge_num_max;
-	
+
 	maxflow_iteration = 0;
 	flow = 0;
 }
@@ -962,15 +961,15 @@ void Graph<captype, tcaptype, flowtype>::reset() {
 	node_last = nodes;
 	arc_last = arcs;
 	node_num = 0;
-	
+
 	if (nodeptr_block) {
 		delete nodeptr_block;
 		nodeptr_block = NULL;
 	}
-	
+
 	maxflow_iteration = 0;
 	flow = 0;
-	
+
 	t_edge_nodes.clear();
 	s_edge_nodes.clear();
 }
@@ -980,7 +979,7 @@ void Graph<captype, tcaptype, flowtype>::reallocate_nodes(int num) {
 	int node_num_max = (int) (node_max - nodes);
 	int num_nodes = (int) (node_max - nodes);
 	node* nodes_old = nodes;
-	
+
 	node_num_max += node_num_max / 2;
 	if (node_num_max < node_num + num)
 		node_num_max = node_num + num;
@@ -990,14 +989,14 @@ void Graph<captype, tcaptype, flowtype>::reallocate_nodes(int num) {
 			(*error_function)("Not enough memory!");
 		throw  std::bad_alloc();
 	}
-	
+
 	for (int i = num_nodes; i < node_num_max; i++) {
 		new (&nodes[i]) node();
 	}
-	
+
 	node_last = nodes + node_num;
 	node_max = nodes + node_num_max;
-	
+
 	if (nodes != nodes_old) {
 		arc* a;
 		for (a = arcs; a < arc_last; a++) {
@@ -1011,7 +1010,7 @@ void Graph<captype, tcaptype, flowtype>::reallocate_arcs() {
 	int arc_num_max = (int) (arc_max - arcs);
 	int arc_num = (int) (arc_last - arcs);
 	arc* arcs_old = arcs;
-	
+
 	arc_num_max += arc_num_max / 2;
 	if (arc_num_max & 1)
 		arc_num_max++;
@@ -1021,14 +1020,14 @@ void Graph<captype, tcaptype, flowtype>::reallocate_arcs() {
 			(*error_function)("Not enough memory!");
 		throw  std::bad_alloc();
 	}
-	
+
 	for (int i = arc_num; i < arc_num_max; i++) {
 		new (&arcs[i]) arc();
 	}
-	
+
 	arc_last = arcs + arc_num;
 	arc_max = arcs + arc_num_max;
-	
+
 	if (arcs != arcs_old) {
 		node* i;
 		arc* a;
@@ -1057,15 +1056,15 @@ void Graph<captype, tcaptype, flowtype>::edit_tweights(node_id i, tcaptype cap_s
 			flow -= MIN(nodes[i].t_cap - nodes[i].tr_cap, nodes[i].t_cap);
 		else
 			flow += MAX(0, nodes[i].tr_cap);
-		
+
 		nodes[i].tr_cap = (cap_source - cap_sink) - (nodes[i].t_cap - nodes[i].tr_cap);
 		nodes[i].t_cap = cap_source - cap_sink;
-		
+
 		if (nodes[i].t_cap > 0)
 			flow += MIN(nodes[i].t_cap - nodes[i].tr_cap, nodes[i].t_cap);
 		else
 			flow -= MAX(0, nodes[i].tr_cap);
-		
+
 		if (!(((oldRes > 0) && (nodes[i].tr_cap > 0)) || ((oldRes < 0) && (nodes[i].tr_cap < 0))))
 			mark_node(i);
 	}
@@ -1084,16 +1083,16 @@ void Graph<captype, tcaptype, flowtype>::edit_tweights(node_id i, tcaptype cap_s
 template<typename captype, typename tcaptype, typename flowtype>
 void Graph<captype, tcaptype, flowtype>::edit_tweights_wt(node_id i, tcaptype cap_source, tcaptype cap_sink) {
 	tcaptype oldRes = nodes[i].t_cap;
-	
+
 	if (nodes[i].t_cap != cap_source - cap_sink) {
 		if (nodes[i].t_cap > 0)
 			flow -= MIN(nodes[i].t_cap - nodes[i].tr_cap, nodes[i].t_cap);
 		else
 			flow += MAX(0, nodes[i].tr_cap);
-		
+
 		nodes[i].tr_cap = (cap_source - cap_sink) - (nodes[i].t_cap - nodes[i].tr_cap);
 		nodes[i].t_cap = cap_source - cap_sink;
-		
+
 		if (nodes[i].t_cap > 0)
 			flow += MIN(nodes[i].t_cap - nodes[i].tr_cap, nodes[i].t_cap);
 		else
@@ -1117,16 +1116,16 @@ void Graph<captype, tcaptype, flowtype>::edit_tweights_wt(node_id i, tcaptype ca
 // Edit capacity of n-edge when "using" tree-recycling, by adding (or subtracting) from the existing capacity
 template<typename captype, typename tcaptype, typename flowtype>
 void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to, captype added_cap,
-		captype added_rev_cap,arc*ac) {
+													   captype added_rev_cap,arc*ac) {
 	arc *a, *a_rev;
-	
+
 	if(!ac){
 		assert(false);
 		a = nodes[from].first;
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
 	}else{
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		a = nodes[from].first;
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
@@ -1137,29 +1136,29 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 
 	}
 
-	
+
 	if (!a || a->head != &nodes[to]) {
 		throw std::invalid_argument("Specified edge doesn't exist");
 	} else {
 		// Modifying flow value
-		
+
 		if (nodes[from].t_cap > 0)
 			flow -= MIN(nodes[from].t_cap - nodes[from].tr_cap, nodes[from].t_cap);
 		else
 			flow += MAX(0, nodes[from].tr_cap);
-		
+
 		if (nodes[to].t_cap > 0)
 			flow -= MIN(nodes[to].t_cap - nodes[to].tr_cap, nodes[to].t_cap);
 		else
 			flow += MAX(0, nodes[to].tr_cap);
-		
+
 		captype eflow, excess;
 		a_rev = a->sister;
 		eflow = a->e_cap - a->r_cap;
-		
+
 		captype cap = a->e_cap + added_cap;
 		captype rev_cap = a_rev->e_cap + added_rev_cap;
-		
+
 		if (eflow == 0) {
 			if (((a->e_cap == 0) && (cap > a->e_cap)) || ((a_rev->e_cap == 0) && (rev_cap > a_rev->e_cap))) {
 				mark_node(from);
@@ -1183,7 +1182,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 				if (eflow <= cap) {
 					a->r_cap -= (a->e_cap - cap);
 					a_rev->r_cap -= (a_rev->e_cap - rev_cap);
-					
+
 					if (eflow == cap) {
 						mark_node(from);
 						mark_node(to);
@@ -1192,7 +1191,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 					excess = eflow - cap;
 					a->r_cap = 0;
 					a_rev->r_cap = rev_cap + cap;
-					
+
 					nodes[from].tr_cap += excess;
 					nodes[to].tr_cap -= excess;
 					if (!nodes[to].in_t_edges_set && nodes[to].tr_cap < 0) {
@@ -1203,7 +1202,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 						nodes[from].in_s_edges_set = 1;
 						s_edge_nodes.push_back(from);
 					}
-					
+
 					if (nodes[from].tr_cap != 0 || nodes[from].parent == a)
 						mark_node(from);
 					if (nodes[to].tr_cap != 0 || nodes[to].parent == a)
@@ -1226,7 +1225,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 				if (eflow <= rev_cap) {
 					a->r_cap -= (a->e_cap - cap);
 					a_rev->r_cap -= (a_rev->e_cap - rev_cap);
-					
+
 					if (eflow == cap) {
 						mark_node(from);
 						mark_node(to);
@@ -1235,7 +1234,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 					excess = eflow - rev_cap;
 					a_rev->r_cap = 0;
 					a->r_cap = rev_cap + cap;
-					
+
 					nodes[from].tr_cap -= excess;
 					nodes[to].tr_cap += excess;
 					if (!nodes[to].in_t_edges_set && nodes[to].tr_cap < 0) {
@@ -1255,14 +1254,14 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_inc(node_id from, node_id to,
 		}
 		a->e_cap = cap;
 		a_rev->e_cap = rev_cap;
-		
+
 		// Modifying flow value
-		
+
 		if (nodes[from].t_cap > 0)
 			flow += MIN(nodes[from].t_cap - nodes[from].tr_cap, nodes[from].t_cap);
 		else
 			flow -= MAX(0, nodes[from].tr_cap);
-		
+
 		if (nodes[to].t_cap > 0)
 			flow += MIN(nodes[to].t_cap - nodes[to].tr_cap, nodes[to].t_cap);
 		else
@@ -1280,7 +1279,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
 	}else{
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		a = nodes[from].first;
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
@@ -1289,26 +1288,26 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 		a = ac;
 		assert(a->head==&nodes[to]);
 	}
-	
+
 	if (a->head != &nodes[to]) {
 		throw std::invalid_argument("Specified edge doesn't exist");
 	} else {
-		// Modifying flow value 
-		
+		// Modifying flow value
+
 		if (nodes[from].t_cap > 0)
 			flow -= MIN(nodes[from].t_cap - nodes[from].tr_cap, nodes[from].t_cap);
 		else
 			flow += MAX(0, nodes[from].tr_cap);
-		
+
 		if (nodes[to].t_cap > 0)
 			flow -= MIN(nodes[to].t_cap - nodes[to].tr_cap, nodes[to].t_cap);
 		else
 			flow += MAX(0, nodes[to].tr_cap);
-		
+
 		captype eflow, excess;
 		a_rev = a->sister;
 		eflow = a->e_cap - a->r_cap;
-		
+
 		if (eflow == 0) {
 			if (((a->e_cap == 0) && (cap > a->e_cap)) || ((a_rev->e_cap == 0) && (rev_cap > a_rev->e_cap))) {
 				mark_node(from);
@@ -1332,7 +1331,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 				if (eflow <= cap) {
 					a->r_cap -= (a->e_cap - cap);
 					a_rev->r_cap -= (a_rev->e_cap - rev_cap);
-					
+
 					if (eflow == cap) {
 						mark_node(from);
 						mark_node(to);
@@ -1341,7 +1340,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 					excess = eflow - cap;
 					a->r_cap = 0;
 					a_rev->r_cap = rev_cap + cap;
-					
+
 					nodes[from].tr_cap += excess;
 					nodes[to].tr_cap -= excess;
 					if (!nodes[to].in_t_edges_set && nodes[to].tr_cap < 0) {
@@ -1375,7 +1374,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 				if (eflow <= rev_cap) {
 					a->r_cap -= (a->e_cap - cap);
 					a_rev->r_cap -= (a_rev->e_cap - rev_cap);
-					
+
 					if (eflow == cap) {
 						mark_node(from);
 						mark_node(to);
@@ -1384,7 +1383,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 					excess = eflow - rev_cap;
 					a_rev->r_cap = 0;
 					a->r_cap = rev_cap + cap;
-					
+
 					nodes[from].tr_cap -= excess;
 					nodes[to].tr_cap += excess;
 					if (!nodes[to].in_t_edges_set && nodes[to].tr_cap < 0) {
@@ -1404,14 +1403,14 @@ void Graph<captype, tcaptype, flowtype>::edit_edge(node_id from, node_id to, cap
 		}
 		a->e_cap = cap;
 		a_rev->e_cap = rev_cap;
-		
-		// Modifying flow value 
-		
+
+		// Modifying flow value
+
 		if (nodes[from].t_cap > 0)
 			flow += MIN(nodes[from].t_cap - nodes[from].tr_cap, nodes[from].t_cap);
 		else
 			flow -= MAX(0, nodes[from].tr_cap);
-		
+
 		if (nodes[to].t_cap > 0)
 			flow += MIN(nodes[to].t_cap - nodes[to].tr_cap, nodes[to].t_cap);
 		else
@@ -1432,15 +1431,15 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, 
 		while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 			a = a->next;
 	}else{
-	#ifndef NDEBUG
-			a = nodes[from].first;
+#ifdef DEBUG_DGL
+		a = nodes[from].first;
 			while ((a != NULL) && (a != a->next) && (a->head != &nodes[to]))
 				a = a->next;
 			assert(a==ac);
-	#endif
-			a = ac;
-			assert(a->head==&nodes[to]);
-		}
+#endif
+		a = ac;
+		assert(a->head==&nodes[to]);
+	}
 	if (a->head != &nodes[to]) {
 		throw std::invalid_argument("Specified edge doesn't exist");
 	} else {
@@ -1452,7 +1451,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, 
 			flow -= MIN(nodes[to].t_cap - nodes[to].tr_cap, nodes[to].t_cap);
 		else
 			flow += MAX(0, nodes[to].tr_cap);
-		
+
 		captype eflow, excess;
 		a_rev = a->sister;
 		eflow = a->e_cap - a->r_cap;
@@ -1476,7 +1475,7 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, 
 				a->r_cap = rev_cap + cap;
 				a_rev->r_cap = 0;
 			}
-			
+
 			nodes[from].tr_cap += excess;
 			nodes[to].tr_cap -= excess;
 			if (!nodes[to].in_t_edges_set && nodes[to].tr_cap < 0) {
@@ -1491,22 +1490,22 @@ void Graph<captype, tcaptype, flowtype>::edit_edge_wt(node_id from, node_id to, 
 			a->r_cap += (cap - a->e_cap);
 			a_rev->r_cap += (rev_cap - a_rev->e_cap);
 		}
-		
+
 		a->e_cap = cap;
 		a_rev->e_cap = rev_cap;
-		
+
 		// Modifying flow value 
-		
+
 		if (nodes[from].t_cap > 0)
 			flow += MIN(nodes[from].t_cap - nodes[from].tr_cap, nodes[from].t_cap);
 		else
 			flow -= MAX(0, nodes[from].tr_cap);
-		
+
 		if (nodes[to].t_cap > 0)
 			flow += MIN(nodes[to].t_cap - nodes[to].tr_cap, nodes[to].t_cap);
 		else
 			flow -= MAX(0, nodes[to].tr_cap);
-		
+
 	}
 }
 
@@ -1548,7 +1547,7 @@ inline void Graph<captype, tcaptype, flowtype>::set_active(node *i) {
 template<typename captype, typename tcaptype, typename flowtype>
 inline typename Graph<captype, tcaptype, flowtype>::node* Graph<captype, tcaptype, flowtype>::next_active() {
 	node *i;
-	
+
 	while (1) {
 		if (!(i = queue_first[0])) {
 			queue_first[0] = i = queue_first[1];
@@ -1558,14 +1557,14 @@ inline typename Graph<captype, tcaptype, flowtype>::node* Graph<captype, tcaptyp
 			if (!i)
 				return NULL;
 		}
-		
+
 		/* remove it from the active list */
 		if (i->next == i)
 			queue_first[0] = queue_last[0] = NULL;
 		else
 			queue_first[0] = i->next;
 		i->next = NULL;
-		
+
 		/* a node in the list is active iff it has a parent */
 		if (i->parent)
 			return i;
@@ -1615,13 +1614,13 @@ inline void Graph<captype, tcaptype, flowtype>::add_to_changed_list(node *i) {
 template<typename captype, typename tcaptype, typename flowtype>
 void Graph<captype, tcaptype, flowtype>::maxflow_init() {
 	node *i;
-	
+
 	queue_first[0] = queue_last[0] = NULL;
 	queue_first[1] = queue_last[1] = NULL;
 	orphan_first = NULL;
-	
+
 	TIME = 0;
-	
+
 	for (i = nodes; i < node_last; i++) {
 		i->next = NULL;
 		i->is_marked = 0;
@@ -1654,13 +1653,13 @@ void Graph<captype, tcaptype, flowtype>::maxflow_reuse_trees_init() {
 	node* queue = queue_first[1];
 	arc* a;
 	nodeptr* np;
-	
+
 	queue_first[0] = queue_last[0] = NULL;
 	queue_first[1] = queue_last[1] = NULL;
 	orphan_first = orphan_last = NULL;
-	
+
 	TIME++;
-	
+
 	while ((i = queue)) {
 		queue = i->next;
 		if (queue == i)
@@ -1668,13 +1667,13 @@ void Graph<captype, tcaptype, flowtype>::maxflow_reuse_trees_init() {
 		i->next = NULL;
 		i->is_marked = 0;
 		set_active(i);
-		
+
 		if (i->tr_cap == 0) {
 			if (i->parent)
 				set_orphan_rear(i);
 			continue;
 		}
-		
+
 		if (i->tr_cap > 0) {
 			if (!i->parent || i->is_sink) {
 				i->is_sink = 0;
@@ -1711,9 +1710,9 @@ void Graph<captype, tcaptype, flowtype>::maxflow_reuse_trees_init() {
 		i->DIST = 1;
 
 	}
-	
+
 	//test_consistency();
-	
+
 	/* adoption */
 	while ((np = orphan_first)) {
 		orphan_first = np->next;
@@ -1736,7 +1735,7 @@ void Graph<captype, tcaptype, flowtype>::augment(arc *middle_arc) {
 	node *i;
 	arc *a;
 	tcaptype bottleneck;
-	
+
 	/* 1. Finding bottleneck capacity */
 	/* 1a - the source tree */
 	bottleneck = middle_arc->r_cap;
@@ -1759,7 +1758,7 @@ void Graph<captype, tcaptype, flowtype>::augment(arc *middle_arc) {
 	}
 	if (bottleneck > -i->tr_cap)
 		bottleneck = -i->tr_cap;
-	
+
 	/* 2. Augmenting */
 	/* 2a - the source tree */
 	middle_arc->sister->r_cap += bottleneck;
@@ -1781,11 +1780,11 @@ void Graph<captype, tcaptype, flowtype>::augment(arc *middle_arc) {
 	if (!i->tr_cap) {
 		set_orphan_front(i); // add i to the beginning of the adoption list
 	} else if (!i->in_t_edges_set && i->tr_cap < 0) {
-		
+
 		i->in_t_edges_set = 1;
 		t_edge_nodes.push_back(i - nodes);
 	}
-	
+
 	/* 2b - the sink tree */
 	for (i = middle_arc->head;; i = a->head) {
 		a = i->parent;
@@ -1806,7 +1805,7 @@ void Graph<captype, tcaptype, flowtype>::augment(arc *middle_arc) {
 		i->in_s_edges_set = 1;
 		s_edge_nodes.push_back(i - nodes);
 	}
-	
+
 	flow += bottleneck;
 }
 
@@ -1817,7 +1816,7 @@ void Graph<captype, tcaptype, flowtype>::process_source_orphan(node *i) {
 	node *j;
 	arc *a0, *a0_min = NULL, *a;
 	int d, d_min = INFINITE_D;
-	
+
 	/* trying to find a new parent */
 	for (a0 = i->first; a0; a0 = a0->next)
 		if (a0->sister->r_cap) {
@@ -1857,9 +1856,9 @@ void Graph<captype, tcaptype, flowtype>::process_source_orphan(node *i) {
 				}
 			}
 		}
-	
+
 	if ((i->parent = a0_min)) //is this assignment intentional
-			{
+	{
 		i->TS = TIME;
 		i->DIST = d_min + 1;
 	} else {
@@ -1885,7 +1884,7 @@ void Graph<captype, tcaptype, flowtype>::process_sink_orphan(node *i) {
 	node *j;
 	arc *a0, *a0_min = NULL, *a;
 	int d, d_min = INFINITE_D;
-	
+
 	/* trying to find a new parent */
 	for (a0 = i->first; a0; a0 = a0->next)
 		if (a0->r_cap) {
@@ -1925,9 +1924,9 @@ void Graph<captype, tcaptype, flowtype>::process_sink_orphan(node *i) {
 				}
 			}
 		}
-	
+
 	if ((i->parent = a0_min)) //is this assignment intentional?
-			{
+	{
 		i->TS = TIME;
 		i->DIST = d_min + 1;
 	} else {
@@ -1955,16 +1954,16 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 	node *i, *j, *current_node = NULL;
 	arc *a;
 	nodeptr *np, *np_next;
-	
+
 	if (!nodeptr_block) {
 		nodeptr_block = new DBlock<nodeptr>(NODEPTR_BLOCK_SIZE, error_function);
 	}
-	
+
 	if (maxflow_iteration == 0) {
 		reuse_trees = false;
 		_changed_list = NULL;
 	}
-	
+
 	if (_changed_list) {
 		keep_changed_list = true;
 		if (changed_list)
@@ -1974,16 +1973,16 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 		*_changed_list = changed_list;
 	} else
 		keep_changed_list = false;
-	
+
 	if (reuse_trees)
 		maxflow_reuse_trees_init();
 	else
 		maxflow_init();
-	
+
 	// main loop
 	while (1) {
 		// test_consistency(current_node);
-		
+
 		if ((i = current_node)) {
 			i->next = NULL; /* remove active flag */
 			if (!i->parent)
@@ -1993,7 +1992,7 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 			if (!(i = next_active()))
 				break;
 		}
-		
+
 		/* growth */
 		if (!i->is_sink) {
 			/* grow source tree */
@@ -2041,13 +2040,13 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 					}
 				}
 		}
-		
+
 		TIME++;
-		
+
 		if (a) {
 			i->next = i; /* set active flag */
 			current_node = i;
-			
+
 			/* augmentation */
 			augment(a);
 			/* augmentation end */
@@ -2056,7 +2055,7 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 			while ((np = orphan_first)) {
 				np_next = np->next;
 				np->next = NULL;
-				
+
 				while ((np = orphan_first)) {
 					orphan_first = np->next;
 					i = np->ptr;
@@ -2068,7 +2067,7 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 					else
 						process_source_orphan(i);
 				}
-				
+
 				orphan_first = np_next;
 			}
 			/* adoption end */
@@ -2076,12 +2075,12 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 			current_node = NULL;
 	}
 	// test_consistency();
-	
+
 	if (!reuse_trees || (maxflow_iteration % 64) == 0) {
 		delete nodeptr_block;
 		nodeptr_block = NULL;
 	}
-	
+
 	maxflow_iteration++;
 	return flow;
 }
@@ -2094,7 +2093,7 @@ void Graph<captype, tcaptype, flowtype>::test_consistency(node* current_node) {
 	arc *a;
 	int r;
 	int num1 = 0, num2 = 0;
-	
+
 	// test whether all nodes i with i->next!=NULL are indeed in the queue
 	for (i = nodes; i < node_last; i++) {
 		if (i->next || i == current_node)
@@ -2115,7 +2114,7 @@ void Graph<captype, tcaptype, flowtype>::test_consistency(node* current_node) {
 			}
 	}
 	assert(num1 == num2);
-	
+
 	for (i = nodes; i < node_last; i++) {
 		// test whether all edges in seach trees are non-saturated
 		if (i->parent == NULL) {

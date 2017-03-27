@@ -33,7 +33,7 @@ template<unsigned int D, class T>
 class Polygon: public Shape<D, T> {
 public:
 	//List of vertices in clockwise order
-	
+
 	BoundingVolume<D, T> * bound = nullptr;
 protected:
 	int distinct_vertices = -1;
@@ -41,9 +41,9 @@ protected:
 	bool bounds_uptodate = false;
 public:
 	Polygon() {
-		
+
 	}
-	
+
 	virtual ~Polygon() {
 		if (bound != nullptr) {
 			delete (bound);
@@ -57,11 +57,11 @@ public:
 	void setBoundingVolume(BoundingVolume<D, T> * bound) {
 		this->bound = bound;
 	}
-	
+
 	bool hasBound() const {
 		return bound;
 	}
-	
+
 	BoundingVolume<D, T> * getBound() {
 		if (!bounds_uptodate) {
 			bounds_uptodate = true;
@@ -69,7 +69,7 @@ public:
 		}
 		return bound;
 	}
-	
+
 	virtual bool contains(const Point<D, T> & point, bool inclusive = true) {
 		if (!boundContains(point, inclusive)) {
 			return false;
@@ -80,14 +80,14 @@ public:
 		assert(false);
 		return false;
 	}
-	
+
 	//virtual bool findContainingConvex(const Point<D,T> & point,NPolygon<D,T> & polygon_out)=0;
-	
+
 	virtual bool intersects(Shape<D, T> & s, bool inclusive = true) {
 		assert(false);
 		return false;
 	}
-	
+
 	virtual int size() const=0;
 	virtual void update()=0;
 
@@ -98,7 +98,7 @@ public:
 	virtual Point<D, T>& back() {
 		return (*this)[size() - 1];
 	}
-	
+
 	virtual T getArea() {
 		if (D == 2) {
 			return getArea2d();
@@ -113,7 +113,7 @@ public:
 			assert(false);
 		return 0;
 	}
-	
+
 	int distinctVertices() {
 		if (distinct_vertices < 0) {
 			if (!vertices_clockwise) {
@@ -140,7 +140,7 @@ public:
 		assert(dbg_distinctVertexCount());
 		return distinct_vertices;
 	}
-	
+
 	inline bool boundContains(const Point<D, T> & p, bool inclusive = true) {
 		if (!bound)
 			return true;
@@ -160,10 +160,10 @@ public:
 		return bound->intersects(p, inclusive);
 	}
 	static bool pointInTriangle2d(const Point<D, T> & p, const Point<D, T> & p0, const Point<D, T> & p1,
-			const Point<D, T> &p2, bool inclusive) {
+								  const Point<D, T> &p2, bool inclusive) {
 		//from http://stackoverflow.com/a/14382692
 		assert(dbg_orderClockwise2dTri(p0, p1, p2));
-		
+
 		T s = (p2.y * p0.x - p2.x * p0.y + (p0.y - p2.y) * p.x + (p2.x - p0.x) * p.y);
 		T t = (p2.x * p1.y - p2.y * p1.x + (p2.y - p1.y) * p.x + (p1.x - p2.x) * p.y);
 		T area2 = (-p1.y * p0.x + p2.y * (-p1.x + p0.x) + p2.x * (p1.y - p0.y) + p1.x * p0.y);
@@ -188,7 +188,7 @@ public:
 		 return (alpha>=0 && beta>=0 && (( alpha + beta)<=1) ) //&& gamma>=0);//should these be > or >=? for inclusive or exclusive containment?*/
 
 	}
-	
+
 	bool orderClockwise() const {
 		if (D == 2) {
 			return orderClockwise2d();
@@ -208,9 +208,9 @@ protected:
 	bool dbg_boundsUpToDate() {
 		return true;
 	}
-	
+
 	bool dbg_distinctVertexCount() const {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		if (distinct_vertices >= 0) {
 			int same_count = 0;
 			for (int i = 0; i < size(); i++) {
@@ -225,15 +225,15 @@ protected:
 #endif
 		return true;
 	}
-	
+
 	static bool dbg_orderClockwise2dTri(Point<2, T> p1, Point<2, T> p2, Point<2, T> p3) {
-#ifndef NDEBUG
-		
+#ifdef DEBUG_GEOMETRY
+
 		std::vector<Point<2, T>> points;
 		points.push_back(p1);
 		points.push_back(p2);
 		points.push_back(p3);
-		
+
 		T sum = 0;
 		for (int i = 0; i < points.size(); i++) {
 			Point<2, T> & a = i > 0 ? points[i - 1] : points.back();
@@ -242,12 +242,12 @@ protected:
 		}
 		assert(sum >= 0);
 		return sum >= 0;
-		
+
 #endif
 		return true;
 	}
 protected:
-	
+
 	T getArea2d();
 	T getPerimeter2d();
 	//put the vertices into clockwise order
@@ -256,12 +256,12 @@ protected:
 	bool contains2d(const Point<2, T> & point, bool inclusive);
 
 	//Note: for convenience, the first point of the wrap is also the last point (it is duplicated).
-	
+
 	struct wrap_iterator {
 		Point<2, T> &operator*() {
 			return verts[pos % verts.size()];
 		}
-		
+
 		wrap_iterator operator++() {
 			wrap_iterator i = *this;
 			pos++;
@@ -280,7 +280,7 @@ protected:
 		bool operator!=(const wrap_iterator& rhs) {
 			return pos != rhs.pos;
 		}
-		
+
 		Polygon<D, T> & verts;
 		int pos = 0;
 
@@ -297,53 +297,53 @@ public:
 	iterator begin() {
 		return iterator(*this, 0);
 	}
-	
+
 	iterator end() {
 		return iterator(*this, size());
 	}
-	
+
 	iterator end_wrap() {
 		return iterator(*this, size() + 1);
 	}
-	
+
 };
 template<unsigned int D, class T>
 class NPolygon: public Polygon<D, T> {
 public:
 	//List of vertices in clockwise order
-	
+
 	std::vector<Point<D, T>> vertices;
 
 	NPolygon() {
-		
+
 	}
-	
+
 	virtual ~NPolygon() {
-		
+
 	}
 	explicit NPolygon(const NPolygon&from) {
 		vertices = from.vertices;
 	}
-	
+
 	virtual ShapeType getType() {
 		return POLYGON;
 	}
-	
+
 	int size() const {
 		return vertices.size();
 	}
-	
+
 	void update() {
 		if (!this->vertices_clockwise) {
 			reorderVertices();
 		}
 		this->bounds_uptodate = false;
 	}
-	
+
 	void clear() {
 		vertices.clear();
 	}
-	
+
 	void addVertex(Point<D, T> p) {
 		this->vertices_clockwise = false;
 		this->bounds_uptodate = false;
@@ -365,24 +365,24 @@ public:
 			this->distinct_vertices = 1;
 		}
 		vertices.push_back(p);
-		
+
 		assert(this->dbg_orderClockwise());
 		assert(this->dbg_boundsUpToDate());
 		assert(this->dbg_distinctVertexCount());
 	}
-	
+
 	void popVertex() {
 		vertices.pop();
 		this->bounds_uptodate = false;
 	}
-	
+
 	void clearVertices() {
 		vertices.clear();
 		this->bounds_uptodate = false;
 	}
-	
+
 	//Returns the vertices of the polygon, in clockwise order.
-	
+
 	std::vector<Point<D, T> > & getVertices() {
 		if (!this->vertices_clockwise) {
 			reorderVertices();
@@ -408,7 +408,7 @@ public:
 		assert(index < size());
 		return vertices[index];
 	}
-	
+
 	//put the vertices into clockwise order
 	void reorderVertices() {
 		if (D == 2) {
@@ -416,7 +416,7 @@ public:
 		} else
 			assert(false);
 	}
-	
+
 	virtual bool isConvex() {
 		bool seenPositive = false;
 		bool seenNegative = false;
@@ -438,10 +438,10 @@ private:
 	// copy ops are private to prevent copying
 	//Polygon(const Polygon& from); // no implementation
 	NPolygon& operator=(const NPolygon& from); // no implementation
-			
+
 	//put the vertices into clockwise order
 	void reorderVertices2d();
-	
+
 };
 template<unsigned int D, class T>
 std::ostream & operator<<(std::ostream & str, NPolygon<D, T> & polygon) {
@@ -463,7 +463,7 @@ std::ostream & operator<<(std::ostream & str, Polygon<D, T> & polygon) {
 }
 template<unsigned int D, class T>
 inline bool Polygon<D, T>::orderClockwise2d() const {
-	
+
 	//from http://stackoverflow.com/a/1165943
 	//but reversed relative to stackoverflow, to work for clockwise instead of counterclockwise
 	T sum = 0;
@@ -477,7 +477,7 @@ inline bool Polygon<D, T>::orderClockwise2d() const {
 
 template<unsigned int D, class T>
 inline bool Polygon<D, T>::dbg_orderClockwise2d() const {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	//from http://stackoverflow.com/a/1165943
 	if (vertices_clockwise) {
 		T sum = 0;
@@ -491,7 +491,7 @@ inline bool Polygon<D, T>::dbg_orderClockwise2d() const {
 			assert(dbg_orderClockwise2dTri((*this)[0], (*this)[1], (*this)[2]));
 		}
 	}
-	
+
 #endif
 	return true;
 }
@@ -529,9 +529,9 @@ bool Polygon<D, T>::contains2d(const Point<2, T> & point, bool inclusive) {
 	bool result = false;
 	for (i = 0, j = (*this).size() - 1; i < (*this).size(); j = i++) {
 		if (((*this)[i].y > point.y) != ((*this)[j].y > point.y)
-				&& (point.x
-						< ((*this)[j].x - (*this)[i].x) * (point.y - (*this)[i].y) / ((*this)[j].y - (*this)[i].y)
-								+ (*this)[i].x)) {
+			&& (point.x
+				< ((*this)[j].x - (*this)[i].x) * (point.y - (*this)[i].y) / ((*this)[j].y - (*this)[i].y)
+				  + (*this)[i].x)) {
 			result = !result;
 		}
 	}
@@ -594,7 +594,7 @@ bool Polygon<D, T>::contains2d(const Point<2, T> & point, bool inclusive) {
 //Note that this is subject to rounding errors.
 template<unsigned int D, class T>
 T Polygon<D, T>::getPerimeter2d() {
-	
+
 	T sum = 0;
 	for (int i = 1; i < size(); i++) {
 		Point<2, T> prev = (*this)[i - 1];
@@ -615,7 +615,7 @@ void NPolygon<D, T>::reorderVertices2d() {
 	if (vertices.size() <= 2) {
 		return;
 	}
-	
+
 	T centerX = 0;
 	T centerY = 0;
 	std::vector<Point<2, T>> & w = (std::vector<Point<2, T>> &) vertices;
@@ -625,18 +625,18 @@ void NPolygon<D, T>::reorderVertices2d() {
 	}
 	centerX /= vertices.size();
 	centerY /= vertices.size();
-	
+
 	//from http://stackoverflow.com/a/6989383
-	
+
 	struct clockwise_lt {
 		const std::vector<Point<2, T>> & points;
 		T centerX;
 		T centerY;
 		clockwise_lt(const std::vector<Point<2, T>> & points, T centerX, T centerY) :
 				points(points), centerX(centerX), centerY(centerY) {
-			
+
 		}
-		
+
 		bool operator ()(int id_a, int id_b) {
 			assert(id_a >= 0);
 			assert(id_a < points.size());
@@ -653,14 +653,14 @@ void NPolygon<D, T>::reorderVertices2d() {
 					return a.y > b.y;
 				return b.y > a.y;
 			}
-			
+
 			// compute the cross product of vectors (center -> a) x (center -> b)
 			T det = (a.x - centerX) * (b.y - centerY) - (b.x - centerX) * (a.y - centerY);
 			if (det < 0)
 				return true;
 			if (det > 0)
 				return false;
-			
+
 			// points a and b are on the same line from the center
 			// check which point is closer to the center
 			T d1 = (a.x - centerX) * (a.x - centerX) + (a.y - centerY) * (a.y - centerY);
@@ -679,14 +679,14 @@ void NPolygon<D, T>::reorderVertices2d() {
 	static std::vector<Point<2, T>> oldPoints;
 	oldPoints.clear();
 	assert(vertices.size() > 0);
-	
+
 	for (int i = 0; i < vertices.size(); i++) {
 		oldPoints.push_back(vertices[i]);
 	}
 	for (int i = 0; i < vertices.size(); i++) {
 		vertices[i] = oldPoints[points_clockwise[i]];
 	}
-	
+
 	assert(this->dbg_orderClockwise());
 	assert(this->dbg_distinctVertexCount());
 }

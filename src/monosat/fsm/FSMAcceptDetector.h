@@ -24,16 +24,16 @@
 
 #include "monosat/dgl/DynamicGraph.h"
 
-#include "DynamicFSM.h"
+#include "monosat/fsm/DynamicFSM.h"
 
 #include "monosat/core/SolverTypes.h"
 #include "monosat/mtl/Map.h"
-
+#include "monosat/mtl/Heap.h"
 
 #include "monosat/utils/System.h"
-#include "FSMDetector.h"
-#include "alg/NFAAccept.h"
-
+#include "monosat/fsm/FSMDetector.h"
+#include "monosat/fsm/alg/NFAAccept.h"
+#include "monosat/fsm/alg/NFAAcceptor.h"
 using namespace dgl;
 namespace Monosat {
 
@@ -64,8 +64,8 @@ public:
 	AcceptStatus *underReachStatus = nullptr;
 	AcceptStatus *overReachStatus = nullptr;
 
-	NFAAccept<AcceptStatus> * underapprox_detector;
-	NFAAccept<AcceptStatus> * overapprox_detector;
+	NFAAcceptor* underapprox_detector;
+	NFAAcceptor * overapprox_detector;
 
 
 
@@ -76,6 +76,7 @@ public:
 		Lit l;
 		int u;
 		int str;
+		bool polarity;
 	};
 	//vec<bool> is_changed;
 	vec<Change> changed;
@@ -88,8 +89,11 @@ public:
 	};
 	vec<AcceptLit> accept_lit_map;
 	vec<Lit> all_lits;
+	vec<Lit> to_decide;
+	vec<NFATransition> decision_path;
+	int last_decision_status = -1;
 	//stats
-	
+
 	long stats_full_updates = 0;
 	long stats_fast_updates = 0;
 	long stats_fast_failed_updates = 0;
@@ -118,26 +122,39 @@ public:
 
 		if (opt_learn_unreachable_component) {
 			printf("\t%ld components learned, average component size: %f\n", stats_learnt_components,
-					stats_learnt_components_sz / (float) stats_learnt_components);
+				   stats_learnt_components_sz / (float) stats_learnt_components);
 		}
 		if(opt_fsm_symmetry_breaking){
 			printf("Symmetry breaking conflicts: %ld\n", stats_symmetry_conflicts);
 		}
 	}
-	
-	void unassign(Lit l) {
+
+	void assign(Lit l)override {
+		FSMDetector::assign(l);
+		int index = indexOf(var(l));
+		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
+			int node = accept_lit_map[index].to;
+			int str =  accept_lit_map[index].str;
+
+			changed.push( { {var(l)}, node,str });
+			if(opt_theory_internal_vsids_fsm && ! order_heap.inHeap(var(l))){
+				order_heap.insert(var(l));
+			}
+		}
+	}
+	void unassign(Lit l)override {
 		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
 		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
 			int node = accept_lit_map[index].to;
 			int str =  accept_lit_map[index].str;
 			//if (!is_changed[index]) {
-            changed.push( { {var(l)}, node,str });
+			changed.push( { {var(l)}, node,str });
 			//	is_changed[index] = true;
 			//}
 		}
 	}
-	
+
 	inline int indexOf(Var v)const{
 		int index = v - first_var;
 		assert(index < accept_lit_map.size());
@@ -158,8 +175,13 @@ public:
 		assert(accept_lit_map[index].to >= 0);
 		return accept_lit_map[index].str;
 	}
+	void backtrack(int level) override{
+		to_decide.clear();
+		last_decision_status = -1;
 
-	bool propagate(vec<Lit> & conflict);
+	}
+	bool propagate(vec<Lit> & conflict)override;
+	Lit decide(int level)override;
 	void buildAcceptReason(int node,int str, vec<Lit> & conflict);
 	void buildNonAcceptReason(int node,int str, vec<Lit> & conflict);
 	void preprocess()override{
@@ -179,16 +201,88 @@ public:
 	void learnClauseSymmetryConflict(vec<Lit> & conflict, int a, int b) ;
 
 	FSMAcceptDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
-			int _source, vec<vec<int>> &  strs, double seed = 1);
+					  int _source, vec<vec<int>> &  strs, double seed = 1);
 	virtual ~FSMAcceptDetector() {
-		
+
 	}
-	
+
 	const char* getName() {
 		return "NFA Accepts Detector";
 	}
-	
-	
+
+	double var_inc=1;
+	double var_decay=1;
+	vec<double> activity;
+	struct AcceptOrderLt {
+		FSMAcceptDetector & outer;
+		const vec<double>& activity;
+
+		bool operator ()(Var x, Var y) const {
+			int indexX = outer.indexOf(x);
+			int indexY = outer.indexOf(y);
+			return activity[indexX] > activity[indexY];
+
+		}
+		AcceptOrderLt(FSMAcceptDetector & outer,const vec<double>& act):outer(outer),
+																		activity(act) {
+		}
+	};
+
+	//Local vsids implementation for edges...
+	Heap<int,AcceptOrderLt> order_heap;
+
+
+	inline void insertAcceptOrder(Lit acceptLit) {
+		if(opt_theory_internal_vsids_fsm){
+			int index = indexOf(var(acceptLit));
+			if (!order_heap.inHeap(var(acceptLit)) && activity[index]>0 )
+				order_heap.insert(var(acceptLit));
+		}
+	}
+	inline void bumpConflict(vec<Lit> &  conflict){
+
+		if(opt_theory_internal_vsids_fsm){
+			for(Lit l:conflict) {
+				int index = indexOf(var(l));
+				if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
+
+					edgeBumpActivity(var(l));
+					edgeDecayActivity();
+					if(!order_heap.inHeap(var(l))){
+						order_heap.insert(var(l));
+						//throw std::runtime_error("Internal error in fsm accept detector");
+					}
+				}
+			}
+		}
+
+	}
+	inline void bumpAcceptLit(Lit  conflict){
+
+		if(opt_theory_internal_vsids_fsm){
+			edgeBumpActivity(var(conflict));
+			edgeDecayActivity();
+		}
+
+	}
+	inline void edgeDecayActivity() {
+		var_inc *= (1 / var_decay);
+	}
+	inline void edgeBumpActivity(Var v) {
+		edgeBumpActivity(v, var_inc);
+	}
+	inline void edgeBumpActivity(Var v, double inc) {
+		if ((activity[indexOf(v)] += inc) > 1e100) {
+			// Rescale:
+			for (int i = 0; i < activity.size(); i++)
+				activity[i] *= 1e-100;
+			var_inc *= 1e-100;
+		}
+
+		// Update order_heap with respect to new activity:
+		if (order_heap.inHeap(v))
+			order_heap.decrease(v);
+	}
 
 };
 }

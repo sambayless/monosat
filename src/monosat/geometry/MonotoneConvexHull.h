@@ -31,7 +31,7 @@
 
 template<unsigned int D, class T>
 class MonotoneConvexHull: public ConvexHull<D, T> {
-	
+
 	PointSet<D, T> & pointSet;
 	NConvexPolygon<D, T> hull;
 	long last_modification = -1;
@@ -47,16 +47,16 @@ public:
 			pointSet(p) {
 		hull.setBoundingVolume(new BoundingBox<D, T, Polygon<D, T>>(hull));
 	}
-	
+
 	void update() {
-		
+
 		if (pointSet.getModifications() <= last_modification) {
 			//stats_skipped_updates++;
 			assert(dbg_uptodate());
 			return;
 		}
 		last_modification = pointSet.getModifications();
-		
+
 		if (pointSet.historyclears != last_history_clear) {
 			last_history_clear = pointSet.historyclears;
 			history_qhead = 0;
@@ -66,7 +66,7 @@ public:
 			for (int i = history_qhead; i < pointSet.history.size(); i++) {
 				int index = pointSet.history[i].id;
 				Point<D, T> & dt = pointSet[index];
-				
+
 				if (pointSet.history[i].addition && pointSet.pointEnabled(index)) {
 					if (!hull.contains(dt, true)) {
 						needsUpdate = true;
@@ -89,25 +89,25 @@ public:
 				return;
 			}
 		}
-		
+
 		stats_updates++;
-		
+
 		if (D == 2) {
 			update2d();
 			return;
 		}
 		assert(false);
 	}
-	
+
 	ConvexPolygon<D, T> & getHull() {
 		update();
 		return hull;
 	}
-	
+
 private:
-	
+
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 		assert(hull.isConvex());
 		for (int i = 0; i < pointSet.size(); i++) {
 			Point<2, T> & p = pointSet[i];
@@ -130,42 +130,42 @@ private:
 
 template<unsigned int D, class T>
 void MonotoneConvexHull<D, T>::update2d() {
-	
+
 	//bool requires_update=false;
-	
+
 	std::vector<Point<D, T>> _points;
 	pointSet.getEnabledPoints(_points);
-	
+
 	std::vector<Point<2, T>> & points = (std::vector<Point<2, T>> &) _points;
-	
+
 	std::sort(points.begin(), points.end(), SortLexicographic<2, T>());
 	hull.clear();
-	
+
 	if (points.size() >= 3) {
-		
+
 		std::vector<Point<2, T>> & list = hull.getVertices();
-		
+
 		// Build lower hull
 		for (int i = 0; i < points.size(); ++i) {
 			while (list.size() >= 2 && crossDif(list[list.size() - 2], list[list.size() - 1], points[i]) <= 0)
 				list.pop_back();
 			list.push_back(points[i]);
 		}
-		
+
 		// Build upper hull
 		for (int i = points.size() - 2, t = list.size() + 1; i >= 0; i--) {
 			while (list.size() >= t && crossDif(list[list.size() - 2], list[list.size() - 1], points[i]) <= 0)
 				list.pop_back();
 			list.push_back(points[i]);
 		}
-		
+
 		assert(list.size() == 0 || (list[0] == list.back()));
 		if (list.size())
 			list.pop_back(); //for now, we aren't replicating the first vertex at the end of the polygon.
-			/*	for(auto & p:list){
-			 std::cout<<p.x << "," << p.y << " ";
-			 }
-			 std::cout<<"\n";*/
+		/*	for(auto & p:list){
+         std::cout<<p.x << "," << p.y << " ";
+         }
+         std::cout<<"\n";*/
 		hull.reorderVertices();
 	} else {
 		for (auto & p : points)
@@ -173,7 +173,7 @@ void MonotoneConvexHull<D, T>::update2d() {
 	}
 	hull.update();
 	assert(dbg_uptodate());
-	
+
 }
 
 #endif

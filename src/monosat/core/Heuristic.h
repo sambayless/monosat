@@ -1,7 +1,7 @@
 /****************************************************************************************[Solver.h]
  The MIT License (MIT)
 
- Copyright (c) 2014, Sam Bayless
+ Copyright (c) 2016, Sam Bayless
 
  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -19,62 +19,61 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef REACH_H_
-#define REACH_H_
+#ifndef MONOSAT_HEURISTIC_H
+#define MONOSAT_HEURISTIC_H
 
-#include <vector>
-namespace dgl {
-
-class Reach {
+#include "monosat/core/SolverTypes.h"
+namespace Monosat {
+/**
+ * Abstract interface for decision heuristics for theory solvers
+ */
+class Heuristic {
+    int priority=0;
+    double activity=0;
+    int heuristic_index=-1;
+    int heuristic_order=0;
 public:
 
-	struct NullStatus {
-		void setReachable(int u, bool reachable) {
 
-		}
-		bool isReachable(int u) const {
-			return false;
-		}
+    virtual ~Heuristic() {
 
-		void setMininumDistance(int u, bool reachable, int distance) {
+    }
+    int getPriority()const{
+        return priority;
+    }
+    void setPriority(int p){
+        priority=p;
+    }
+    int getHeuristicOrder()const{
+        return heuristic_order;
+    }
+    void setHeuristicOrder(int p){
+        heuristic_order=p;
+    }
+    double & getActivity(){
+        return activity;
+    }
+    void setActivity(double p){
+        activity=p;
+    }
+    //the theory index of the theory this heuristic belongs to, or -1 if there is no theory.
+    virtual int getTheoryIndex()const{
+        return -1;
+    }
 
-		}
+    int getHeuristicIndex()const{
+        return heuristic_index;
+    }
+    void setHeuristicIndex(int id){
+        assert(id>0);
+        heuristic_index=id;
+    }
+    virtual Lit decideTheory(CRef & decision_reason){
+        decision_reason = CRef_Undef;
+        return lit_Undef;
+    }
 
-	};
-	static NullStatus nullStatus;
-
-	virtual int numUpdates() const=0;
-	virtual ~Reach() {
-	}
-	;
-
-	virtual void setSource(int s)=0;
-	virtual int getSource()=0;
-	//virtual addSource(int s)=0;
-
-	virtual void update()=0;
-
-	virtual bool connected_unsafe(int t)=0;
-	virtual bool connected_unchecked(int t)=0;
-	virtual bool connected(int t)=0;
-	//virtual int distance( int t)=0;
-	//virtual int distance_unsafe(int t)=0;
-	virtual int previous(int node)=0;
-	virtual int incomingEdge(int node)=0;
-	//The maximum distance to compute up to.
-	/*	virtual void setMaxDistance(int maxDistance){
-
-	 }*/
-	virtual void addDestination(int node){
-
-	}
-	virtual void removeDestination(int node){
-
-	}
-	virtual void clearCache(){
-
-	}
 };
 }
-;
-#endif /* REACH_H_ */
+
+#endif //MONOSAT_HEURISTIC_H

@@ -36,7 +36,7 @@ namespace dgl {
 template<typename Weight, class Status>
 class DynamicConnectivity: public Reach, public AllPairs, public ConnectedComponents {
 public:
-	
+
 	DynamicGraph<Weight> & g;
 	Status & status;
 	int last_modification;
@@ -75,7 +75,7 @@ public:
 	const int reportPolarity;
 
 public:
-	
+
 	long stats_full_updates=0;
 	long stats_fast_updates=0;
 	long stats_fast_failed_updates=0;
@@ -89,17 +89,17 @@ public:
 
 	DynamicConnectivity(DynamicGraph<Weight> & graph, Status & status, int _reportPolarity = 0) :
 			g(graph), status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
-					0), INF(0), reportPolarity(_reportPolarity) {
+			0), INF(0), reportPolarity(_reportPolarity) {
 		default_source = -1;
 		hasPrev = false;
 		iteration = 0;
 	}
-	
+
 	void addSource(int s) {
 		int sourceNum = sources.size();
 		sources.push_back(s);
 		changes.push_back( { sourceNum, s });
-		
+
 		transitive_closure.push_back( { });
 		transitive_closure[sourceNum].resize(g.nodes());
 		transitive_closure[sourceNum][s].reachable = true;
@@ -108,23 +108,23 @@ public:
 		last_addition = -1;
 		last_deletion = -1;
 	}
-	
+
 	void setSource(int s) {
 		if (!std::count(sources.begin(), sources.end(), s)) {
 			addSource(s);
 		}
 		default_source_index = sources.size() - 1;
 		default_source = s;
-		
+
 	}
 	int getSource() {
 		return default_source;
 	}
-	
+
 	void setNodes(int n) {
-		
+
 		INF = g.nodes() + 1;
-		
+
 		while (t.nNodes() < g.nodes()) {
 			t.addNode();
 			prev.push_back(-1);
@@ -132,9 +132,9 @@ public:
 		for (int i = 0; i < transitive_closure.size(); i++) {
 			transitive_closure[i].resize(g.nodes());
 		}
-		
+
 	}
-	
+
 	void updateEdge(int u, int v, int edgeid, bool add) {
 		if (edgeid == 2) {
 			int a = 1;
@@ -145,7 +145,7 @@ public:
 		assert(transitive_closure[0][sources[0]].reachable);
 		assert(
 				(g.all_edges[edgeid].to == u && g.all_edges[edgeid].from == v)
-						|| (g.all_edges[edgeid].to == v && g.all_edges[edgeid].from == u));
+				|| (g.all_edges[edgeid].to == v && g.all_edges[edgeid].from == u));
 		if (add) {
 			bool already_connected = false;
 			if (!t.connected(u, v)) {
@@ -153,23 +153,23 @@ public:
 				u_component.clear();
 				v_component.clear();
 				for (int i = 0; i < sources.size(); i++) {
-					
+
 					//then it may be the case that new nodes are connected to one of the sources we are tracking
 					if (transitive_closure[i][u].reachable && !transitive_closure[i][v].reachable) {
 						//ok, explore the new connected component and enclose it
-						
+
 						if (!v_component.size())
 							t.getConnectedComponentEdges(v, v_component, true);
 						assert(!transitive_closure[i][v].reachable);
-						
+
 						transitive_closure[i][v].reachable = true;
 						if (!transitive_closure[i][v].changed) {
 							transitive_closure[i][v].changed = true;
 							changes.push_back( { i, v });
 						}
-						
+
 						for (int edgeid : v_component) {
-							
+
 							int u = g.all_edges[edgeid].from;
 							int v = g.all_edges[edgeid].to;
 							if (u == 16 || v == 16) {
@@ -180,7 +180,7 @@ public:
 							int n = transitive_closure[i][u].reachable ? v : u;
 							assert(!transitive_closure[i][n].reachable);
 							transitive_closure[i][n].reachable = true;
-							
+
 							if (!transitive_closure[i][n].changed) {
 								transitive_closure[i][n].changed = true;
 								changes.push_back( { i, n });
@@ -191,13 +191,13 @@ public:
 						if (!u_component.size())
 							t.getConnectedComponentEdges(u, u_component, true);
 						assert(!transitive_closure[i][u].reachable);
-						
+
 						transitive_closure[i][u].reachable = true;
 						if (!transitive_closure[i][u].changed) {
 							transitive_closure[i][u].changed = true;
 							changes.push_back( { i, u });
 						}
-						
+
 						for (int edgeid : u_component) {
 							int u = g.all_edges[edgeid].from;
 							int v = g.all_edges[edgeid].to;
@@ -209,7 +209,7 @@ public:
 							int n = transitive_closure[i][u].reachable ? v : u;
 							assert(!transitive_closure[i][n].reachable);
 							transitive_closure[i][n].reachable = true;
-							
+
 							if (!transitive_closure[i][n].changed) {
 								transitive_closure[i][n].changed = true;
 								changes.push_back( { i, n });
@@ -242,7 +242,7 @@ public:
 									int a = 1;
 								}
 								transitive_closure[i][n].reachable = false;
-								
+
 								if (!transitive_closure[i][n].changed) {
 									transitive_closure[i][n].changed = true;
 									changes.push_back( { i, n });
@@ -258,7 +258,7 @@ public:
 									int a = 1;
 								}
 								transitive_closure[i][n].reachable = false;
-								
+
 								if (!transitive_closure[i][n].changed) {
 									transitive_closure[i][n].changed = true;
 									changes.push_back( { i, n });
@@ -271,8 +271,8 @@ public:
 		}
 		assert(transitive_closure[0][sources[0]].reachable);
 	}
-	
-#ifndef NDEBUG
+
+#ifdef DEBUG_DGL
 	DisjointSets dbg_sets;
 #endif
 	int iteration;
@@ -281,23 +281,23 @@ public:
 		return num_updates;
 	}
 	void update() {
-		
+
 		int local_it = ++iteration;
-		
+
 		if (last_modification > 0 && g.modifications == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
 		stats_full_updates++;
-		
+
 		setNodes(g.nodes());
 		hasPrev = false;
-		
-#ifndef NDEBUG
+
+#ifdef DEBUG_DGL
 		dbg_sets.Reset();
-		
+
 		dbg_sets.AddElements(g.nodes());
-		
+
 		for (int i = 0; i < g.all_edges.size(); i++) {
 			if (g.edgeEnabled(i) && g.all_edges[i].id >= 0) {
 				int u = g.all_edges[i].from;
@@ -305,16 +305,16 @@ public:
 				dbg_sets.UnionElements(u, v);
 			}
 		}
-		
+
 #endif
 		dbg_transitive_closure();
-		
+
 		assert(transitive_closure[0][sources[0]].reachable);
-		
+
 		if (last_modification <= 0 || g.historyclears != last_history_clear) {
 			last_history_clear = g.historyclears;
 			history_qhead = 0;
-			
+
 			//initialize the transitive closure.
 			for (int s = 0; s < sources.size(); s++) {
 				int source = sources[s];
@@ -335,7 +335,7 @@ public:
 					}
 				}
 			}
-			
+
 			//start from scratch
 			for (int i = 0; i < g.all_edges.size(); i++) {
 				if (g.all_edges[i].id >= 0) {
@@ -345,7 +345,7 @@ public:
 					updateEdge(u, v, i, add);
 				}
 			}
-			
+
 		} else {
 			//incremental/decremental update
 			for (; history_qhead < g.historySize(); history_qhead++) {
@@ -355,9 +355,9 @@ public:
 				int v = g.all_edges[edgeid].to;
 				updateEdge(u, v, edgeid, add);
 			}
-			
+
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < g.edges(); i++) {
 			if (g.all_edges[i].id >= 0) {
 				assert(t.edges[i].edgeID == g.all_edges[i].id);
@@ -389,7 +389,7 @@ public:
 			}
 		}
 		changes.clear();
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		{
 			for (std::vector<ClosureData> & v : transitive_closure)
 				for (ClosureData & c : v)
@@ -432,42 +432,42 @@ public:
 		 }
 		 }
 		 */
-
+#ifdef DEBUG_DGL
 		assert(dbg_sets.NumSets() == t.numComponents());
-		
+#endif
 		num_updates++;
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
-		
+
 		//stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}
-	
+
 	void dbg_transitive_closure() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (int i = 0; i < sources.size(); i++) {
 			int source = sources[i];
 			assert(transitive_closure[i][source].reachable);
 			for (int n = 0; n < transitive_closure[i].size(); n++) {
 				bool reachable = t.connected(source, n);
 				assert(((bool )transitive_closure[i][n].reachable) == reachable);
-				
+
 			}
 		}
-		
+
 #endif
 	}
 	void dbg_path_edges(int from, int to, std::vector<int> & path) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		assert(path.size());
 		int n = from;
-		
+
 		for (int i = 0; i < path.size(); i++) {
 			int edgeid = path[i];
-			
+
 			int v = g.all_edges[edgeid].from;
 			int u = g.all_edges[edgeid].to;
 			assert(v == n || u == n);
@@ -482,7 +482,7 @@ public:
 #endif
 	}
 	void dbg_path(int from, int to, std::vector<int> & path) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		assert(path.size());
 		assert(path[0] == from);
 		assert(path.back() == to);
@@ -494,12 +494,12 @@ public:
 		}
 #endif
 	}
-	
+
 	bool connected(int from, int to) {
 		update();
 		return t.connected(from, to);
 	}
-	
+
 	int numComponents() {
 		update();
 		return t.numComponents();
@@ -508,14 +508,14 @@ public:
 		update();
 		return t.findRoot(node);
 	}
-	
+
 	bool connected_unsafe(int from, int to) {
 		return t.connected(from, to);
 	}
 	bool connected_unchecked(int from, int to) {
 		return t.connected(from, to);
 	}
-	
+
 	int distance(int from, int to) {
 		update();
 		return t.connected(from, to) ? 0 : INF;
@@ -526,7 +526,7 @@ public:
 	void getPath(int source, int to, std::vector<int> & path_store) {
 		return t.getPath(source, to, path_store);
 	}
-	
+
 	bool connected_unsafe(int t) {
 		return connected_unsafe(getSource(), t);
 	}
@@ -591,9 +591,9 @@ public:
 			 printf("\n");
 			 */
 			dbg_path_edges(getSource(), to, path);
-			
+
 			int n = getSource();
-			
+
 			for (int edge : path) {
 				int v = g.all_edges[edge].from;
 				assert(v == n || g.all_edges[edge].to == n);
@@ -615,14 +615,14 @@ public:
 		if (edgeID < 0)
 			return -1;
 		assert(transitive_closure[default_source_index][t].reachable);
-		
+
 		if (g.all_edges[edgeID].from == t) {
 			return g.all_edges[edgeID].to;
 		}
 		assert(g.all_edges[edgeID].to == t);
 		return g.all_edges[edgeID].from;
 	}
-	
+
 	void getPath(int t, std::vector<int> & path_store) {
 		getPath(getSource(), t, path_store);
 	}

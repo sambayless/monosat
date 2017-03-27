@@ -19,25 +19,33 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include <monosat/core/Config.h>
-#include <monosat/dgl/RamalReps.h>
+#include "monosat/core/Config.h"
+#include "monosat/dgl/RamalReps.h"
 #include "monosat/dgl/EdmondsKarp.h"
 #include "monosat/dgl/EdmondsKarpAdj.h"
 #include "monosat/dgl/KohliTorr.h"
+#include "monosat/dgl/EdmondsKarpDynamic.h"
 #include "monosat/dgl/Dinics.h"
-#include <monosat/graph/WeightedDistanceDetector.h>
-#include <monosat/graph/GraphTheory.h>
+#include "monosat/dgl/DinicsLinkCut.h"
+#include "monosat/graph/WeightedDistanceDetector.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/mtl/Rnd.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/utils/Options.h"
 //#include "monosat/dgl/UnweightedDistance.h"
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
 #include <iomanip>
 using namespace Monosat;
 
 template<typename Weight>
 WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,
-		DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, double seed) :
+														   DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, double seed) :
 		Detector(_detectorID), outer(outer), g_under(_g), g_over(_antig), source(from), rnd_seed(seed) {
 	max_unweighted_distance = 0;
 	rnd_path = NULL;
-
+	bvTheory = outer->bvTheory;
 	constraintsBuilt = -1;
 	first_reach_var = var_Undef;
 	stats_pure_skipped = 0;
@@ -58,13 +66,13 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 	//select the _weighted_ distance detectors
 	positiveDistanceStatus = new WeightedDistanceDetector<Weight>::DistanceStatus(*this, true);
 	negativeDistanceStatus = new WeightedDistanceDetector<Weight>::DistanceStatus(*this, false);
-	
+
 	if (outer->hasBitVectorEdges()){
 		printf("Note: falling back on Dijkstra for shortest paths, because edge weights are bitvectors\n");
 		//ramel reps doesn't support bvs yet
 		underapprox_weighted_distance_detector =
-		new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
-				*positiveDistanceStatus, 0);
+				new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
+																								*positiveDistanceStatus, 0);
 		overapprox_weighted_distance_detector = new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(
 				from, _antig,  *negativeDistanceStatus, 0);
 		underapprox_weighted_path_detector = underapprox_weighted_distance_detector;
@@ -72,20 +80,20 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 
 		underapprox_weighted_distance_detector =
 				new RamalReps<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
-						*(positiveDistanceStatus), -2);
+																								 *(positiveDistanceStatus), -2);
 		overapprox_weighted_distance_detector =
 				new RamalReps<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _antig,
-						*(negativeDistanceStatus), -2);
+																								 *(negativeDistanceStatus), -2);
 		underapprox_weighted_path_detector =underapprox_weighted_distance_detector; //new Dijkstra<Weight>(from, _g);
 	} else {
 		underapprox_weighted_distance_detector =
 				new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
-						*positiveDistanceStatus, 0);
+																								*positiveDistanceStatus, 0);
 		overapprox_weighted_distance_detector = new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(
 				from, _antig,  *negativeDistanceStatus, 0);
 		underapprox_weighted_path_detector = underapprox_weighted_distance_detector;
 	}
-	
+
 	if (opt_conflict_min_cut) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
 			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
@@ -96,11 +104,11 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints
 			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
-			
+
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
 				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph, source, 0,
-						opt_kt_preserve_order);
+													   opt_kt_preserve_order);
 			} else
 				conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
 		} else {
@@ -108,7 +116,7 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 		}
 	}
 
-	
+
 	weighted_underprop_marker = outer->newReasonMarker(getID());
 	weighted_overprop_marker = outer->newReasonMarker(getID());
 
@@ -119,7 +127,7 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 
 template<typename Weight>
 void WeightedDistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var outer_reach_var,
-		Weight within_distance, bool strictComparison) {
+																  Weight within_distance, bool strictComparison) {
 	g_under.invalidate();
 	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());
@@ -139,14 +147,19 @@ void WeightedDistanceDetector<Weight>::addWeightedShortestPathLit(int from, int 
 
 template<typename Weight>
 void WeightedDistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, int to, Var outer_reach_var,
-		const BitVector<Weight>  &bv, bool strictComparison) {
+																	const BitVector<Weight>  &bv, bool strictComparison) {
 	g_under.invalidate();
 	g_over.invalidate();
 
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 	assert(from == source);
 
-	weighted_dist_bv_lits.push(WeightedDistBVLit { mkLit(reach_var), to, bv, strictComparison });
+	weighted_dist_bv_lits.push(WeightedDistBVLit { mkLit(reach_var), to, bv, strictComparison,nullptr });
+	//sort(weighted_dist_lits);
+	if(opt_graph_bv_prop){
+		DistanceOp *distOp = new DistanceOp(*bvTheory, this,bv.getID(),to,strictComparison,mkLit(reach_var));
+		weighted_dist_bv_lits.last().op=distOp;
+	}
 
 	if (first_reach_var == var_Undef) {
 		first_reach_var = reach_var;
@@ -163,11 +176,11 @@ void WeightedDistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, in
 
 template<typename Weight>
 void WeightedDistanceDetector<Weight>::DistanceStatus::setReachable(int u, bool reachable) {
-	
+
 }
 template<typename Weight>
 void WeightedDistanceDetector<Weight>::DistanceStatus::setMininumDistance(int u, bool reachable, Weight & distance) {
-	
+
 }
 
 
@@ -175,26 +188,51 @@ template<typename Weight>
 void WeightedDistanceDetector<Weight>::printSolution(std::ostream& write_to) {
 
 }
+template<typename Weight>
+void WeightedDistanceDetector<Weight>::DistanceOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+//watch out - might need to backtrack the graph theory appropriately, here...
+	static int iter = 0;
+	if(++iter==46){
+		int a=1;
+	}
+	GraphTheorySolver<Weight>::GraphTheoryOp::analyzeReason(compareOver,op,to,conflict);
+	if(!compareOver){
+		Lit l = this->comparisonLit;
+		assert(outer->outer->value(l)==l_True);
+
+		conflict.push(outer->outer->toSolver(~l));
+		assert(op==Comparison::gt || op==Comparison::geq);
+		assert(this->strictCompare== (op==Comparison::gt));
+		outer->analyzeDistanceGTReason(this->to,to,conflict, strictCompare);
+	}else{
+		Lit l = this->comparisonLit;
+		assert(outer->outer->value(l)==l_False);
+		conflict.push(outer->outer->toSolver(l));
+		assert(op==Comparison::lt || op==Comparison::leq);
+		assert(this->strictCompare== (op==Comparison::lt));
+		outer->analyzeDistanceLEQReason(this->to, to,conflict,strictCompare);
+
+	}
+	GraphTheorySolver<Weight>::GraphTheoryOp::completeAnalysis();
+}
 
 template<typename Weight>
-void WeightedDistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
-	stats_distance_leq_reasons++;
+void WeightedDistanceDetector<Weight>::analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
 	Distance<Weight> & d = *underapprox_weighted_path_detector;
 	underapprox_weighted_distance_detector->update();
 	Weight & actual_dist = underapprox_weighted_distance_detector->distance(to);
-	double starttime = rtime(2);
+
 	d.update();
 	stats_under_conflicts++;
 	assert(outer->dbg_reachable(d.getSource(), to));
-
+	assert(underapprox_weighted_distance_detector->connected(to));
 	assert(
 			underapprox_weighted_distance_detector->distance(to) <= min_distance
-					&& underapprox_weighted_distance_detector->distance(to)
-							!= underapprox_weighted_distance_detector->unreachable());
+			&& underapprox_weighted_distance_detector->distance(to)
+			   != underapprox_weighted_distance_detector->unreachable());
 	assert(d.connected_unchecked(to));
 	if (!d.connected(to) || d.distance(to) > min_distance) {
-		fprintf(stderr, "Error in shortest path detector, aborting\n");
-		exit(4);
+		throw  std::runtime_error("Internal error in shortest path detector");
 	}
 
 	//the reason that the distance is less than or equal to min_distance is because the shortest path is less than this weight
@@ -208,51 +246,48 @@ void WeightedDistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & m
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
 			if(!g_under.isConstant(edgeID))
-				conflict.push(mkLit(e, true));
+				conflict.push(outer->toSolver(mkLit(e, true)));
 			if(outer->hasBitVector(edgeID)){
-	/*			Lit leq;
-				Weight w = g_under.getWeight(edgeID);
-				if(strictComparison){
-					leq= outer->getEdgeWeightGT(edgeID,w);
-				}else{
-					leq= ~outer->getEdgeWeightLEQ(edgeID,w);
-				}
-				lbool val = outer->dbg_value(leq);
-				assert(val!=l_True);
-				conflict.push(leq);*/
-				outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_under.getWeight(edgeID),conflict);
+
+
+				outer->bvTheory->addAnalysis(Comparison::leq,outer->getEdgeBV(edgeID).getID(),g_under.getWeight(edgeID));
+				//outer->buildBVReason(outer->getEdgeBV(edgeID).getID(),Comparison::leq,g_under.getWeight(edgeID),conflict);
 			}
 
 			u = p;
 		}
 	}
+}
+template<typename Weight>
+void WeightedDistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
+	stats_distance_leq_reasons++;
+	double starttime = rtime(2);
+
+	analyzeDistanceLEQReason(to,min_distance,conflict,strictComparison);
+	if(outer->bvTheory){
+		outer->bvTheory->analyze(conflict);
+	}
 	outer->num_learnt_paths++;
 	outer->learnt_path_clause_length += (conflict.size() - 1);
-	
+
 	stats_under_clause_length += (conflict.size() - 1);
 	double elapsed = rtime(2) - starttime;
 	stats_under_conflict_time += elapsed;
-	
+
 }
 
 template<typename Weight>
-void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
-	static int it = 0;
-	stats_distance_gt_reasons++;
-	stats_over_conflicts++;
-	++it;
-	double starttime = rtime(2);
-	int u = to;
+void WeightedDistanceDetector<Weight>::analyzeDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
 	bool reaches = overapprox_weighted_distance_detector->connected(to);
 	if (!reaches && opt_conflict_min_cut && conflict_flow) {
-		g_over.drawFull();
+
 		cut.clear();
 		int64_t f;
-		
+
 		assert(conflict_flow->getSource() == source);
 		conflict_flow->setSink(to);
 		f = conflict_flow->minCut(cut);
-		
+
 		assert(f == cut.size()); //because edges are only ever infinity or 1
 
 		for (int i = 0; i < cut.size(); i++) {
@@ -263,44 +298,35 @@ void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & mi
 			if(!g_over.isConstant(edgeID)){
 				Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 				assert(outer->value(l)==l_False);
-				conflict.push(l);
+				conflict.push(outer->toSolver(l));
 			}
 		}
-		outer->learnt_cut_clause_length += (conflict.size() - 1);
 
-		stats_over_clause_length += (conflict.size() - 1);
-		double elapsed = rtime(2) - starttime;
-		outer->mctime += elapsed;
 		return;
 	}
 	Weight & actual_dist = overapprox_weighted_distance_detector->distance(to);
-	/*for(auto & e:antig.all_edges){
-	 if(antig.edgeEnabled(e.id)){
-	 printf("nxg.add_edge(%d,%d,weight=",e.from,e.to);
-	 std::cout<<outer->getWeight(e.id)<<")\n";
-	 }
-	 }*/
+
 	bool connected = overapprox_weighted_distance_detector->connected(to);
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 	Dijkstra<Weight> d(source, g_over);
 	Weight & expected = d.distance(to);
 	assert(expected == actual_dist);
 	assert(!overapprox_weighted_distance_detector->connected(to) || (strictComparison? actual_dist > min_distance: actual_dist >= min_distance));
 #endif
-	
+
 	{
-		
+
 		vec<int>& to_visit = outer->to_visit;
 		vec<char>& seen = outer->seen;
-		
+
 		to_visit.clear();
 		to_visit.push(to);
 		seen.clear();
 		seen.growTo(outer->nNodes());
 		seen[to] = true;
-		
+
 		do {
-			
+
 			assert(to_visit.size());
 			int u = to_visit.last();
 			assert(u != source);
@@ -323,7 +349,7 @@ void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & mi
 					continue; //Self loops are allowed, but just make sure nothing got flipped around...
 				}
 				assert(from != u);
-				
+
 				if (has_weighted_shortest_paths_overapprox && reaches) {
 					//This is an optional optimization: if we know that even with all possible edges enabled, the shortest path to from + 1 is >= than the current distance to this node, enabling this edge cannot decrease the shortest path,
 					//and so we don't need to consider this edge
@@ -335,34 +361,34 @@ void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & mi
 						continue;
 					}
 				}
-				
+
 				if (outer->value(edge_enabled) == l_False) {
 					//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 					//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
 					//if(!seen[from])
 					if(!g_over.isConstant(edge_num)){
-						conflict.push(mkLit(edge_enabled,false));
+						conflict.push(outer->toSolver(mkLit(edge_enabled)));
 					}
 				} else{
 
 					if(reaches){
 						//if the edge _is_ enabled, and the node _is_ reachable, and the edge weight is symbolic
-						//then part of the reason the shortest path is too long is that this edge is not less than its current weight.
+						//then part of the reason the shortest path is too int64_t is that this edge is not less than its current weight.
 						if(!outer->constantWeight(edge_num)){
 							Weight w = g_over.getWeight(edge_num);
 
-							Lit gt;
+
 							if(strictComparison){
-								gt= ~outer->getEdgeWeightGEQ(edge_num,w);
+								outer->bvTheory->addAnalysis(Comparison::geq,outer->getEdgeBV(edge_num).getID(),w);
+								//gt= ~outer->getEdgeWeightGEQ(edge_num,w);
 								//gt= outer->getEdgeWeightLT(edge_num,w);
 							}else{
-								gt= ~outer->getEdgeWeightGEQ(edge_num,w);
+								outer->bvTheory->addAnalysis(Comparison::geq,outer->getEdgeBV(edge_num).getID(),w);
+								//gt= ~outer->getEdgeWeightGEQ(edge_num,w);
 								//gt= outer->getEdgeWeightLEQ(edge_num,w);
 								//gt= ~outer->getEdgeWeightGT(edge_num,w);
 							}
-							lbool val = outer->dbg_value(gt);
-							assert(val!=l_True);
-							conflict.push(gt);
+
 						}
 					}
 					//for distance analysis, we _can_ end up reaching source.
@@ -376,21 +402,33 @@ void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & mi
 				}
 			}
 		} while (to_visit.size());
-
 	}
+}
 
+template<typename Weight>
+void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
+	static int it = 0;
+	stats_distance_gt_reasons++;
+	stats_over_conflicts++;
+	++it;
+	double starttime = rtime(2);
+	int u = to;
+	analyzeDistanceGTReason(to,min_distance,conflict,strictComparison);
+	if(outer->bvTheory){
+		outer->bvTheory->analyze(conflict);
+	}
 	outer->learnt_cut_clause_length += (conflict.size() - 1);
-	
+
 	stats_over_clause_length += (conflict.size() - 1);
 	double elapsed = rtime(2) - starttime;
 	outer->mctime += elapsed;
-	
+
 }
 template<typename Weight>
 void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
-	
+
 	if (marker ==weighted_underprop_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		assert(getLitType(p)==WeightedConstLit);
 		Var v = var(p);
 		WeightedDistLit & dist_lit = getDistLit(v);
@@ -406,7 +444,7 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 		buildDistanceLEQReason(to, min_dist, reason,strictComparison);
 
 	} else if (marker == weighted_overprop_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		assert(sign(p));
 		assert(getLitType(p)==WeightedConstLit);
 		Var v = var(p);
@@ -423,7 +461,7 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 		buildDistanceGTReason(to, min_dist, reason,strictComparison);
 
 	}else if (marker ==weighted_underprop_bv_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		assert(getLitType(p)==WeightedBVLit);
 
 		Var v = var(p);
@@ -439,17 +477,17 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 
 		if(strictComparison){
 
+			outer->bvTheory->addAnalysis(Comparison::gt,bv.getID(),under_dist);
 
-			outer->buildBVReason(bv.getID(),Comparison::gt,under_dist,reason);
 			buildDistanceLEQReason(to, min_dist_under, reason,true);
 		}else{
-			outer->buildBVReason(bv.getID(),Comparison::geq,under_dist,reason);
+			outer->bvTheory->addAnalysis(Comparison::geq,bv.getID(),under_dist);
 			buildDistanceLEQReason(to, min_dist_under, reason,false);
 		}
 
 
 	} else if (marker == weighted_overprop_bv_marker) {
-		reason.push(p);
+		reason.push(outer->toSolver(p));
 		assert(sign(p));
 		assert(getLitType(p)==WeightedBVLit);
 
@@ -467,14 +505,12 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 
 		if(strictComparison){
 			if(overapprox_weighted_distance_detector->connected(to)){
-				outer->buildBVReason(bv.getID(),Comparison::leq,over_dist,reason);
-
+				outer->bvTheory->addAnalysis(Comparison::leq,bv.getID(),over_dist);
 			}
 			buildDistanceGTReason(to, min_dist_over, reason,false);
 		}else{
 			if(overapprox_weighted_distance_detector->connected(to)){
-				outer->buildBVReason(bv.getID(),Comparison::lt,over_dist,reason);
-
+				outer->bvTheory->addAnalysis(Comparison::lt,bv.getID(),over_dist);
 			}
 			buildDistanceGTReason(to, min_dist_over, reason,true);
 		}
@@ -502,7 +538,8 @@ void WeightedDistanceDetector<Weight>::updateShortestPaths() {
 }
 template<typename Weight>
 void WeightedDistanceDetector<Weight>::preprocess() {
-	is_changed.growTo(g_under.nodes());
+	is_changed_under.growTo(g_under.nodes());
+	is_changed_over.growTo(g_over.nodes());
 
 
 
@@ -533,10 +570,10 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		stats_skipped_under_updates++;
 		//stats_pure_skipped++;
 	}
-	
+
 	//  outer->reachupdatetime+=reachUpdateElapsed;
 	bool skipped_negative = false;
-	
+
 	if (!opt_detect_pure_theory_lits || unassigned_negatives > 0) {
 		double startunreachtime = rtime(2);
 		stats_over_updates++;
@@ -549,9 +586,9 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		stats_skipped_over_updates++;
 	}
 	//outer->unreachupdatetime+=unreachUpdateElapsed;
-	
 
-	
+
+
 	if (opt_rnd_shuffle && weighted_dist_lits.size()) {
 		randomShuffle(rnd_seed, weighted_dist_lits);
 	}
@@ -570,14 +607,14 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		Weight & over_dist = underapprox_weighted_distance_detector->distance(to);
 		Weight & under_dist = overapprox_weighted_distance_detector->distance(to);
 		if (underapprox_weighted_distance_detector->connected(to)
-				&& (!strictComparison ? (underapprox_weighted_distance_detector->distance(to) <= min_dist) : (underapprox_weighted_distance_detector->distance(to) < min_dist))) {
+			&& (!strictComparison ? (underapprox_weighted_distance_detector->distance(to) <= min_dist) : (underapprox_weighted_distance_detector->distance(to) < min_dist))) {
 			if (outer->value(l) == l_True) {
 				//do nothing
 			} else if (outer->value(l) == l_Undef) {
 				outer->enqueue(l, weighted_underprop_marker);
 			} else if (outer->value(l) == l_False) {
 				//conflict
-				conflict.push(l);
+				conflict.push(outer->toSolver(l));
 
 				buildDistanceLEQReason(to, min_dist, conflict,strictComparison);
 
@@ -585,21 +622,21 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 			}
 		}
 		if (!overapprox_weighted_distance_detector->connected(to)
-				|| (!strictComparison ? (overapprox_weighted_distance_detector->distance(to) > min_dist) :  (overapprox_weighted_distance_detector->distance(to) >= min_dist))) {
+			|| (!strictComparison ? (overapprox_weighted_distance_detector->distance(to) > min_dist) :  (overapprox_weighted_distance_detector->distance(to) >= min_dist))) {
 			if (outer->value(~l) == l_True) {
 				//do nothing
 			} else if (outer->value(~l) == l_Undef) {
 				outer->enqueue(~l, weighted_overprop_marker);
 			} else if (outer->value(~l) == l_False) {
 				//conflict
-				conflict.push(~l);
+				conflict.push(outer->toSolver(~l));
 
 				buildDistanceGTReason(to, min_dist, conflict,strictComparison);
 
 				return false;
 			}
 		}
-		
+
 	}
 	//g_under.drawFull(true);
 	//g_over.drawFull(true);
@@ -615,7 +652,7 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 
 
 		if (underapprox_weighted_distance_detector->connected(to)
-				&& (strictComparison? (under_dist < min_dist_under) :  (under_dist <= min_dist_under))) {
+			&& (strictComparison? (under_dist < min_dist_under) :  (under_dist <= min_dist_under))) {
 			if (outer->value(l) == l_True) {
 				//do nothing
 			} else if (outer->value(l) == l_Undef) {
@@ -623,7 +660,7 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 			} else if (outer->value(l) == l_False) {
 				//conflict
 
-				conflict.push(l);
+				conflict.push(outer->toSolver(l));
 				//conflict.push(~outer->getBV_LEQ(bv.getID(),min_dist_under));
 				if(strictComparison){
 					//std::cout<<"distance conflict " << under_dist << " < " << bv.getID() << "\n";
@@ -632,9 +669,8 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					lbool val = outer->value(d);
 					lbool dbgval = outer->dbg_value(d);
 					assert(dbgval!=l_True);*/
-
-					outer->buildBVReason(bv.getID(),Comparison::gt,under_dist,conflict);
-
+					outer->bvTheory->addAnalysis(Comparison::gt,bv.getID(),under_dist);
+					//outer->buildBVReason(bv.getID(),Comparison::gt,under_dist,conflict);
 					buildDistanceLEQReason(to, min_dist_under, conflict,true);
 				}else{
 					//std::cout<<"distance conflict " << under_dist << " <= " << bv.getID() << "\n";
@@ -643,8 +679,8 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 					lbool dbgval = outer->dbg_value(outer->getBV_LT(bv.getID(),under_dist));
 					assert(dbgval!=l_True);*/
 
-					outer->buildBVReason(bv.getID(),Comparison::geq,under_dist,conflict);
-
+					outer->bvTheory->addAnalysis(Comparison::geq,bv.getID(),under_dist);
+					//outer->buildBVReason(bv.getID(),Comparison::geq,under_dist,conflict);
 					buildDistanceLEQReason(to, min_dist_under, conflict,false);
 				}
 
@@ -652,28 +688,28 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 			}
 		}
 		if (!overapprox_weighted_distance_detector->connected(to)
-				|| (strictComparison? (over_dist >= min_dist_over) :  (over_dist > min_dist_over))){//over_dist > min_dist_over) {
+			|| (strictComparison? (over_dist >= min_dist_over) :  (over_dist > min_dist_over))){//over_dist > min_dist_over) {
 			if (outer->value(~l) == l_True) {
 				//do nothing
 			} else if (outer->value(~l) == l_Undef) {
 				outer->enqueue(~l, weighted_overprop_bv_marker);
 			} else if (outer->value(~l) == l_False) {
 				//conflict
-				conflict.push(~l);
+				conflict.push(outer->toSolver(~l));
 				if(strictComparison){
 					//std::cout<<"distance conflict " << over_dist << " > " << bv.getID() << "\n";
 					//conflict.push(outer->getBV_LT(bv.getID(),min_dist_over));
 					if(overapprox_weighted_distance_detector->connected(to)){
-						outer->buildBVReason(bv.getID(),Comparison::leq,over_dist,conflict);
-
+						outer->bvTheory->addAnalysis(Comparison::leq,bv.getID(),over_dist);
+						//outer->buildBVReason(bv.getID(),Comparison::leq,over_dist,conflict);
 					}
 					buildDistanceGTReason(to, min_dist_over, conflict,false);
 				}else{
 					//std::cout<<"distance conflict " << over_dist << " >= " << bv.getID() << "\n";
 					//conflict.push(outer->getBV_LT(bv.getID(),min_dist_over));
 					if(overapprox_weighted_distance_detector->connected(to)){
-
-						outer->buildBVReason(bv.getID(),Comparison::lt,over_dist,conflict);
+						outer->bvTheory->addAnalysis(Comparison::lt,bv.getID(),over_dist);
+						//outer->buildBVReason(bv.getID(),Comparison::lt,over_dist,conflict);
 					}
 					buildDistanceGTReason(to, min_dist_over, conflict,true);
 				}
@@ -686,7 +722,40 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 
 		assert(min_dist_under<=min_dist_over);
 		assert(under_dist == -1 || over_dist<=under_dist);
+		if(opt_graph_bv_prop){
+			//std::cout<<"under_dist " << under_dist << " over_dist " << over_dist << "; min_dist_under "<<  min_dist_under << " " << "min_dist_over" <<min_dist_over <<"\n";
+			DistanceOp * distOp = dist_lit.op;
+			if(distOp && !bv.isConst()){
+				if (outer->value(l) == l_True){
 
+					//propagate over/under constraints on the output lit back to the bitvector theory
+					if(!overapprox_weighted_distance_detector->connected(to)){
+						//this should have triggered a conflict above
+						throw  std::runtime_error("Internal error in distance detector");
+					}else{
+						if(!outer->assignBV(bv.getID(),strictComparison? Comparison::gt : Comparison::geq,over_dist,distOp)){
+							throw  std::runtime_error("Bad bv assignment in distance detector");
+						}
+
+					}
+				}else  if (outer->value(l) == l_False){
+					if(!underapprox_weighted_distance_detector->connected(to)){
+						//this is allowed, but what value should the bv take in this case?
+					}else{
+						if(!strictComparison && under_dist==0){
+							//then we can't state that the bv is less than zero (since the distance on the edge must be positive), so
+							//actually this should have been caught as a conflict above
+							throw  std::runtime_error("Bad bv assignment in distance detector");
+						}
+
+						if(!outer->assignBV(bv.getID(),strictComparison? Comparison::leq : Comparison::lt,under_dist,distOp)){
+							throw  std::runtime_error("Bad bv assignment in distance detector");
+						}
+					}
+				}
+
+			}
+		}
 	}
 	return true;
 }
@@ -694,12 +763,12 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 template<typename Weight>
 bool WeightedDistanceDetector<Weight>::getModel_Path(int node, std::vector<int> & store_path){
 	store_path.clear();
-	 Reach & d = *underapprox_weighted_path_detector;
-	 d.update();
-	 if(!d.connected(node))
-		 return false;
-	 int u = node;
-	 int p;
+	Reach & d = *underapprox_weighted_path_detector;
+	d.update();
+	if(!d.connected(node))
+		return false;
+	int u = node;
+	int p;
 	while ((p = d.previous(u)) != -1) {
 		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
 		Var e = edg.v;
@@ -712,17 +781,17 @@ bool WeightedDistanceDetector<Weight>::getModel_Path(int node, std::vector<int> 
 	store_path.push_back(u);
 	std::reverse(store_path.begin(),store_path.end());
 	return true;
- }
+}
 
 template<typename Weight>
 bool WeightedDistanceDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path){
 	store_path.clear();
-	 Reach & d = *underapprox_weighted_path_detector;
-	 d.update();
-	 if(!d.connected(node))
-		 return false;
-	 int u = node;
-	 int p;
+	Reach & d = *underapprox_weighted_path_detector;
+	d.update();
+	if(!d.connected(node))
+		return false;
+	int u = node;
+	int p;
 	while ((p = d.previous(u)) != -1) {
 		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
 		Var e = edg.v;
@@ -735,70 +804,70 @@ bool WeightedDistanceDetector<Weight>::getModel_PathByEdgeLit(int node, std::vec
 	assert(u==this->source);
 	std::reverse(store_path.begin(),store_path.end());
 	return true;
- }
+}
 
 template<typename Weight>
 bool WeightedDistanceDetector<Weight>::checkSatisfied() {
 
-		Dijkstra<Weight> under(source, g_under);
-		Dijkstra<Weight> over(source, g_over);
-		//g_under.drawFull(true);
-		//g_over.drawFull(true);
-		under.update();
-		over.update();
-		//now, check for weighted distance lits
-		for (auto & dist_lit : weighted_dist_lits) {
-			Lit l = dist_lit.l;
-			lbool val = outer->value(l);
-			int to = dist_lit.u;
-			Weight & min_dist = dist_lit.min_distance;
-			Weight & over_dist = under.distance(to);
-			Weight & under_dist = over.distance(to);
-			bool strictComparison = dist_lit.strictComparison;
-			if(!strictComparison){
-				if (under.connected(to) &&  under.distance(to) <= min_dist) {
-					if (outer->value(l) == l_True) {
-						//do nothing
-					} else if (outer->value(l) == l_Undef) {
-						outer->enqueue(l, weighted_underprop_marker);
-					} else if (outer->value(l) == l_False) {
-						return false;
-					}
+	Dijkstra<Weight> under(source, g_under);
+	Dijkstra<Weight> over(source, g_over);
+	//g_under.drawFull(true);
+	//g_over.drawFull(true);
+	under.update();
+	over.update();
+	//now, check for weighted distance lits
+	for (auto & dist_lit : weighted_dist_lits) {
+		Lit l = dist_lit.l;
+		lbool val = outer->value(l);
+		int to = dist_lit.u;
+		Weight & min_dist = dist_lit.min_distance;
+		Weight & over_dist = under.distance(to);
+		Weight & under_dist = over.distance(to);
+		bool strictComparison = dist_lit.strictComparison;
+		if(!strictComparison){
+			if (under.connected(to) &&  under.distance(to) <= min_dist) {
+				if (outer->value(l) == l_True) {
+					//do nothing
+				} else if (outer->value(l) == l_Undef) {
+					outer->enqueue(l, weighted_underprop_marker);
+				} else if (outer->value(l) == l_False) {
+					return false;
 				}
-				if (!over.connected(to) || over.distance(to) > min_dist) {
-					if (outer->value(~l) == l_True) {
-						//do nothing
-					} else if (outer->value(~l) == l_Undef) {
-						outer->enqueue(~l, weighted_overprop_marker);
-					} else if (outer->value(~l) == l_False) {
+			}
+			if (!over.connected(to) || over.distance(to) > min_dist) {
+				if (outer->value(~l) == l_True) {
+					//do nothing
+				} else if (outer->value(~l) == l_Undef) {
+					outer->enqueue(~l, weighted_overprop_marker);
+				} else if (outer->value(~l) == l_False) {
 
-						return false;
-					}
+					return false;
 				}
-			}else{
-				if (under.connected(to) &&  under.distance(to) < min_dist) {
-					if (outer->value(l) == l_True) {
-						//do nothing
-					} else if (outer->value(l) == l_Undef) {
-						outer->enqueue(l, weighted_underprop_marker);
-					} else if (outer->value(l) == l_False) {
-						return false;
-					}
+			}
+		}else{
+			if (under.connected(to) &&  under.distance(to) < min_dist) {
+				if (outer->value(l) == l_True) {
+					//do nothing
+				} else if (outer->value(l) == l_Undef) {
+					outer->enqueue(l, weighted_underprop_marker);
+				} else if (outer->value(l) == l_False) {
+					return false;
 				}
-				if (!over.connected(to) || over.distance(to) >= min_dist) {
-					if (outer->value(~l) == l_True) {
-						//do nothing
-					} else if (outer->value(~l) == l_Undef) {
-						outer->enqueue(~l, weighted_overprop_marker);
-					} else if (outer->value(~l) == l_False) {
+			}
+			if (!over.connected(to) || over.distance(to) >= min_dist) {
+				if (outer->value(~l) == l_True) {
+					//do nothing
+				} else if (outer->value(~l) == l_Undef) {
+					outer->enqueue(~l, weighted_overprop_marker);
+				} else if (outer->value(~l) == l_False) {
 
-						return false;
-					}
+					return false;
 				}
 			}
 		}
-		
-	
+	}
+
+
 
 	//	}
 	return true;
@@ -825,18 +894,18 @@ bool WeightedDistanceDetector<Weight>::checkSatisfied() {
  */
 
 template<typename Weight>
-Lit WeightedDistanceDetector<Weight>::decide() {
+Lit WeightedDistanceDetector<Weight>::decide(CRef &decision_reason) {
 	if (!opt_decide_graph_distance || !overapprox_weighted_distance_detector)
 		return lit_Undef;
 	WeightedDistanceDetector *r = this;
 	auto * over = r->overapprox_weighted_distance_detector;
-	
+
 	auto * under = r->underapprox_weighted_distance_detector;
-	
+
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
-	
+
 	//ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
-	
+
 	//this can be obviously more efficient
 	//for(int j = 0;j<nNodes();j++){
 	/*	if(opt_decide_graph_neg){
@@ -868,14 +937,14 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 				if (opt_decide_graph_pos) {
 					//if(S->level(var(l))>0)
 					//	continue;
-					
+
 					assert(over->distance(j) <= min_dist);//else we would already be in conflict before this decision was attempted!
 					if (under->distance(j) > min_dist) {
 						//then lets try to connect this
 						//static vec<bool> print_path;
-						
+
 						assert(over->connected(j));					//Else, we would already be in conflict
-								
+
 						int p = j;
 						int last = j;
 						int last_edge = -1;
@@ -887,7 +956,7 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 							last = j;
 							int dist = 0;
 							while (under->distance(p) >= min_dist - dist) {
-								
+
 								last = p;
 								assert(p != r->source);
 								int prev = over->previous(p);
@@ -895,13 +964,13 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 								assert(over->distance(p) <= min_dist - dist);
 								dist += 1;						//should really be weighted
 								p = prev;
-								
+
 							}
 						} else {
 							//This won't work (without modification) because we need to constrain these paths to ones of maximum real distance < min_dist.
 							//Randomly re-weight the graph sometimes
 							if (drand(rnd_seed) < opt_decide_graph_re_rnd) {
-								
+
 								for (int i = 0; i < outer->edge_list.size(); i++) {
 									double w = drand(rnd_seed);
 									/* w-=0.5;
@@ -917,18 +986,18 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 							last = j;
 							assert(rnd_path->connected(p));
 							while (!under->connected(p)) {
-								
+
 								last = p;
-								
+
 								assert(p != source);
 								int prev = rnd_path->previous(p);
 								last_edge = rnd_path->incomingEdge(p);
 								p = prev;
 								assert(p >= 0);
 							}
-							
+
 						}
-						
+
 						//ok, now pick some edge p->last that will connect p to last;
 						/*	assert(!under->connected(last));
 						 assert(under->connected(p));
@@ -962,11 +1031,11 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 				}
 			} else if (outer->value(l) == l_False) {
 				if (opt_decide_graph_neg) {
-					
+
 					//assert(over->distance(j)<=min_dist);//else we would already be in conflict before this decision was attempted!
-					
+
 					if (over->distance(j) <= min_dist && under->distance(j) > min_dist) {
-						//then lets try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
+						//then lets try to disconnect this node from source by walking back aint64_t the path in the over approx, and disabling the first unassigned edge we see.
 						//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
 						int p = j;
 						int last = j;
@@ -993,7 +1062,7 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 							assert(over->distance(p) <= min_dist - dist);
 							dist += 1;								//should really be weighted
 							p = prev;
-							
+
 						}
 						/*		assert(opt_use_random_path_for_decisions);
 						 assert(tmp_nodes.size()>0);
@@ -1013,5 +1082,5 @@ Lit WeightedDistanceDetector<Weight>::decide() {
 template class Monosat::WeightedDistanceDetector<int> ;
 template class Monosat::WeightedDistanceDetector<int64_t> ;
 template class Monosat::WeightedDistanceDetector<double> ;
-
+#include <gmpxx.h>
 template class Monosat::WeightedDistanceDetector<mpq_class> ;

@@ -64,7 +64,7 @@ public:
 		}
 		;
 	};
-	Heap<DistCmp> q;
+	alg::Heap<DistCmp> q;
 
 public:
 	
@@ -349,7 +349,7 @@ public:
 		}
 		;
 	};
-	Heap<DistCmp> q;
+	alg::Heap<DistCmp> q;
 
 public:
 	

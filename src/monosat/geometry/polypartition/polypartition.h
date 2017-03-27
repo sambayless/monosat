@@ -45,35 +45,35 @@ struct TPPLPoint {
 		r.y = y + p.y;
 		return r;
 	}
-	
+
 	TPPLPoint operator -(const TPPLPoint& p) const {
 		TPPLPoint r;
 		r.x = x - p.x;
 		r.y = y - p.y;
 		return r;
 	}
-	
+
 	TPPLPoint operator *(const T f) const {
 		TPPLPoint r;
 		r.x = x * f;
 		r.y = y * f;
 		return r;
 	}
-	
+
 	TPPLPoint operator /(const T f) const {
 		TPPLPoint r;
 		r.x = x / f;
 		r.y = y / f;
 		return r;
 	}
-	
+
 	bool operator==(const TPPLPoint& p) const {
 		if ((x == p.x) && (y == p.y))
 			return true;
 		else
 			return false;
 	}
-	
+
 	bool operator!=(const TPPLPoint& p) const {
 		if ((x == p.x) && (y == p.y))
 			return false;
@@ -86,13 +86,13 @@ struct TPPLPoint {
 template<typename T>
 class TPPLPoly {
 protected:
-	
+
 	TPPLPoint<T> *points;
-	int64_t numpoints;
+	long numpoints;
 	bool hole;
 
 public:
-	
+
 	//constructors/destructors
 	TPPLPoly();
 	~TPPLPoly();
@@ -101,35 +101,35 @@ public:
 	TPPLPoly& operator=(const TPPLPoly &src);
 
 	//getters and setters
-	int64_t GetNumPoints() {
+	long GetNumPoints() {
 		return numpoints;
 	}
-	
+
 	bool IsHole() {
 		return hole;
 	}
-	
+
 	void SetHole(bool hole) {
 		this->hole = hole;
 	}
-	
-	TPPLPoint<T> &GetPoint(int64_t i) {
+
+	TPPLPoint<T> &GetPoint(long i) {
 		return points[i];
 	}
-	
+
 	TPPLPoint<T> *GetPoints() {
 		return points;
 	}
-	
+
 	TPPLPoint<T> & operator[](int i) {
 		return points[i];
 	}
-	
+
 	//clears the polygon points
 	void Clear();
 
 	//inits the polygon with numpoints vertices
-	void Init(int64_t numpoints);
+	void Init(long numpoints);
 
 	//creates a triangle with points p1,p2,p3
 	void Triangle(TPPLPoint<T> &p1, TPPLPoint<T> &p2, TPPLPoint<T> &p3);
@@ -153,7 +153,7 @@ public:
 //edge that intersects the scanline
 template<typename T>
 struct ScanLineEdge {
-	mutable int64_t index;
+	mutable long index;
 	TPPLPoint<T> p1;
 	TPPLPoint<T> p2;
 
@@ -176,39 +176,39 @@ struct PartitionVertex {
 template<typename T>
 struct MonotoneVertex {
 	TPPLPoint<T> p;
-	int64_t previous;
-	int64_t next;
+	long previous;
+	long next;
 };
 
 template<typename T>
 class TPPLPartition {
 protected:
-	
+
 	class VertexSorter {
 		MonotoneVertex<T> *vertices;
 	public:
 		VertexSorter(MonotoneVertex<T> *v) :
 				vertices(v) {
 		}
-		bool operator()(int64_t index1, int64_t index2);
+		bool operator()(long index1, long index2);
 	};
 
 	struct Diagonal {
-		int64_t index1;
-		int64_t index2;
+		long index1;
+		long index2;
 	};
 
 	//dynamic programming state for minimum-weight triangulation
 	struct DPState {
 		bool visible;
 		T weight;
-		int64_t bestvertex;
+		long bestvertex;
 	};
 
 	//dynamic programming state for convex partitioning
 	struct DPState2 {
 		bool visible;
-		int64_t weight;
+		long weight;
 		std::list<Diagonal> pairs;
 	};
 
@@ -227,24 +227,24 @@ protected:
 
 	//helper functions for Triangulate_EC
 	void UpdateVertexReflexity(PartitionVertex<T> *v);
-	void UpdateVertex(PartitionVertex<T> *v, PartitionVertex<T> *vertices, int64_t numvertices);
+	void UpdateVertex(PartitionVertex<T> *v, PartitionVertex<T> *vertices, long numvertices);
 
 	//helper functions for ConvexPartition_OPT
-	void UpdateState(int64_t a, int64_t b, int64_t w, int64_t i, int64_t j, DPState2 **dpstates);
-	void TypeA(int64_t i, int64_t j, int64_t k, PartitionVertex<T> *vertices, DPState2 **dpstates);
-	void TypeB(int64_t i, int64_t j, int64_t k, PartitionVertex<T> *vertices, DPState2 **dpstates);
+	void UpdateState(long a, long b, long w, long i, long j, DPState2 **dpstates);
+	void TypeA(long i, long j, long k, PartitionVertex<T> *vertices, DPState2 **dpstates);
+	void TypeB(long i, long j, long k, PartitionVertex<T> *vertices, DPState2 **dpstates);
 
 	//helper functions for MonotonePartition
 	bool Below(TPPLPoint<T> &p1, TPPLPoint<T> &p2);
 
-	void AddDiagonal(MonotoneVertex<T> *vertices, int64_t *numvertices, int64_t index1, int64_t index2, char *vertextypes,
-			typename set<ScanLineEdge<T>>::iterator *edgeTreeIterators, set<ScanLineEdge<T>> *edgeTree, int64_t *helpers);
+	void AddDiagonal(MonotoneVertex<T> *vertices, long *numvertices, long index1, long index2, char *vertextypes,
+					 typename set<ScanLineEdge<T>>::iterator *edgeTreeIterators, set<ScanLineEdge<T>> *edgeTree, long *helpers);
 
 	//triangulates a monotone polygon, used in Triangulate_MONO
 	int TriangulateMonotone(TPPLPoly<T> *inPoly, std::list<TPPLPoly<T>> *triangles);
 
 public:
-	
+
 	//simple heuristic procedure for removing holes from a list of polygons
 	//works by creating a diagonal from the rightmost hole vertex to some visible vertex
 	//time complexity: O(h*(n^2)), h is the number of holes, n is the number of vertices
@@ -368,7 +368,7 @@ public:
  template<typename T>
  void TPPLPoly<T>::Clear() ;
  template<typename T>
- void TPPLPoly<T>::Init(int64_t numpoints);
+ void TPPLPoly<T>::Init(long numpoints);
  template<typename T>
  void TPPLPoly<T>::Triangle(TPPLPoint<T> &p1, TPPLPoint<T> &p2, TPPLPoint<T> &p3);
  template<typename T>
@@ -404,7 +404,7 @@ public:
  template<typename T>
  void TPPLPartition<T>::UpdateVertexReflexity(PartitionVertex *v);
  template<typename T>
- void TPPLPartition<T>::UpdateVertex(PartitionVertex *v, PartitionVertex *vertices, int64_t numvertices) ;
+ void TPPLPartition<T>::UpdateVertex(PartitionVertex *v, PartitionVertex *vertices, long numvertices) ;
 
  //triangulation by ear removal
  template<typename T>
@@ -421,11 +421,11 @@ public:
  template<typename T>
  int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *triangles) ;
  template<typename T>
- void TPPLPartition<T>::UpdateState(int64_t a, int64_t b, int64_t w, int64_t i, int64_t j, DPState2 **dpstates) ;
+ void TPPLPartition<T>::UpdateState(long a, long b, long w, long i, long j, DPState2 **dpstates) ;
  template<typename T>
- void TPPLPartition<T>::TypeA(int64_t i, int64_t j, int64_t k, PartitionVertex *vertices, DPState2 **dpstates);
+ void TPPLPartition<T>::TypeA(long i, long j, long k, PartitionVertex *vertices, DPState2 **dpstates);
  template<typename T>
- void TPPLPartition<T>::TypeB(int64_t i, int64_t j, int64_t k, PartitionVertex *vertices, DPState2 **dpstates);
+ void TPPLPartition<T>::TypeB(long i, long j, long k, PartitionVertex *vertices, DPState2 **dpstates);
  template<typename T>
  int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *parts);
 
@@ -439,14 +439,14 @@ public:
 
  //adds a diagonal to the doubly-connected list of vertices
  template<typename T>
- void TPPLPartition<T>::AddDiagonal(MonotoneVertex *vertices, int64_t *numvertices, int64_t index1, int64_t index2,
+ void TPPLPartition<T>::AddDiagonal(MonotoneVertex *vertices, long *numvertices, long index1, long index2,
  char *vertextypes,typename set<ScanLineEdge>::iterator *edgeTreeIterators,
- set<ScanLineEdge> *edgeTree, int64_t *helpers) ;
+ set<ScanLineEdge> *edgeTree, long *helpers) ;
  template<typename T>
  bool TPPLPartition<T>::Below(TPPLPoint<T> &p1, TPPLPoint<T> &p2);
  //sorts in the falling order of y values, if y is equal, x is used instead
  template<typename T>
- bool TPPLPartition<T>::VertexSorter::operator() (int64_t index1, int64_t index2);
+ bool TPPLPartition<T>::VertexSorter::operator() (long index1, long index2);
  template<typename T>
  bool TPPLPartition<T>::ScanLineEdge::IsConvex(const TPPLPoint<T>& p1, const TPPLPoint<T>& p2, const TPPLPoint<T>& p3) const;
  template<typename T>
@@ -488,7 +488,7 @@ void TPPLPoly<T>::Clear() {
 	points = NULL;
 }
 template<typename T>
-void TPPLPoly<T>::Init(int64_t numpoints) {
+void TPPLPoly<T>::Init(long numpoints) {
 	Clear();
 	this->numpoints = numpoints;
 	points = new TPPLPoint<T> [numpoints];
@@ -518,7 +518,7 @@ TPPLPoly<T>& TPPLPoly<T>::operator=(const TPPLPoly<T> &src) {
 }
 template<typename T>
 int TPPLPoly<T>::GetOrientation() {
-	int64_t i1, i2;
+	long i1, i2;
 	T area = 0;
 	for (i1 = 0; i1 < numpoints; i1++) {
 		i2 = i1 + 1;
@@ -541,14 +541,14 @@ void TPPLPoly<T>::SetOrientation(int orientation) {
 }
 template<typename T>
 void TPPLPoly<T>::Invert() {
-	int64_t i;
+	long i;
 	TPPLPoint<T> *invpoints;
-	
+
 	invpoints = new TPPLPoint<T> [numpoints];
 	for (i = 0; i < numpoints; i++) {
 		invpoints[i] = points[numpoints - i - 1];
 	}
-	
+
 	delete[] points;
 	points = invpoints;
 }
@@ -583,31 +583,31 @@ int TPPLPartition<T>::Intersects(TPPLPoint<T> &p11, TPPLPoint<T> &p12, TPPLPoint
 		return 0;
 	if ((p12.x == p22.x) && (p12.y == p22.y))
 		return 0;
-	
+
 	TPPLPoint<T> v1ort, v2ort, v;
 	T dot11, dot12, dot21, dot22;
-	
+
 	v1ort.x = p12.y - p11.y;
 	v1ort.y = p11.x - p12.x;
-	
+
 	v2ort.x = p22.y - p21.y;
 	v2ort.y = p21.x - p22.x;
-	
+
 	v = p21 - p11;
 	dot21 = v.x * v1ort.x + v.y * v1ort.y;
 	v = p22 - p11;
 	dot22 = v.x * v1ort.x + v.y * v1ort.y;
-	
+
 	v = p11 - p21;
 	dot11 = v.x * v2ort.x + v.y * v2ort.y;
 	v = p12 - p21;
 	dot12 = v.x * v2ort.x + v.y * v2ort.y;
-	
+
 	if (dot11 * dot12 > 0)
 		return 0;
 	if (dot21 * dot22 > 0)
 		return 0;
-	
+
 	return 1;
 }
 
@@ -616,7 +616,7 @@ template<typename T>
 int TPPLPartition<T>::RemoveHoles(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> *outpolys) {
 	list<TPPLPoly<T>> polys;
 	typename list<TPPLPoly<T>>::iterator holeiter, polyiter, iter, iter2;
-	int64_t i, i2, holepointindex, polypointindex;
+	long i, i2, holepointindex, polypointindex;
 	TPPLPoint<T> holepoint, polypoint, bestpolypoint;
 	TPPLPoint<T> linep1, linep2;
 	TPPLPoint<T> v1, v2;
@@ -624,7 +624,7 @@ int TPPLPartition<T>::RemoveHoles(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> 
 	bool hasholes;
 	bool pointvisible;
 	bool pointfound;
-	
+
 	//check for trivial case (no holes)
 	hasholes = false;
 	for (iter = inpolys->begin(); iter != inpolys->end(); iter++) {
@@ -639,22 +639,22 @@ int TPPLPartition<T>::RemoveHoles(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> 
 		}
 		return 1;
 	}
-	
+
 	polys = *inpolys;
-	
+
 	while (1) {
 		//find the hole point with the largest x
 		hasholes = false;
 		for (iter = polys.begin(); iter != polys.end(); iter++) {
 			if (!iter->IsHole())
 				continue;
-			
+
 			if (!hasholes) {
 				hasholes = true;
 				holeiter = iter;
 				holepointindex = 0;
 			}
-			
+
 			for (i = 0; i < iter->GetNumPoints(); i++) {
 				if (iter->GetPoint(i).x > holeiter->GetPoint(holepointindex).x) {
 					holeiter = iter;
@@ -665,7 +665,7 @@ int TPPLPartition<T>::RemoveHoles(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> 
 		if (!hasholes)
 			break;
 		holepoint = holeiter->GetPoint(holepointindex);
-		
+
 		pointfound = false;
 		for (iter = polys.begin(); iter != polys.end(); iter++) {
 			if (iter->IsHole())
@@ -674,7 +674,7 @@ int TPPLPartition<T>::RemoveHoles(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> 
 				if (iter->GetPoint(i).x <= holepoint.x)
 					continue;
 				if (!InCone(iter->GetPoint((i + iter->GetNumPoints() - 1) % (iter->GetNumPoints())), iter->GetPoint(i),
-						iter->GetPoint((i + 1) % (iter->GetNumPoints())), holepoint))
+							iter->GetPoint((i + 1) % (iter->GetNumPoints())), holepoint))
 					continue;
 				polypoint = iter->GetPoint(i);
 				if (pointfound) {
@@ -706,10 +706,10 @@ int TPPLPartition<T>::RemoveHoles(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> 
 				}
 			}
 		}
-		
+
 		if (!pointfound)
 			return 0;
-		
+
 		newpoly.Init(holeiter->GetNumPoints() + polyiter->GetNumPoints() + 2);
 		i2 = 0;
 		for (i = 0; i <= polypointindex; i++) {
@@ -724,16 +724,16 @@ int TPPLPartition<T>::RemoveHoles(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> 
 			newpoly[i2] = polyiter->GetPoint(i);
 			i2++;
 		}
-		
+
 		polys.erase(holeiter);
 		polys.erase(polyiter);
 		polys.push_back(newpoly);
 	}
-	
+
 	for (iter = polys.begin(); iter != polys.end(); iter++) {
 		outpolys->push_back(*iter);
 	}
-	
+
 	return 1;
 }
 template<typename T>
@@ -767,9 +767,9 @@ bool TPPLPartition<T>::IsInside(TPPLPoint<T>& p1, TPPLPoint<T>& p2, TPPLPoint<T>
 template<typename T>
 bool TPPLPartition<T>::InCone(TPPLPoint<T> &p1, TPPLPoint<T> &p2, TPPLPoint<T> &p3, TPPLPoint<T> &p) {
 	bool convex;
-	
+
 	convex = IsConvex(p1, p2, p3);
-	
+
 	if (convex) {
 		if (!IsConvex(p1, p2, p))
 			return false;
@@ -787,11 +787,11 @@ bool TPPLPartition<T>::InCone(TPPLPoint<T> &p1, TPPLPoint<T> &p2, TPPLPoint<T> &
 template<typename T>
 bool TPPLPartition<T>::InCone(PartitionVertex<T> *v, TPPLPoint<T> &p) {
 	TPPLPoint<T> p1, p2, p3;
-	
+
 	p1 = v->previous->p;
 	p2 = v->p;
 	p3 = v->next->p;
-	
+
 	return InCone(p1, p2, p3, p);
 }
 template<typename T>
@@ -802,20 +802,20 @@ void TPPLPartition<T>::UpdateVertexReflexity(PartitionVertex<T> *v) {
 	v->isConvex = !IsReflex(v1->p, v->p, v3->p);
 }
 template<typename T>
-void TPPLPartition<T>::UpdateVertex(PartitionVertex<T> *v, PartitionVertex<T> *vertices, int64_t numvertices) {
-	int64_t i;
+void TPPLPartition<T>::UpdateVertex(PartitionVertex<T> *v, PartitionVertex<T> *vertices, long numvertices) {
+	long i;
 	PartitionVertex<T> *v1, *v3;
 	TPPLPoint<T> vec1, vec3;
-	
+
 	v1 = v->previous;
 	v3 = v->next;
-	
+
 	v->isConvex = IsConvex(v1->p, v->p, v3->p);
-	
+
 	vec1 = Normalize(v1->p - v->p);
 	vec3 = Normalize(v3->p - v->p);
 	v->angle = vec1.x * vec3.x + vec1.y * vec3.y;
-	
+
 	if (v->isConvex) {
 		v->isEar = true;
 		for (i = 0; i < numvertices; i++) {
@@ -838,22 +838,22 @@ void TPPLPartition<T>::UpdateVertex(PartitionVertex<T> *v, PartitionVertex<T> *v
 //triangulation by ear removal
 template<typename T>
 int TPPLPartition<T>::Triangulate_EC(TPPLPoly<T> *poly, list<TPPLPoly<T>> *triangles) {
-	int64_t numvertices;
+	long numvertices;
 	PartitionVertex<T> *vertices;
 	PartitionVertex<T> *ear;
 	TPPLPoly<T> triangle;
-	int64_t i, j;
+	long i, j;
 	bool earfound;
-	
+
 	if (poly->GetNumPoints() < 3)
 		return 0;
 	if (poly->GetNumPoints() == 3) {
 		triangles->push_back(*poly);
 		return 1;
 	}
-	
+
 	numvertices = poly->GetNumPoints();
-	
+
 	vertices = new PartitionVertex<T> [numvertices];
 	for (i = 0; i < numvertices; i++) {
 		vertices[i].isActive = true;
@@ -870,7 +870,7 @@ int TPPLPartition<T>::Triangulate_EC(TPPLPoly<T> *poly, list<TPPLPoly<T>> *trian
 	for (i = 0; i < numvertices; i++) {
 		UpdateVertex(&vertices[i], vertices, numvertices);
 	}
-	
+
 	for (i = 0; i < numvertices - 3; i++) {
 		earfound = false;
 		//find the most extruded ear
@@ -892,17 +892,17 @@ int TPPLPartition<T>::Triangulate_EC(TPPLPoly<T> *poly, list<TPPLPoly<T>> *trian
 			delete[] vertices;
 			return 0;
 		}
-		
+
 		triangle.Triangle(ear->previous->p, ear->p, ear->next->p);
 		triangles->push_back(triangle);
-		
+
 		ear->isActive = false;
 		ear->previous->next = ear->next;
 		ear->next->previous = ear->previous;
-		
+
 		if (i == numvertices - 4)
 			break;
-		
+
 		UpdateVertex(ear->previous, vertices, numvertices);
 		UpdateVertex(ear->next, vertices, numvertices);
 	}
@@ -913,16 +913,16 @@ int TPPLPartition<T>::Triangulate_EC(TPPLPoly<T> *poly, list<TPPLPoly<T>> *trian
 			break;
 		}
 	}
-	
+
 	delete[] vertices;
-	
+
 	return 1;
 }
 template<typename T>
 int TPPLPartition<T>::Triangulate_EC(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> *triangles) {
 	list<TPPLPoly<T>> outpolys;
 	typename list<TPPLPoly<T>>::iterator iter;
-	
+
 	if (!RemoveHoles(inpolys, &outpolys))
 		return 0;
 	for (iter = outpolys.begin(); iter != outpolys.end(); iter++) {
@@ -938,10 +938,10 @@ int TPPLPartition<T>::ConvexPartition_HM(TPPLPoly<T> *poly, list<TPPLPoly<T>> *p
 	TPPLPoly<T> *poly1, *poly2;
 	TPPLPoly<T> newpoly;
 	TPPLPoint<T> d1, d2, p1, p2, p3;
-	int64_t i11, i12, i21, i22, i13, i23, j, k;
+	long i11, i12, i21, i22, i13, i23, j, k;
 	bool isdiagonal;
-	int64_t numreflex;
-	
+	long numreflex;
+
 	//check if the poly is already convex
 	numreflex = 0;
 	for (i11 = 0; i11 < poly->GetNumPoints(); i11++) {
@@ -962,23 +962,23 @@ int TPPLPartition<T>::ConvexPartition_HM(TPPLPoly<T> *poly, list<TPPLPoly<T>> *p
 		parts->push_back(*poly);
 		return 1;
 	}
-	
+
 	if (!Triangulate_EC(poly, &triangles))
 		return 0;
-	
+
 	for (iter1 = triangles.begin(); iter1 != triangles.end(); iter1++) {
 		poly1 = &(*iter1);
 		for (i11 = 0; i11 < poly1->GetNumPoints(); i11++) {
 			d1 = poly1->GetPoint(i11);
 			i12 = (i11 + 1) % (poly1->GetNumPoints());
 			d2 = poly1->GetPoint(i12);
-			
+
 			isdiagonal = false;
 			for (iter2 = iter1; iter2 != triangles.end(); iter2++) {
 				if (iter1 == iter2)
 					continue;
 				poly2 = &(*iter2);
-				
+
 				for (i21 = 0; i21 < poly2->GetNumPoints(); i21++) {
 					if ((d2.x != poly2->GetPoint(i21).x) || (d2.y != poly2->GetPoint(i21).y))
 						continue;
@@ -991,10 +991,10 @@ int TPPLPartition<T>::ConvexPartition_HM(TPPLPoly<T> *poly, list<TPPLPoly<T>> *p
 				if (isdiagonal)
 					break;
 			}
-			
+
 			if (!isdiagonal)
 				continue;
-			
+
 			p2 = poly1->GetPoint(i11);
 			if (i11 == 0)
 				i13 = poly1->GetNumPoints() - 1;
@@ -1006,10 +1006,10 @@ int TPPLPartition<T>::ConvexPartition_HM(TPPLPoly<T> *poly, list<TPPLPoly<T>> *p
 			else
 				i23 = i22 + 1;
 			p3 = poly2->GetPoint(i23);
-			
+
 			if (!IsConvex(p1, p2, p3))
 				continue;
-			
+
 			p2 = poly1->GetPoint(i12);
 			if (i12 == (poly1->GetNumPoints() - 1))
 				i13 = 0;
@@ -1021,10 +1021,10 @@ int TPPLPartition<T>::ConvexPartition_HM(TPPLPoly<T> *poly, list<TPPLPoly<T>> *p
 			else
 				i23 = i21 - 1;
 			p1 = poly2->GetPoint(i23);
-			
+
 			if (!IsConvex(p1, p2, p3))
 				continue;
-			
+
 			newpoly.Init(poly1->GetNumPoints() + poly2->GetNumPoints() - 2);
 			k = 0;
 			for (j = i12; j != i11; j = (j + 1) % (poly1->GetNumPoints())) {
@@ -1035,27 +1035,27 @@ int TPPLPartition<T>::ConvexPartition_HM(TPPLPoly<T> *poly, list<TPPLPoly<T>> *p
 				newpoly[k] = poly2->GetPoint(j);
 				k++;
 			}
-			
+
 			triangles.erase(iter2);
 			*iter1 = newpoly;
 			poly1 = &(*iter1);
 			i11 = -1;
-			
+
 			continue;
 		}
 	}
-	
+
 	for (iter1 = triangles.begin(); iter1 != triangles.end(); iter1++) {
 		parts->push_back(*iter1);
 	}
-	
+
 	return 1;
 }
 template<typename T>
 int TPPLPartition<T>::ConvexPartition_HM(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> *parts) {
 	list<TPPLPoly<T>> outpolys;
 	typename list<TPPLPoly<T>>::iterator iter;
-	
+
 	if (!RemoveHoles(inpolys, &outpolys))
 		return 0;
 	for (iter = outpolys.begin(); iter != outpolys.end(); iter++) {
@@ -1070,22 +1070,22 @@ int TPPLPartition<T>::ConvexPartition_HM(list<TPPLPoly<T>> *inpolys, list<TPPLPo
 //O(n^2) space complexity
 template<typename T>
 int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *triangles) {
-	int64_t i, j, k, gap, n;
+	long i, j, k, gap, n;
 	DPState **dpstates;
 	TPPLPoint<T> p1, p2, p3, p4;
-	int64_t bestvertex;
+	long bestvertex;
 	T weight, minweight, d1, d2;
 	Diagonal diagonal, newdiagonal;
 	list<Diagonal> diagonals;
 	TPPLPoly<T> triangle;
 	int ret = 1;
-	
+
 	n = poly->GetNumPoints();
 	dpstates = new DPState *[n];
 	for (i = 1; i < n; i++) {
 		dpstates[i] = new DPState[i];
 	}
-	
+
 	//init states and visibility
 	for (i = 0; i < (n - 1); i++) {
 		p1 = poly->GetPoint(i);
@@ -1095,7 +1095,7 @@ int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *tria
 			dpstates[j][i].bestvertex = -1;
 			if (j != (i + 1)) {
 				p2 = poly->GetPoint(j);
-				
+
 				//visibility check
 				if (i == 0)
 					p3 = poly->GetPoint(n - 1);
@@ -1109,7 +1109,7 @@ int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *tria
 					dpstates[j][i].visible = false;
 					continue;
 				}
-				
+
 				if (j == 0)
 					p3 = poly->GetPoint(n - 1);
 				else
@@ -1122,7 +1122,7 @@ int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *tria
 					dpstates[j][i].visible = false;
 					continue;
 				}
-				
+
 				for (k = 0; k < n; k++) {
 					p3 = poly->GetPoint(k);
 					if (k == (n - 1))
@@ -1140,7 +1140,7 @@ int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *tria
 	dpstates[n - 1][0].visible = true;
 	dpstates[n - 1][0].weight = 0;
 	dpstates[n - 1][0].bestvertex = -1;
-	
+
 	for (gap = 2; gap < n; gap++) {
 		for (i = 0; i < (n - gap); i++) {
 			j = i + gap;
@@ -1152,7 +1152,7 @@ int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *tria
 					continue;
 				if (!dpstates[j][k].visible)
 					continue;
-				
+
 				if (k <= (i + 1))
 					d1 = 0;
 				else
@@ -1161,9 +1161,9 @@ int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *tria
 					d2 = 0;
 				else
 					d2 = Distance(poly->GetPoint(k), poly->GetPoint(j));
-				
+
 				weight = dpstates[k][i].weight + dpstates[j][k].weight + d1 + d2;
-				
+
 				if ((bestvertex == -1) || (weight < minweight)) {
 					bestvertex = k;
 					minweight = weight;
@@ -1174,15 +1174,15 @@ int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *tria
 					delete[] dpstates[i];
 				}
 				delete[] dpstates;
-				
+
 				return 0;
 			}
-			
+
 			dpstates[j][i].bestvertex = bestvertex;
 			dpstates[j][i].weight = minweight;
 		}
 	}
-	
+
 	newdiagonal.index1 = 0;
 	newdiagonal.index2 = n - 1;
 	diagonals.push_back(newdiagonal);
@@ -1207,28 +1207,28 @@ int TPPLPartition<T>::Triangulate_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *tria
 			diagonals.push_back(newdiagonal);
 		}
 	}
-	
+
 	for (i = 1; i < n; i++) {
 		delete[] dpstates[i];
 	}
 	delete[] dpstates;
-	
+
 	return ret;
 }
 template<typename T>
-void TPPLPartition<T>::UpdateState(int64_t a, int64_t b, int64_t w, int64_t i, int64_t j, DPState2 **dpstates) {
+void TPPLPartition<T>::UpdateState(long a, long b, long w, long i, long j, DPState2 **dpstates) {
 	Diagonal newdiagonal;
 	list<Diagonal> *pairs;
-	int64_t w2;
-	
+	long w2;
+
 	w2 = dpstates[a][b].weight;
 	if (w > w2)
 		return;
-	
+
 	pairs = &(dpstates[a][b].pairs);
 	newdiagonal.index1 = i;
 	newdiagonal.index2 = j;
-	
+
 	if (w < w2) {
 		pairs->clear();
 		pairs->push_front(newdiagonal);
@@ -1242,12 +1242,12 @@ void TPPLPartition<T>::UpdateState(int64_t a, int64_t b, int64_t w, int64_t i, i
 	}
 }
 template<typename T>
-void TPPLPartition<T>::TypeA(int64_t i, int64_t j, int64_t k, PartitionVertex<T> *vertices, DPState2 **dpstates) {
+void TPPLPartition<T>::TypeA(long i, long j, long k, PartitionVertex<T> *vertices, DPState2 **dpstates) {
 	list<Diagonal> *pairs;
 	typename list<Diagonal>::iterator iter, lastiter;
-	int64_t top;
-	int64_t w;
-	
+	long top;
+	long w;
+
 	if (!dpstates[i][j].visible)
 		return;
 	top = j;
@@ -1280,17 +1280,17 @@ void TPPLPartition<T>::TypeA(int64_t i, int64_t j, int64_t k, PartitionVertex<T>
 	UpdateState(i, k, w, top, j, dpstates);
 }
 template<typename T>
-void TPPLPartition<T>::TypeB(int64_t i, int64_t j, int64_t k, PartitionVertex<T> *vertices, DPState2 **dpstates) {
+void TPPLPartition<T>::TypeB(long i, long j, long k, PartitionVertex<T> *vertices, DPState2 **dpstates) {
 	list<Diagonal> *pairs;
 	typename list<Diagonal>::iterator iter, lastiter;
-	int64_t top;
-	int64_t w;
-	
+	long top;
+	long w;
+
 	if (!dpstates[j][k].visible)
 		return;
 	top = j;
 	w = dpstates[j][k].weight;
-	
+
 	if (j - i > 1) {
 		if (!dpstates[i][j].visible)
 			return;
@@ -1298,7 +1298,7 @@ void TPPLPartition<T>::TypeB(int64_t i, int64_t j, int64_t k, PartitionVertex<T>
 	}
 	if (k - j > 1) {
 		pairs = &(dpstates[j][k].pairs);
-		
+
 		iter = pairs->begin();
 		if ((!pairs->empty()) && (!IsReflex(vertices[i].p, vertices[j].p, vertices[iter->index1].p))) {
 			lastiter = iter;
@@ -1323,25 +1323,25 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 	TPPLPoint<T> p1, p2, p3, p4;
 	PartitionVertex<T> *vertices;
 	DPState2 **dpstates;
-	int64_t i, j, k, n, gap;
+	long i, j, k, n, gap;
 	list<Diagonal> diagonals, diagonals2;
 	Diagonal diagonal, newdiagonal;
 	list<Diagonal> *pairs, *pairs2;
 	typename list<Diagonal>::iterator iter, iter2;
 	int ret;
 	TPPLPoly<T> newpoly;
-	list<int64_t> indices;
-	list<int64_t>::iterator iiter;
+	list<long> indices;
+	list<long>::iterator iiter;
 	bool ijreal, jkreal;
-	
+
 	n = poly->GetNumPoints();
 	vertices = new PartitionVertex<T> [n];
-	
+
 	dpstates = new DPState2 *[n];
 	for (i = 0; i < n; i++) {
 		dpstates[i] = new DPState2[n];
 	}
-	
+
 	//init vertex information
 	for (i = 0; i < n; i++) {
 		vertices[i].p = poly->GetPoint(i);
@@ -1358,7 +1358,7 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 	for (i = 1; i < n; i++) {
 		UpdateVertexReflexity(&(vertices[i]));
 	}
-	
+
 	//init states and visibility
 	for (i = 0; i < (n - 1); i++) {
 		p1 = poly->GetPoint(i);
@@ -1371,7 +1371,7 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 			}
 			if (j != (i + 1)) {
 				p2 = poly->GetPoint(j);
-				
+
 				//visibility check
 				if (!InCone(&vertices[i], p2)) {
 					dpstates[i][j].visible = false;
@@ -1381,7 +1381,7 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 					dpstates[i][j].visible = false;
 					continue;
 				}
-				
+
 				for (k = 0; k < n; k++) {
 					p3 = poly->GetPoint(k);
 					if (k == (n - 1))
@@ -1405,10 +1405,10 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 			dpstates[i][j].pairs.push_back(newdiagonal);
 		}
 	}
-	
+
 	dpstates[0][n - 1].visible = true;
 	vertices[0].isConvex = false; //by convention
-			
+
 	for (gap = 3; gap < n; gap++) {
 		for (i = 0; i < n - gap; i++) {
 			if (vertices[i].isConvex)
@@ -1442,7 +1442,7 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 			}
 		}
 	}
-	
+
 	//recover solution
 	ret = 1;
 	newdiagonal.index1 = 0;
@@ -1516,17 +1516,17 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 			}
 		}
 	}
-	
+
 	if (ret == 0) {
 		for (i = 0; i < n; i++) {
 			delete[] dpstates[i];
 		}
 		delete[] dpstates;
 		delete[] vertices;
-		
+
 		return ret;
 	}
-	
+
 	newdiagonal.index1 = 0;
 	newdiagonal.index2 = n - 1;
 	diagonals.push_front(newdiagonal);
@@ -1535,13 +1535,13 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 		diagonals.pop_front();
 		if ((diagonal.index2 - diagonal.index1) <= 1)
 			continue;
-		
+
 		indices.clear();
 		diagonals2.clear();
 		indices.push_back(diagonal.index1);
 		indices.push_back(diagonal.index2);
 		diagonals2.push_front(diagonal);
-		
+
 		while (!diagonals2.empty()) {
 			diagonal = *(diagonals2.begin());
 			diagonals2.pop_front();
@@ -1562,7 +1562,7 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 				if (iter->index1 != iter->index2)
 					jkreal = false;
 			}
-			
+
 			newdiagonal.index1 = diagonal.index1;
 			newdiagonal.index2 = j;
 			if (ijreal) {
@@ -1570,7 +1570,7 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 			} else {
 				diagonals2.push_back(newdiagonal);
 			}
-			
+
 			newdiagonal.index1 = j;
 			newdiagonal.index2 = diagonal.index2;
 			if (jkreal) {
@@ -1578,12 +1578,12 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 			} else {
 				diagonals2.push_back(newdiagonal);
 			}
-			
+
 			indices.push_back(j);
 		}
-		
+
 		indices.sort();
-		newpoly.Init((int64_t) indices.size());
+		newpoly.Init((long) indices.size());
 		k = 0;
 		for (iiter = indices.begin(); iiter != indices.end(); iiter++) {
 			newpoly[k] = vertices[*iiter].p;
@@ -1591,13 +1591,13 @@ int TPPLPartition<T>::ConvexPartition_OPT(TPPLPoly<T> *poly, list<TPPLPoly<T>> *
 		}
 		parts->push_back(newpoly);
 	}
-	
+
 	for (i = 0; i < n; i++) {
 		delete[] dpstates[i];
 	}
 	delete[] dpstates;
 	delete[] vertices;
-	
+
 	return ret;
 }
 
@@ -1610,22 +1610,22 @@ template<typename T>
 int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> *monotonePolys) {
 	typename list<TPPLPoly<T>>::iterator iter;
 	MonotoneVertex<T> *vertices;
-	int64_t i, numvertices, vindex, vindex2, newnumvertices, maxnumvertices;
-	int64_t polystartindex, polyendindex;
+	long i, numvertices, vindex, vindex2, newnumvertices, maxnumvertices;
+	long polystartindex, polyendindex;
 	TPPLPoly<T> *poly;
 	MonotoneVertex<T> *v, *v2, *vprev, *vnext;
 	ScanLineEdge<T> newedge;
 	bool error = false;
-	
+
 	numvertices = 0;
 	for (iter = inpolys->begin(); iter != inpolys->end(); iter++) {
 		numvertices += iter->GetNumPoints();
 	}
-	
+
 	maxnumvertices = numvertices * 3;
 	vertices = new MonotoneVertex<T> [maxnumvertices];
 	newnumvertices = numvertices;
-	
+
 	polystartindex = 0;
 	for (iter = inpolys->begin(); iter != inpolys->end(); iter++) {
 		poly = &(*iter);
@@ -1643,20 +1643,20 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 		}
 		polystartindex = polyendindex + 1;
 	}
-	
+
 	//construct the priority queue
-	int64_t *priority = new int64_t[numvertices];
+	long *priority = new long[numvertices];
 	for (i = 0; i < numvertices; i++)
 		priority[i] = i;
 	std::sort(priority, &(priority[numvertices]), VertexSorter(vertices));
-	
+
 	//determine vertex types
 	char *vertextypes = new char[maxnumvertices];
 	for (i = 0; i < numvertices; i++) {
 		v = &(vertices[i]);
 		vprev = &(vertices[v->previous]);
 		vnext = &(vertices[v->next]);
-		
+
 		if (Below(vprev->p, v->p) && Below(vnext->p, v->p)) {
 			if (IsConvex(vnext->p, vprev->p, v->p)) {
 				vertextypes[i] = TPPL_VERTEXTYPE_START;
@@ -1673,10 +1673,10 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 			vertextypes[i] = TPPL_VERTEXTYPE_REGULAR;
 		}
 	}
-	
+
 	//helpers
-	int64_t *helpers = new int64_t[maxnumvertices];
-	
+	long *helpers = new long[maxnumvertices];
+
 	//binary search tree that holds edges intersecting the scanline
 	//note that while set doesn't actually have to be implemented as a tree
 	//complexity requirements for operations are the same as for the balanced binary search tree
@@ -1688,14 +1688,14 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 	pair<typename set<ScanLineEdge<T>>::iterator, bool> edgeTreeRet;
 	for (i = 0; i < numvertices; i++)
 		edgeTreeIterators[i] = edgeTree.end();
-	
+
 	//for each vertex
 	for (i = 0; i < numvertices; i++) {
 		vindex = priority[i];
 		v = &(vertices[vindex]);
 		vindex2 = vindex;
 		v2 = v;
-		
+
 		//depending on the vertex type, do the appropriate action
 		//comments in the following sections are copied from "Computational Geometry: Algorithms and Applications"
 		switch (vertextypes[vindex]) {
@@ -1708,18 +1708,18 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 				edgeTreeIterators[vindex] = edgeTreeRet.first;
 				helpers[vindex] = vindex;
 				break;
-				
+
 			case TPPL_VERTEXTYPE_END:
 				//if helper(ei-1) is a merge vertex
 				if (vertextypes[helpers[v->previous]] == TPPL_VERTEXTYPE_MERGE) {
 					//Insert the diagonal connecting vi to helper(ei-1) in D.
 					AddDiagonal(vertices, &newnumvertices, vindex, helpers[v->previous], vertextypes, edgeTreeIterators,
-							&edgeTree, helpers);
+								&edgeTree, helpers);
 				}
 				//Delete ei-1 from T
 				edgeTree.erase(edgeTreeIterators[v->previous]);
 				break;
-				
+
 			case TPPL_VERTEXTYPE_SPLIT:
 				//Search in T to find the edge e j directly left of vi.
 				newedge.p1 = v->p;
@@ -1732,7 +1732,7 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 				edgeIter--;
 				//Insert the diagonal connecting vi to helper(ej) in D.
 				AddDiagonal(vertices, &newnumvertices, vindex, helpers[edgeIter->index], vertextypes, edgeTreeIterators,
-						&edgeTree, helpers);
+							&edgeTree, helpers);
 				vindex2 = newnumvertices - 2;
 				v2 = &(vertices[vindex2]);
 				//helper(e j)vi
@@ -1745,13 +1745,13 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 				edgeTreeIterators[vindex2] = edgeTreeRet.first;
 				helpers[vindex2] = vindex2;
 				break;
-				
+
 			case TPPL_VERTEXTYPE_MERGE:
 				//if helper(ei-1) is a merge vertex
 				if (vertextypes[helpers[v->previous]] == TPPL_VERTEXTYPE_MERGE) {
 					//Insert the diagonal connecting vi to helper(ei-1) in D.
 					AddDiagonal(vertices, &newnumvertices, vindex, helpers[v->previous], vertextypes, edgeTreeIterators,
-							&edgeTree, helpers);
+								&edgeTree, helpers);
 					vindex2 = newnumvertices - 2;
 					//v2 = &(vertices[vindex2]); //this assignment isn't used
 				}
@@ -1770,12 +1770,12 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 				if (vertextypes[helpers[edgeIter->index]] == TPPL_VERTEXTYPE_MERGE) {
 					//Insert the diagonal connecting vi to helper(e j) in D.
 					AddDiagonal(vertices, &newnumvertices, vindex2, helpers[edgeIter->index], vertextypes,
-							edgeTreeIterators, &edgeTree, helpers);
+								edgeTreeIterators, &edgeTree, helpers);
 				}
 				//helper(e j)vi
 				helpers[edgeIter->index] = vindex2;
 				break;
-				
+
 			case TPPL_VERTEXTYPE_REGULAR:
 				//if the interior of P lies to the right of vi
 				if (Below(v->p, vertices[v->previous].p)) {
@@ -1783,7 +1783,7 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 					if (vertextypes[helpers[v->previous]] == TPPL_VERTEXTYPE_MERGE) {
 						//Insert the diagonal connecting vi to helper(ei-1) in D.
 						AddDiagonal(vertices, &newnumvertices, vindex, helpers[v->previous], vertextypes,
-								edgeTreeIterators, &edgeTree, helpers);
+									edgeTreeIterators, &edgeTree, helpers);
 						vindex2 = newnumvertices - 2;
 						v2 = &(vertices[vindex2]);
 					}
@@ -1811,24 +1811,24 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 					if (vertextypes[helpers[edgeIter->index]] == TPPL_VERTEXTYPE_MERGE) {
 						//Insert the diagonal connecting vi to helper(e j) in D.
 						AddDiagonal(vertices, &newnumvertices, vindex, helpers[edgeIter->index], vertextypes,
-								edgeTreeIterators, &edgeTree, helpers);
+									edgeTreeIterators, &edgeTree, helpers);
 					}
 					//helper(e j)vi
 					helpers[edgeIter->index] = vindex;
 				}
 				break;
 		}
-		
+
 		if (error)
 			break;
 	}
-	
+
 	char *used = new char[newnumvertices];
 	memset(used, 0, newnumvertices * sizeof(char));
-	
+
 	if (!error) {
 		//return result
-		int64_t size;
+		long size;
 		TPPLPoly<T> mpoly;
 		for (i = 0; i < newnumvertices; i++) {
 			if (used[i])
@@ -1856,7 +1856,7 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 			monotonePolys->push_back(mpoly);
 		}
 	}
-	
+
 	//cleanup
 	delete[] vertices;
 	delete[] priority;
@@ -1864,7 +1864,7 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 	delete[] edgeTreeIterators;
 	delete[] helpers;
 	delete[] used;
-	
+
 	if (error) {
 		return 0;
 	} else {
@@ -1874,31 +1874,31 @@ int TPPLPartition<T>::MonotonePartition(list<TPPLPoly<T>> *inpolys, list<TPPLPol
 
 //adds a diagonal to the doubly-connected list of vertices
 template<typename T>
-void TPPLPartition<T>::AddDiagonal(MonotoneVertex<T> *vertices, int64_t *numvertices, int64_t index1, int64_t index2,
-		char *vertextypes, typename set<ScanLineEdge<T>>::iterator *edgeTreeIterators, set<ScanLineEdge<T>> *edgeTree,
-		int64_t *helpers) {
-	int64_t newindex1, newindex2;
-	
+void TPPLPartition<T>::AddDiagonal(MonotoneVertex<T> *vertices, long *numvertices, long index1, long index2,
+								   char *vertextypes, typename set<ScanLineEdge<T>>::iterator *edgeTreeIterators, set<ScanLineEdge<T>> *edgeTree,
+								   long *helpers) {
+	long newindex1, newindex2;
+
 	newindex1 = *numvertices;
 	(*numvertices)++;
 	newindex2 = *numvertices;
 	(*numvertices)++;
-	
+
 	vertices[newindex1].p = vertices[index1].p;
 	vertices[newindex2].p = vertices[index2].p;
-	
+
 	vertices[newindex2].next = vertices[index2].next;
 	vertices[newindex1].next = vertices[index1].next;
-	
+
 	vertices[vertices[index2].next].previous = newindex2;
 	vertices[vertices[index1].next].previous = newindex1;
-	
+
 	vertices[index1].next = newindex2;
 	vertices[newindex2].previous = index1;
-	
+
 	vertices[index2].next = newindex1;
 	vertices[newindex1].previous = index2;
-	
+
 	//update all relevant structures
 	vertextypes[newindex1] = vertextypes[index1];
 	edgeTreeIterators[newindex1] = edgeTreeIterators[index1];
@@ -1925,7 +1925,7 @@ bool TPPLPartition<T>::Below(TPPLPoint<T> &p1, TPPLPoint<T> &p2) {
 
 //sorts in the falling order of y values, if y is equal, x is used instead
 template<typename T>
-bool TPPLPartition<T>::VertexSorter::operator()(int64_t index1, int64_t index2) {
+bool TPPLPartition<T>::VertexSorter::operator()(long index1, long index2) {
 	if (vertices[index1].p.y > vertices[index2].p.y)
 		return true;
 	else if (vertices[index1].p.y == vertices[index2].p.y) {
@@ -1978,21 +1978,21 @@ bool ScanLineEdge<T>::operator <(const ScanLineEdge<T> & other) const {
 //O(n) time, O(n) space complexity
 template<typename T>
 int TPPLPartition<T>::TriangulateMonotone(TPPLPoly<T> *inPoly, list<TPPLPoly<T>> *triangles) {
-	int64_t i, i2, j, topindex, bottomindex, leftindex, rightindex, vindex;
+	long i, i2, j, topindex, bottomindex, leftindex, rightindex, vindex;
 	TPPLPoint<T> *points;
-	int64_t numpoints;
+	long numpoints;
 	TPPLPoly<T> triangle;
-	
+
 	numpoints = inPoly->GetNumPoints();
 	points = inPoly->GetPoints();
-	
+
 	//trivial calses
 	if (numpoints < 3)
 		return 0;
 	if (numpoints == 3) {
 		triangles->push_back(*inPoly);
 	}
-	
+
 	topindex = 0;
 	bottomindex = 0;
 	for (i = 1; i < numpoints; i++) {
@@ -2001,7 +2001,7 @@ int TPPLPartition<T>::TriangulateMonotone(TPPLPoly<T> *inPoly, list<TPPLPoly<T>>
 		if (Below(points[topindex], points[i]))
 			topindex = i;
 	}
-	
+
 	//check if the poly is really monotone
 	i = topindex;
 	while (i != bottomindex) {
@@ -2021,10 +2021,10 @@ int TPPLPartition<T>::TriangulateMonotone(TPPLPoly<T> *inPoly, list<TPPLPoly<T>>
 			return 0;
 		i = i2;
 	}
-	
+
 	char *vertextypes = new char[numpoints];
-	int64_t *priority = new int64_t[numpoints];
-	
+	long *priority = new long[numpoints];
+
 	//merge left and right vertex chains
 	priority[0] = topindex;
 	vertextypes[topindex] = 0;
@@ -2065,14 +2065,14 @@ int TPPLPartition<T>::TriangulateMonotone(TPPLPoly<T> *inPoly, list<TPPLPoly<T>>
 	}
 	priority[i] = bottomindex;
 	vertextypes[bottomindex] = 0;
-	
-	int64_t *stack = new int64_t[numpoints];
-	int64_t stackptr = 0;
-	
+
+	long *stack = new long[numpoints];
+	long stackptr = 0;
+
 	stack[0] = priority[0];
 	stack[1] = priority[1];
 	stackptr = 2;
-	
+
 	//for each vertex from top to bottom trim as many triangles as possible
 	for (i = 2; i < (numpoints - 1); i++) {
 		vindex = priority[i];
@@ -2123,18 +2123,18 @@ int TPPLPartition<T>::TriangulateMonotone(TPPLPoly<T> *inPoly, list<TPPLPoly<T>>
 		}
 		triangles->push_back(triangle);
 	}
-	
+
 	delete[] priority;
 	delete[] vertextypes;
 	delete[] stack;
-	
+
 	return 1;
 }
 template<typename T>
 int TPPLPartition<T>::Triangulate_MONO(list<TPPLPoly<T>> *inpolys, list<TPPLPoly<T>> *triangles) {
 	list<TPPLPoly<T>> monotone;
 	typename list<TPPLPoly<T>>::iterator iter;
-	
+
 	if (!MonotonePartition(inpolys, &monotone))
 		return 0;
 	for (iter = monotone.begin(); iter != monotone.end(); iter++) {
@@ -2147,7 +2147,7 @@ template<typename T>
 int TPPLPartition<T>::Triangulate_MONO(TPPLPoly<T> *poly, list<TPPLPoly<T>> *triangles) {
 	list<TPPLPoly<T>> polys;
 	polys.push_back(*poly);
-	
+
 	return Triangulate_MONO(&polys, triangles);
 }
 #endif

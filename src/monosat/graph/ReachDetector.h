@@ -39,6 +39,7 @@
 
 #include "monosat/utils/System.h"
 #include "Detector.h"
+#include "monosat/graph/MaxflowDetector.h"
 using namespace dgl;
 namespace Monosat {
 template<typename Weight>
@@ -71,12 +72,12 @@ public:
 	vec<Lit> reach_lits;
 	vec<Lit> cnf_reach_lits;
 	Var first_reach_var;
-	vec<int> order_vec;
+
 	vec<int> reach_lit_map;
 	vec<int> force_reason;
+	vec<Heuristic*> all_reach_heuristics;
+	vec<Heuristic*> reach_heuristics;
 
-	vec<Lit> to_decide;
-	int last_decision_status = -1;
 	/*
 	 struct DistLit{
 	 Lit l;
@@ -89,14 +90,16 @@ public:
 	struct Change {
 		Var v;
 		int u;
+		bool polarity;
 	};
-	vec<bool> is_changed;
+	vec<bool> is_changed_under;
+	vec<bool> is_changed_over;
 	vec<Change> changed;
 
 	vec<Lit> extra_conflict;
 	vec<int> removed_edges;
 	//stats
-	
+
 	int stats_full_updates = 0;
 	int stats_fast_updates = 0;
 	int stats_fast_failed_updates = 0;
@@ -105,11 +108,18 @@ public:
 	int stats_num_skipable_deletions = 0;
 	int stats_learnt_components = 0;
 	int stats_learnt_components_sz = 0;
+	long stats_heuristic_recomputes=0;
 	double mod_percentage = 0.2;
 	int stats_pure_skipped = 0;
 	int stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
+	Heuristic * conflictingHeuristic=nullptr;
+
+	Heuristic * getConflictingHeuristic()override{
+		return conflictingHeuristic;
+	}
+
 
 	void printStats() {
 		//printf("Reach detector\n");
@@ -121,10 +131,13 @@ public:
 		}
 		if (opt_learn_unreachable_component) {
 			printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
-					stats_learnt_components_sz / (float) stats_learnt_components);
+				   stats_learnt_components_sz / (float) stats_learnt_components);
+		}
+		if(opt_decide_theories){
+			printf("\t%ld heuristic path recomputations\n",stats_heuristic_recomputes);
 		}
 	}
-	
+
 	struct ReachStatus {
 		ReachDetector & detector;
 		bool polarity;
@@ -132,7 +145,7 @@ public:
 		bool isReachable(int u) const {
 			return false;
 		}
-		
+
 		void setMininumDistance(int u, bool reachable, Weight distance);
 
 		ReachStatus(ReachDetector & _outer, bool _polarity) :
@@ -144,8 +157,7 @@ public:
 	MaxFlow<int64_t> * conflict_flow = nullptr;
 	std::vector<MaxFlow<int64_t> *> conflict_flows;
 
-	WeightedDijkstra<Weight,double> * rnd_path = nullptr;
-	std::vector<double> rnd_weight;
+
 	/*struct OptimalWeightEdgeStatus{
 	 ReachDetector & detector;
 	 int operator [] (int edge) const ;
@@ -175,7 +187,7 @@ public:
 		CutStatus(ReachDetector & _outer) :
 				outer(_outer) {
 		}
-		
+
 	} cutStatus;*/
 	std::vector<MaxFlowEdge> cut;
 	/*		struct ChokepointStatus{
@@ -198,12 +210,12 @@ public:
 	public:
 		CNFReachability(ReachDetector & _outer, bool over_approx) :
 				detector(_outer), over_approx(over_approx) {
-			
+
 		}
 		int numUpdates() const {
 			return num_updates;
 		}
-		
+
 		void update() {
 			num_updates++;
 		}
@@ -213,7 +225,7 @@ public:
 		int getSource() {
 			return detector.source;
 		}
-		
+
 		bool connected_unsafe(int t) {
 			return connected(t);
 		}
@@ -235,20 +247,39 @@ public:
 			assert(false);
 			exit(5); //not supported
 		}
-		
+
 	};
-	void unassign(Lit l) {
+	void unassign(Lit l) override{
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;
 		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index] != -1) {
 			int node = reach_lit_map[index];
-			if (!is_changed[node]) {
-				changed.push( { var(l), node });
-				is_changed[node] = true;
+
+			if (!is_changed_under[node]) {
+				changed.push( {  var(l), node, true });
+				is_changed_under[node] = true;
+			}
+			if (!is_changed_over[node]) {
+				changed.push( {  var(l), node, false });
+				is_changed_over[node] = true;
 			}
 		}
 	}
-	
+	void activateHeuristic()override{
+		for(Heuristic * h:all_reach_heuristics){
+			outer->activateHeuristic(h);
+		}
+	}
+	void assign(Lit l) override{
+		Detector::assign(l);
+		int index = var(l) - first_reach_var;
+		if(index>=0 && index< reach_lit_map.size()) {
+			int to = reach_lit_map[index];
+			if (to >=0 && to < reach_heuristics.size() && reach_heuristics[to]) {
+				outer->activateHeuristic(reach_heuristics[to]);
+			}
+		}
+	}
 	int getNode(Var reachVar) {
 		assert(reachVar >= first_reach_var);
 		int index = reachVar - first_reach_var;
@@ -256,10 +287,8 @@ public:
 		assert(reach_lit_map[index] >= 0);
 		return reach_lit_map[index];
 	}
-	void backtrack(int level) {
-		to_decide.clear();
-		last_decision_status = -1;
-		
+	void backtrack(int level) override{
+
 	}
 	/*	Lit getLit(int node){
 
@@ -277,15 +306,14 @@ public:
 	void printSolution(std::ostream& write_to);
 
 	void addLit(int from, int to, Var reach_var);
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 	void preprocess();
 	void dbg_sync_reachability();
 
 	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
-			int _source, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
+				  int _source, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
 	virtual ~ReachDetector() {
-		if (rnd_path)
-			delete rnd_path;
+
 		if (chokepoint_detector)
 			delete chokepoint_detector;
 		if (cutgraph_detector)
@@ -298,7 +326,7 @@ public:
 
 		if(underapprox_path_detector && underapprox_path_detector != underapprox_detector)
 			delete underapprox_path_detector;
-		
+
 		if(overapprox_path_detector && overapprox_path_detector != overapprox_reach_detector)
 			delete overapprox_path_detector;
 
@@ -326,14 +354,14 @@ public:
 				delete c;
 		}
 	}
-	
+
 	const char* getName() {
 		return "Reachability Detector";
 	}
-	
+
 	bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph<Weight>  & graph, int source, int node) {
-#ifndef NDEBUG
-		
+#ifdef DEBUG_GRAPH
+
 		DynamicGraph<int>  t;
 		for (int i = 0; i < graph.nodes(); i++)
 			t.addNode();
@@ -356,7 +384,7 @@ public:
 			} else {
 				t.setEdgeWeight(id, 0xFFFF);
 			}
-			
+
 		}
 		EdmondsKarpAdj<int> check(t,  source, node);
 		std::vector<MaxFlowEdge> check_cut;
@@ -369,6 +397,9 @@ public:
 #endif
 		return true;
 	}
+
+	//Use paths from a maximum flow constraint as decisions for a reachability constraint
+	void useFlowAsDecision(Lit outer_reach_lit, Lit outer_flow_literal, MaxflowDetector<Weight> * mf);
 
 	//Return the path (in terms of nodes)
 	bool getModel_Path(int node, std::vector<int> & store_path);

@@ -38,7 +38,7 @@ void QuickConvexHull<2, mpq_class>::update() {
 			hull.addVertex(p);
 	} else {
 		std::sort(points.begin(), points.end(), SortLexicographic<2, mpq_class>()); //not sure if this is required or not...
-				
+
 		cevans::quickhull2D<Point<2, mpq_class>, mpq_class> chull(points);
 		hull.clear();
 		for (int i = 0; i < chull.boundary.size(); i++) {
@@ -46,22 +46,22 @@ void QuickConvexHull<2, mpq_class>::update() {
 			hull.addVertex(points[chull.boundary[i]]);
 		}
 	}
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	for (int i = 0; i < pointSet.size(); i++) {
 		Point<2, mpq_class> & p = pointSet[i];
 		if (!pointSet.pointEnabled(i)) {
-			
+
 		} else {
 			assert(hull.contains(p, true));
 		}
 	}
 #endif
-	
+
 }
 
 template<>
 void QuickConvexHull<1, double>::update() {
-	
+
 }
 template<>
 void QuickConvexHull<3, double>::update() {
@@ -76,7 +76,7 @@ void QuickConvexHull<3, double>::update() {
 		printf("%d ", chull.boundary[i]);
 	}
 	printf("\n");
-	
+
 }
 template<>
 void QuickConvexHull<2, double>::update() {
@@ -89,7 +89,7 @@ void QuickConvexHull<2, double>::update() {
 			hull.addVertex(p);
 	} else {
 		std::sort(points.begin(), points.end(), SortLexicographic<2, double>()); //not sure if this is required or not...
-				
+
 		cevans::quickhull2D<Point2D, double> chull(points);
 		hull.clear();
 		for (int i = 0; i < chull.boundary.size(); i++) {
@@ -97,7 +97,7 @@ void QuickConvexHull<2, double>::update() {
 			hull.addVertex(points[chull.boundary[i]]);
 		}
 	}
-#ifndef NDEBUG
+#ifdef DEBUG_GEOMETRY
 	for (int i = 0; i < pointSet.size(); i++) {
 		Point<2, double> & p = pointSet[i];
 		if (!pointSet.pointEnabled(i)) {
@@ -107,6 +107,6 @@ void QuickConvexHull<2, double>::update() {
 		}
 	}
 #endif
-	
+
 }
 

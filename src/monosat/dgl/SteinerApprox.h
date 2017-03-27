@@ -40,7 +40,7 @@ namespace dgl {
 template<class TerminalSet, class Status, typename Weight = int>
 class SteinerApprox: public SteinerTree<Weight> {
 public:
-	
+
 	DynamicGraph<Weight> & g;
 
 	TerminalSet & terminals;
@@ -61,7 +61,7 @@ public:
 	std::vector<bool> in_tree;
 	std::vector<int> tree_edges;
 public:
-	
+
 	int stats_full_updates;
 	int stats_fast_updates;
 	int stats_fast_failed_updates;
@@ -74,10 +74,10 @@ public:
 	double stats_fast_update_time;
 
 	SteinerApprox(DynamicGraph<Weight> & graph,  TerminalSet & terminals, Status & _status,
-			int _reportPolarity = 0) :
+				  int _reportPolarity = 0) :
 			g(graph),terminals(terminals), status(_status), last_modification(-1), last_addition(-1), last_deletion(
-					-1), history_qhead(0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
-		
+			-1), history_qhead(0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
+
 		mod_percentage = 0.2;
 		stats_full_updates = 0;
 		stats_fast_updates = 0;
@@ -88,13 +88,13 @@ public:
 		stats_num_skipable_deletions = 0;
 		stats_fast_failed_updates = 0;
 		min_weight = -1;
-		
+
 	}
-	
+
 	void setNodes(int n) {
 		INF = std::numeric_limits<int>::max();
 	}
-	
+
 	void update() {
 		static int iteration = 0;
 		int local_it = ++iteration;
@@ -109,31 +109,31 @@ public:
 			return;
 		}
 		stats_full_updates++;
-		
+
 		if (last_deletion == g.deletions) {
 			stats_num_skipable_deletions++;
 		}
-		
+
 		setNodes(g.nodes());
-		
+
 		in_tree.clear();
 		in_tree.resize(g.nodes(), false);
-		
+
 		min_weight = 0;
 		tree_edges.clear();
 		is_disconnected = false;
 		if (terminals.numEnabled() > 1) {
 			std::vector<Distance<Weight>*> reaches;
-			
+
 			//construct the metric closure of GL on the set of terminal nodes.
 			//i.e., find the shortest path between each terminal node; then form a graph with one edge for each such path...
 			DynamicGraph<Weight> induced;
-			
+
 			for (int i = 0; i < g.nodes(); i++) {
 				induced.addNode();
-				
+
 			}
-			
+
 			//This can be made much more efficient...
 			for (int i = 0; i < terminals.nodes(); i++) {
 				reaches.push_back(new Dijkstra<Weight>(i, g));
@@ -156,10 +156,10 @@ public:
 					}
 				}
 			}
-			
+
 			Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> mst(induced);
 			min_weight = 0;
-			
+
 			for (int & edgeID : mst.getSpanningTree()) {
 				int u = induced.getEdge(edgeID).from;
 				int v = induced.getEdge(edgeID).to;
@@ -197,91 +197,91 @@ public:
 			}
 			assert(min_weight <= mst.forestWeight());
 		}
-		
+
 		if (is_disconnected) {
 			status.setMinimumSteinerTree(INF);
 		} else {
 			status.setMinimumSteinerTree(min_weight);
 		}
-		
+
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		//dbg_drawSteiner();
 		assert(dbg_uptodate());
 	}
-	
+
 	void dbg_drawSteiner() {
-#ifndef NDEBUG
-		
+#ifdef DEBUG_DGL
+
 		printf("digraph{\n");
 		for (int i = 0; i < g.nodes(); i++) {
-			
+
 			if (terminals.nodeEnabled(i)) {
-				
+
 				printf("n%d [fillcolor=blue,style=filled]\n", i);
 			} else if (in_tree[i]) {
 				printf("n%d [fillcolor=gray,style=filled]\n", i);
 			} else {
 				printf("n%d\n", i);
 			}
-			
+
 		}
-		
+
 		for (int i = 0; i < g.nodes(); i++) {
 			for (int j = 0; j < g.nIncident(i); j++) {
 				int id = g.incident(i, j).id;
 				int u = g.incident(i, j).node;
-				
+
 				const char * s = "black";
-				
+
 				if (g.edgeEnabled(id))
 					s = "black";
 				else
 					s = "gray";
-				
+
 				if (std::count(tree_edges.begin(), tree_edges.end(), id)) {
 					s = "blue";
 				}
-				
+
 				//printf("n%d -> n%d [label=\"v%d w=%d\",color=\"%s\"]\n", i,u, id,g.getWeight(id), s);
-				
+
 			}
 		}
 		printf("}\n");
 #endif
 	}
-	
+
 	Weight &weight() {
-		
+
 		update();
-		
+
 		assert(dbg_uptodate());
 		if (is_disconnected)
 			return INF;
 		return min_weight;
 	}
-	
+
 	bool disconnected() {
 		update();
 		return is_disconnected;
 	}
-	
+
 	void getSteinerTree(std::vector<int> & edges) {
 		edges = tree_edges;
 	}
-	
+
 	bool dbg_uptodate() {
-#ifndef NDEBUG
-		
+#ifdef DEBUG_DGL
+
 #endif
 		return true;
 	}
 	;
-	
+
 };
 }
 ;

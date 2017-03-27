@@ -35,6 +35,7 @@
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
+#include "monosat/Version.h"
 #include <csignal>
 #include <set>
 #include <iostream>
@@ -400,6 +401,10 @@ void setOutputFile(Monosat::SimpSolver * S, char * output){
 	}
 }
 
+const char * getVersion(){
+	return MONOSAT_VERSION_STR;
+}
+
 Monosat::SimpSolver * newSolver(){
 	return newSolver_arg(nullptr);
 }
@@ -690,7 +695,7 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	Monosat::GraphTheorySolver<int64_t> *graph = new Monosat::GraphTheorySolver<int64_t>(S);
-	S->addTheory(graph);
+
 	d->graphs.push(graph);
 	if( d->bv_theory){
 		graph->setBVTheory(d->bv_theory);
@@ -864,6 +869,7 @@ void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable){
 	S->setDecisionVar(var,decidable);
 }
 void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority){
+	 write_out(S,"priority %d %d\n",var+1,priority);//add 1 for dimacs
 	S->setDecisionPriority(var,priority);
 }
 bool isDecisionVar(Monosat::SimpSolver * S,int var){
@@ -1158,6 +1164,13 @@ void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,i
 void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int aID, int lower, int upper, int resultID){
 	write_out(S,"bv slice %d %d %d %d\n",aID,lower,upper, resultID);
 	bv->slice(bv->getBV(aID),lower,upper,bv->getBV(resultID));
+}
+
+//Convert the specified bitvector, as well as any other bitvectors in its cone of influence, into pure CNF
+void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
+	S->cancelUntil(0);
+	write_out(S,"bv bitblast %d\n",bvID);
+	bv->bitblast(bvID);
 }
 
 //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.

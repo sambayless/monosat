@@ -43,7 +43,7 @@ namespace dgl {
 template<class Status, typename Weight = int>
 class SpiraPan: public MinimumSpanningTree<Weight>, public DynamicGraphAlgorithm {
 public:
-	
+
 	DynamicGraph<Weight> & g;
 
 	Status & status;
@@ -83,7 +83,7 @@ public:
 		}
 	};
 
-	Heap<VertLt> Q;
+	alg::Heap<VertLt> Q;
 
 	std::vector<bool> seen;
 
@@ -93,11 +93,11 @@ public:
 	std::vector<int> empty_components; //list of component ids with no member nodes
 	std::vector<int> components;
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 	Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> dbg;
 #endif
 public:
-	
+
 	int stats_full_updates=0;
 	int stats_fast_updates=0;
 	int stats_fast_failed_updates=0;
@@ -111,18 +111,18 @@ public:
 
 	SpiraPan(DynamicGraph<Weight> & graph,  Status & status, int reportPolarity = 0) :
 			g(graph),  status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), INF(0), reportPolarity(reportPolarity), Q(VertLt(component_edge_weight))
-#ifndef NDEBUG
-					, dbg(g,  MinimumSpanningTree<Weight>::nullStatus, 0)
+			0), last_history_clear(0), INF(0), reportPolarity(reportPolarity), Q(VertLt(component_edge_weight))
+#ifdef DEBUG_DGL
+	, dbg(g,  MinimumSpanningTree<Weight>::nullStatus, 0)
 #endif
 	{
 		alg_id=g.addDynamicAlgorithm(this);
 		mod_percentage = 0.2;
 
 		min_weight = -1;
-		
+
 	}
-	
+
 	void setNodes(int n) {
 		q.reserve(n);
 		check.reserve(n);
@@ -132,17 +132,17 @@ public:
 		while (component_edge_weight.size() <= g.nodes()) {
 			component_edge_weight.push_back(INF);
 		}
-		
+
 		parents.resize(n, -1);
 		edge_to_component.resize(n, -1);
-		
+
 		parent_edges.resize(n, -1);
 	}
 
 	void dbg_printSpanningTree(bool showWeights=true){
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 
-#ifndef NDEBUG
+		#ifdef DEBUG_DGL
 		printf("graph{\n");
 	/*	for (int i = 0; i < g.nodes(); i++) {
 			printf("n%d\n", i);
@@ -222,14 +222,14 @@ public:
 	 }*/
 
 	bool dbg_is_largest_edge_on_path(int edge, int from, int to) {
-#ifndef NDEBUG
-		
+#ifdef DEBUG_DGL
+
 #endif
 		return true;
 	}
-	
+
 	void dbg_parents() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		//check that the parents don't cycle
 		for (int i = 0; i < g.nodes(); i++) {
 			int p = i;
@@ -252,45 +252,45 @@ public:
 				} else {
 					assert(parent_edges[p] == -1);
 				}
-				
+
 				p = parents[p];
 				assert(num_parents <= g.nodes());
-				
+
 			}
-			
+
 		}
-		
+
 		std::vector<int> used_components;
 		for (int i = 0; i < g.nodes(); i++) {
 			if (!std::count(used_components.begin(), used_components.end(), components[i])) {
 				used_components.push_back(components[i]);
-				
+
 			}
 		}
-		
+
 		for (int c : used_components) {
 			assert(!std::count(empty_components.begin(), empty_components.end(), c));
 			assert(component_member[c] != -1);
 			int m = component_member[c];
 			assert(components[m] == c);
 		}
-		
+
 		for (int c : empty_components) {
 			//assert(!used_components.contains(c));
 			assert(!std::count(used_components.begin(), used_components.end(), c));
 			assert(component_member[c] == -1);
 		}
-		
+
 #endif
 	}
-	
+
 	void addEdgeToMST(int edgeid) {
 		int u = g.getEdge(edgeid).from;
 		int v = g.getEdge(edgeid).to;
-		
+
 		dbg_parents();
 		if (components[u] != components[v]) {
-			
+
 			//If u,v are in separate components, then this edge must be in the mst (and we need to fix the component markings)
 
 
@@ -302,13 +302,13 @@ public:
 				std::swap(higher_component, lower_component);
 				std::swap(new_c, old_c);
 			}
-			
+
 			if(component_needs_visit[old_c] || component_needs_visit[new_c]){
 				return;//let prims connect these two components.
 			}
 
 			if (component_needs_visit[old_c]) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 				bool found = false;
 				for (int i : components_to_visit) {
 					if (i == old_c)
@@ -342,7 +342,7 @@ public:
 				for (int i = 0; i < g.nIncident(n, true); i++) {
 					auto & edge = g.incident(n, i, true);
 					if (in_tree[edge.id]) {
-						
+
 						int t = edge.node;
 						if (components[t] == old_c) {
 							components[t] = new_c;
@@ -350,7 +350,7 @@ public:
 							parent_edges[t] = edge.id;
 							q.push_back(t);
 						}
-						
+
 					}
 				}
 			}
@@ -385,7 +385,7 @@ public:
 			} else {
 				//otherwise, find the cycle induced by adding this edge into the MST (by walking up the tree to find the LCA - if we are doing many insertions, could we swap this out for tarjan's OLCA?).
 				int p = u;
-				
+
 				while (p > -1) {
 					seen[p] = true;
 					p = parents[p];
@@ -421,7 +421,7 @@ public:
 					}
 					p = parents[p];
 				}
-				
+
 				//reset remaining 'seen' vars
 				assert(p == lca);
 				while (p > -1) {
@@ -437,7 +437,7 @@ public:
 					min_weight += g.getWeight(edgeid);
 					in_tree[edgeid] = true;
 					in_tree[max_edge] = false;
-					
+
 					int last_p;
 					if (edge_on_left) {
 						p = u;
@@ -446,7 +446,7 @@ public:
 						p = v;
 						last_p = u;
 					}
-					
+
 					int last_edge = edgeid;
 					while (parent_edges[p] != max_edge) {
 						assert(p > -1);
@@ -462,31 +462,31 @@ public:
 				}
 				dbg_parents();
 			}
-			
+
 		}
 		dbg_parents();
 	}
-	
+
 	void removeEdgeFromMST(int edgeid) {
 		dbg_parents();
 		if (!in_tree[edgeid]) {
-			
+
 			//If an edge is disabled that was NOT in the MST, then no update is required.
 		} else {
 			//this is the 'tricky' case for dynamic mst.
 			//following Spira & Pan, each removed edge splits the spanning tree into separate components that are MST's for those components.
 			//after all edges that will be removed have been removed, we will run Prim's to stitch those components back together, if possible.
-			
+
 			int u = g.getEdge(edgeid).from;
 			int v = g.getEdge(edgeid).to;
-			
+
 			in_tree[edgeid] = false;
 			min_weight -= g.getWeight(edgeid);
 			num_sets++;
-			
+
 			assert(components[u] == components[v]);
 			assert(parents[u] == v || parents[v] == u);
-			
+
 			if (parents[u] == v) {
 				parents[u] = -1;
 				parent_edges[u] = -1;
@@ -526,26 +526,26 @@ public:
 					}
 				}
 			}
-			
+
 		}
 		dbg_parents();
 	}
-	
+
 	void prims() {
 		dbg_parents();
 		//component_weight.clear();
-		
+
 		for (int i = 0; i < components_to_visit.size(); i++) {
 			int c = components_to_visit[i];
 			int start_node = component_member[c];
-			
+
 			if (start_node == -1) {
 				//then this component has already been merged into another one, no need to visit it.
 				continue;
 			}
 			component_needs_visit[c] = false;			//because we just visited this component
 			assert(c >= 0);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			for (auto w : component_edge_weight) {
 				assert(w == INF);
 			}
@@ -555,14 +555,14 @@ public:
 			int smallest_edge = -1;
 			Weight smallest_weight = INF;
 			Q.insert(c);
-			
+
 			//do a dfs to find all the edges leading out of this component.
 			while (Q.size()) {
 				int cur_component = Q.removeMin();
-				
+
 				int last_p = -1;
 				int last_edge = -1;
-				
+
 				if (cur_component != c) {
 					//connect these two components together
 					int edgeid = edge_to_component[cur_component];
@@ -571,7 +571,7 @@ public:
 					int v = g.getEdge(edgeid).to;
 					assert(components[u] == c || components[v] == c);
 					assert(components[u] == cur_component || components[v] == cur_component);
-					
+
 					last_edge = edgeid;
 					if (components[u] == cur_component) {
 						//attach these components together using this edge.
@@ -582,7 +582,7 @@ public:
 						start_node = v;
 						last_p = u;
 					}
-					
+
 					num_sets--;
 					in_tree[edgeid] = true;
 					min_weight += g.getWeight(edgeid);
@@ -612,10 +612,10 @@ public:
 								if (ncomponent != c && ncomponent != cur_component) {
 									Weight w = g.getWeight(edge.id);
 									if (w < component_edge_weight[ncomponent]) {
-										
+
 										edge_to_component[ncomponent] = edge.id;
 										component_edge_weight[ncomponent] = w;
-										
+
 										Q.update(ncomponent);
 									}
 								}
@@ -638,11 +638,11 @@ public:
 					seen[s] = false;
 				}
 				q.clear();
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 				for (bool b : q)
 					assert(!b);
 #endif
-				
+
 			}
 		}
 		components_to_visit.clear();
@@ -661,8 +661,10 @@ public:
 		}
 
 		if (last_modification > 0 && g.modifications == last_modification) {
+#ifdef DEBUG_DGL
 			assert(min_weight == dbg.forestWeight());
 			assert(num_sets == dbg.numComponents());
+#endif
 			return;
 		}
 
@@ -700,7 +702,7 @@ public:
 			component_member.clear();
 			for (int i = 0; i < g.nodes(); i++)
 				component_member.push_back(i);
-			
+
 			mst.clear();
 			parents.clear();
 			parents.resize(g.nodes(), -1);
@@ -710,12 +712,12 @@ public:
 				in_tree[i] = false;
 			last_history_clear = g.historyclears;
 			history_qhead = g.historySize();//have to skip any additions or deletions that are left here, as otherwise the tree wont be an MST at the beginning of the addEdgeToMST method, which is an error.
-					
+
 		}
 
 		//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 		for (int i = history_qhead; i < g.historySize(); i++) {
-			
+
 			int edgeid = g.getChange(i).id;
 			if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
 				prims();//to maintain correctness in spirapan, prims apparently must be called before addEdgeToMST.
@@ -728,7 +730,7 @@ public:
 			}
 			//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for(int i = 0;i<g.edges();i++)
 			assert(g.edgeEnabled(i)==edge_enabled[i]);
 #endif
@@ -737,25 +739,29 @@ public:
 		//g.drawFull(true);
 		dbg_parents();
 		//dbg_printSpanningTree();
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight expect = dbg.forestWeight();
 		//dbg.dbg_printSpanningTree();
 		assert(min_weight == dbg.forestWeight());
 		assert(num_sets == dbg.numComponents());
 #endif
-		
+
 		status.setMinimumSpanningTree(num_sets > 1 ? INF : min_weight, num_sets <= 1);
-		
+
 		//if(reportPolarity>-1){
 		for (int i = 0; i < in_tree.size(); i++) {
-			
+
 			//Note: for the tree edge detector, polarity is effectively reversed.
 			if (reportPolarity < 1 && (!g.edgeEnabled(i) || in_tree[i])) {
 				status.inMinimumSpanningTree(i, true);
+#ifdef DEBUG_DGL
 				assert(!g.edgeEnabled(i) || dbg.edgeInTree(i));
+#endif
 			} else if (reportPolarity > -1 && (g.edgeEnabled(i) && !in_tree[i])) {
 				status.inMinimumSpanningTree(i, false);
+#ifdef DEBUG_DGL
 				assert(!dbg.edgeInTree(i));
+#endif
 			}
 		}
 		assert(dbg_uptodate());
@@ -763,11 +769,11 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
-		
+
 		;
 	}
 
@@ -779,10 +785,10 @@ public:
 		update();
 		return mst;
 	}
-	
+
 	int getParent(int node) {
 		update();
-		
+
 		return parents[node];
 	}
 	int getParentEdge(int node) {
@@ -796,10 +802,10 @@ public:
 		return in_tree[edgeid];
 	}
 	bool dbg_mst() {
-		
+
 		return true;
 	}
-	
+
 	Weight & weight() {
 		update();
 		assert(dbg_uptodate());
@@ -808,7 +814,7 @@ public:
 		else
 			return INF;
 	}
-	
+
 	Weight & forestWeight() {
 		update();
 		assert(dbg_uptodate());
@@ -833,10 +839,10 @@ public:
 		return component_member[c];
 		//return parents[component];
 	}
-	
+
 	bool dbg_uptodate() {
-#ifndef NDEBUG
-		
+#ifdef DEBUG_DGL
+
 		dbg_parents();
 		//int n_components = 0;
 		//check that each component has a unique root
@@ -847,7 +853,7 @@ public:
 				while (parents[root] > -1) {
 					root = parents[root];
 				}
-				
+
 				for (int i = 0; i < g.nodes(); i++) {
 					if (components[i] == c) {
 						//check that the root of i is root
@@ -858,10 +864,10 @@ public:
 						assert(p == root);
 					}
 				}
-				
+
 			}
 		}
-		
+
 		assert(num_sets == g.nodes() - empty_components.size());
 		Weight sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
@@ -875,9 +881,9 @@ public:
 		return true;
 	}
 	;
-	
+
 	/*
-	 #ifndef NDEBUG
+	 #ifdef DEBUG_DGL
 	 int rootcount =0;
 	 for(int i = 0;i<parents.size();i++){
 	 if(parents[i]==-1)

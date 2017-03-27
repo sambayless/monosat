@@ -27,6 +27,7 @@
 #include <vector>
 
 namespace dgl {
+namespace alg {
 //=================================================================================================
 // A heap implementation with support for decrease/increase key.
 
@@ -35,22 +36,24 @@ class Heap {
 	Comp lt;       // The heap is a minimum-heap with respect to this comparator
 	std::vector<int> heap;     // Heap of integers
 	std::vector<int> indices;  // Each integers position (index) in the Heap
-	
+
 	// Index "traversal" functions
 	static inline int left(int i) {
 		return i * 2 + 1;
 	}
+
 	static inline int right(int i) {
 		return (i + 1) * 2;
 	}
+
 	static inline int parent(int i) {
 		return (i - 1) >> 1;
 	}
-	
+
 	void percolateUp(int i) {
 		int x = heap[i];
 		int p = parent(i);
-		
+
 		while (i != 0 && lt(x, heap[p])) {
 			heap[i] = heap[p];
 			indices[heap[p]] = i;
@@ -60,7 +63,7 @@ class Heap {
 		heap[i] = x;
 		indices[x] = i;
 	}
-	
+
 	void percolateDown(int i) {
 		int x = heap[i];
 		while (left(i) < heap.size()) {
@@ -74,35 +77,39 @@ class Heap {
 		heap[i] = x;
 		indices[x] = i;
 	}
-	
+
 public:
-	Heap(const Comp& c) :
+	Heap(const Comp &c) :
 			lt(c) {
 	}
-	
+
 	int size() const {
 		return heap.size();
 	}
+
 	bool empty() const {
 		return heap.size() == 0;
 	}
+
 	bool inHeap(int n) const {
 		return n < indices.size() && indices[n] >= 0;
 	}
+
 	int operator[](int index) const {
 		assert(index < heap.size());
 		return heap[index];
 	}
-	
+
 	void decrease(int n) {
 		assert(inHeap(n));
 		percolateUp(indices[n]);
 	}
+
 	void increase(int n) {
 		assert(inHeap(n));
 		percolateDown(indices[n]);
 	}
-	
+
 	// Safe variant of insert/decrease/increase:
 	void update(int n) {
 		if (!inHeap(n))
@@ -112,21 +119,21 @@ public:
 			percolateDown(indices[n]);
 		}
 	}
-	
+
 	void insert(int n) {
 		if (indices.size() <= n)
 			indices.resize(n + 1, -1);
 		assert(!inHeap(n));
-		
+
 		indices[n] = heap.size();
 		heap.push_back(n);
 		percolateUp(indices[n]);
 	}
-	
+
 	int peekMin() {
 		return heap[0];
 	}
-	
+
 	int removeMin() {
 		int x = heap[0];
 		heap[0] = heap.back();
@@ -137,22 +144,22 @@ public:
 			percolateDown(0);
 		return x;
 	}
-	
+
 	// Rebuild the heap from scratch, using the elements in 'ns':
-	void build(std::vector<int>& ns) {
+	void build(std::vector<int> &ns) {
 		for (int i = 0; i < heap.size(); i++)
 			indices[heap[i]] = -1;
 		heap.clear();
-		
+
 		for (int i = 0; i < ns.size(); i++) {
 			indices[ns[i]] = i;
 			heap.push_back(ns[i]);
 		}
-		
+
 		for (int i = heap.size() / 2 - 1; i >= 0; i--)
 			percolateDown(i);
 	}
-	
+
 	void clear(bool dealloc = false) {
 		for (int i = 0; i < heap.size(); i++)
 			indices[heap[i]] = -1;
@@ -161,8 +168,9 @@ public:
 			heap.shrink_to_fit();
 		}
 	}
-	
+
 //=================================================================================================
+};
 };
 }
 ;

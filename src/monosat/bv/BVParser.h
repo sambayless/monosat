@@ -145,6 +145,9 @@ private:
 		int resultID;
 	};
 	vec<InvertBV> invertbvs;
+
+	vec<int> tobitblast;
+
 	void readConstBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
@@ -217,6 +220,46 @@ private:
 	}
 
 
+	void readMultBV(B& in, Solver& S) {
+
+		skipWhitespace(in);
+
+		int resultID = parseInt(in);
+		skipWhitespace(in);
+
+		int64_t arg1 = parseInt(in);
+		skipWhitespace(in);
+
+		int64_t arg2 = parseInt(in);
+
+
+		multbvs.push();
+		multbvs.last().resultID = resultID;
+		multbvs.last().aBV =  (int) arg1;
+		multbvs.last().bBV = (int) arg2;
+		return;
+
+	}
+	void readDivBV(B& in, Solver& S) {
+
+		skipWhitespace(in);
+
+		int resultID = parseInt(in);
+		skipWhitespace(in);
+
+		int64_t arg1 = parseInt(in);
+		skipWhitespace(in);
+
+		int64_t arg2 = parseInt(in);
+
+
+		divbvs.push();
+		divbvs.last().resultID = resultID;
+		divbvs.last().aBV =  (int) arg1;
+		divbvs.last().bBV = (int) arg2;
+		return;
+
+	}
 
 	void readAddBV(B& in, Solver& S) {
 
@@ -243,17 +286,6 @@ private:
 		addbvs.last().aBV =  (int) arg1;
 		addbvs.last().bBV = (int) arg2;
 		return;
-	/*	}else if(!(arg1_is_bv || arg2_is_bv)){
-			bvconstants.push({resultID,arg1+arg2});
-			return;
-		}else if (arg2_is_bv && ! arg1_is_bv){
-			std::swap(arg1_is_bv,arg2_is_bv);
-			std::swap(arg1,arg2);
-		}
-		addconsts.push();
-		addconsts.last().resultID = resultID;
-		addconsts.last().aBV = (int) arg1;
-		addconsts.last().b = arg2;*/
 	}
 	void readSubtractionBV(B& in, Solver& S) {
 
@@ -280,47 +312,6 @@ private:
 		subtractionbvs.last().aBV =  (int) arg1;
 		subtractionbvs.last().bBV = (int) arg2;
 		return;
-
-	}
-    void readMultBV(B& in, Solver& S) {
-
-        skipWhitespace(in);
-
-        int resultID = parseInt(in);
-        skipWhitespace(in);
-
-        int64_t arg1 = parseInt(in);
-        skipWhitespace(in);
-
-        int64_t arg2 = parseInt(in);
-
-
-        multbvs.push();
-        multbvs.last().resultID = resultID;
-        multbvs.last().aBV =  (int) arg1;
-        multbvs.last().bBV = (int) arg2;
-        return;
-
-    }
-    void readDivBV(B& in, Solver& S) {
-
-        skipWhitespace(in);
-
-        int resultID = parseInt(in);
-        skipWhitespace(in);
-
-        int64_t arg1 = parseInt(in);
-        skipWhitespace(in);
-
-        int64_t arg2 = parseInt(in);
-
-
-        divbvs.push();
-        divbvs.last().resultID = resultID;
-        divbvs.last().aBV =  (int) arg1;
-        divbvs.last().bBV = (int) arg2;
-        return;
-
     }
 	void readSymbol(B& in, Solver& S){
 		//this is a variable symbol map
@@ -345,6 +336,21 @@ private:
 		symbols.last().first = v;
 		symbols.last().second = symbol;
 	}
+
+	void readBitblast(B& in, Solver& S){
+		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
+
+		int argID = parseInt(in);
+
+
+
+		tobitblast.push();
+		tobitblast.last()=argID;
+
+
+
+	}
+
 
 	void readNotBV(B& in, Solver& S){
 		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
@@ -560,6 +566,9 @@ public:
 			}else if (match(in,"not")){
 				readNotBV(in,S);
 				return true;
+			}else if (match(in,"bitblast")){
+				readBitblast(in,S);
+				return true;
 			}
 			else{
 				readBV(in,S);
@@ -573,8 +582,7 @@ public:
 
 	void implementConstraints(Solver & S) {
 		theory = (BVTheorySolver<int64_t>*) S.bvtheory;
-		if(bvs.size() || multbvs.size() || divbvs.size()  || addbvs.size()  || subtractionbvs.size()  || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
-
+		if(bvs.size() || multbvs.size() || divbvs.size()  || subtractionbvs.size() || addbvs.size() || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
 
 			if(!theory){
 				theory = new BVTheorySolver<int64_t>(&S);
@@ -746,6 +754,12 @@ public:
 				}
 			}
 			symbols.clear();
+
+			for(int bvID:tobitblast){
+				bvID = mapBV(S,bvID);
+				theory->bitblast(bvID);
+			}
+			tobitblast.clear();
 
 		}else if (multbvs.size() || divbvs.size()|| subtractionbvs.size() ||  addbvs.size() || comparebvs.size() || compares.size() || addbvs.size() || itebvs.size() || minmaxs.size() || popCounts.size() ){
 

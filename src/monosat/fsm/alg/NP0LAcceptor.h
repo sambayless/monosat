@@ -7,7 +7,7 @@
 
 #ifndef NPOL_ACCEPT_H_
 #define NPOL_ACCEPT_H_
-#include "../LSystem.h"
+#include "monosat/fsm/LSystem.h"
 #include "monosat/mtl/Bitset.h"
 #include "monosat/mtl/Vec.h"
 #include "monosat/fsm/alg/NFATypes.h"
@@ -413,19 +413,19 @@ private:
 				if(next_transition<acceptor.outAlphabet()){
 					if(emove_count+1 < acceptor.states() && suffixTable[str_pos][to]){
 						int o =next_transition;
-							if(acceptor.transitionEnabled(edgeID,0,o)){
+						if(acceptor.transitionEnabled(edgeID,0,o)){
 
-								if(o>0)
-									path.push(o);
-								bool used = false;
-								int rID = getRule(edgeID,0);
-								if(rID>=0 && ! used_edges[rID]){
-									used=true;
-									used_edges[rID]=true;
-									used_rule_set.push(rID);
-								}
-								stack.push(PathElement(true,used,o>0,to,0,0));
+							if(o>0)
+								path.push(o);
+							bool used = false;
+							int rID = getRule(edgeID,0);
+							if(rID>=0 && ! used_edges[rID]){
+								used=true;
+								used_edges[rID]=true;
+								used_rule_set.push(rID);
 							}
+							stack.push(PathElement(true,used,o>0,to,0,0));
+						}
 
 
 
@@ -577,7 +577,7 @@ public:
 			}
 		}
 
-#ifndef NDEBUG
+#ifdef DEBUG_FSM
 		assert(!used_rules[string].contains(true));
 		assert(used_rule_sets[string].size()==0);
 #endif

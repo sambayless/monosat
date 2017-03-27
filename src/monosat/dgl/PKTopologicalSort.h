@@ -138,7 +138,7 @@ private:
 	void invalidateSCC(int node){
 		assert(has_cycle);
 		if(cycle.size()){
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			for(int edgeID:cycle){
 				int from = g.getEdge(edgeID).from;
 				int to = g.getEdge(edgeID).to;
@@ -187,7 +187,7 @@ private:
 			}
 			cycle.clear();
 			//search for a cycle
-			if(dfs_cycle.has_directed_cycle) {
+			if(dfs_cycle.hasDirectedCycle()) {
 				cycle = dfs_cycle.getDirectedCycle();
 				for (int edgeID:cycle) {
 					int from = g.getEdge(edgeID).from;
@@ -247,7 +247,7 @@ private:
 	//PK Algorithm:
 
 	void addEdge(int edgeID){
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for(int i = 0;i<visited.size();i++){
 			assert(!visited[i]);
 		}
@@ -277,7 +277,7 @@ private:
 			if(!has_cycle){
 				dfs_backward(from,has_cycle ? to : -1,edgeID);
 				reorder();
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for(int i = 0;i<visited.size();i++){
 			assert(!visited[i]);
 		}
@@ -296,7 +296,7 @@ private:
 				for(int i =0;i<l_xy_F.size();i++){
 					visited[l_xy_F[i]]=false;
 				}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for(int i = 0;i<visited.size();i++){
 			assert(!visited[i]);
 		}
@@ -306,16 +306,15 @@ private:
 				/*if(force_dag){
 					has_cycle=false;//ignore the edge that caused a cycle to be introduced, because it is guaranteed that any edges creating cycles will be removed.
 				}else{*/
-				if(!force_dag){
 					has_topo=false;//topological sort is no longer valid.
-				}
+				//}
 			}
 		}
 
 	}
 
 	void checkCycle(){
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
         std::vector<bool> seen;
 		seen.clear();
 		seen.resize(g.nodes(),false);
@@ -349,7 +348,7 @@ private:
 
 		for(int i:count){
 			if(i!=0){
-				exit(4);
+				throw std::runtime_error("Error in PKTopologicalSort");
 			}
 			assert(i==0);
 		}
@@ -473,7 +472,7 @@ private:
 		l_xy_B.clear();
 	}
 	void dbg_check_topo(){
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		if(!has_topo){
 			return;
 		}
@@ -610,7 +609,7 @@ private:
 		nextOrd=g.nodes();
 		//from wikipedia's pseudocode: http://en.wikipedia.org/wiki/Topological_sorting
 		L.clear();
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for(int i = 0;i<tmp_mark.size();i++){
 			assert(!tmp_mark[i]);
 			assert(!visited[i]);

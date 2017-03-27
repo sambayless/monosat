@@ -43,6 +43,7 @@ namespace Monosat {
 template<class B, class Solver>
 class FSMParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
+	FSMTheorySolver * theory=nullptr;
 	vec<int> fsmIDs;
 
 	vec<int> inAlphabets;
@@ -94,13 +95,13 @@ class FSMParser: public Parser<B, Solver> {
 	vec<vec<Generates> > generates;
 
 	struct Transduces{
-			int fsm;
-			int from;
-			int to;
-			int strID;
-			int strID2;
-			Var reachVar;
-		};
+		int fsm;
+		int from;
+		int to;
+		int strID;
+		int strID2;
+		Var reachVar;
+	};
 
 	vec<vec<Transduces> > transduces;
 
@@ -115,7 +116,7 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		int fsmID = parseInt(in);  //id of the fsm
-		int n_labels = parseInt(in);
+		int n_labels = parseInt(in); //not using this anymore
 		bool hasEpsilon= parseInt(in)>0;
 		if (fsmID < 0 ) {
 			parse_errorf("FSM id must be >=0, was %d\n", fsmID);
@@ -130,7 +131,7 @@ class FSMParser: public Parser<B, Solver> {
 		}
 		//fsms[fsmID]= new FSMTheorySolver(&S);
 		fsmIDs[fsmID]=fsmID;
-		//S.addTheory(fsms[fsmID]);
+
 		transitions.growTo(fsmID+1);
 		accepts.growTo(fsmID+1);
 		generates.growTo(fsmID+1);
@@ -140,7 +141,7 @@ class FSMParser: public Parser<B, Solver> {
 		outAlphabets.growTo(fsmID+1,0);
 		hasEpsilonTransitions[fsmID]=false;
 	}
-	
+
 	void readString(B& in, Solver & S){
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -185,16 +186,16 @@ class FSMParser: public Parser<B, Solver> {
 			skipLine(in);
 			return;
 		}
-		
+
 		++in;
-		
+
 		int fsmID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
 		int input = parseInt(in);
 		int output = parseInt(in);
 		int edgeVar = parseInt(in) - 1;
-		
+
 		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
 			parse_errorf("Undeclared fsm identifier %d for edge %d\n", fsmID, edgeVar);
 		}
@@ -202,8 +203,8 @@ class FSMParser: public Parser<B, Solver> {
 			parse_errorf("Transition inputs  must be >=0, was %d\n", input);
 		}
 		if (output<0){
-				parse_errorf("Transition outputs  must be >=0, was %d\n", output);
-			}
+			parse_errorf("Transition outputs  must be >=0, was %d\n", output);
+		}
 		if (edgeVar < 0) {
 			parse_errorf("Edge variables must be >=0, was %d\n", edgeVar);
 		}
@@ -213,8 +214,9 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		edgeVar= mapVar(S,edgeVar);
-		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input+1);
-		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output+1);
+
+		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input);
+		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output);
 		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
 	}
 
@@ -225,7 +227,7 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		++in;
-		
+
 		int fsmID = parseInt(in);
 		int from = parseInt(in);
 		int to = parseInt(in);
@@ -249,8 +251,8 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		if (from<0){
-				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
-			}
+			parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
+		}
 		if (to<0){
 			parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to);
 		}
@@ -261,7 +263,7 @@ class FSMParser: public Parser<B, Solver> {
 
 
 	}
-	
+
 	void readCompositionAccepts(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -293,8 +295,8 @@ class FSMParser: public Parser<B, Solver> {
 
 
 		if (from1<0){
-				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from1);
-			}
+			parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from1);
+		}
 		if (to1<0){
 			parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to1);
 		}
@@ -304,8 +306,8 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		if (from2<0){
-				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from2);
-			}
+			parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from2);
+		}
 		if (to2<0){
 			parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to2);
 		}
@@ -346,8 +348,8 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		if (from<0){
-				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
-			}
+			parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
+		}
 
 		if (reachVar < 0) {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
@@ -389,11 +391,11 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		if (from<0){
-				parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
-			}
+			parse_errorf("Source state must be a node id (a non-negative integer), was %d\n", from);
+		}
 		if (to<0){
-				parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to);
-			}
+			parse_errorf("Accepting state must be a node id (a non-negative integer), was %d\n", to);
+		}
 		if (reachVar < 0) {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
@@ -443,90 +445,88 @@ public:
 		}
 		return false;
 	}
-	
+
 
 	void implementConstraints(Solver & S) {
-		FSMTheorySolver * theory=nullptr;
 
-		for(int i = 0;i<fsmIDs.size();i++){
+
+		for(int i = 0;i<fsmIDs.size();i++) {
 			int fsmID = fsmIDs[i];
-			if(fsmID<0)
+			if (fsmID < 0)
 				continue;
 
-			if(!theory){
+			if (!theory) {
 				theory = new FSMTheorySolver(&S);
-				S.addTheory(theory);
 				theory->setStrings(strings);
 			}
+			if (!theory->hasFSM(fsmID)) {
 				theory->newFSM(fsmID);
+				theory->setAlphabets(fsmID, inAlphabets[i], outAlphabets[i]);
+			}
+			for (auto &t:transitions[i]){
+				theory->newTransition(fsmID,t.from,t.to,t.input,t.output,t.edgeVar);
+			}
+			transitions[i].clear();
+			for(auto & a: accepts[i]){
+				if (a.strID<0 ){
+					parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
+				}
+				stringIDMap.growTo(a.strID+1,-1);
+				a.strID = stringIDMap[a.strID];
 
-
-				theory->setAlphabets(fsmID,inAlphabets[i],outAlphabets[i]);
-
-				for (auto &t:transitions[i]){
-					theory->newTransition(fsmID,t.from,t.to,t.input,t.output,t.edgeVar);
+				if (a.strID<0  || a.strID>=created_strings.size() || !created_strings[a.strID]){
+					parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
 				}
 
-				for(auto & a: accepts[i]){
-					if (a.strID<0 ){
-							parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
-						}
-					stringIDMap.growTo(a.strID+1,-1);
-					a.strID = stringIDMap[a.strID];
-
-					if (a.strID<0  || a.strID>=created_strings.size() || !created_strings[a.strID]){
-						parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
-					}
-
-					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
-							parse_errorf("%d is not a valid state\n", a.from);
-						}
-					if(a.to<0 || a.to>=theory->nNodes(fsmID)){
-						parse_errorf("%d is not a valid state\n", a.to);
-					}
-
-					theory->addAcceptLit(fsmID,a.from, a.to,a.strID,a.reachVar);
+				if(a.from<0 || a.from>=theory->nNodes(fsmID)){
+					parse_errorf("%d is not a valid state\n", a.from);
+				}
+				if(a.to<0 || a.to>=theory->nNodes(fsmID)){
+					parse_errorf("%d is not a valid state\n", a.to);
 				}
 
-				for(auto & a: generates[i]){
-					if (a.strID<0 ){
-							parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
-						}
-					stringIDMap.growTo(a.strID+1,-1);
-					a.strID = stringIDMap[a.strID];
-					if (a.strID<0  || a.strID>=created_strings.size() || !created_strings[a.strID]){
-						parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
-					}
-					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
-							parse_errorf("%d is not a valid state\n", a.from);
-						}
-
-					theory->addGenerateLit(fsmID,a.from, a.strID,a.reachVar);
+				theory->addAcceptLit(fsmID,a.from, a.to,a.strID,a.reachVar);
+			}
+			accepts[i].clear();
+			for(auto & a: generates[i]){
+				if (a.strID<0 ){
+					parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
+				}
+				stringIDMap.growTo(a.strID+1,-1);
+				a.strID = stringIDMap[a.strID];
+				if (a.strID<0  || a.strID>=created_strings.size() || !created_strings[a.strID]){
+					parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
+				}
+				if(a.from<0 || a.from>=theory->nNodes(fsmID)){
+					parse_errorf("%d is not a valid state\n", a.from);
 				}
 
-				for(auto & a: transduces[i]){
-					if (a.strID<0 ){
-							parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
-						}
-					if (a.strID2<0 ){
-							parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID2);
-						}
-					stringIDMap.growTo(a.strID+1,-1);
-					a.strID = stringIDMap[a.strID];
-					stringIDMap.growTo(a.strID2+1,-1);
-					a.strID2 = stringIDMap[a.strID2];
-					if (a.strID<0 || a.strID>=created_strings.size() || !created_strings[a.strID]){
-						parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
-					}
-					if(a.from<0 || a.from>=theory->nNodes(fsmID)){
-							parse_errorf("%d is not a valid state\n", a.from);
-						}
-					if(a.to<0 || a.to>=theory->nNodes(fsmID)){
-									parse_errorf("%d is not a valid state\n", a.from);
-								}
-					theory->addTransduceLit(fsmID,a.from,a.to, a.strID,a.strID2,a.reachVar);
+				theory->addGenerateLit(fsmID,a.from, a.strID,a.reachVar);
+			}
+			generates[i].clear();
+			for(auto & a: transduces[i]){
+				if (a.strID<0 ){
+					parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
 				}
-
+				if (a.strID2<0 ){
+					parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID2);
+				}
+				stringIDMap.growTo(a.strID+1,-1);
+				a.strID = stringIDMap[a.strID];
+				stringIDMap.growTo(a.strID2+1,-1);
+				a.strID2 = stringIDMap[a.strID2];
+				if (a.strID<0 || a.strID>=created_strings.size() || !created_strings[a.strID]){
+					parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
+				}
+				if(a.from<0 || a.from>=theory->nNodes(fsmID)){
+					parse_errorf("%d is not a valid state\n", a.from);
+				}
+				if(a.to<0 || a.to>=theory->nNodes(fsmID)){
+					parse_errorf("%d is not a valid state\n", a.from);
+				}
+				theory->addTransduceLit(fsmID,a.from,a.to, a.strID,a.strID2,a.reachVar);
+			}
+			transduces[i].clear();
 
 
 		}
@@ -545,11 +545,11 @@ public:
 			}
 			theory->addComposeAcceptLit(c.fsmID1,c.fsmID2,c.from1,c.to1,c.from2,c.to2, c.strID,c.reachVar);
 		}
-
+		compose_accepts.clear();
 
 	}
 
-	
+
 };
 
 //=================================================================================================

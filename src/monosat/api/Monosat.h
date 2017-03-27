@@ -66,6 +66,7 @@ typedef int64_t Weight;
   int litToVar(int lit){
 	  return lit/2;
   }
+ const char * getVersion();
   SolverPtr newSolver();
   SolverPtr newSolver_arg(char*argv);
 #ifndef JNA
@@ -163,6 +164,8 @@ typedef int64_t Weight;
   int newBVComparison_const_geq(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
   int newBVComparison_bv_geq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
 
+  //Convert the specified bitvector, as well as any other bitvectors in its cone of influence, into pure CNF
+  void bv_bitblast(SolverPtr S, BVTheoryPtr bv,int bvID);
 
   void bv_concat( SolverPtr S, BVTheoryPtr bv,int aID, int bID, int resultID);
   void bv_slice( SolverPtr S, BVTheoryPtr bv,int aID, int lower, int upper, int resultID);

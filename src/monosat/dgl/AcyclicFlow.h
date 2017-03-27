@@ -62,7 +62,7 @@ public:
 			fprintf(g.outfile, "%s\n",ss.str().c_str());
 		}
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 
 		Weight expected_flow=-1;
 		{
@@ -123,7 +123,7 @@ public:
 			parent_edge.push_back(-1);
 			parents.push_back(-1);
 		}
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for(int i = 0;i<g.nodes();i++){
 			assert(forest.isRoot(i));
 			assert(parent_edge[i]==-1);
@@ -164,13 +164,13 @@ public:
 						}
 						assert(flow_store[edgeID]>=flow);
 						flow_store[edgeID]-=flow;
-		/*				printf("digraph{\n");
-						for(int j =0;j<g.nodes();j++){
-							if(parent_edge[j]!=-1){
-								printf("%d -> %d label=\"v%d\"\n",j,parents[j],parent_edge[j]);
-							}
-						}
-						printf("\n}\n");*/
+						/*				printf("digraph{\n");
+                                        for(int j =0;j<g.nodes();j++){
+                                            if(parent_edge[j]!=-1){
+                                                printf("%d -> %d label=\"v%d\"\n",j,parents[j],parent_edge[j]);
+                                            }
+                                        }
+                                        printf("\n}\n");*/
 
 						//forest.print_forest();
 						forest.updateCostOfPathToRoot(to,-flow);
@@ -241,7 +241,7 @@ public:
 					}
 					for(int i = 0;i<flow_store.size();i++)
 						flow_store[i]=new_flow[i];
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 					//verify that no cycle remains
 					DynamicGraph<Weight> test;
 					//test.outfile = fopen("/tmp/TEST_ACYCLIC_FLOW", "w");

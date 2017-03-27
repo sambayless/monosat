@@ -114,7 +114,7 @@ public:
 	vec<VarData> vars;
 	int theory_index = 0;
 public:
-	
+
 
 	double reachtime = 0;
 	double unreachtime = 0;
@@ -145,28 +145,29 @@ public:
 
 
 		rnd_seed = opt_random_seed;
+		S->addTheory(this);
 	}
-	
+
 	void printStats(int detailLevel) {
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)
 				d->printStats();
 		}
-		
+
 		printf("FSM %d stats:\n", getGraphID());
 
 		fflush(stdout);
 	}
-	
+
 	void writeTheoryWitness(std::ostream& write_to) {
-		
+
 		for (FSMDetector * d : detectors) {
 			write_to << "Graph " << this->getGraphID() << ", detector " << d->getID() << ":\n";
 			d->printSolution(write_to);
 		}
 	}
-	
-	inline int getTheoryIndex() {
+
+	inline int getTheoryIndex()const {
 		return theory_index;
 	}
 	inline void setTheoryIndex(int id) {
@@ -211,7 +212,7 @@ public:
 		assert(!isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
-	
+
 	inline Var getRuleVar(int ruleID) {
 
 		Var v = getRule(ruleID).v;
@@ -219,7 +220,7 @@ public:
 		//assert(vars[v].isEdge);
 		return v;
 	}
-	
+
 	void makeEqual(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
@@ -255,10 +256,10 @@ public:
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
-		
+
 		S->addClauseSafely(tmp_clause);
 	}
-	
+
 	Var newAuxVar(int forDetector = -1, bool connectToTheory = false) {
 		Var s = S->newVar();
 		return newVar(s, forDetector,false, connectToTheory);
@@ -299,23 +300,23 @@ public:
 		//assert(S->getTheoryVar(vars[v].solverVar)==v);
 		return vars[v].solverVar;
 	}
-	
+
 	inline Lit toSolver(Lit l) {
 		//assert(S->hasTheory(vars[var(l)].solverVar));
 		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar, sign(l));
 	}
-	
+
 	void toSolver(vec<Lit> & c) {
 		for (int i = 0; i < c.size(); i++) {
 			c[i] = toSolver(c[i]);
 		}
 	}
-	
+
 	inline lbool value(Var v) {
 		if (assigns[v] != l_Undef)
 			assert(S->value(toSolver(v)) == assigns[v]);
-		
+
 		return assigns[v]; //S->value(toSolver(v));
 	}
 	inline lbool value(Lit l) {
@@ -332,7 +333,7 @@ public:
 	}
 	inline bool enqueue(Lit l, CRef reason) {
 		assert(assigns[var(l)]==l_Undef);
-		
+
 		Lit sl = toSolver(l);
 		if (S->enqueue(sl, reason)) {
 			enqueueTheory(l);
@@ -341,20 +342,20 @@ public:
 			return false;
 		}
 	}
-	
+
 	~LSystemSolver() {
 	}
 
-	
+
 	bool dbg_propgation(Lit l) {
 
 		return true;
 	}
-	
-	void dbg_sync_reachability() {
-		
 
-		
+	void dbg_sync_reachability() {
+
+
+
 	}
 	void dbg_sync() {
 
@@ -363,17 +364,17 @@ public:
 	void dbg_full_sync() {
 
 	}
-	
+
 	void backtrackUntil(int level) {
 		static int it = 0;
-		
+
 		bool changed = false;
 		//need to remove and add edges in the two graphs accordingly.
 		if (trail_lim.size() > level) {
-			
+
 			int stop = trail_lim[level];
 			for (int i = trail.size() - 1; i >= trail_lim[level]; i--) {
-				
+
 				Assignment & e = trail[i];
 				assert(assigns[e.var]!=l_Undef);
 				if (e.isEdge) {
@@ -390,7 +391,7 @@ public:
 
 					}
 				} else {
-					//This is a reachability literal				  
+					//This is a reachability literal
 					detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
 				}
 				assigns[e.var] = l_Undef;
@@ -399,14 +400,14 @@ public:
 			trail.shrink(trail.size() - stop);
 			trail_lim.shrink(trail_lim.size() - level);
 			assert(trail_lim.size() == level);
-			
+
 			if (changed) {
 				requiresPropagation = true;
 				/*				g.markChanged();
 				 antig.markChanged();
 				 cutGraph.markChanged();*/
 			}
-			
+
 			for (FSMDetector * d : detectors) {
 				d->backtrack(level);
 			}
@@ -414,16 +415,17 @@ public:
 
 		assert(dbg_graphsUpToDate());
 		dbg_sync();
-		
+
 	};
 	virtual bool supportsDecisions() {
 		return true;
 	}
-	Lit decideTheory() {
+	Lit decideTheory(CRef & decision_reason) {
+		decision_reason=CRef_Undef;
 		if (!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
-		
+
 		dbg_full_sync();
 		for (int i = 0; i < detectors.size(); i++) {
 			FSMDetector * r = detectors[i];
@@ -438,10 +440,10 @@ public:
 		stats_decision_time += rtime(1) - start;
 		return lit_Undef;
 	}
-	
+
 	void backtrackUntil(Lit p) {
 		//need to remove and add edges in the two graphs accordingly.
-		
+
 		int i = trail.size() - 1;
 		for (; i >= 0; i--) {
 			Assignment e = trail[i];
@@ -464,7 +466,7 @@ public:
 				detectors[getDetector(e.var)]->unassign(mkLit(e.var, !e.assign));
 			}
 		}
-		
+
 		trail.shrink(trail.size() - (i + 1));
 		//if(i>0){
 		requiresPropagation = true;
@@ -500,7 +502,7 @@ public:
 		//double initial_start = rtime(1);
 		double start = rtime(1);
 		backtrackUntil(p);
-		
+
 		assert(d < detectors.size());
 		detectors[d]->buildReason(p, reason, marker);
 		toSolver(reason);
@@ -508,12 +510,12 @@ public:
 		stats_reason_time += finish - start;
 		stats_num_reasons++;
 		//stats_reason_initial_time+=start-initial_start;
-		
+
 	}
-	
 
 
-	
+
+
 	bool dbg_graphsUpToDate() {
 
 		return true;
@@ -534,20 +536,20 @@ public:
 			else if (sign(l) && vars[var(l)].occursNegative != occurs)
 				detectors[getDetector(var(l))]->setOccurs(l, occurs);
 		}
-		
+
 	}
-	
+
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-		
+
 		int lev = level(v);
-		
+
 		assert(decisionLevel() <= lev);
-		
+
 		while (lev > trail_lim.size()) {
 			newDecisionLevel();
 		}
-		
+
 		if (assigns[var(l)] != l_Undef) {
 			return;			//this is already enqueued.
 		}
@@ -555,19 +557,19 @@ public:
 		assigns[var(l)] = sign(l) ? l_False : l_True;
 		requiresPropagation = true;
 		//printf("enqueue %d\n", dimacs(l));
-		
-#ifndef NDEBUG
+
+#ifdef DEBUG_FSM
 		{
 			for (int i = 0; i < trail.size(); i++) {
 				assert(trail[i].var != v);
 			}
 		}
 #endif
-		
 
-		
+
+
 		if (isEdgeVar(var(l))) {
-			
+
 			//this is an edge assignment
 			int edgeID = getEdgeID(var(l)); //v-min_edge_var;
 
@@ -580,14 +582,14 @@ public:
 			} else {
 				g_over.disableRule(edgeID);
 			}
-			
+
 		} else {
-			
+
 			trail.push( { false, !sign(l),-1, v });
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
 		}
-		
+
 	}
 	;
 	bool propagateTheory(vec<Lit> & conflict) {
@@ -602,21 +604,21 @@ public:
 			assert(dbg_graphsUpToDate());
 			return true;
 		}
-		
+
 		bool any_change = false;
 		double startproptime = rtime(1);
 		//static vec<int> detectors_to_check;
-		
+
 		conflict.clear();
 		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
 		//That second one especially.
-		
+
 		//At level 0, need to propagate constant reaches/source nodes/edges...
-		
+
 		//stats_initial_propagation_time += rtime(1) - startproptime;
 		dbg_sync();
 		assert(dbg_graphsUpToDate());
-		
+
 		for (int d = 0; d < detectors.size(); d++) {
 			assert(conflict.size() == 0);
 			bool r = detectors[d]->propagate(conflict);
@@ -627,18 +629,18 @@ public:
 				return false;
 			}
 		}
-		
+
 		dbg_full_sync();
-		
+
 		requiresPropagation = false;
 		g_under.clearChanged();
 		g_over.clearChanged();
-		
+
 		g_under.clearHistory();
 		g_over.clearHistory();
 
 		//detectors_to_check.clear();
-		
+
 		double elapsed = rtime(1) - startproptime;
 		propagationtime += elapsed;
 		dbg_sync();
@@ -657,9 +659,9 @@ public:
 	;
 
 	void drawFull(int from, int to) {
-		
+
 	}
-	
+
 	bool check_solved() {
 
 
@@ -670,20 +672,20 @@ public:
 		}
 		return true;
 	}
-	
+
 	bool dbg_solved() {
 
 		return true;
 	}
-	
+
 	void drawCurrent() {
-		
+
 	}
 	int nEdges() {
 		return rules.size();
 	}
-	CRef newReasonMarker(int detectorID) {
-		CRef reasonMarker = S->newReasonMarker(this);
+	CRef newReasonMarker(int detectorID,bool is_decision=false) {
+		CRef reasonMarker = S->newReasonMarker(this,is_decision);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
 		marker_map[mnum] = detectorID;
@@ -710,13 +712,13 @@ public:
 	}
 
 	void printSolution() {
-		
+
 		for (auto * d : detectors) {
 			assert(d);
 			d->printSolution();
 		}
 	}
-	
+
 	void setStrings(vec<vec<int>>* strings){
 		assert(!this->strings);
 		this->strings=strings;

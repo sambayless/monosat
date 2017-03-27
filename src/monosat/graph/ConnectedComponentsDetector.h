@@ -128,7 +128,7 @@ public:
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	void printSolution(std::ostream & write_to);
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 	void addTreeEdgeLit(int edge_id, Var reach_var);
 	void addConnectedComponentsLit(Var weight_var, int min_components);
 	void addConnectedLit(Var outer_weight_var, int node1, int node2);

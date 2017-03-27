@@ -54,6 +54,34 @@ public:
 	CRef underprop_marker;
 	CRef overprop_marker;
 
+	BVTheorySolver<Weight> * bvTheory=nullptr;
+	class FlowOp: public  GraphTheorySolver<Weight>::GraphTheoryOp{
+		MaxflowDetector * outer;
+		int bvID;
+	public:
+		FlowOp(BVTheorySolver<Weight> &theory,MaxflowDetector * outer, int bvID):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID){
+
+		}
+		int getBV()override{
+			return bvID;
+		}
+
+		bool propagate(bool & changed, vec<Lit> & conflict)override{
+			return true;
+		}
+
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{
+			;
+		}
+
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override;
+
+		bool checkSolved()override{
+			return true;
+		}
+	};
+
+
 	MaxFlow<Weight>* underapprox_detector = nullptr;
 	MaxFlow<Weight> * overapprox_detector = nullptr;
 	MaxFlow<Weight> * underapprox_conflict_detector = nullptr;
@@ -66,16 +94,16 @@ public:
 	int last_decision_q_pos = 0;
 	int alg_id=-1;
 
-	long stats_decision_calculations = 0;
+	int64_t stats_decision_calculations = 0;
 	double stats_total_prop_time=0;
 	double stats_flow_calc_time = 0;
 	double stats_flow_recalc_time = 0;
 	double stats_redecide_time = 0;
-
+	long stats_heuristic_recomputes=0;
 	Lit last_decision_lit = lit_Undef;
 
 	//vec<Lit> decisions;
-	vec<bool> is_potential_decision;
+	vec<bool> is_potential_decision;//not used for bitvector edges
 	vec<bool> in_decision_q;
 	vec<int> potential_decisions;
 	struct DecisionS{
@@ -94,6 +122,7 @@ public:
 	vec<int> back_edges;
 	int learngraph_history_qhead = 0;
 	int learngraph_history_clears = -1;
+	bool overIsEdgeSet=false;
 	MaxFlow<Weight> * learn_cut = nullptr;
 	//int current_decision_edge=-1;
 	//vec<Lit>  reach_lits;
@@ -108,8 +137,20 @@ public:
 		Weight max_flow=(Weight)-1;
 		BitVector<Weight>  bv;
 		bool inclusive;//If inclusive true, l is true iff the maximum flow is >= max_flow; else, l is true iff the maximum flow is > max_flow.
+		FlowOp * op=nullptr;
 	};
 	vec<DistLit> flow_lits;
+
+/*	struct MaxflowBV{
+		int bvID=-1;
+		vec<Lit> lits;
+		Lit l=lit_Undef;
+		bool isSatisfied=false;
+	};*/
+
+	//vec<MaxflowBV> maximum_flow_bvs;
+
+	int n_satisfied_lits=0;
 
 	std::vector<MaxFlowEdge> cut;
 
@@ -119,10 +160,9 @@ public:
 	vec<bool> seen_path;
 
 
-	void backtrack(int level) override {
+	void backtrack(int level) {
 		to_decide.clear();
 		last_decision_status = -1;
-		has_flow_model=false;
 		//LevelDetector::backtrack(level);
 	}
 	void collectChangedEdges();
@@ -137,6 +177,8 @@ public:
 
 
 	bool propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit);
+	void analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict, bool force_maxflow=false);
+	void analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict);
 	void buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict);
 	Lit findFirstReasonTooHigh(Weight flow);
 	Lit findFirstReasonTooLow(Weight flow);
@@ -145,9 +187,20 @@ public:
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
 	bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op);
-	void undecideEdgeWeight(int edgeID);
-	void undecide(Lit l);
-	Lit decide();
+	void undecideEdgeWeight(int edgeID)override;
+	void undecide(Lit l)override;
+	void debug_decidable(Var v);
+	void assignBV(int bvID)override ;
+	void unassignBV(int bvID) override;
+	void assign(Lit l)override{
+		Detector::assign(l);
+		if(default_heuristic){
+			outer->activateHeuristic(default_heuristic);
+		}
+	}
+	void setSatisfied(Lit l, bool isSatisfied)override;
+	bool detectorIsSatisfied()override;
+	Lit decide(CRef &decision_reason);
 	bool supportsEdgeDecisions(){
 		return true;
 	}
@@ -169,36 +222,64 @@ public:
 		if(opt_theory_internal_vsids){
 			printf("\tVsids decisions: %ld\n",n_stats_vsids_decisions);
 		}
-		
+
 	}
+
+	Weight computeUnderApprox( Weight & computed_under_weight){
+		if(computed_under_weight>-1){
+			return computed_under_weight;
+		}
+		if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
+			double startdreachtime = rtime(2);
+			stats_under_updates++;
+
+			computed_under_weight = underapprox_detector->maxFlow();
+			assert(computed_under_weight == underapprox_conflict_detector->maxFlow());
+			double reachUpdateElapsed = rtime(2) - startdreachtime;
+			stats_under_update_time += reachUpdateElapsed;
+			return computed_under_weight;
+		}
+		return 0;
+	}
+
+	Weight computeOverApprox(Weight & computed_over_weight){
+		if(computed_over_weight>-1){
+			return computed_over_weight;
+		}
+		if (overapprox_detector && ( !opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
+			double startunreachtime = rtime(2);
+			stats_over_updates++;
+			computed_over_weight = overapprox_detector->maxFlow();
+			assert(computed_over_weight == overapprox_conflict_detector->maxFlow());
+			double unreachUpdateElapsed = rtime(2) - startunreachtime;
+			stats_over_update_time += unreachUpdateElapsed;
+			return computed_over_weight;
+		}
+		return 0;
+	}
+
 	//Lit decideByPath(int level);
 	void dbg_decisions();
 	void printSolution(std::ostream & write_to);
-	bool has_flow_model= false;
 	Weight getModel_Maxflow(){
-		has_flow_model=true;
+		underapprox_detector->update();
 		return underapprox_detector->maxFlow();
 	}
 	Weight getModel_EdgeFlow(int edgeID){
-		if(!has_flow_model){
-			getModel_Maxflow();
-		}
+
 		return underapprox_detector->getEdgeFlow(edgeID);
 	}
 
 	Weight getModel_AcyclicEdgeFlow(int edgeID){
-		if(!has_flow_model){
-			getModel_Maxflow();
-		}
 		if(!acyclic_flow){
 			acyclic_flow=new AcyclicFlow<Weight>(g_under);
 		}
-
 		if(refined_flow_model.size()==0){
+			underapprox_detector->update();
 			refined_flow_model.resize(g_under.edges());
 			for(int i = 0;i<g_under.edges();i++){
 				if(g_under.hasEdge(i) && g_under.edgeEnabled(i)){
-					refined_flow_model[i]=underapprox_conflict_detector->getEdgeFlow(i);
+					refined_flow_model[i]=underapprox_detector->getEdgeFlow(i);
 				}else{
 					refined_flow_model[i]=0;
 				}
@@ -209,13 +290,14 @@ public:
 
 	}
 	void buildModel(){
-		has_flow_model=false;
+		underapprox_detector->update();
 		refined_flow_model.clear();
 	}
+	void setFlowBV(const BitVector<Weight>  &bv);
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
-	void addFlowBVLessThan(const BitVector<Weight>  &bv, Var v, bool inclusive);
+	void addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+					DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1, bool overIsEdgeSet=false); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() {
 		if (underapprox_conflict_detector && underapprox_conflict_detector!=underapprox_detector)
 			delete 	underapprox_conflict_detector;
@@ -235,19 +317,19 @@ public:
 	const char* getName() {
 		return "Max-flow Detector";
 	}
-	
+
 /*	void decideEdge(int edgeID,  bool assign = true) {
 		assert(decisions.size() >= decisionLevel());
 
 		newDecisionLevel(outer->decisionLevel()+1);
-		
+
 		Lit l = mkLit(outer->getEdgeVar(edgeID), !assign);
 
 		assert(!decisions.contains(l));
 		assert(!decisions.contains(~l));
-		
+
 		//decisions.push(l);
-		
+
 		assert(decisions.size() == decisionLevel());
 		dbg_decisions();
 	}*/
@@ -255,10 +337,10 @@ public:
 		dbg_decisions();
 		//undo a decision edge, and return it to the set of potential decisions
 		assert(decisions.size() == decisionLevel() + 1);
-		
+
 		Lit l = decisions.last();
 		decisions.pop();
-		
+
 		assert(outer->isEdgeVar(var(l)));
 		int edgeID = outer->getEdgeID(var(l));
 
@@ -293,8 +375,17 @@ public:
 		is_potential_decision.growTo(g_under.edges(), false);
 
 		in_decision_q.growTo(g_under.edges(), false);
+		int max_decision_priority=-1;
+		for(int i =0;i<flow_lits.size();i++){
+			Lit l = flow_lits[i].l;
+			int priority = outer->getSolver()->getDecisionPriority(var(outer->toSolver(l)));
+			if(priority>max_decision_priority){
+				max_decision_priority=priority;
+			}
+		}
+		default_heuristic->setPriority(max_decision_priority);
 	}
-	
+
 private:
 
 	void buildLearnGraph(){
@@ -329,18 +420,18 @@ private:
 		//const vec<int> & priority;
 		bool operator ()(Var x, Var y) const {
 			//if (priority[x] == priority[y])
-				return activity[x] > activity[y];
+			return activity[x] > activity[y];
 			//else {
 			//	return priority[x] > priority[y];
 			//}
 		}
 		EdgeOrderLt(const vec<double>& act):
-			activity(act) {
+				activity(act) {
 		}
 	};
 
 	//Local vsids implementation for edges...
-	Heap<EdgeOrderLt> order_heap;
+	Heap<int,EdgeOrderLt> order_heap;
 
 	inline void insertEdgeOrder(int edgeID) {
 		if(opt_theory_internal_vsids){

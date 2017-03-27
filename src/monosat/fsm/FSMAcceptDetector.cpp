@@ -18,6 +18,7 @@
  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
+#include "monosat/fsm/alg/NFAGraphAccept.h"
 #include "monosat/fsm/alg/NFAAccept.h"
 #include "monosat/fsm/FSMAcceptDetector.h"
 #include "monosat/fsm/FSMTheory.h"
@@ -26,15 +27,22 @@ using namespace Monosat;
 
 
 FSMAcceptDetector::FSMAcceptDetector(int detectorID, FSMTheorySolver * outer, DynamicFSM &g_under,
-		DynamicFSM &g_over, int source, vec<vec<int>> & str, double seed) :
-		FSMDetector(detectorID), outer(outer), g_under(g_under), g_over(g_over), source(source),strings(str), rnd_seed(seed){
+									 DynamicFSM &g_over, int source, vec<vec<int>> & str, double seed) :
+		FSMDetector(detectorID), outer(outer), g_under(g_under), g_over(g_over), source(source),strings(str), rnd_seed(seed),order_heap(AcceptOrderLt(*this,activity)){
 
 	underReachStatus = new FSMAcceptDetector::AcceptStatus(*this, true);
 	overReachStatus = new FSMAcceptDetector::AcceptStatus(*this, false);
-
-	underapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_under,source,str,*underReachStatus, opt_fsm_track_used_transitions);
-	overapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_over,source,str,*overReachStatus, opt_fsm_track_used_transitions);
-
+	if(!opt_fsm_as_graph) {
+		underapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_under, source, str, *underReachStatus,
+																			  opt_fsm_track_used_transitions);
+		overapprox_detector = new NFAAccept<FSMAcceptDetector::AcceptStatus>(g_over, source, str, *overReachStatus,
+																			 opt_fsm_track_used_transitions);
+	}else{
+		underapprox_detector = new NFAGraphAccept<FSMAcceptDetector::AcceptStatus>(g_under, source, str, *underReachStatus,
+																				   opt_fsm_track_used_transitions);
+		overapprox_detector = new NFAGraphAccept<FSMAcceptDetector::AcceptStatus>(g_over, source, str, *overReachStatus,
+																				  opt_fsm_track_used_transitions);
+	}
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
 }
@@ -80,7 +88,7 @@ void FSMAcceptDetector::addAcceptLit(int state, int strID, Var outer_reach_var){
 	accept_lit_map[accept_var - first_var] = {strID,state};
 	accepting_state.growTo(g_over.states());
 	accepting_state[state]=true;
-
+	activity.growTo(index+1,0);
 	underapprox_detector->setTrackStringAcceptance(strID,state,true,true);
 	overapprox_detector->setTrackStringAcceptance(strID,state,true,true);
 }
@@ -95,12 +103,123 @@ void FSMAcceptDetector::AcceptStatus::accepts(int string,int state,int edgeID,in
 		if (polarity == accepts){
 			lbool assign = detector.outer->value(l);
 			//detector.is_changed[detector.indexOf(var(l))] = true;
-			detector.changed.push( { l, state,string});
+			detector.changed.push( { l, state,string,polarity});
 		}
 	}
 }
 
+Lit FSMAcceptDetector::decide(int level){
+	if (to_decide.size() && last_decision_status == overapprox_detector->numUpdates()) {
+		while (to_decide.size()) {
+			Lit l = to_decide.last();
+			to_decide.pop();
+			if (outer->value(l) == l_Undef) {
+				/*if(opt_verb>1){
+					printf("fsm decide %d\n",dimacs(l));
+				}*/
+				return l;
+			}
+		}
+	}
+	int last_size = order_heap.size()+1;
+	while(order_heap.size()){
+		if(order_heap.size()>=last_size){
+			throw std::runtime_error("Error in fsm accept detector");
+		}
+		last_size = order_heap.size();
+		Var acceptVar = order_heap.peekMin();
+		Lit l = mkLit(acceptVar);
 
+
+		if (l == lit_Undef) {
+			order_heap.removeMin();
+			continue;
+		}
+		int index =  indexOf(var(l));
+		int node = accept_lit_map[index].to;
+		int str = accept_lit_map[index].str;
+		/*if(opt_verb>1){
+			printf("fsm pick decide %d\n",index);
+		}*/
+
+		if (outer->value(l) == l_True && opt_decide_fsm_pos) {
+			int j = node;
+
+			if ( !underapprox_detector->acceptsString(str,node)) {
+				assert(overapprox_detector->acceptsString(str,node));//else we'd have a conflict
+				to_decide.clear();
+				last_decision_status = overapprox_detector->numUpdates();
+				decision_path.clear();
+
+				int p = j;
+				int last_edge = -1;
+				int last = j;
+
+
+				//ok, read back the path from the over to find a candidate edge we can decide
+				//find the earliest unconnected node on this path
+				overapprox_detector->getAbstractPath(str, node, decision_path,true);
+				last_decision_status = overapprox_detector->numUpdates();
+				for(NFATransition & t:decision_path){
+					int edgeID = t.edgeID;
+					int input = t.input;
+					Lit l  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
+					if(outer->value(l)==l_Undef)
+						to_decide.push(l);
+				}
+
+
+				if (to_decide.size() && last_decision_status == overapprox_detector->numUpdates()) {
+					while (to_decide.size()) {
+						Lit l = to_decide.last();
+						to_decide.pop();
+						if (outer->value(l) == l_Undef) {
+							/*if(opt_verb>1){
+                                printf("fsm decide %d\n",dimacs(l));
+                            }*/
+							return l;
+						}
+					}
+				}
+			}
+		}else if (outer->value(l)==l_False && opt_decide_fsm_neg){
+			//find any transitions that are not on any paths of the accepting strings, and assign them false.
+			if (overapprox_detector->acceptsString(str,node) ) {
+				assert(!underapprox_detector->acceptsString(str,node));//else we'd have a conflict
+				//for each negated reachability constraint, we can find a cut through the unassigned edges in the over-approx and disable one of those edges.
+
+
+
+				//try to disconnect this node from source by walking back along the path in the over approx, and disabling the first unassigned edge we see.
+				//(there must be at least one such edge, else the variable would be connected in the under approximation as well - in which case it would already have been propagated.
+				overapprox_detector->getAbstractPath(str, node, decision_path,true);
+				last_decision_status = overapprox_detector->numUpdates();
+				for(NFATransition & t:decision_path){
+					int edgeID = t.edgeID;
+					int input = t.input;
+					Lit l  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
+					if(outer->value(l)==l_Undef) {
+						//to_decide.push(l);
+						/*	if(opt_verb>1){
+								printf("fsm decide %d\n",dimacs(l));
+							}*/
+						return l;
+					}
+				}
+
+
+			}
+
+		}
+		if(order_heap.peekMin()==acceptVar){
+			order_heap.removeMin();
+		}
+
+
+	}
+
+	return lit_Undef;
+}
 
 bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
@@ -166,72 +285,93 @@ bool FSMAcceptDetector::propagate(vec<Lit> & conflict) {
 
 
 	while (changed.size()) {
-			int sz = changed.size();
-			Lit l = changed.last().l;
+		int sz = changed.size();
+		Lit l = changed.last().l;
+		bool polarity = changed.last().polarity;
+		int u = changed.last().u;
+		int str = changed.last().str;
+		//assert(is_changed[indexOf(var(l))]);
 
-			int u = changed.last().u;
-			int str = changed.last().str;
-			//assert(is_changed[indexOf(var(l))]);
-			if(sign(l)){
-				assert(!overapprox_detector->acceptsString(str,u));
-			}else{
-				assert(underapprox_detector->acceptsString(str,u));
-			}
 
-			if (underapprox_detector && !skipped_positive && !sign(l)) {
+		if (underapprox_detector && polarity && !sign(l) && underapprox_detector->acceptsString(str,u)) {
 
-			} else if (overapprox_detector && !skipped_negative && sign(l)) {
+		} else if (overapprox_detector && !polarity && sign(l) && !overapprox_detector->acceptsString(str,u)) {
 
-			} else {
+		} else {
+			if(sz==changed.size()) {
+				//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
+				//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
 				assert(sz == changed.size());
 				assert(changed.last().u == u);
 				//is_changed[indexOf(var(l))] = false;
 				changed.pop();
 				//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
-				continue;
+			}
+			continue;
+		}
+
+		bool reach = !sign(l);
+		if (outer->value(l) == l_True) {
+			//do nothing
+			if(opt_theory_internal_vsids_fsm && ! order_heap.inHeap(var(l))){
+				order_heap.insert(var(l));
+			}
+		} else if (outer->value(l) == l_Undef) {
+
+			if (reach)
+				outer->enqueue(l, underprop_marker);
+			else
+				outer->enqueue(l, overprop_marker);
+		} else if (outer->value(l) == l_False) {
+			conflict.push(l);
+
+			if (reach) {
+				buildAcceptReason(u,str, conflict);
+			} else {
+				//The reason is a cut separating s from t
+				buildNonAcceptReason(u,str, conflict);
 			}
 
-			bool reach = !sign(l);
-			if (outer->value(l) == l_True) {
-				//do nothing
-			} else if (outer->value(l) == l_Undef) {
-
-				if (reach)
-					outer->enqueue(l, underprop_marker);
-				else
-					outer->enqueue(l, overprop_marker);
-			} else if (outer->value(l) == l_False) {
-				conflict.push(l);
-
-				if (reach) {
-					buildAcceptReason(u,str, conflict);
-				} else {
-					//The reason is a cut separating s from t
-					buildNonAcceptReason(u,str, conflict);
-				}
-
-				return false;
-			}
-
-			assert(sz == changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
+			return false;
+		}
+		if(sz==changed.size()) {
+			//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
+			//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
+			assert(sz ==
+				   changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
 			assert(changed.last().u == u);
 			//is_changed[indexOf(var(l))] = false;
 			changed.pop();
 		}
+	}
 	{
-#ifndef NDEBUG
-		NFAAccept<> check(g_over,source,strings);
+#ifdef DEBUG_FSM
+		NFAAccept<> check_over(g_over,source,strings);
+		NFAAccept<> check_under(g_under,source,strings);
 
 		for(int str = 0;str<accept_lits.size();str++){
+			bool all_undef =true;
+			for(Lit a:accept_lits[str]){
+				if(a!=lit_Undef)
+				{
+					all_undef=false;
+					break;
+				}
+			}
+			if(all_undef)
+				continue;
 			vec<int> & string = strings[str];
-			check.run(str);
+			check_over.run(str);
+			check_under.run(str);
 			for(int to = 0;to<accept_lits[str].size();to++){
 				if(accept_lits[str][to]!=lit_Undef){
 					Lit l = accept_lits[str][to];
-					 if (outer->value(l)==l_True && !check.accepting(to)){
+					 if (outer->value(l)==l_True && !check_over.accepting(to)){
 						assert( false);
 					}
-
+					if (outer->value(l)==l_False && check_under.accepting(to)){
+						assert( false);
+					}
 				}
 			}
 
@@ -261,177 +401,177 @@ void FSMAcceptDetector::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	}
 }
 
-	bool FSMAcceptDetector::checkSymmetryConstraints(vec<Lit> & conflict) {
-		if(opt_fsm_symmetry_breaking==1){
-			return checkSymmetryConstraintsPopCount(conflict);
-		}else if (opt_fsm_symmetry_breaking==2){
-			return checkSymmetryConstraintsBitVec(conflict);
-		}else{
-			return true;
-		}
+bool FSMAcceptDetector::checkSymmetryConstraints(vec<Lit> & conflict) {
+	if(opt_fsm_symmetry_breaking==1){
+		return checkSymmetryConstraintsPopCount(conflict);
+	}else if (opt_fsm_symmetry_breaking==2){
+		return checkSymmetryConstraintsBitVec(conflict);
+	}else{
+		return true;
 	}
+}
 
-	bool FSMAcceptDetector::checkSymmetryConstraintsBitVec(vec<Lit> & conflict) {
-		for (int i = 0; i < g_over.states(); i++) {
-			if (i == source || accepting_state[i])
+bool FSMAcceptDetector::checkSymmetryConstraintsBitVec(vec<Lit> & conflict) {
+	for (int i = 0; i < g_over.states(); i++) {
+		if (i == source || accepting_state[i])
+			continue;
+
+		Bitset & prevOver = _bitvec1;
+		prevOver.zero();
+
+		int pos = 0;
+		for(int k = 0;k<g_over.nIncident(i);k++){
+			int edgeID = g_over.incident(i,k).id;
+			for(int l = 0;l< g_over.inAlphabet();l++ ){
+				prevOver.growTo(pos+1);
+				if( g_over.transitionEnabled(edgeID,l,0)){
+
+					prevOver.set(pos);
+				}
+				pos++;
+			}
+		}
+
+		for (int j = i+1; j < g_over.states(); j++) {
+			if (j == source || accepting_state[j] )
 				continue;
-
-			Bitset & prevOver = _bitvec1;
-			prevOver.zero();
-
+			Bitset & curUnder = _bitvec2;
+			curUnder.zero();
+			//if i is < j, then the number of enabled transitions in i must be <= the number in j
 			int pos = 0;
-			for(int k = 0;k<g_over.nIncident(i);k++){
-				int edgeID = g_over.incident(i,k).id;
-				for(int l = 0;l< g_over.inAlphabet();l++ ){
-					prevOver.growTo(pos+1);
-					if( g_over.transitionEnabled(edgeID,l,0)){
+			for(int k = 0;k<g_under.nIncident(j);k++){
+				int edgeID = g_under.incident(j,k).id;
+				for(int l = 0;l< g_under.inAlphabet();l++ ){
+					curUnder.growTo(pos+1);
+					if(g_under.transitionEnabled(edgeID,l,0)){
 
-						prevOver.set(pos);
+						curUnder.set(pos);
 					}
 					pos++;
 				}
 			}
+			if (curUnder.GreaterThan(prevOver)){
+				//this is a symmetry conflict
+				//either node i must enable a disabled transition, or node j must disable an enabled transition
 
-			for (int j = i+1; j < g_over.states(); j++) {
-				if (j == source || accepting_state[j] )
-					continue;
-					Bitset & curUnder = _bitvec2;
-					curUnder.zero();
-					//if i is < j, then the number of enabled transitions in i must be <= the number in j
-					int pos = 0;
-					for(int k = 0;k<g_under.nIncident(j);k++){
-						int edgeID = g_under.incident(j,k).id;
-						for(int l = 0;l< g_under.inAlphabet();l++ ){
-							curUnder.growTo(pos+1);
-							if(g_under.transitionEnabled(edgeID,l,0)){
-
-								curUnder.set(pos);
-							}
-							pos++;
-						}
+				vec<Var> overVars;
+				vec<Var> underVars;
+				for(int k = 0;k<g_over.nIncident(i);k++){
+					int edgeID = g_over.incident(i,k).id;
+					for(int l = 0;l< g_over.inAlphabet();l++ ){
+						overVars.push(outer->getTransitionVar(g_over.getID(),edgeID,l,0));
 					}
-					if (curUnder.GreaterThan(prevOver)){
-						//this is a symmetry conflict
-						//either node i must enable a disabled transition, or node j must disable an enabled transition
-
-						vec<Var> overVars;
-						vec<Var> underVars;
-						for(int k = 0;k<g_over.nIncident(i);k++){
-							int edgeID = g_over.incident(i,k).id;
-							for(int l = 0;l< g_over.inAlphabet();l++ ){
-								overVars.push(outer->getTransitionVar(g_over.getID(),edgeID,l,0));
-							}
-						}
-
-						for(int k = 0;k<g_under.nIncident(j);k++){
-							int edgeID = g_under.incident(j,k).id;
-							for(int l = 0;l< g_under.inAlphabet();l++ ){
-								Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
-								underVars.push(v);
-							}
-						}
-						assert(underVars.size()==overVars.size());
-						assert(pos==underVars.size());
-						pos--;
-							for(;pos>=0;pos--) {
-
-								if (curUnder[pos]) {
-
-									if(underVars[pos]!=var_Undef){
-										Lit l = ~mkLit(underVars[pos]);
-										conflict.push(l);
-										assert(outer->value(l)==l_False);
-									}
-								}
-								if (!prevOver[pos]) {
-
-									if(overVars[pos]!=var_Undef){
-										Lit l = mkLit(overVars[pos]);
-										conflict.push(l);
-										assert(outer->value(l)==l_False);
-									}
-								}
-								if(prevOver[pos] && !curUnder[pos]){
-									break;
-								}
-							} ;
-						   if(opt_verb>1){
-								printf("FSM Symmetry breaking clause, with %d lits\n", conflict.size());
-							}
-							return false;
-					}
-
-
-					}
-
-			}
-		return true;
-	}
-
-	bool FSMAcceptDetector::checkSymmetryConstraintsPopCount(vec<Lit> & conflict) {
-		for (int i = 0; i < g_over.states(); i++) {
-			if (i == source || accepting_state[i])
-				continue;
-
-			int n_enabled_outgoing_over = 0;
-			for(int k = 0;k<g_over.nIncident(i);k++){
-				int edgeID = g_over.incident(i,k).id;
-				for(int l = 0;l< g_over.inAlphabet();l++ ){
-					n_enabled_outgoing_over+=g_over.transitionEnabled(edgeID,l,0);
 				}
+
+				for(int k = 0;k<g_under.nIncident(j);k++){
+					int edgeID = g_under.incident(j,k).id;
+					for(int l = 0;l< g_under.inAlphabet();l++ ){
+						Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
+						underVars.push(v);
+					}
+				}
+				assert(underVars.size()==overVars.size());
+				assert(pos==underVars.size());
+				pos--;
+				for(;pos>=0;pos--) {
+
+					if (curUnder[pos]) {
+
+						if(underVars[pos]!=var_Undef){
+							Lit l = ~mkLit(underVars[pos]);
+							conflict.push(l);
+							assert(outer->value(l)==l_False);
+						}
+					}
+					if (!prevOver[pos]) {
+
+						if(overVars[pos]!=var_Undef){
+							Lit l = mkLit(overVars[pos]);
+							conflict.push(l);
+							assert(outer->value(l)==l_False);
+						}
+					}
+					if(prevOver[pos] && !curUnder[pos]){
+						break;
+					}
+				} ;
+				if(opt_verb>1){
+					printf("FSM Symmetry breaking clause, with %d lits\n", conflict.size());
+				}
+				return false;
 			}
-			if (n_enabled_outgoing_over==0)
-				continue;
 
-			for (int j = i+1; j < g_over.states(); j++) {
-				if (j == source || accepting_state[j] )
-					continue;
 
-					//if i is < j, then the number of enabled transitions in i must be <= the number in j
-					int n_enabled_outgoing_under = 0;
-					for(int k = 0;k<g_under.nIncident(j);k++){
-						int edgeID = g_under.incident(j,k).id;
-						for(int l = 0;l< g_under.inAlphabet();l++ ){
-							n_enabled_outgoing_under+=g_under.transitionEnabled(edgeID,l,0);
-						}
-					}
-					if (n_enabled_outgoing_under>n_enabled_outgoing_over){
-						//this is a symmetry conflict
-						//either node i must enable a disabled transition, or node j must disable an enabled transition
-						for(int k = 0;k<g_over.nIncident(i);k++){
-							int edgeID = g_over.incident(i,k).id;
-							for(int l = 0;l< g_over.inAlphabet();l++ ){
-								if(!g_over.transitionEnabled(edgeID,l,0)){
-									Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
-									if(v!=var_Undef){
-										conflict.push(mkLit(v));
-									}
-								}
-							}
-						}
+		}
 
-						for(int k = 0;k<g_under.nIncident(j);k++){
-							int edgeID = g_under.incident(j,k).id;
-							for(int l = 0;l< g_under.inAlphabet();l++ ){
-								if(g_under.transitionEnabled(edgeID,l,0)){
-									Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
-									if(v!=var_Undef){
-										conflict.push(~mkLit(v));
-									}
-									//conflict.push(~mkLit(outer->getTransitionVar(g_under.getID(), edgeID,l,0)));
-								}
-							}
-						}
-						if(opt_verb>1){
-							printf("FSM Symmetry breaking clause, with %d lits\n", conflict.size());
-						}
-						return false;
-					}
+	}
+	return true;
+}
 
+bool FSMAcceptDetector::checkSymmetryConstraintsPopCount(vec<Lit> & conflict) {
+	for (int i = 0; i < g_over.states(); i++) {
+		if (i == source || accepting_state[i])
+			continue;
+
+		int n_enabled_outgoing_over = 0;
+		for(int k = 0;k<g_over.nIncident(i);k++){
+			int edgeID = g_over.incident(i,k).id;
+			for(int l = 0;l< g_over.inAlphabet();l++ ){
+				n_enabled_outgoing_over+=g_over.transitionEnabled(edgeID,l,0);
 			}
 		}
-		return true;
+		if (n_enabled_outgoing_over==0)
+			continue;
+
+		for (int j = i+1; j < g_over.states(); j++) {
+			if (j == source || accepting_state[j] )
+				continue;
+
+			//if i is < j, then the number of enabled transitions in i must be <= the number in j
+			int n_enabled_outgoing_under = 0;
+			for(int k = 0;k<g_under.nIncident(j);k++){
+				int edgeID = g_under.incident(j,k).id;
+				for(int l = 0;l< g_under.inAlphabet();l++ ){
+					n_enabled_outgoing_under+=g_under.transitionEnabled(edgeID,l,0);
+				}
+			}
+			if (n_enabled_outgoing_under>n_enabled_outgoing_over){
+				//this is a symmetry conflict
+				//either node i must enable a disabled transition, or node j must disable an enabled transition
+				for(int k = 0;k<g_over.nIncident(i);k++){
+					int edgeID = g_over.incident(i,k).id;
+					for(int l = 0;l< g_over.inAlphabet();l++ ){
+						if(!g_over.transitionEnabled(edgeID,l,0)){
+							Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
+							if(v!=var_Undef){
+								conflict.push(mkLit(v));
+							}
+						}
+					}
+				}
+
+				for(int k = 0;k<g_under.nIncident(j);k++){
+					int edgeID = g_under.incident(j,k).id;
+					for(int l = 0;l< g_under.inAlphabet();l++ ){
+						if(g_under.transitionEnabled(edgeID,l,0)){
+							Var v = outer->getTransitionVar(g_over.getID(), edgeID,l,0);
+							if(v!=var_Undef){
+								conflict.push(~mkLit(v));
+							}
+							//conflict.push(~mkLit(outer->getTransitionVar(g_under.getID(), edgeID,l,0)));
+						}
+					}
+				}
+				if(opt_verb>1){
+					printf("FSM Symmetry breaking clause, with %d lits\n", conflict.size());
+				}
+				return false;
+			}
+
+		}
 	}
+	return true;
+}
 
 
 
@@ -459,7 +599,7 @@ void FSMAcceptDetector::buildAcceptReason(int node,int str, vec<Lit> & conflict)
 		conflict.push(mkLit(v,true));
 	}
 	//note: if there are repeated edges in this conflict, they will be cheaply removed by the sat solver anyhow, so that is not a major problem.
-
+	bumpConflict(conflict);
 }
 void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & conflict){
 
@@ -553,7 +693,7 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 			cur_seen[s]=false;
 		}
 		to_visit.clear();
-
+		bumpConflict(conflict);
 		return;
 	}
 
@@ -629,6 +769,7 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 		}
 
 	}
+	bumpConflict(conflict);
 /*	printf("conflict: ");
 	for (int i = 1;i<conflict.size();i++){
 		Lit l = conflict[i];
@@ -641,10 +782,11 @@ void FSMAcceptDetector::buildNonAcceptReason(int node,int str, vec<Lit> & confli
 void FSMAcceptDetector::printSolution(std::ostream& out){
 	g_under.draw(source);
 }
-bool FSMAcceptDetector::checkSatisfied(){
-	NFAAccept<> check(g_under,source,strings);
-
-	g_under.draw(source,first_destination );
+bool FSMAcceptDetector::checkSatisfied() {
+	NFAAccept<> check(g_under, source, strings);
+	//if (opt_verb > 1) {
+	//	g_under.draw(source, first_destination);
+	//}
 	for(int str = 0;str<accept_lits.size();str++){
 		vec<int> & string = strings[str];
 		check.run(str);

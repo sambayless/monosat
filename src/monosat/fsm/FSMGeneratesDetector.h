@@ -24,15 +24,15 @@
 
 #include "monosat/dgl/DynamicGraph.h"
 
-#include "DynamicFSM.h"
+#include "monosat/fsm/DynamicFSM.h"
 
 #include "monosat/core/SolverTypes.h"
 #include "monosat/mtl/Map.h"
 
 
 #include "monosat/utils/System.h"
-#include "FSMDetector.h"
-#include "alg/NFAGenerate.h"
+#include "monosat/fsm/FSMDetector.h"
+#include "monosat/fsm/alg/NFAGenerate.h"
 
 using namespace dgl;
 namespace Monosat {
@@ -87,7 +87,7 @@ public:
 	vec<GenerateLit> generate_lit_map;
 	vec<Lit> all_lits;
 	//stats
-	
+
 	int stats_full_updates = 0;
 	int stats_fast_updates = 0;
 	int stats_fast_failed_updates = 0;
@@ -115,10 +115,10 @@ public:
 		}
 		if (opt_learn_unreachable_component) {
 			printf("\t%d components learned, average component size: %f\n", stats_learnt_components,
-					stats_learnt_components_sz / (float) stats_learnt_components);
+				   stats_learnt_components_sz / (float) stats_learnt_components);
 		}
 	}
-	
+
 	void unassign(Lit l) {
 		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
@@ -126,12 +126,12 @@ public:
 
 			int str =  generate_lit_map[index].str;
 			//if (!is_changed[index]) {
-            changed.push( { {var(l)}, str });
+			changed.push( { {var(l)}, str });
 			//	is_changed[index] = true;
 			//}
 		}
 	}
-	
+
 	inline int indexOf(Var v)const{
 		int index = v - first_var;
 		assert(index < generate_lit_map.size());
@@ -160,15 +160,15 @@ public:
 
 
 	FSMGeneratesDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
-			int _source, vec<vec<int>> &  strs, double seed = 1);
+						 int _source, vec<vec<int>> &  strs, double seed = 1);
 	virtual ~FSMGeneratesDetector() {
-		
+
 	}
-	
+
 	const char* getName() {
 		return "NFA Generates Detector";
 	}
-	
+
 private:
 
 	struct UsedTransition{
@@ -178,7 +178,7 @@ private:
 
 	vec<UsedTransition> used_transitions;
 	bool unique_path_conflict(int s,int string,int str_pos,int emove_count, vec<NFATransition> & path,vec<Lit> & conflict);
-	
+
 
 };
 }

@@ -23,7 +23,7 @@
 #define DISTANCEETECTOR_H_
 #include "monosat/utils/System.h"
 
-#include "GraphTheoryTypes.h"
+#include "monosat/graph/GraphTheoryTypes.h"
 #include "monosat/dgl/DynamicGraph.h"
 #include "monosat/dgl/Reach.h"
 #include "monosat/dgl/Distance.h"
@@ -32,10 +32,10 @@
 #include "monosat/dgl/MaxFlow.h"
 #include "monosat/core/SolverTypes.h"
 #include "monosat/mtl/Map.h"
-#include "WeightedDijkstra.h"
+#include "monosat/graph/WeightedDijkstra.h"
 #include <gmpxx.h>
 #include "monosat/utils/System.h"
-#include "Detector.h"
+#include "monosat/graph/Detector.h"
 #include "monosat/bv/BVTheorySolver.h"
 #include <vector>
 using namespace dgl;
@@ -83,13 +83,13 @@ public:
 
 	int max_unweighted_distance=0;
 
-	long stats_pure_skipped = 0;
-	long stats_distance_gt_reasons = 0;
-	long stats_distance_leq_reasons = 0;
-	long stats_unweighted_gt_reasons = 0;
-	long stats_unweighted_leq_reasons = 0;
-	long stats_gt_unweighted_edges_skipped = 0;
-	long stats_gt_weighted_edges_skipped = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_distance_gt_reasons = 0;
+	int64_t stats_distance_leq_reasons = 0;
+	int64_t stats_unweighted_gt_reasons = 0;
+	int64_t stats_unweighted_leq_reasons = 0;
+	int64_t stats_gt_unweighted_edges_skipped = 0;
+	int64_t stats_gt_weighted_edges_skipped = 0;
 
 
 	vec<vec<Lit> > unweighted_sat_lits;
@@ -107,10 +107,12 @@ public:
 	struct Change {
 		//Var v;
 		int u;
+		bool polarity;
 		//int min_distance;
 	};
 	vec<Change> changed;
-	vec<bool> is_changed;
+	vec<bool> is_changed_under;
+	vec<bool> is_changed_over;
 	vec<Var> tmp_nodes;
 
 	std::vector<double> rnd_weight;
@@ -223,19 +225,24 @@ public:
 
 	 }*/
 
-	void unassign(Lit l) {
+	void unassign(Lit l) override{
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;
 		
 		//at the moment, change in assignments are only tracked this way for unweighted lits:
 		if (index >= 0 && index < reach_lit_map.size() && reach_lit_map[index].to != -1) {
 			int node = reach_lit_map[index].to;
-			if (!is_changed[node]) {
-				changed.push( { node });
-				is_changed[node] = true;
+			if (!is_changed_under[node]) {
+				changed.push( { node, true });
+				is_changed_under[node] = true;
 			}
+			if (!is_changed_over[node]) {
+				changed.push( { node, false });
+				is_changed_over[node] = true;
 		}
 	}
+	}
+
 	void preprocess();
 	bool propagate(vec<Lit> & conflict);
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
@@ -243,7 +250,7 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 	void updateShortestPaths();
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 

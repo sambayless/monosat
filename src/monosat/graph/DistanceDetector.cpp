@@ -19,15 +19,24 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include <monosat/core/Config.h>
-#include <monosat/dgl/RamalReps.h>
+#include "monosat/core/Config.h"
+#include "monosat/dgl/RamalReps.h"
 #include "monosat/dgl/EdmondsKarp.h"
 #include "monosat/dgl/EdmondsKarpAdj.h"
 #include "monosat/dgl/KohliTorr.h"
+#include "monosat/dgl/EdmondsKarpDynamic.h"
 #include "monosat/dgl/Dinics.h"
-#include <monosat/graph/DistanceDetector.h>
-#include <monosat/graph/GraphTheory.h>
+#include "monosat/dgl/DinicsLinkCut.h"
+#include "monosat/graph/DistanceDetector.h"
+#include "monosat/graph/GraphTheory.h"
+#include "monosat/mtl/Rnd.h"
+#include "monosat/mtl/Vec.h"
+#include "monosat/utils/Options.h"
+#include <monosat/graph/GraphHeuristic.h>
 //#include "monosat/dgl/UnweightedDistance.h"
+#include <cassert>
+#include <cstdlib>
+#include <iostream>
 #include <iomanip>
 using namespace Monosat;
 
@@ -111,8 +120,8 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		if(underapprox_unweighted_distance_detector){
 			underapprox_path_detector = underapprox_unweighted_distance_detector;
 		}else{
-			underapprox_path_detector =  underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
-									from, _g, *positiveReachStatus, 0);
+			underapprox_path_detector =  underapprox_unweighted_distance_detector =  new UnweightedRamalReps<Weight,
+					typename DistanceDetector<Weight>::ReachStatus>(from, _g, *(positiveReachStatus), 0);
 		}
 		 //new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 0);
 	} else {
@@ -159,9 +168,10 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 	unweighted_underprop_marker = outer->newReasonMarker(getID());
 	unweighted_overprop_marker = outer->newReasonMarker(getID());
 	
+	default_heuristic = new GraphHeuristic<Weight>(outer,this);
+
 
 }
-
 
 template<typename Weight>
 void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderApprox, int within_steps) {
@@ -179,7 +189,7 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 		//To do the same for undirected graps, also non-deterministically set the direction of each edge.
 		Lit True = mkLit(outer->newVar());
 		outer->addClause(True);
-		BitVector<Weight> one = outer->comparator->newBitvector(-1,outer->getEdgeWeightBitWidth() ,1);
+		BitVector<Weight> one = outer->bvTheory->newBitvector(-1,outer->getEdgeWeightBitWidth() ,1);
 		for(int  to = 0;to<unweighted_dist_lits.size();to++){
 			if(unweighted_dist_lits[to].size() && to!=source){
 
@@ -245,14 +255,14 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 								BitVector<Weight> sum = outer->newBV();
 
 								//this is an unweighted constraint, so just add 1
-								outer->comparator->newAdditionBV(sum.getID(), node_distances[from].getID(),one.getID());
+								outer->bvTheory->newAdditionBV(sum.getID(), node_distances[from].getID(),one.getID());
 								BitVector<Weight> new_dist = outer->newBV();
 								//If this incoming edge is enabled, then the distance is the cost of this edge
-								outer->comparator->newConditionalBV(l,new_dist.getID(),sum.getID(),dist.getID());
+								outer->bvTheory->newConditionalBV(l,new_dist.getID(),sum.getID(),dist.getID());
 
 								dist = new_dist;
 							}
-							outer->comparator->makeEquivalent(dist.getID(),node_distances[to].getID());
+							outer->bvTheory->makeEquivalent(dist.getID(),node_distances[to].getID());
 						}else{
 							//all incoming edges must be disabled
 							for(int i = 0;i<g_over.nIncoming(n);i++){
@@ -314,11 +324,11 @@ void DistanceDetector<Weight>::buildUnweightedSATConstraints(bool onlyUnderAppro
 				for(int i = 0;i<unweighted_dist_lits[to].size();i++){
 					Lit l = unweighted_dist_lits[to][i].l;
 					int min_unweighted_distance = unweighted_dist_lits[to][i].min_unweighted_distance;
-					BitVector<Weight> comparison =  outer->comparator->newBitvector(-1,outer->getEdgeWeightBitWidth() ,min_unweighted_distance);
-					Lit conditional = outer->comparator->newComparison(Comparison::leq, dist.getID() ,comparison.getID());
+					BitVector<Weight> comparison =  outer->bvTheory->newBitvector(-1,outer->getEdgeWeightBitWidth() ,min_unweighted_distance);
+					Lit conditional = outer->bvTheory->newComparison(Comparison::leq, dist.getID() ,comparison.getID());
 
 					Lit s_l = outer->toSolver(l);
-					Lit s_conditional =  outer->comparator->toSolver(conditional);
+					Lit s_conditional =  outer->bvTheory->toSolver(conditional);
 					Lit s_reaches = outer->toSolver(reaches_to);
 
 					//l is true if the distance is <= comparison, AND their exists a path to node
@@ -481,22 +491,20 @@ void DistanceDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reach
 		//int& min_distance =  detector.unweighted_dist_lits[u][i].min_unweighted_distance;
 		
 		//Lit l = detector.unweighted_dist_lits[u][i].l;
-		if (!detector.is_changed[u]) {
 			
-			if (!polarity) {				// && (!reachable || (distance>min_distance))){
+
+		if (!polarity && !detector.is_changed_over[u]) {				// && (!reachable || (distance>min_distance))){
 				//lbool assign = detector.outer->value(l);
 				//if( assign!= l_False ){
-				detector.is_changed[u] = true;
-				detector.changed.push( { u });						//{var(l),u,min_distance});
+			detector.is_changed_over[u] = true;
+			detector.changed.push( { u,polarity });						//{var(l),u,min_distance});
 				//}
-			} else if (polarity) {						// && reachable && (distance<=min_distance)){
-				//lbool assign = detector.outer->value(l);
-				//if( assign!= l_True ){
-				detector.is_changed[u] = true;
-				detector.changed.push( { u });						//{var(l),u,min_distance});
+		} else if (polarity && !detector.is_changed_under[u]) {						// && reachable && (distance<=min_distance)){
+			detector.is_changed_under[u] = true;
+			detector.changed.push( { u,polarity });						//{var(l),u,min_distance});
 				//}
 			}
-		}
+
 		//}
 	}
 	
@@ -739,7 +747,7 @@ void DistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 		throw std::runtime_error("Internal error in distance detector");
 		assert(false);
 	}
-
+	outer->toSolver(reason);
 }
 
 template<typename Weight>
@@ -757,7 +765,8 @@ void DistanceDetector<Weight>::updateShortestPaths() {
 }
 template<typename Weight>
 void DistanceDetector<Weight>::preprocess() {
-	is_changed.growTo(g_under.nodes());
+	is_changed_under.growTo(g_under.nodes());
+	is_changed_over.growTo(g_over.nodes());
 
 	if(!overapprox_unweighted_distance_detector){
 		buildUnweightedSATConstraints(false);
@@ -787,7 +796,7 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		return true;
 	
 	static int iter = 0;
-	if (++iter == 29) { //18303
+	if (++iter == 1722) { //18303
 		int a = 1;
 	}
 
@@ -820,6 +829,10 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 		skipped_negative = true;
 		stats_skipped_over_updates++;
 	}
+
+	if(skipped_positive && skipped_negative){
+		int a=1;
+	}
 	//outer->unreachupdatetime+=unreachUpdateElapsed;
 	
 	if (opt_rnd_shuffle) {
@@ -829,21 +842,19 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	while (changed.size()) {
 		int sz = changed.size();
 		int u = changed.last().u;
-		if (u == 3) {
-			int a = 1;
-		}
-		assert(is_changed[u]);
+		bool polarity = changed.last().polarity;
+		assert(polarity? is_changed_under[u] : is_changed_over[u]);
 		for (int i = 0; i < unweighted_dist_lits[u].size(); i++) {
 			int& min_distance = unweighted_dist_lits[u][i].min_unweighted_distance;
 			
 			Var v = var(unweighted_dist_lits[u][i].l);
 			Lit l;
 			
-			if (underapprox_unweighted_distance_detector && !skipped_positive
+			if (underapprox_unweighted_distance_detector && polarity
 					&& underapprox_unweighted_distance_detector->connected(u)
 					&& underapprox_unweighted_distance_detector->distance(u) <= min_distance) {
 				l = mkLit(v, false);
-			} else if (overapprox_unweighted_distance_detector && !skipped_negative
+			} else if (overapprox_unweighted_distance_detector && !polarity
 					&& (!overapprox_unweighted_distance_detector->connected(u)
 							|| overapprox_unweighted_distance_detector->distance(u) > min_distance)) {
 				l = mkLit(v, true);
@@ -892,18 +903,27 @@ bool DistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 				if(S->dbg_solver)
 				S->dbg_check(conflict);
 #endif
-
+				outer->toSolver(conflict);
 				return false;
 			} else {
 				int a = 1;
 			}
 		}
+		if(sz==changed.size()) {
+			//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
+			//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
+			//(should only be possible to have this happen at most twice per propagation call, so shouldn't matter too much)
 		assert(sz == changed.size());
 		assert(changed.last().u == u);
-		is_changed[u] = false;
+			if (polarity) {
+				is_changed_under[u] = false;
+			} else {
+				is_changed_over[u] = false;
+			}
 		changed.pop();
 	}
-	
+	}
+
 
 	return true;
 }
@@ -1012,7 +1032,7 @@ bool DistanceDetector<Weight>::checkSatisfied() {
  */
 
 template<typename Weight>
-Lit DistanceDetector<Weight>::decide() {
+Lit DistanceDetector<Weight>::decide(CRef &decision_reason) {
 	if (!opt_decide_graph_distance || !overapprox_unweighted_distance_detector)
 		return lit_Undef;
 	DistanceDetector *r = this;
@@ -1186,5 +1206,5 @@ Lit DistanceDetector<Weight>::decide() {
 template class Monosat::DistanceDetector<int> ;
 template class Monosat::DistanceDetector<int64_t> ;
 template class Monosat::DistanceDetector<double> ;
-
+#include <gmpxx.h>
 template class Monosat::DistanceDetector<mpq_class> ;

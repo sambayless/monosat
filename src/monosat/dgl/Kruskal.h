@@ -35,7 +35,7 @@ namespace dgl {
 template<class Status, typename Weight = int>
 class Kruskal: public MinimumSpanningTree<Weight> {
 public:
-	
+
 	DynamicGraph<Weight> & g;
 
 	Status & status;
@@ -71,13 +71,13 @@ public:
 		}
 	};
 
-	Heap<EdgeLt> edge_heap;
+	alg::Heap<EdgeLt> edge_heap;
 	std::vector<int> edge_list;
 
 	std::vector<int> prev;
 
 public:
-	
+
 	int stats_full_updates=0;
 	int stats_fast_updates=0;
 	int stats_fast_failed_updates=0;
@@ -89,9 +89,9 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 	void dbg_printSpanningTree(bool showWeights=true){
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 
-#ifndef NDEBUG
+		#ifdef DEBUG_DGL
 		printf("graph{\n");
 	/*	for (int i = 0; i < g.nodes(); i++) {
 			printf("n%d\n", i);
@@ -127,21 +127,21 @@ public:
 
 	}
 	Kruskal(DynamicGraph<Weight> & graph, Status & _status =
-			MinimumSpanningTree<Weight>::nullStatus, int _reportPolarity = 0) :
+	MinimumSpanningTree<Weight>::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), edge_heap(EdgeLt(g.getWeights())) {
-		
+			0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), edge_heap(EdgeLt(g.getWeights())) {
+
 		mod_percentage = 0.2;
 
 		min_weight = -1;
 		hasParents = false;
 	}
-	
+
 	void setNodes(int n) {
 		q.reserve(n);
 		check.reserve(n);
 		in_tree.resize(g.nEdgeIDs());
-		
+
 		//INF=std::numeric_limits<int>::max();
 		sets.AddElements(n);
 		parents.resize(n);
@@ -165,7 +165,7 @@ public:
 			return;
 		}
 		stats_full_updates++;
-		
+
 		if (last_deletion == g.deletions) {
 			stats_num_skipable_deletions++;
 		}
@@ -173,22 +173,22 @@ public:
 		sets.Reset();
 		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
 			INF = 1; //g.nodes()+1;
-					
+
 			for (auto & w : g.getWeights())
 				INF += w;
 		}
 		setNodes(g.nodes());
 		min_weight = 0;
-		
+
 		mst.clear();
-		
+
 		if (edge_list.size() < g.nEdgeIDs()) {
 			edge_list.clear();
 			for (int i = 0; i < g.nEdgeIDs(); i++) {
-				
+
 				//edge_heap.insert(i);
 				edge_list.push_back(i);
-				
+
 			}
 			std::sort(edge_list.begin(), edge_list.end(), EdgeLt(g.getWeights()));
 		}
@@ -201,7 +201,7 @@ public:
 				continue;
 			int u = g.getEdge(edge_id).from;
 			int v = g.getEdge(edge_id).to;
-			
+
 			int set1 = sets.FindSet(u);
 			int set2 = sets.FindSet(v);
 			if (set1 != set2) {
@@ -215,12 +215,12 @@ public:
 				assert(sets.FindSet(u) == sets.FindSet(v));
 			}
 		}
-		
+
 		/*		if (sets.NumSets()>1)
 		 min_weight=INF;*/
 
 		status.setMinimumSpanningTree(sets.NumSets() > 1 ? INF : min_weight, sets.NumSets() <= 1);
-		
+
 		//if(reportPolarity>-1){
 		for (int i = 0; i < in_tree.size(); i++) {
 			//Note: for the tree edge detector, polarity is effectively reversed.
@@ -231,15 +231,15 @@ public:
 			}
 		}
 		//}
-		
+
 		num_updates++;
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
-		
+
 		assert(dbg_uptodate());
 
 		;
@@ -248,7 +248,7 @@ public:
 		update();
 		return mst;
 	}
-	
+
 	int getParent(int node) {
 		update();
 		//kruskals doesn't actually give us the parents, normally. need to construct it on demand, here.
@@ -267,14 +267,14 @@ public:
 		return in_tree[edgeid];
 	}
 	bool dbg_mst() {
-		
+
 		return true;
 	}
-	
+
 	Weight& weight() {
-		
+
 		update();
-		
+
 		assert(dbg_uptodate());
 		if (sets.NumSets() > 1)
 			return INF;
@@ -300,16 +300,16 @@ public:
 		int u = 0;
 		if (sets.NumSets() > 1)
 			u = sets.GetElement(component);
-		
+
 		while (int p = getParent(u) != -1) {
 			u = p;
 		}
 		assert(getParent(u) == -1);
 		return u;
 	}
-	
+
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
 		for (int i = 0; i < g.edges(); i++) {
@@ -318,13 +318,13 @@ public:
 			}
 		}
 		assert(sumweight == min_weight || min_weight == INF);
-		
+
 #endif
 		return true;
 	}
 	;
 private:
-	
+
 	void buildParents() {
 		hasParents = true;
 		for (int i = 0; i < parents.size(); i++) {
@@ -349,7 +349,7 @@ private:
 					if (edge >= in_tree.size())
 						throw std::logic_error("Error in Kruskal");
 					if (in_tree[edge]) {
-						
+
 						if (parents[to] == -1 && to != root) {
 							assert(to != root);
 							//int st = sets.FindSet(to);
@@ -364,7 +364,7 @@ private:
 			assert(parents[root] == -1);
 		}
 		/*
-		 #ifndef NDEBUG
+		 #ifdef DEBUG_DGL
 		 int rootcount =0;
 		 for(int i = 0;i<parents.size();i++){
 		 if(parents[i]==-1)

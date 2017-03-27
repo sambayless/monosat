@@ -92,14 +92,14 @@ class LSystemParser: public Parser<B, Solver> {
 			parse_errorf("lsystem id %d declared twice!\n", lsystemID);
 		}
 		lsystems[lsystemID]= new LSystemSolver(&S);
-		S.addTheory(lsystems[lsystemID]);
+
 		rules.growTo(lsystemID+1);
 		produces.growTo(lsystemID+1);
 
 		alphabets.growTo(lsystemID+1);
 
 	}
-	
+
 	void readString(B& in, Solver & S){
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -138,9 +138,9 @@ class LSystemParser: public Parser<B, Solver> {
 			skipLine(in);
 			return;
 		}
-		
+
 		++in;
-		
+
 		int lsystemID = parseInt(in);
 		int from = parseInt(in);
 		int edgeVar = parseInt(in) - 1;
@@ -182,7 +182,7 @@ class LSystemParser: public Parser<B, Solver> {
 		}
 
 		++in;
-		
+
 		int lsystemID = parseInt(in);
 		int atom = parseInt(in);
 		int strID = parseInt(in);
@@ -206,7 +206,7 @@ class LSystemParser: public Parser<B, Solver> {
 		if (reachVar < 0) {
 			parse_errorf("Edge variables must be >=0, was %d\n", reachVar);
 		}
-		
+
 		reachVar= mapVar(S,reachVar);
 
 	}
@@ -214,7 +214,7 @@ class LSystemParser: public Parser<B, Solver> {
 
 public:
 	LSystemParser():Parser<B, Solver>("LSystem"){
-		
+
 	}
 
 	bool parseLine(B& in, Solver& S) {
@@ -242,10 +242,10 @@ public:
 		}
 		return false;
 	}
-	
+
 
 	void implementConstraints(Solver & S) {
-		
+
 		for(int i = 0;i<lsystems.size();i++){
 			if(lsystems[i]){
 
@@ -276,7 +276,7 @@ public:
 
 	}
 
-	
+
 };
 
 //=================================================================================================

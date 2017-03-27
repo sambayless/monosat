@@ -23,7 +23,7 @@
 #define WEIGHTED_DISTANCEETECTOR_H_
 #include "monosat/utils/System.h"
 
-#include "GraphTheoryTypes.h"
+#include "monosat/graph/GraphTheoryTypes.h"
 #include "monosat/dgl/DynamicGraph.h"
 #include "monosat/dgl/Reach.h"
 #include "monosat/dgl/Distance.h"
@@ -32,10 +32,10 @@
 #include "monosat/dgl/MaxFlow.h"
 #include "monosat/core/SolverTypes.h"
 #include "monosat/mtl/Map.h"
-#include "WeightedDijkstra.h"
+#include "monosat/graph/WeightedDijkstra.h"
 #include <gmpxx.h>
 #include "monosat/utils/System.h"
-#include "Detector.h"
+#include "monosat/graph/Detector.h"
 #include "monosat/bv/BVTheorySolver.h"
 #include <vector>
 using namespace dgl;
@@ -88,15 +88,45 @@ public:
 
 	int max_unweighted_distance;
 
-	long stats_pure_skipped = 0;
-	long stats_distance_gt_reasons = 0;
-	long stats_distance_leq_reasons = 0;
-	long stats_unweighted_gt_reasons = 0;
-	long stats_unweighted_leq_reasons = 0;
-	long stats_gt_unweighted_edges_skipped = 0;
-	long stats_gt_weighted_edges_skipped = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_distance_gt_reasons = 0;
+	int64_t stats_distance_leq_reasons = 0;
+	int64_t stats_unweighted_gt_reasons = 0;
+	int64_t stats_unweighted_leq_reasons = 0;
+	int64_t stats_gt_unweighted_edges_skipped = 0;
+	int64_t stats_gt_weighted_edges_skipped = 0;
 
 	BVTheorySolver<Weight> * bvTheory=nullptr;
+	class DistanceOp: public  GraphTheorySolver<Weight>::GraphTheoryOp{
+		WeightedDistanceDetector * outer;
+		int bvID;
+		int to;
+		bool strictCompare;
+		Lit comparisonLit;
+	public:
+		DistanceOp(BVTheorySolver<Weight> &theory,WeightedDistanceDetector * outer, int bvID, int to, bool strictCompare, Lit comparisonLit):GraphTheorySolver<Weight>::GraphTheoryOp(theory,outer->outer),outer(outer),bvID(bvID),to(to),strictCompare(strictCompare),comparisonLit(comparisonLit){
+
+		}
+		int getBV()override{
+			return bvID;
+		}
+
+		bool propagate(bool & changed, vec<Lit> & conflict)override{
+			return true;
+		}
+
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{
+			;
+		}
+
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override;
+
+		bool checkSolved()override{
+			return true;
+		}
+	};
+
+
 
 	struct WeightedDistLit {
 		Lit l;
@@ -115,7 +145,7 @@ public:
 		int u;
 		BitVector<Weight> bv;
 		bool strictComparison;
-
+		DistanceOp * op;
 	};
 	vec<WeightedDistBVLit> weighted_dist_bv_lits;
 
@@ -125,7 +155,8 @@ public:
 		//int min_distance;
 	};
 	vec<Change> changed;
-	vec<bool> is_changed;
+	vec<bool> is_changed_under;
+	vec<bool> is_changed_over;
 	vec<Var> tmp_nodes;
 
 	std::vector<double> rnd_weight;
@@ -152,7 +183,7 @@ public:
 		bool isReachable(int u) const {
 			return false;
 		}
-		
+
 		void setMininumDistance(int u, bool reachable, int distance);
 
 		ReachStatus(WeightedDistanceDetector & _outer, bool _polarity) :
@@ -166,7 +197,7 @@ public:
 		bool isReachable(int u) const {
 			return false;
 		}
-		
+
 		void setMininumDistance(int u, bool reachable, Weight& distance);
 
 		DistanceStatus(WeightedDistanceDetector & _outer, bool _polarity) :
@@ -192,7 +223,7 @@ public:
 		CutStatus(WeightedDistanceDetector & _outer) :
 				outer(_outer) {
 		}
-		
+
 	} cutStatus;*/
 	std::vector<MaxFlowEdge> cut;
 
@@ -252,10 +283,10 @@ public:
 			printf("\tUnweighted Reasons (leq,gt): %ld,%ld\n", stats_unweighted_leq_reasons, stats_unweighted_gt_reasons);
 			printf("\tWeighted Reasons (leq,gt): %ld,%ld\n", stats_distance_leq_reasons, stats_distance_gt_reasons);
 			printf("\tConflict Edges Skipped (unweighted %ld, weighted %ld)\n", stats_gt_unweighted_edges_skipped,
-					stats_gt_weighted_edges_skipped);
+				   stats_gt_weighted_edges_skipped);
 		}
 	}
-	
+
 	void printSolution(std::ostream& write_to);
 
 	/*	Lit getLit(int node){
@@ -268,7 +299,7 @@ public:
 		Detector::unassign(l);
 /*
 		int index = var(l) - first_reach_var;
-		
+
 		//at the moment, change in assignments are only tracked this way for unweighted lits:
 		if (index >= 0 && index < reach_lit_map.size() && getLitType(l)==UnweightedLit && reach_lit_map[index].to != -1) {
 			int node = reach_lit_map[index].to;
@@ -283,9 +314,11 @@ public:
 
 	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=false);
 	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
+	void analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
+	void analyzeDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 	void updateShortestPaths();
 
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
@@ -293,7 +326,7 @@ public:
 	bool getModel_Path(int node, std::vector<int> & store_path);
 	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	WeightedDistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+							 DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	virtual ~WeightedDistanceDetector() {
 		if (positiveDistanceStatus )
 			delete positiveDistanceStatus;

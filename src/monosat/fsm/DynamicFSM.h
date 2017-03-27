@@ -31,6 +31,10 @@ class DynamicFSM{
 	bool is_linear=true;
 	bool is_deterministic=false;
 	bool must_be_deterministic=false;
+	int n_total_input_emoves=0;
+	int n_total_output_emoves=0;
+	int n_enabled_input_emoves=0;
+	int n_enabled_output_emoves=0;
 public:
 	vec<Bitset> transitions;
 
@@ -84,9 +88,11 @@ public:
 	void setEmovesEnabled(bool enabled){
 		has_epsilon=enabled;
 	}
-
-	bool emovesEnabled()const{
-		return has_epsilon;
+	bool hasEmoves(bool inputEmoves=true)const{
+		return has_epsilon && (inputEmoves ? n_total_input_emoves>0 : n_total_output_emoves);
+	}
+	bool emovesEnabled(bool inputEmoves=true)const{
+		return has_epsilon && (inputEmoves ? n_enabled_input_emoves>0 : n_enabled_output_emoves);
 	}
 
 /*
@@ -107,6 +113,8 @@ public:
 	void addOutCharacter(){
 		out_alphabet++;
 	}
+
+
 	bool transitionEnabled(int edgeID, int input, int output)const{
 		assert(input<inAlphabet());
 		assert(output<outAlphabet());
@@ -139,8 +147,17 @@ public:
 		transitions.growTo(edgeID+1);
 		transitions[edgeID].growTo(inAlphabet()*outAlphabet());
 		int pos = input +output*inAlphabet();
-		if(defaultEnabled)
+		if(defaultEnabled) {
 			transitions[edgeID].set(pos);
+			if(input==0) {
+				n_enabled_input_emoves++;
+				n_total_input_emoves++;
+			}
+			if(output==0) {
+				n_enabled_output_emoves++;
+				n_total_output_emoves++;
+			}
+		}
 		return edgeID;
 	}
 
@@ -154,6 +171,10 @@ public:
 			//edge_status.setStatus(id,true);
 			modifications++;
 			additions = modifications;
+			if(input==0)
+				n_enabled_input_emoves++;
+			if(output==0)
+				n_enabled_output_emoves++;
 			history.push_back( { true, edgeID,input,output, modifications, additions });
 		}
 	}
@@ -165,6 +186,12 @@ public:
 		if (transitions[edgeID][pos]) {
 			transitions[edgeID].clear(pos);
 			modifications++;
+			if(input==0)
+				n_enabled_input_emoves--;
+			if(output==0)
+				n_enabled_output_emoves--;
+			assert(n_enabled_input_emoves>=0);
+			assert(n_enabled_output_emoves>=0);
 			history.push_back( { false, edgeID,input,output, modifications, deletions });
 			deletions = modifications;
 		}
@@ -258,13 +285,17 @@ public:
 		return modifications;
 	}
 
+	int historySize(){
+		return history.size();
+	}
+
 	void clearHistory(bool forceClear = false) {
 		//long expect=std::max(1000,historyClearInterval*edges());
 		if (history.size()
-				&& (forceClear
-						|| (history.size()
-								> (adaptive_history_clear ?
-										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))) {//){
+			&& (forceClear
+				|| (history.size()
+					> (adaptive_history_clear ?
+					   std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))) {//){
 			history.clear();
 			historyclears++;
 
@@ -514,51 +545,51 @@ private:
 	vec<bool> cur_seen;
 
 	bool generates_path_rec(int s,int final,int emove_count, vec<NFATransition> & path){
-			if(s==final){
-				return true;
-			}
-			if (emove_count>=states()){
-				return false;//this is not a great way to solve the problem of avoiding infinite e-move cycles...
-			}
-
-
-			for(int j = 0;j<nIncident(s);j++){
-				//now check if the label is active
-				int edgeID= incident(s,j).id;
-				int to = incident(s,j).node;
-				if( transitionEnabled(edgeID,0,0)){
-
-
-						path.push({edgeID,0,0});
-						if(generates_path_rec(to,final,emove_count+1,path)){//str_pos is NOT incremented!
-
-							return true;
-						}else{
-
-							path.pop();
-						}
-
-				}
-				for(int l = 0;l<outAlphabet();l++){
-					if (transitionEnabled(edgeID,0,l)){
-						bool set_transition=false;
-
-
-						path.push({edgeID,0,l});
-						if(generates_path_rec(to,final,0,path)){//str_pos is incremented
-
-							return true;
-						}else{
-
-							path.pop();
-						}
-
-					}
-				}
-
-			}
-			return false;
+		if(s==final){
+			return true;
 		}
+		if (emove_count>=states()){
+			return false;//this is not a great way to solve the problem of avoiding infinite e-move cycles...
+		}
+
+
+		for(int j = 0;j<nIncident(s);j++){
+			//now check if the label is active
+			int edgeID= incident(s,j).id;
+			int to = incident(s,j).node;
+			if( transitionEnabled(edgeID,0,0)){
+
+
+				path.push({edgeID,0,0});
+				if(generates_path_rec(to,final,emove_count+1,path)){//str_pos is NOT incremented!
+
+					return true;
+				}else{
+
+					path.pop();
+				}
+
+			}
+			for(int l = 0;l<outAlphabet();l++){
+				if (transitionEnabled(edgeID,0,l)){
+					bool set_transition=false;
+
+
+					path.push({edgeID,0,l});
+					if(generates_path_rec(to,final,0,path)){//str_pos is incremented
+
+						return true;
+					}else{
+
+						path.pop();
+					}
+
+				}
+			}
+
+		}
+		return false;
+	}
 
 public:
 	bool generates(int source, int final, vec<NFATransition> & path){

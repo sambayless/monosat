@@ -63,7 +63,7 @@ public:
 		;
 	};
 
-	Heap<DistCmp> q;
+	alg::Heap<DistCmp> q;
 
 public:
 	int stats_full_updates;

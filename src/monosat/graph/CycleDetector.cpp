@@ -165,23 +165,21 @@ void CycleDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 template<typename Weight>
 bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
-/*	if(++it==687){
-		g_under.drawFull();
-		int a=1;
-	}*/
+
 
 	double startdreachtime = rtime(2);
-	//if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_True && outer->level(var(directed_acyclic_lit))==0 && opt_graph_prop_skip<=1 && !opt_lazy_backtrack){
+	/*if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_True && outer->level(var(directed_acyclic_lit))==0 && opt_graph_prop_skip<=1 && !opt_lazy_backtrack){
 		//this doesn't work properly, if after a backtracking (which removes a cycle), a newly learnt clause forces
 		//a new cycle to be re-introduced at the same level that was back tracked to.
-		//underapprox_directed_cycle_detector->forceDAG();
-	//}
+	 	underapprox_directed_cycle_detector->forceDAG();
+	}*/
 
-
+	//g_over.drawFull(false,true);
 	
 	if (directed_acyclic_lit != lit_Undef) {
 		
@@ -197,6 +195,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 			} else if (outer->value(l) == l_False) {
 				conflict.push(l);
 				buildDirectedCycleReason(conflict);
+				outer->toSolver(conflict);
 				return false;
 			}
 		} else if (outer->value(directed_acyclic_lit) !=l_True && !overapprox_directed_cycle_detector->hasDirectedCycle()) {
@@ -210,6 +209,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 			} else if (outer->value(l) == l_False) {
 				conflict.push(l);
 				buildNoDirectedCycleReason(conflict);
+				outer->toSolver(conflict);
 				return false;
 			}
 		}
@@ -228,6 +228,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 			} else if (outer->value(l) == l_False) {
 				conflict.push(l);
 				buildUndirectedCycleReason(conflict);
+				outer->toSolver(conflict);
 				return false;
 			}
 		} else if (outer->value(undirected_acyclic_lit) !=l_True &&  !overapprox_undirected_cycle_detector->hasUndirectedCycle()) {
@@ -241,6 +242,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 			} else if (outer->value(l) == l_False) {
 				conflict.push(l);
 				buildNoUndirectedCycleReason(conflict);
+				outer->toSolver(conflict);
 				return false;
 			}
 		}
@@ -271,7 +273,7 @@ bool CycleDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit CycleDetector<Weight>::decide() {
+Lit CycleDetector<Weight>::decide(CRef &decision_reason) {
 	
 	return lit_Undef;
 }

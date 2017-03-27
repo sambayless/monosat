@@ -23,75 +23,106 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Monosat {
 
-    template<class T> struct MkIndexDefault {
-        int operator()(T t) const { return (int) t; }
-    };
-    
-    template<class K, class V, class MkIndex = MkIndexDefault<K> >
-    class IntMap {
-        vec<V>   map;
-        MkIndex  index;
-    public:
-        explicit IntMap(MkIndex _index = MkIndex()) : index(_index){}
-        
-        bool     has       (K k) const { return index(k) < map.size(); }
+template<class T> struct MkIndexDefault {
+    int operator()(T t) const { return (int) t; }
+};
 
-        const V& operator[](K k) const { assert(has(k)); return map[index(k)]; }
-        V&       operator[](K k)       { assert(has(k)); return map[index(k)]; }
+template<class K, class V, class MkIndex = MkIndexDefault<K> >
+class IntMap {
+    vec<V>   map;
+    MkIndex  index;
+public:
+    explicit IntMap(MkIndex _index = MkIndex()) : index(_index){}
 
-        const V* begin  () const { return &map[0]; }
-        const V* end    () const { return &map[map.size()]; }
-        V*       begin  ()       { return &map[0]; }
-        V*       end    ()       { return &map[map.size()]; }
+    bool     has       (K k) const { return index(k) < map.size(); }
 
-        void     reserve(K key, V pad)       { map.growTo(index(key)+1, pad); }
-        void     reserve(K key)              { map.growTo(index(key)+1); }
-        void     insert (K key, V val, V pad){ reserve(key, pad); operator[](key) = val; }
-        void     insert (K key, V val)       { reserve(key); operator[](key) = val; }
+    const V& operator[](K k) const { assert(has(k)); return map[index(k)]; }
+    V&       operator[](K k)       { assert(has(k)); return map[index(k)]; }
 
-        void     clear  (bool dispose = false) { map.clear(dispose); }
-        void     moveTo (IntMap& to)           { map.moveTo(to.map); to.index = index; }
-        void     copyTo (IntMap& to) const     { map.copyTo(to.map); to.index = index; }
-    };
+    const V* begin  () const { return &map[0]; }
+    const V* end    () const { return &map[map.size()]; }
+    V*       begin  ()       { return &map[0]; }
+    V*       end    ()       { return &map[map.size()]; }
+
+    void     reserve(K key, V pad)       { map.growTo(index(key)+1, pad); }
+    void     reserve(K key)              { map.growTo(index(key)+1); }
+    void     insert (K key, V val, V pad){ reserve(key, pad); operator[](key) = val; }
+    void     insert (K key, V val)       { reserve(key); operator[](key) = val; }
+
+    void     clear  (bool dispose = false) { map.clear(dispose); }
+    void     moveTo (IntMap& to)           { map.moveTo(to.map); to.index = index; }
+    void     copyTo (IntMap& to) const     { map.copyTo(to.map); to.index = index; }
+};
 
 
-    template<class K, class MkIndex = MkIndexDefault<K> >
-    class IntSet
-    {
-        IntMap<K, char, MkIndex> in_set;
-        vec<K>                   xs;
-        
-    public:
-        // Size operations:
-        int      size        (void)      const  { return xs.size(); }
-        void     clear       (bool free = false){
-            if (free)
-                in_set.clear(true); 
-            else
-                for (int i = 0; i < xs.size(); i++)
-                    in_set[xs[i]] = 0;
-            xs.clear(free);
+template<class K=int, class MkIndex = MkIndexDefault<K> >
+class IntSet
+{
+    IntMap<K, char, MkIndex> in_set;
+    vec<K>                   xs;
+
+public:
+    // Size operations:
+    int      size        (void)      const  { return xs.size(); }
+    void     clear       (bool free = false){
+        if (free)
+            in_set.clear(true);
+        else
+            for (int i = 0; i < xs.size(); i++)
+                in_set[xs[i]] = 0;
+        xs.clear(free);
+    }
+
+    // Stack interface:
+
+    void push(const K& elem) {
+        insert(elem);
+    }
+
+    void pop(void) {
+        assert(size() > 0);
+        assert(in_set[xs.last()]);
+        in_set[xs.last()]=0;
+        xs.pop();
+    }
+
+    const K& last(void) const {
+        return xs.last();
+    }
+    K& last(void) {
+        return xs.last();
+    }
+
+    // Allow inspecting the internal vector:
+    const vec<K>&
+    toVec       ()          const  { return xs; }
+
+    // Vector interface:
+    K        operator [] (int index) const  { return xs[index]; }
+
+
+    void     insert      (K k) { in_set.reserve(k, 0); if (!in_set[k]) { in_set[k] = 1; xs.push(k); } }
+    void	 insertAll(vec<K> & from){
+        for(K & l:from){
+            insert(l);
         }
+    }
+    bool     has         (K k) { in_set.reserve(k, 0); return in_set[k]; }
+    bool     contains         (K k) { return has(k);}
 
-        // Allow inspecting the internal vector:
-        const vec<K>&
-                 toVec       ()          const  { return xs; }
+    //stl-style begin and end, to support C++11 range-based for loops
+    K* begin() const {
+        return xs.begin();
+    }
 
-        // Vector interface:
-        K        operator [] (int index) const  { return xs[index]; }
-        
-        
-        void     insert      (K k) { in_set.reserve(k, 0); if (!in_set[k]) { in_set[k] = 1; xs.push(k); } }
-        void	 insertAll(vec<K> & from){
-        	for(K & l:from){
-        		insert(l);
-        	}
-        }
-        bool     has         (K k) { in_set.reserve(k, 0); return in_set[k]; }
-    };
+    K* end() const {
+        return xs.end();
+    }
 
-    #if 0
-    template<class K, class V, V nil, class MkIndex = MkIndexDefault<K> >
+};
+
+#if 0
+template<class K, class V, V nil, class MkIndex = MkIndexDefault<K> >
     class IntMapNil {
         vec<V> map;
         V      nil;
@@ -104,7 +135,7 @@ namespace Monosat {
         const V& operator[](K k) const;
 
     };
-    #endif
+#endif
 
 //=================================================================================================
 } // namespace Minisat

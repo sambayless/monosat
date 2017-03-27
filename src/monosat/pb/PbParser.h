@@ -50,7 +50,6 @@ public:
 	void init(){
 		if (opt_pb_theory) {
 			pbtheory = new PbTheory(&S);
-			S.addTheory(pbtheory);
 
 		}else {
 			if(!S.getPB()) {
@@ -162,7 +161,7 @@ public:
 		if(opt_pb_theory) {
 			assert(lits.size() == weights.size());
 			pbtheory->addConstraint(lits, weights, rhs, lit_Undef, op,
-							   PbTheory::ConstraintSide::Both);
+									PbTheory::ConstraintSide::Both);
 		}else{
 
 			coefs.clear();

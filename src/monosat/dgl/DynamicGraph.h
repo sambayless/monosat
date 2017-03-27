@@ -53,7 +53,7 @@ public:
  */
 template<typename Weight>
 class DynamicGraph {
-	
+
 	std::vector<bool> edge_status;
 	std::vector<bool> edge_status_const;
 	std::vector<Weight> weights;
@@ -77,6 +77,7 @@ public:
 	int deletions=0;
 	int edge_increases = 0;
 	int edge_decreases = 0;
+	int64_t previous_history_size=0;
 	int64_t historyclears=0;
 	int64_t skipped_historyclears=0;
 	struct Edge {
@@ -101,8 +102,8 @@ public:
 	};
 
 private:
-#ifndef NDEBUG
-public:
+#ifdef DEBUG_DGL
+	public:
 #endif
 	std::vector<FullEdge> all_edges;
 public:
@@ -123,11 +124,11 @@ public:
 
 	DynamicGraph() {
 	}
-	
+
 	~DynamicGraph() {
-		
+
 	}
-	
+
 	void addNodes(int n) {
 		for (int i = 0; i < n; i++)
 			addNode();
@@ -162,9 +163,9 @@ public:
 		}
 		return false;
 	}
-	
+
 	int addNode() {
-		
+
 		adjacency_list.push_back( { }); //adj list
 		adjacency_undirected_list.push_back( { });
 		inverted_adjacency_list.push_back( { });
@@ -215,7 +216,7 @@ public:
 				next_id = id + 1;
 			}
 		}
-		
+
 		num_edges = next_id;
 		adjacency_list[from].push_back( { to, id });
 		adjacency_undirected_list[from].push_back( { to, id });
@@ -239,7 +240,7 @@ public:
 		additions = modifications;
 		edge_increases = modifications;
 		markChanged();
-		
+
 
 		if (outfile) {
 			fprintf(outfile, "edge %d %d %d %d\n", from, to, 1, id + 1);
@@ -264,7 +265,7 @@ public:
 	inline int edges() const {
 		return num_edges;
 	}
-	
+
 	inline int nIncident(int node, bool undirected = false) {
 		assert(node >= 0);
 		assert(node < nodes());
@@ -274,7 +275,7 @@ public:
 			return adjacency_list[node].size();
 		}
 	}
-	
+
 	inline int nDirectedEdges(int node, bool incoming) {
 		assert(node >= 0);
 		assert(node < nodes());
@@ -291,7 +292,7 @@ public:
 			return incident(node, i, false);
 		}
 	}
-	
+
 	inline int nIncoming(int node, bool undirected = false) {
 		assert(node >= 0);
 		assert(node < nodes());
@@ -301,7 +302,7 @@ public:
 			return inverted_adjacency_list[node].size();
 		}
 	}
-	
+
 	inline Edge & incident(int node, int i, bool undirected = false) {
 		assert(node >= 0);
 		assert(node < nodes());
@@ -328,15 +329,15 @@ public:
 
 	std::vector<Weight> & getWeights(){
 		return weights;
-	 }
+	}
 /*	 Weight getWeight(int edgeID){
 		 return weights[edgeID];
 	 //return all_edges[edgeID].weight;
 	 }*/
-	 Weight  getWeight(int edgeID){
-		 return weights[edgeID];
-	 //return all_edges[edgeID].weight;
-	 }
+	Weight  getWeight(int edgeID){
+		return weights[edgeID];
+		//return all_edges[edgeID].weight;
+	}
 	FullEdge & getEdge(int id)  {
 		return all_edges[id];
 	}
@@ -361,27 +362,27 @@ public:
 		if (!edge_status[id] ) {
 			edge_status[id] = true;
 			//edge_status.setStatus(id,true);
-			
+
 			modifications++;
 			additions = modifications;
 			history.push_back( { true,false,false,false, id, modifications, additions });
 
 			if (outfile) {
-				
+
 				fprintf(outfile, "%d\n", id + 1);
 				fflush(outfile);
 			}
 
 		}
 	}
-	
+
 	bool undoEnableEdge(int id) {
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
 		if (!history.size())
 			return false;
-		
+
 		if (history.back().addition && history.back().id == id && history.back().mod == modifications) {
 			//edge_status.setStatus(id,false);
 			edge_status[id] = false;
@@ -401,7 +402,7 @@ public:
 		}
 		return false;
 	}
-	
+
 	void disableEdge(int from, int to, int id) {
 		assert(id >= 0);
 		assert(id < edge_status.size());
@@ -414,27 +415,27 @@ public:
 				fprintf(outfile, "-%d\n", id + 1);
 				fflush(outfile);
 			}
-			
+
 			modifications++;
-			
+
 			history.push_back( { false,true,false,false, id, modifications, deletions });
 			deletions = modifications;
 		}
 	}
-	
+
 	bool undoDisableEdge(int id) {
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
 		if (!history.size())
 			return false;
-		
+
 		if (!history.back().addition && history.back().id == id && history.back().mod == modifications) {
 			//edge_status.setStatus(id,true);
 			edge_status[id] = true;
 
 			if (outfile) {
-				
+
 				fprintf(outfile, "%d\n", id + 1);
 				fflush(outfile);
 			}
@@ -450,43 +451,46 @@ public:
 		return getWeight(edgeID);
 	}
 	void setEdgeWeight(int id,const Weight & w) {
-			assert(id >= 0);
-			assert(id < edge_status.size());
-			assert(isEdge(id));
-			if(w==getWeight(id)){
-				return;
-			}
+		assert(id >= 0);
+		assert(id < edge_status.size());
+		assert(isEdge(id));
+		if(w==getWeight(id)){
+			return;
+		}
 
-			modifications++;
-			if(w>getWeight(id)){
-				history.push_back( {false,false, true,false, id, modifications, additions });
-				edge_increases = modifications;
-			}else{
-				assert(w<getWeight(id));
-				history.push_back( {false,false, false, true, id, modifications, additions });
-				edge_decreases = modifications;
-			}
-			weights[id]=w;
+		modifications++;
+		if(w>getWeight(id)){
+			history.push_back( {false,false, true,false, id, modifications, additions });
+			edge_increases = modifications;
+		}else{
+			assert(w<getWeight(id));
+			history.push_back( {false,false, false, true, id, modifications, additions });
+			edge_decreases = modifications;
+		}
+		weights[id]=w;
 
-			if (outfile) {
-				std::stringstream ss;
-				ss<<w;
-				fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
-				fflush(outfile);
-			}
-
-
+		if (outfile) {
+			std::stringstream ss;
+			ss<<w;
+			fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
+			fflush(outfile);
 		}
 
 
-	void drawFull(bool showWeights = false) {
+	}
 
-#ifndef NDEBUG
+
+	void drawFull(bool showWeights = false, bool force_draw=false) {
+#ifndef DEBUG_DGL
+		if(!force_draw)
+			return;
+#endif
+//#ifdef DEBUG_DGL
 		printf("digraph{\n");
 		for (int i = 0; i < num_nodes; i++) {
 			printf("n%d\n", i);
 		}
-		
+
 		for (int i = 0; i < adjacency_list.size(); i++) {
 			for (int j = 0; j < adjacency_list[i].size(); j++) {
 				int id = adjacency_list[i][j].id;
@@ -501,17 +505,17 @@ public:
 					ss<<getWeight(id);
 					printf("n%d -> n%d [label=\"v%d w=%s\",color=\"%s\"]\n", i,u, id,ss.str().c_str(), s);
 				}else{
-				printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i, u, id, s);
+					printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i, u, id, s);
 				}
 			}
 		}
 		printf("}\n");
-#endif
+//#endif
 
 	}
-	
+
 	bool rewindHistory(int steps) {
-		
+
 		int cur_modifications = modifications;
 		for (int i = 0; i < steps; i++) {
 			EdgeChange & e = history.back();
@@ -524,7 +528,7 @@ public:
 					return false;
 				}
 			}
-			
+
 		}
 		assert(modifications == cur_modifications - steps);
 		return true;
@@ -561,7 +565,7 @@ public:
 	int getCurrentHistory() {
 		return modifications;
 	}
-	
+
 
 
 	void clearHistory(bool forceClear = false) {
@@ -571,10 +575,10 @@ public:
 			return;
 
 		if (history.size()
-				&& (forceClear
-						|| (history.size()
-								>= (std::min((int64_t)history.max_size(), (adaptive_history_clear ?
-										std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
+			&& (forceClear
+				|| (history.size()
+					>= (std::min((int64_t)history.max_size(), (adaptive_history_clear ?
+															   std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
 
 
 			if(!forceClear && dynamic_history_clears>0){
@@ -601,7 +605,7 @@ public:
 					return;
 				}
 			}
-
+			previous_history_size=history.size();
 			history_offset=0;
 			history.clear();
 			historyclears++;
@@ -627,7 +631,9 @@ public:
 		}
 
 	}
-	
+	int64_t getPreviousHistorySize()const{
+		return previous_history_size;
+	}
 	void markChanged() {
 		is_changed = true;
 
@@ -640,7 +646,7 @@ public:
 	bool changed() {
 		return is_changed;
 	}
-	
+
 	void clearChanged() {
 		is_changed = false;
 

@@ -105,20 +105,20 @@ class GeometryParser: public Parser<B, Solver> {
 	void parsePoint(B &in, int d, ParsePoint & point) {
 		//for now, points are given as 32-bit integers. This is less convenient than, say, floats, but makes parsing much easier.
 		//in the future, we could also support inputting arbitrary precision integers... but for now, we aren't going to.
-		
+
 		//is there a better way to read in an arbitrary-sized vector of points?
 		for (int i = 0; i < d; i++) {
-			
+
 			int n = parseInt(in);
 			//double p = parseDouble(in,tmp_str);
 			point.position.push((T) n);
 		}
 	}
-	
+
 	void readPoint(B& in, Solver& S) {
-		
+
 		int pointsetID = parseInt(in);
-		
+
 		Var v = parseInt(in)-1;
 		v = mapVar(S,v);
 		int d = parseInt(in);
@@ -127,13 +127,13 @@ class GeometryParser: public Parser<B, Solver> {
 		//stringstream ss(in);
 		ParsePoint & point = pointsets[pointsetID].last();
 		parsePoint(in, d, point);
-		
+
 		point.var = v;
 
 	}
-	
+
 	void readConvexHullArea(B& in, Solver& S) {
-		
+
 		//hull_area_lt pointsetID area var
 		int pointset = parseInt(in); //ID of the hull
 		Var var = parseInt(in) - 1;
@@ -146,17 +146,17 @@ class GeometryParser: public Parser<B, Solver> {
 	}
 	void readConvexHullIntersectsPolygon(B& in, Solver& S, bool inclusive) {
 		//convex_hull_intersects_polygon pointsetID var NumPoints D p1 p2 ... pD q1 q2 ... qD ...
-		
+
 		convex_hull_polygon_intersections.push();
 		convex_hull_polygon_intersections.last().inclusive = inclusive;
-		
+
 		int pointsetID = parseInt(in);
 		Var v = parseInt(in) - 1;
 		v = mapVar(S,v);
 		convex_hull_polygon_intersections.last().pointsetID = pointsetID;
 		convex_hull_polygon_intersections.last().var = v;
 		int numPoints = parseInt(in);
-		
+
 		int d = parseInt(in);
 		for (int i = 0; i < numPoints; i++) {
 			convex_hull_polygon_intersections.last().points.push();
@@ -223,18 +223,18 @@ class GeometryParser: public Parser<B, Solver> {
 	 convex_hull_point_containments.last().pointsetID = pointsetID;
 	 }*/
 	void readConvexHullPointOnHull(B& in, Solver& S) {
-		
+
 		//point_on_hull pointsetID pointVar var
-		
+
 		int pointsetID = parseInt(in);
 		int pointVar = parseInt(in) - 1;
 		Var var = parseInt(in) - 1;
 		var = mapVar(S,var);
 		convex_hull_points.push( { pointsetID, pointVar, var });
 	}
-	
+
 	void readConvexHullsIntersect(B& in, Solver& S, bool inclusive) {
-		
+
 		//hulls_intersect pointsetID1 pointsetID2 var
 		//v is true iff the two convex hulls intersect
 		int pointsetID1 = parseInt(in);
@@ -242,18 +242,18 @@ class GeometryParser: public Parser<B, Solver> {
 		Var v = parseInt(in) - 1;
 		v = mapVar(S,v);
 		convex_hulls_intersect.push( { pointsetID1, pointsetID2, v, inclusive });
-		
+
 	}
-	
+
 public:
-	
+
 	GeometryParser():Parser<B, Solver>("Geometry"){
 
 	}
 
 
 	bool parseLine(B& in, Solver& S) {
-		
+
 		skipWhitespace(in);
 		if (*in == EOF) {
 			return false;
@@ -275,21 +275,21 @@ public:
 		} else if (match(in, "convex_hulls_collide")) {
 			readConvexHullsIntersect(in, S, true);
 		} else if (match(in, "heightmap_volume")) {
-			
+
 		} else if (match(in, "euclidian_steiner_tree_weight")) {
-			
+
 		} else if (match(in, "rectilinear_steiner_tree_weight")) {
-			
+
 		} else if (match(in, "point")) {
 			//add a point to a point set
 			readPoint(in, S);
-			
+
 		} else {
 			return false;
 		}
 		return true;
 	}
-	
+
 	void implementConstraints(Solver & S) {
 		//build point sets in their appropriate spaces.
 		//for now, we only support up to 3 dimensions
@@ -300,32 +300,32 @@ public:
 				continue;
 			ParsePoint & firstP = pointset[0];
 			int D = firstP.position.size();
-			
+
 			if (D == 1) {
 				/* space_1D.growTo(i+1,nullptr);
 				 if(!space_1D[i]){
 				 space_1D[i] = new GeometryTheorySolver<1,double>(&S);
-				 S.addTheory(space_1D[i]);
+
 				 }*/
 			} else if (D == 2) {
-				
+
 				if (!space_2D) {
 					space_2D = new GeometryTheorySolver<2, T>(&S);
-					S.addTheory(space_2D);
+
 				}
 			}/*else if (D==3){
 			 space_3D.growTo(i+1,nullptr);
 			 if(!space_3D[i]){
 			 space_3D[i] = new GeometryTheorySolver<3,double>(&S);
-			 S.addTheory(space_3D[i]);
+
 			 }
 			 }*/else {
-				
+
 				parse_errorf("Only points of dimension 1 and 2 currently supported (found point %d of dimension %d), aborting\n",
-						i, D);
+							 i, D);
 
 			}
-			
+
 			pointsetDim.growTo(i + 1, -1);
 			pointsetDim[i] = D;
 			for (ParsePoint & p : pointset) {
@@ -347,7 +347,7 @@ public:
 				}
 			}
 		}
-		
+
 		for (auto & c : convex_hull_areas) {
 			if (c.pointsetID >= pointsetDim.size() || c.pointsetID < 0 || pointsetDim[c.pointsetID] < 0) {
 				parse_errorf("Bad pointsetID %d\n", c.pointsetID);
@@ -357,7 +357,7 @@ public:
 
 			}
 			int D = pointsetDim[c.pointsetID];
-			
+
 			if (D == 1) {
 				// space_1D[c.pointsetID]->convexHullArea(c.area,c.v);
 			} else if (D == 2) {
@@ -367,7 +367,7 @@ public:
 			 }*/else {
 				assert(false);
 			}
-			
+
 		}
 		for (auto & c : convex_hull_polygon_intersections) {
 			if (c.pointsetID >= pointsetDim.size() || c.pointsetID < 0 || pointsetDim[c.pointsetID] < 0) {
@@ -378,19 +378,19 @@ public:
 
 			}
 			int D = pointsetDim[c.pointsetID];
-			
+
 			if (D == 1) {
-				
+
 				// space_1D[c.pointsetID]->convexHullContains(pnt, c.point.var);
 			} else if (D == 2) {
-				
+
 				std::vector<Point<2, T> > p2;
 				for (ParsePoint &p : c.points) {
 					p2.push_back(p.position);
 				}
 				space_2D->convexHullIntersectsPolygon(c.pointsetID, p2, c.var, c.inclusive);
 			} else if (D == 3) {
-				
+
 			} else {
 				assert(false);
 			}
@@ -470,38 +470,38 @@ public:
 			 }*/
 
 		}
-		
+
 		for (auto & c : convex_hulls_intersect) {
 			if (c.pointsetID1 < 0 || c.pointsetID1 >= pointsetDim.size() || c.pointsetID1 < 0
-					|| pointsetDim[c.pointsetID1] < 0) {
+				|| pointsetDim[c.pointsetID1] < 0) {
 				parse_errorf( "Bad pointsetID %d\n", c.pointsetID1);
 
 			}
 			if (c.pointsetID2 < 0 || c.pointsetID2 >= pointsetDim.size() || c.pointsetID2 < 0
-					|| pointsetDim[c.pointsetID2] < 0) {
+				|| pointsetDim[c.pointsetID2] < 0) {
 				parse_errorf( "Bad pointsetID %d\n", c.pointsetID2);
 
 			}
 			int D = pointsetDim[c.pointsetID1];
-			
+
 			if (pointsetDim[c.pointsetID2] != D) {
 				parse_errorf(
 						"Cannot intersect convex hulls in different dimensions (%d has dimension %d, while %d has dimension %d)\n",
 						c.pointsetID1, D, c.pointsetID2, pointsetDim[c.pointsetID2]);
 			}
 			if (D == 1) {
-				
+
 			} else if (D == 2) {
-				
+
 				space_2D->convexHullsIntersect(c.pointsetID1, c.pointsetID2, c.var, c.inclusive);
 			} else {
 				assert(false);
 			}
-			
+
 		}
-		
+
 	}
-	
+
 };
 
 //=================================================================================================

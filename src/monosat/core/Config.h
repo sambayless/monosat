@@ -24,6 +24,7 @@
 #include "monosat/utils/Options.h"
 #include "monosat/utils/System.h"
 namespace Monosat {
+extern BoolOption opt_show_version_and_quit;
 extern IntOption opt_verb;
 extern IntOption opt_verb_optimize;
 extern BoolOption opt_pre;
@@ -47,24 +48,31 @@ extern IntOption opt_limit_optimization_time;
 extern BoolOption opt_limit_optimization_time_per_arg;
 extern BoolOption opt_pb_theory;
 extern bool opt_record;
-
+extern DoubleOption opt_rnd_optimization_freq;
+extern DoubleOption opt_rnd_optimization_restart_freq;
 extern IntOption opt_theory_conflict_max;
 extern DoubleOption opt_random_theory_freq;
-extern DoubleOption opt_random_theory_vsids_freq;
-extern BoolOption opt_randomize_theory_order;
+extern BoolOption opt_theory_internal_vsids_fsm;
+extern DoubleOption opt_random_theory_order_freq;
+extern DoubleOption opt_randomize_theory_order_restart_freq;
+extern BoolOption opt_theory_order_initial_sort;
 extern BoolOption opt_randomize_theory_order_all;
 extern BoolOption opt_theory_decision_round_robin;
+
+extern BoolOption opt_optimization_init_solve;
+extern BoolOption opt_decide_objectives_first;
+extern BoolOption opt_strict_search_optimization;
 extern BoolOption opt_interpolate;
 extern IntOption opt_eager_prop;
 extern IntOption opt_subsearch;
 
+extern BoolOption opt_parser_immediate_mode;
 extern BoolOption opt_remap_vars;
 extern BoolOption opt_decide_optimization_lits;
 extern IntOption opt_optimization_search_type;
-extern DoubleOption opt_rnd_optimization_freq;
-extern DoubleOption opt_rnd_optimization_restart_freq;
-extern BoolOption opt_amo_eager_prop;
 
+extern IntOption opt_clausify_amo;
+extern BoolOption opt_amo_eager_prop;
 
 extern StringOption opt_debug_learnt_clauses;
 extern BoolOption opt_debug_model;
@@ -73,6 +81,7 @@ extern BoolOption opt_write_bv_bounds;
 extern BoolOption opt_write_bv_analysis;
 extern FILE* opt_write_learnt_clauses;
 //extern StringOption opt_fsm_model;
+
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;
@@ -99,6 +108,21 @@ extern IntOption opt_lazy_conflicts;
 extern BoolOption opt_keep_lazy_conflicts;
 extern BoolOption opt_lazy_backtrack_redecide;
 extern BoolOption opt_theory_order_vsids;
+extern BoolOption opt_theory_order_swapping;
+extern BoolOption opt_theory_order_swapping_first_on_unit;
+extern BoolOption opt_theory_order_conflict_sort_vsids;
+extern BoolOption opt_theory_order_swapping_preserve_order;
+extern BoolOption opt_theory_order_conflict_clear_on_restart;
+extern BoolOption opt_theory_order_conflict_conservative;
+extern BoolOption opt_theory_order_conflict_on_unit;
+extern IntOption opt_theory_order_conflict_restart;
+extern BoolOption opt_theory_order_conflict_sort_counter;
+extern IntOption opt_theory_order_swapping_max_invovled;
+extern BoolOption opt_theory_order_swapping_luby;
+extern BoolOption opt_theory_order_swapping_prioritize_last_decision;
+extern BoolOption opt_decide_theories_only_prop_decision;
+
+extern BoolOption opt_monolothic_theory_decisions;
 extern BoolOption opt_vsids_both;
 extern DoubleOption opt_theory_vsids_balance;
 extern BoolOption opt_use_var_decay_for_theory_vsids;
@@ -106,15 +130,12 @@ extern BoolOption opt_vsids_solver_as_theory;
 extern BoolOption opt_theory_internal_vsids;
 extern BoolOption opt_theory_prioritize_conflicts;
 extern BoolOption opt_theory_priority_clear;
-extern BoolOption opt_optimization_init_solve;
-extern BoolOption opt_decide_objectives_first;
-extern BoolOption opt_strict_search_optimization;
+extern BoolOption opt_theory_propagate_assumptions;
 
 extern BoolOption opt_check_solution;
 extern BoolOption opt_print_reach;
 extern BoolOption opt_print_graph;
-extern BoolOption opt_theory_propagate_assumptions;//not implemented
-extern IntOption opt_detect_satisfied_predicates;
+
 extern IntOption opt_learn_reaches;
 extern StringOption opt_priority;
 
@@ -151,10 +172,15 @@ extern IntOption opt_temporary_theory_reasons;
 extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
-extern BoolOption opt_rnd_order_graph_decisions;
+
+
+extern BoolOption opt_decide_fsm_neg;
+extern BoolOption opt_decide_fsm_pos;
+
 extern BoolOption opt_compute_max_distance;
 extern BoolOption opt_detect_pure_theory_lits;
 extern BoolOption opt_detect_pure_lits;
+extern IntOption opt_detect_satisfied_predicates;
 extern BoolOption opt_propagate_theories_during_simplification;
 extern BoolOption opt_propagate_theories_during_fast_simplification;
 extern BoolOption opt_shrink_theory_conflicts;
@@ -183,6 +209,8 @@ extern BoolOption opt_conflict_min_cut_maxflow;
 extern IntOption opt_history_clear;
 extern BoolOption opt_kt_preserve_order;
 
+extern IntOption opt_maxflow_decisions_type;
+
 extern BoolOption opt_lazy_maxflow_decisions;
 extern BoolOption opt_maxflow_allow_cycles;
 extern BoolOption opt_old_lazy_maxflow_decisions;
@@ -199,6 +227,8 @@ extern IntOption opt_fsm_prop_skip;
 
 extern BoolOption opt_fsm_negate_underapprox;
 extern BoolOption opt_fsm_edge_prop;
+extern BoolOption opt_fsm_forced_edge_prop;
+extern BoolOption opt_fsm_chokepoint_prop;
 
 extern BoolOption opt_fsm_as_graph;
 extern IntOption opt_fsm_symmetry_breaking;
@@ -206,6 +236,12 @@ extern BoolOption opt_fsm_track_used_transitions;
 
 extern BoolOption opt_learn_acyclic_flows;
 
+
+extern IntOption opt_min_edgeset;
+extern BoolOption opt_only_prop_edgeset;
+
+extern BoolOption opt_graph_cache_propagation;
+extern IntOption opt_graph_use_cache_for_decisions;
 
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT
@@ -234,7 +270,7 @@ extern AllPairsConnectivityAlg undirected_allpairsalg;
 enum class MinCutAlg {
 	ALG_EDMONSKARP, ALG_EDKARP_ADJ,
 	// ALG_IBFS, //omitted for licensing reasons
-	ALG_EDKARP_DYN,
+			ALG_EDKARP_DYN,
 	ALG_DINITZ,
 	ALG_DINITZ_LINKCUT,
 	ALG_KOHLI_TORR

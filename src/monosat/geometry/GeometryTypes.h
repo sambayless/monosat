@@ -48,7 +48,7 @@ template<> struct epsilon<float> {
 private:
 	float const value = 0.000001f;
 public:
-	
+
 	operator double() const {
 		return value;
 	}
@@ -58,7 +58,7 @@ template<> struct epsilon<double> {
 private:
 	double const value = 0.000000001;
 public:
-	
+
 	operator double() const {
 		return value;
 	}
@@ -68,7 +68,7 @@ template<> struct epsilon<mpq_class> {
 private:
 	const mpq_class value = mpq_class(0);
 public:
-	
+
 	operator mpq_class() const {
 		return value;
 	}
@@ -87,8 +87,8 @@ template<typename T> struct numeric {
 		}
 	}
 };
-template<typename T> T numeric<T>::inf = std::numeric_limits<int64_t>::max(); //hopefully large enough for common use cases...
-		
+template<typename T> T numeric<T>::inf = std::numeric_limits<long>::max(); //hopefully large enough for common use cases...
+
 //This may have rounding errors! Use carefully!
 inline mpq_class sqrt(mpq_class v) {
 	return (mpq_class) sqrt((mpf_class) v);
@@ -145,7 +145,7 @@ struct Point {
 		assert(index >= 0);
 		return vector[index];
 	}
-	
+
 	Point() :
 			id(-1), x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		/*	for(int i = 0;i<D;i++){//this is not required; it is already built-in to the constructor.
@@ -155,11 +155,11 @@ struct Point {
 		assert(&y == &vector[1]);
 		assert(&z == &vector[D>2?2:1]);
 	}
-	
+
 	~Point() {
-		
+
 	}
-	
+
 	Point(const std::vector<T> & list) :
 			id(-1), x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		assert(list.size() == D);
@@ -191,7 +191,7 @@ struct Point {
 		assert(&x == &vector[0]);
 		assert(&y == &vector[1]);assert(&z == &vector[D>2?2:1]);
 	}
-	
+
 	Point(std::initializer_list<T> list) :
 			id(-1), x(vector[0]), y(vector[1]), z(vector[D>2?2:1]) {
 		assert(list.size() == size());
@@ -244,7 +244,7 @@ struct Point {
 			vector[i] = 0;
 		}
 	}
-	
+
 	Point<D, T> & operator +=(const Point<D, T>& other) {
 		for (int i = 0; i < D; i++) {
 			vector[i] += other[i];
@@ -356,7 +356,7 @@ struct SortBy {
 
 template<unsigned int D, class T>
 struct SortLexicographic {
-	
+
 	bool operator()(const Point<D, T> & a, const Point<D, T> & b) const {
 		for (int i = 0; i < D; i++)
 			if (a[i] < b[i])
@@ -365,7 +365,7 @@ struct SortLexicographic {
 				return false;
 		return false;
 	}
-	
+
 };
 template<class T>
 static T crossDif(const Point<2, T> &O, const Point<2, T> &A, const Point<2, T> &B) {
@@ -394,7 +394,7 @@ static Winding computeWinding(const std::vector<Point<2, T>> & points) {
 	for (int i = 0; i < points.size(); i++) {
 		const Point<2, T> & prev = i > 0 ? points[i - 1] : points.back();
 		const Point<2, T> & p = points[i];
-		
+
 		sum += (cross2d(prev, p) > 0);
 	}
 	if (sum > 0)

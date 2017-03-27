@@ -37,14 +37,14 @@ struct _node {
 	_node<T> *left, *right;
 	_node<T> *parent;
 //link to the successor and predessor nodes, for quick traversal
-	
+
 #ifdef linked
 	_node<T> * _next;
 	_node<T> * _prev;
 	void setPrev(_node<T> * v) {
 		_prev = v;
 	}
-	
+
 	void setNext(_node<T> * v) {
 		_next = v;
 	}
@@ -57,10 +57,10 @@ struct _node {
 
 	}
 #endif
-	
+
 	int subtree_size;
 public:
-	
+
 	T value;
 	_node(const T& init = T()) :
 			left(0), right(0), parent(0), subtree_size(1), value(init) {
@@ -72,7 +72,7 @@ public:
 public:
 	_node * prev() {
 #ifdef linked
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		_node*exp = prev_slow();
 #endif
 		assert(_prev == prev_slow());
@@ -81,10 +81,10 @@ public:
 		return prev_slow();
 #endif
 	}
-	
+
 	_node * next() {
 #ifdef linked
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		_node*exp = next_slow();
 #endif
 		assert(_next == next_slow());
@@ -120,7 +120,7 @@ private:
 			}
 			return p;
 		}
-		
+
 	}
 public:
 	_node * findRoot() {
@@ -129,21 +129,21 @@ public:
 			u = u->parent;
 		return u;
 	}
-	
+
 	_node* findMin() {
 		_node*u = this;
 		while (u->left)
 			u = u->left;
 		return u;
 	}
-	
+
 	_node* findMax() {
 		_node*u = this;
 		while (u->right)
 			u = u->right;
 		return u;
 	}
-	
+
 };
 
 template<typename T>
@@ -180,10 +180,10 @@ private:
 	 */
 	void left_rotate(Node *x) {
 		Node *y = x->right;
-		
+
 		// int x_incident = getIncident(x);
 		// int y_incident = getIncident(y);
-		
+
 		x->right = y->left;
 		if (y->left)
 			y->left->parent = x;
@@ -196,7 +196,7 @@ private:
 			x->parent->right = y;
 		y->left = x;
 		x->parent = y;
-		
+
 		//update x's subtree size (have to do this first, because x is a child of y)
 		x->subtree_size = 1;
 		// x->n_incident=x_incident;
@@ -208,7 +208,7 @@ private:
 			x->subtree_size += x->right->subtree_size;
 			//x->n_incident+=x->right->n_incident;
 		}
-		
+
 		//update y's subtree size
 		y->subtree_size = 1;
 		//y->n_incident=y_incident;
@@ -222,13 +222,13 @@ private:
 		}
 		dbg_checkSubtreeSize(y);
 	}
-	
+
 	void right_rotate(Node *x) {
 		Node *y = x->left;
-		
+
 		//int x_incident = getIncident(x);
 		// int y_incident = getIncident(y);
-		
+
 		x->left = y->right;
 		if (y->right)
 			y->right->parent = x;
@@ -241,7 +241,7 @@ private:
 			x->parent->right = y;
 		y->right = x;
 		x->parent = y;
-		
+
 		//update x's subtree size (have to do this first, because x is a child of y)
 		x->subtree_size = 1;
 		//x->n_incident=x_incident;
@@ -253,7 +253,7 @@ private:
 			x->subtree_size += x->right->subtree_size;
 			//x->n_incident+=x->right->n_incident;
 		}
-		
+
 		//update y's subtree size
 		y->subtree_size = 1;
 		// y->n_incident=y_incident;
@@ -269,10 +269,10 @@ private:
 	}
 public:
 	int dbg_checkSubtreeSize(Node * x) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		if (!x)
 			return 0;
-		
+
 		int size = 1 + dbg_checkSubtreeSize(x->left) + dbg_checkSubtreeSize(x->right);
 		assert(x->subtree_size == size);
 		return size;
@@ -280,7 +280,7 @@ public:
 		return 0;
 	}
 	void dbg_checkNextSucc(Node * x) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		if (!x)
 			return;
 		x->next();
@@ -289,9 +289,9 @@ public:
 			x->next()->prev();
 		if (x->prev())
 			x->prev()->next();
-		
+
 #endif
-		
+
 	}
 	void splay(Node *x) {
 		while (x->parent) {
@@ -317,7 +317,7 @@ public:
 		assert(findRoot(x) == x);
 		dbg_checkSubtreeSize(x);
 	}
-	
+
 	void replace(Node *u, Node *v) {
 		if (!u->parent) {
 			//root = v;
@@ -329,7 +329,7 @@ public:
 #ifdef linked
 			assert(!v->prev());
 			assert(!v->parent);
-			
+
 			if (u->prev()) {
 				v->setPrev(u->prev());
 				assert(u->prev()->next() == u);
@@ -348,13 +348,13 @@ public:
 		dbg_checkNextSucc(v);
 		dbg_checkNextSucc(u);
 	}
-	
+
 	Node* subtree_minimum(Node *u) {
 		while (u->left)
 			u = u->left;
 		return u;
 	}
-	
+
 	Node* subtree_maximum(Node *u) {
 		while (u->right)
 			u = u->right;
@@ -364,30 +364,30 @@ public:
 	AugmentedSplayTree() :
 			p_size(0) {
 	}
-	
+
 	Node * createNode(const T &value) {
 		return new Node(value);
 	}
-	
+
 	void insertAfter(Node * insertAt, Node * toInsert) {
 		Node *z = insertAt;
 		Node *p = nullptr;
-		
+
 		while (z) {
 			p = z;
 			z = z->right;
 			//else z = z->left;
 		}
-		
+
 		z = toInsert;
 		z->parent = p;
-		
+
 		if (!p) {
 			//root = z;
 		} else {
 			assert(!p->right);
 #ifdef linked
-			
+
 			assert(!p->next());
 			Node * m = z->findMin();
 			p->setNext(m);
@@ -400,28 +400,28 @@ public:
 		p_size++;
 		dbg_checkSubtreeSize(z);
 		dbg_checkNextSucc(z);
-		
+
 	}
-	
+
 	void insertBefore(Node * insertAt, Node * toInsert) {
 		Node *z = insertAt;
 		Node *p = nullptr;
-		
+
 		while (z) {
 			p = z;
 			z = z->left;
 			//else z = z->left;
 		}
-		
+
 		z = toInsert;
 		z->parent = p;
-		
+
 		if (!p) {
 			//root = z;
 		} else {
-			
+
 #ifdef linked
-			
+
 			assert(!p->prev());
 			Node * m = z->findMax();
 			p->setPrev(m);
@@ -435,7 +435,7 @@ public:
 		dbg_checkSubtreeSize(z);
 		dbg_checkNextSucc(z);
 	}
-	
+
 	/*  node* find( const T &key ) {
 	 node *z = root;
 	 while( z ) {
@@ -462,15 +462,15 @@ public:
 			r->parent = nullptr;
 		}
 		splitAt->right = nullptr;
-		
+
 		assert(findMax(splitAt) == splitAt);
 		assert(findMax(findRoot(splitAt)) == splitAt);
-		
+
 		if (r) {
 			assert(findRoot(r) == r);
-			
+
 			assert(findRoot(splitAt) != findRoot(r));
-			
+
 		}
 		if (r) {
 			Node * p = splitAt;
@@ -488,9 +488,9 @@ public:
 	Node*splitBefore(Node * splitAt) {
 		splay(splitAt);
 		assert(!splitAt->parent);
-		
+
 		Node * l = splitAt->left;
-		
+
 		if (l) {
 #ifdef linked
 			assert(splitAt->prev());
@@ -499,9 +499,9 @@ public:
 #endif
 			l->parent = nullptr;
 		}
-		
+
 		splitAt->left = nullptr;
-		
+
 		if (l) {
 			Node * p = splitAt;
 			while (p) {
@@ -520,7 +520,7 @@ public:
 		right = findRoot(right);
 		assert(findRoot(left) == left);
 		assert(findRoot(right) == right);
-		
+
 		Node* maxLeft = findMax(left);
 		//only needed if we are maintaining next/prev pointers
 #ifdef linked
@@ -569,7 +569,7 @@ public:
 	 }*/
 	//This is LOG time
 	Node* findRoot(Node* of) {
-		
+
 		while (of && of->parent) {
 			of = of->parent;
 		}
@@ -583,7 +583,7 @@ public:
 	Node* findMax(Node* of) {
 		return subtree_maximum(of);
 	}
-	
+
 	//This is LOG time
 	int depth(Node * a) {
 		int depth = 0;
@@ -594,7 +594,7 @@ public:
 		assert(depth >= 0);
 		return depth;
 	}
-	
+
 	//Return -1 if a is before b, 1 if a is after b, 0 if either they are the same node, or not in the same tree.
 	//This calculation is LOG time
 	int compare(Node * a, Node * b) {
@@ -605,7 +605,7 @@ public:
 		//can these be avoided? well, yes, if you are willing to leave markers behind on the visited nodes...
 		int depthA = depth(a);
 		int depthB = depth(b);
-		
+
 		while (depthA > depthB) {
 			if (a->parent == b) {
 				if (a == b->left) {
@@ -617,7 +617,7 @@ public:
 			}
 			a = a->parent;
 			depthA--;
-			
+
 		}
 		while (depthB > depthA) {
 			if (b->parent == a) {
@@ -654,7 +654,7 @@ public:
 		assert(!b->parent);
 		return 0;
 	}
-	
+
 	void clear(Node * n) {
 		n->parent = nullptr;
 		n->left = nullptr;
@@ -663,7 +663,7 @@ public:
 		n->setNext(nullptr);
 		n->setPrev(nullptr);
 	}
-	
+
 	//This is CONSTANT time
 	int size(Node * of) {
 		return of->subtree_size;

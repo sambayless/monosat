@@ -30,7 +30,7 @@ namespace dgl {
 template<typename Weight = int>
 class EdmondsKarp: public MaxFlow<Weight> {
 public:
-	
+
 	std::vector<std::vector<Weight> > F; //(Residual capacity from u to v is C[u,v] - F[u,v])
 	std::vector<std::vector<Weight> > C;
 	std::vector<int> P;
@@ -58,12 +58,12 @@ public:
 		P[s] = -2;
 		Q.clear();
 		Q.push_back(s);
-		
+
 		//while (Q.size() > 0){
 		//int u =Q.back(); Q.pop_back();
 		for (int j = 0; j < Q.size(); j++) {
 			int u = Q[j];
-			
+
 			for (int i = 0; i < g.nIncident(u); i++) {
 				if (!g.edgeEnabled(g.incident(u, i).id))
 					continue;
@@ -71,7 +71,7 @@ public:
 				///(If there is available capacity, and v is not seen before in search)
 				Weight c = C[u][v];
 				Weight f = F[u][v];
-				
+
 				if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)) {
 					P[v] = u;
 					Weight b = C[u][v] - F[u][v];
@@ -90,7 +90,7 @@ public:
 				///(If there is available capacity, and v is not seen before in search)
 				Weight c = C[u][v];
 				Weight f = F[u][v];
-				
+
 				if (((C[u][v] - F[u][v]) > 0) && (P[v] == -1)) {
 					P[v] = u;
 					Weight b = C[u][v] - F[u][v];
@@ -103,17 +103,17 @@ public:
 			}
 		}
 		return 0;
-		
+
 	}
 public:
 	EdmondsKarp(DynamicGraph<Weight>& _g, int source = -1, int sink = -1) :
 			g(_g), source(source), sink(sink), INF(0xF0F0F0) {
 		curflow = -1;
-		
+
 		last_modification = -1;
 		last_deletion = -1;
 		last_addition = -1;
-		
+
 		history_qhead = -1;
 		last_history_clear = -1;
 		setAllEdgeCapacities(1);
@@ -146,7 +146,7 @@ public:
 	int numUpdates() const {
 		return num_updates;
 	}
-	
+
 	const Weight update() {
 		return maxFlow(source, sink);
 	}
@@ -161,9 +161,9 @@ public:
 		}
 		changed_edges.clear();
 	}
-	
+
 private:
-	
+
 	void markChanged(int edgeID) {
 		if (!changed[edgeID]) {
 			changed[edgeID] = true;
@@ -187,7 +187,7 @@ public:
 	}
 	const Weight maxFlow(int s, int t) {
 		if (last_modification > 0 && g.modifications == last_modification) {
-			
+
 			return curflow;
 		}
 		Weight f = 0;
@@ -195,7 +195,7 @@ public:
 		F.resize(g.nodes());
 		P.resize(g.nodes());
 		M.resize(g.nodes());
-		
+
 		for (int i = 0; i < g.nodes(); i++) {
 			P[i] = -1;
 			M[i] = 0;
@@ -209,12 +209,12 @@ public:
 		M[s] = INF;
 		while (true) {
 			Weight m = BreadthFirstSearch(s, t);
-			
+
 			if (m == 0)
 				break;
-			
+
 			f = f + m;
-			
+
 			int v = t;
 			while (v != s) {
 				int u = P[v];
@@ -228,7 +228,7 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		return f;
@@ -253,10 +253,10 @@ public:
 		M[s] = INF;
 		while (true) {
 			int m = BreadthFirstSearch(s, t);
-			
+
 			if (m == 0)
 				break;
-			
+
 			f = f + m;
 			if (f > max_length) {
 				return f;
@@ -271,7 +271,7 @@ public:
 		}
 		return f;
 	}
-	
+
 	std::vector<bool> seen;
 	std::vector<bool> visited;
 	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
@@ -294,7 +294,7 @@ public:
 		//	visited[s]=true;
 		for (int j = 0; j < Q.size(); j++) {
 			int u = Q[j];
-			
+
 			for (int i = 0; i < g.nIncident(u); i++) {
 				if (!g.edgeEnabled(g.incident(u, i).id))
 					continue;
@@ -318,7 +318,7 @@ public:
 		cut.resize(j);
 		return true;
 	}
-	
+
 	const Weight getEdgeFlow(int edgeid) {
 		assert(g.edgeEnabled(edgeid));
 		int u = g.all_edges[edgeid].from;
@@ -331,13 +331,13 @@ public:
 		int v = g.all_edges[id].to;
 		return C[u][v];
 	}
-	
+
 	const Weight getEdgeResidualCapacity(int id) {
 		assert(g.edgeEnabled(id));
 		int u = g.all_edges[id].from;
 		int v = g.all_edges[id].to;
 		return C[u][v] - F[u][v];
-		
+
 	}
 	const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut) {
 		Weight f = maxFlow(s, t);
@@ -347,11 +347,11 @@ public:
 		seen.clear();
 		seen.resize(g.nodes());
 		seen[s] = true;
-		
+
 		//explore the residual graph
 		for (int j = 0; j < Q.size(); j++) {
 			int u = Q[j];
-			
+
 			for (int i = 0; i < g.nIncident(u); i++) {
 				if (!g.edgeEnabled(g.incident(u, i).id))
 					continue;
@@ -370,7 +370,7 @@ public:
 				int v = g.incoming(u, i).node;
 				int id = g.incoming(u, i).id;
 				if (F[v][u] == 0) {
-					
+
 				} else if (!seen[v]) {
 					Q.push_back(v);
 					seen[v] = true;
@@ -385,7 +385,7 @@ public:
 			}
 		}
 		cut.resize(j);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
@@ -398,7 +398,7 @@ public:
 #endif
 		return f;
 	}
-	
+
 };
 
 }

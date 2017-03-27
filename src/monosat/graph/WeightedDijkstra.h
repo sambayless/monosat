@@ -62,30 +62,30 @@ public:
 		}
 		;
 	};
-	dgl::Heap<DistCmp> q;
+	dgl::alg::Heap<DistCmp> q;
 
 public:
 	//stats
-	
-	long stats_full_updates = 0;
-	long stats_fast_updates = 0;
-	long stats_fast_failed_updates = 0;
-	long stats_skip_deletes = 0;
-	long stats_skipped_updates = 0;
-	long stats_num_skipable_deletions = 0;
+
+	int64_t stats_full_updates = 0;
+	int64_t stats_fast_updates = 0;
+	int64_t stats_fast_failed_updates = 0;
+	int64_t stats_skip_deletes = 0;
+	int64_t stats_skipped_updates = 0;
+	int64_t stats_num_skipable_deletions = 0;
 	double mod_percentage = 0;
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
 	WeightedDijkstra(int s, DynamicGraph<GraphWeight> & graph, std::vector<Weight> & weights) :
 			g(graph), weights(weights), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
-					0), source(s), INF(0), q(DistCmp(dist)) {
-		
+			0), source(s), INF(0), q(DistCmp(dist)) {
+
 		mod_percentage = 0.2;
-		
+
 		INF = std::numeric_limits<Weight>::infinity();
 	}
-	
+
 	void setSource(int s) {
 		source = s;
 		last_modification = -1;
@@ -95,7 +95,7 @@ public:
 	int getSource() {
 		return source;
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const {
 		return num_updates;
 	}
@@ -105,13 +105,13 @@ public:
 		num_updates++;
 		last_modification = g.modifications;
 		last_addition = g.additions;
-		
+
 		dist.resize(g.nodes());
 		prev.resize(g.nodes());
 		while (weights.size() <= g.nodes()) {
 			weights.push_back(1);
 		}
-		
+
 		q.clear();
 		if (last_history_clear != g.historyclears) {
 			history_qhead = 0;
@@ -125,15 +125,15 @@ public:
 			int v = g.all_edges[edgeID].to;
 			Weight alt = dist[u] + weights[u];
 			if (alt < dist[v]) {
-				
+
 				if (dist[v] >= INF) {
 					//this was changed
 					changed.push_back(v);
 				}
-				
+
 				dist[v] = alt;
 				prev[v] = edgeID;
-				
+
 				if (!q.inHeap(v))
 					q.insert(v);
 				else
@@ -143,15 +143,15 @@ public:
 				int u = g.all_edges[edgeID].to;
 				Weight alt = dist[u] + weights[u];
 				if (alt < dist[v]) {
-					
+
 					if (dist[v] >= INF) {
 						//this was changed
 						changed.push_back(v);
 					}
-					
+
 					dist[v] = alt;
 					prev[v] = edgeID;
-					
+
 					if (!q.inHeap(v))
 						q.insert(v);
 					else
@@ -160,7 +160,7 @@ public:
 			}
 		}
 		history_qhead = g.historySize();
-		
+
 		while (q.size()) {
 			int u = q.removeMin();
 			if (dist[u] == INF)
@@ -168,7 +168,7 @@ public:
 			for (int i = 0; i < g.nIncident(u, undirected); i++) {
 				if (!g.edgeEnabled(g.incident(u, i, undirected).id))
 					continue;
-				
+
 				int edgeID = g.incident(u, i, undirected).id;
 				int v = g.incident(u, i, undirected).node;
 				Weight alt = dist[u] + weights[u];
@@ -177,7 +177,7 @@ public:
 						//this was changed
 						changed.push_back(v);
 					}
-					
+
 					dist[v] = alt;
 					prev[v] = edgeID;
 					if (!q.inHeap(v))
@@ -185,10 +185,10 @@ public:
 					else
 						q.decrease(v);
 				}
-				
+
 			}
 		}
-		
+
 	}
 	std::vector<int> & getChanged() {
 		return changed;
@@ -196,11 +196,11 @@ public:
 	void clearChanged() {
 		changed.clear();
 	}
-	
+
 	void drawFull() {
-		
+
 	}
-	
+
 	void update() {
 		static int iteration = 0;
 		int local_it = ++iteration;
@@ -263,7 +263,7 @@ public:
 		 }*/
 
 		stats_full_updates++;
-		
+
 		dist.resize(g.nodes(), INF);
 		prev.resize(g.nodes());
 		old_dist.resize(g.nodes(), INF);
@@ -287,9 +287,9 @@ public:
 				int edgeID = g.incident(u, i, undirected).id;
 				if (!g.edgeEnabled(edgeID))
 					continue;
-				
+
 				int v = g.incident(u, i, undirected).node;
-				
+
 				Weight alt = dist[u] + weights[edgeID];
 				if (alt < dist[v]) {
 					dist[v] = alt;
@@ -301,11 +301,11 @@ public:
 				}
 			}
 		}
-		
+
 		for (int u = 0; u < g.nodes(); u++) {
 			//while(q.size()){
 			//iterate through the unreached nodes and check which ones were previously reached
-			
+
 			if (last_modification <= 0 || (old_dist[u] < INF && dist[u] >= INF)) {
 				changed.push_back(u);
 			}
@@ -316,10 +316,10 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
-		
+
 		;
 	}
 	bool dbg_path(int to) {
@@ -343,10 +343,10 @@ public:
 		return true;
 	}
 	bool dbg_uptodate() {
-		
+
 		return true;
 	}
-	
+
 	bool connected_unsafe(int t) {
 		return t < dist.size() && dist[t] < INF;
 	}
@@ -357,9 +357,9 @@ public:
 	bool connected(int t) {
 		if (last_modification != g.modifications)
 			update();
-		
+
 		assert(dbg_uptodate());
-		
+
 		return dist[t] < INF;
 	}
 	Weight & distance(int t) {
@@ -387,7 +387,7 @@ public:
 		assert(g.getEdge(incomingEdge(t)).to == t);
 		return g.getEdge(incomingEdge(t)).from;
 	}
-	
+
 };
 
 #endif /* DIJKSTRA_H_ */

@@ -18,8 +18,10 @@ if platform.system() != "Windows":
 
     if os.path.exists(orig_lib):
         if not os.path.exists(copy_lib):
+            print("Copying %s to monosat/libmonosat.so"%(copy_lib))
             shutil.copy2(orig_lib, "monosat")
         if  os.path.getmtime(orig_lib) > os.path.getmtime(copy_lib):
+            print("Copying %s to monosat/libmonosat.so"%(orig_lib))
             shutil.copy2(orig_lib, "monosat")
 else:
     copy_lib = "monosat/libmonosat.dll"
@@ -28,15 +30,17 @@ else:
         orig_lib = "../../../../Win64SharedLibrary/libmonosat.dll"
     if os.path.exists(orig_lib):
         if not os.path.exists(copy_lib):
+            print("Copying %s to monosat/libmonosat.so"%(copy_lib))
             shutil.copy2(orig_lib, "monosat")
         if  os.path.getmtime(orig_lib) > os.path.getmtime(copy_lib):
+            print("Copying %s to monosat/libmonosat.so"%(orig_lib))
             shutil.copy2(orig_lib, "monosat")
 
 if not os.path.exists(copy_lib):
     print("Warning: could not find libmonosat.so or libmonosat.dll. See README for instructions on compiling the library, the re-install",file=sys.stderr)
 
 setup(name='monosat',
-      version='1.0',
+      version='1.4',
       description='MonoSAT Python Interface',
       author='Sam Bayless',
       author_email='sbayless@cs.ubc.ca',

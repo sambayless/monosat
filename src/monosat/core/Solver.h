@@ -1,7 +1,7 @@
 /****************************************************************************************[Solver.h]
  The MIT License (MIT)
 
- Copyright (c) 2014-2016, Sam Bayless
+ Copyright (c) 2014-2017, Sam Bayless
  Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
  Copyright (c) 2007-2010, Niklas Sorensson
 
@@ -35,6 +35,8 @@
 #include "monosat/core/Config.h"
 #include <cinttypes>
 
+
+
 //this is _really_ ugly...
 template<unsigned int D, class T> class GeometryTheorySolver;
 
@@ -57,9 +59,6 @@ public:
 	friend class FSMTheorySolver;
 	friend class LSystemSolver;
 	bool shown_warning=false;
-
-
-
 	// Constructor/Destructor:
 	//
 	Solver();
@@ -90,17 +89,52 @@ public:
 	int getDecisionPriority(Var v) const{
 		return priority[v];
 	}
-
+	virtual void setTheorySatisfied(Theory * theory)override{
+		int theoryID = theory->getTheoryIndex();
+		if(!theorySatisfied(theory)){
+			//printf("Theory %d sat at %d\n",theoryID, decisionLevel());
+			if(trail.size()>0) {
+				satisfied_theory_trail_pos[theoryID] = trail.size() - 1;
+			}else{
+				//this really shouldn't ever happen...
+				satisfied_theory_trail_pos[theoryID]=0;
+			}
+			post_satisfied_theory_trail_pos[theoryID]=satisfied_theory_trail_pos[theoryID];
+			//theory_sat_queue.push(TheorySatisfaction(theoryID,trail.size()));
+		}
+	}
+	virtual bool theorySatisfied(Theory * theory)override{
+		int theoryID = theory->getTheoryIndex();
+		return satisfied_theory_trail_pos[theoryID]>=0;
+	}
+	virtual bool heuristicSatisfied(Heuristic * h){
+		int theoryID = h->getTheoryIndex();
+		if(theoryID>=0) {
+			return satisfied_theory_trail_pos[theoryID] >= 0;
+		}else{
+			return false;
+		}
+	}
+	void clearSatisfied()override{
+		for(Theory * t:theories){
+			if(t){
+				int theoryID = t->getTheoryIndex();
+				satisfied_theory_trail_pos[theoryID]=-1;
+				post_satisfied_theory_trail_pos[theoryID]=-1;
+				t->clearSatisfied();
+			}
+		}
+	}
 	//Theory interface
 	void addTheory(Theory*t) {
+		satisfied_theory_trail_pos.push(-1);
+		post_satisfied_theory_trail_pos.push(-1);
 		theories.push(t);
-		t->setActivity(opt_randomize_theory_order ? drand(random_seed) * 0.00001 : 0);
-		t->setPriority(0);
+		theory_reprop_trail_pos.push(-1);
+		theory_init_prop_trail_pos.push(-1);
 		t->setTheoryIndex(theories.size() - 1);
-
 		if(t->supportsDecisions()){
-			decidable_theories.push(t);
-			theory_order_heap.insert(t->getTheoryIndex());
+			addHeuristic(t);
 		}
 		theory_queue.capacity(theories.size());
 		in_theory_queue.push(false);
@@ -108,7 +142,36 @@ public:
 		cancelUntil(0);
 		resetInitialPropagation();
 	}
-
+	void addHeuristic(Heuristic*t)override {
+		if(t->getHeuristicIndex()>=0) {
+			assert(t->getHeuristicIndex()<all_decision_heuristics.size());
+			assert(all_decision_heuristics[t->getHeuristicIndex()]==t);
+			return;
+		}
+		int heuristic_id = all_decision_heuristics.size();
+		assert(heuristic_id>0);
+		t->setHeuristicIndex(heuristic_id);
+		all_decision_heuristics.push(t);
+		decision_heuristics.push(t);
+		theory_order_heap.insert(t);
+		theory_conflict_counters.growTo(all_decision_heuristics.size(),0);
+		first_heuristic_decision_level.growTo(all_decision_heuristics.size(),-1);
+		t->setActivity(opt_randomize_theory_order_restart_freq>0 ? drand(random_seed) * 0.00001 : 0);
+		t->setPriority(0);
+	}
+	void activateHeuristic(Heuristic*h)override{
+		assert(all_decision_heuristics.contains(h));
+		if(h->getHeuristicIndex()>all_decision_heuristics.size() || h->getHeuristicIndex()<0 || all_decision_heuristics[h->getHeuristicIndex()] !=h){
+			throw std::runtime_error("Unknown decision heuristic");
+		}
+		theory_order_heap.update(h);
+	}
+	void theoryPropagated(Theory * t)override {
+		int theoryID = t->getTheoryIndex();
+		if (decisionLevel() > 0 && theory_init_prop_trail_pos[theoryID] >= 0 && theory_reprop_trail_pos[theoryID] < 0) {
+			theory_reprop_trail_pos[theoryID] = qhead;
+		}
+	}
 	//Call to force at least one round of propagation to each theory solver at the next solve() call
 	void resetInitialPropagation() {
 		if (!initialPropagate) {
@@ -151,7 +214,7 @@ public:
 		cancelUntil(0);
 	}
 
-	int getTheoryIndex() {
+	int getTheoryIndex() const{
 		return theory_index;
 	}
 	void setTheoryIndex(int id) {
@@ -159,20 +222,27 @@ public:
 	}
 
 	//Generate a new, unique `temporary value' for explaining conflicts
-	CRef newReasonMarker(Theory * forTheory) {
+	CRef newReasonMarker(Heuristic * forTheory, bool is_decision=false) override{
 		markers.push(ca.makeMarkerReference());
 
 		int marker_num = CRef_Undef - markers.last() - 1;
 		marker_theory.growTo(marker_num + 1, -1);
 
+		if(is_decision){
+			assert(forTheory->getHeuristicIndex()>0);//heuristic indices must be strictly greater than 0
+			marker_theory[marker_num]=-forTheory->getHeuristicIndex();
+		}else{
+			marker_theory[marker_num]=forTheory->getTheoryIndex();
+		}
+
 		//this could be done more efficiently
-		for (int i = 0; i < theories.size(); i++) {
+		/*for (int i = 0; i < theories.size(); i++) {
 			if (theories[i] == forTheory) {
 				marker_theory[marker_num] = i;
 				break;
 			}
-		}
-		assert(marker_theory[marker_num] >= 0);
+		}*/
+		//assert(marker_theory[marker_num] >= 0);
 
 		return markers.last();
 	}
@@ -184,6 +254,9 @@ public:
 
 
 		printf("restarts              : %" PRIu64 "\n", starts);
+		if(opt_theory_order_conflict_restart && stats_theory_conflict_counter_restarts>0){
+			printf("conflict counter restarts:     %" PRIu64 "\n",stats_theory_conflict_counter_restarts);
+		}
 		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%ld theory learnts), %" PRId64 " removed)\n", conflicts,
 			   conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
@@ -198,11 +271,19 @@ public:
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
 			   (max_literals - tot_literals) * 100 / (double) max_literals);
+		if(stats_skipped_theory_prop_rounds>0){
+			printf("theory propagations skipped: %ld\n",stats_skipped_theory_prop_rounds);
+		}
 		if (opt_detect_pure_theory_lits) {
 			printf("pure literals     : %" PRId64 " (%" PRId64 " theory lits) (%" PRId64 " rounds, %f time)\n", stats_pure_lits,
 				   stats_pure_theory_lits, pure_literal_detections, stats_pure_lit_time);
 		}
-
+		if(stats_theory_prop_time>0) {
+			printf("Time spent in theory propagation: %f\n", stats_theory_prop_time);
+		}
+		if(stats_theory_conflict_time>0){
+			printf("Time spent in theory conflicts: %f\n",stats_theory_conflict_time);
+		}
 		if(opt_check_solution){
 			printf("Solution double-checking time (disable with -no-check-solution): %f s\n",stats_solution_checking_time);
 		}
@@ -234,16 +315,30 @@ public:
 		}
 	}
 
-	bool isTheoryCause(CRef cr) {
+	bool isTheoryCause(CRef cr)const {
 		return cr != CRef_Undef && !ca.isClause(cr);
 	}
 
-	int getTheory(CRef cr) {
+	Theory* getTheory(CRef cr) const{
 		assert(isTheoryCause(cr));
+		assert(!isDecisionReason(cr));
 		// UINT32_MAX-cr - 1;
 		int marker = CRef_Undef - cr - 1;
-		return marker_theory[marker];
+		assert(marker_theory[marker]>=0);
+		assert(marker_theory[marker]<theories.size());
+		return theories[marker_theory[marker]];
 	}
+	Heuristic * getHeuristic(CRef cr) const{
+		assert(isDecisionReason(cr));
+		// UINT32_MAX-cr - 1;
+		int marker = CRef_Undef - cr - 1;
+		int hID =  -(marker_theory[marker]);
+		assert(hID>=0);
+		assert(hID<=all_decision_heuristics.size());
+		return all_decision_heuristics[hID];
+	}
+
+
 
 	bool hasTheory(Var v) {
 		return theory_vars[v].isTheoryVar;
@@ -321,18 +416,21 @@ public:
 		assert(isTheoryCause(cr));
 		assert(!ca.isClause(cr));
 		assert(cr != CRef_Undef);
+		assert(!isDecisionReason(cr));
 		int trail_pos = trail.size();
-		int t = getTheory(cr);
+		Theory * t = getTheory(cr);
+		assert(t);
 		assert(hasTheory(p));
 		theory_reason.clear();
-		if(p.x==269 ){
-			int a =1;
-		}
-		theories[t]->buildReason(getTheoryLit(p), theory_reason, cr);
+
+		double start_t = rtime(1);
+		t->buildReason(getTheoryLit(p), theory_reason, cr);
+
+		stats_theory_conflict_time+= (rtime(1)-start_t);
 		assert(theory_reason[0] == p);
 		assert(value(p)==l_True);
 
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 		for(Lit l:theory_reason)
 			assert(value(l)!=l_Undef);
 #endif
@@ -385,6 +483,7 @@ public:
 
 	// Solving:
 	//
+	void detectPureTheoryLiterals(); //if opt_detect_pure_literals, finds pure theory literals.
 	bool simplify();                        // Removes already satisfied clauses.
 	virtual bool solve(const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
 	virtual lbool solveLimited(const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).
@@ -393,7 +492,7 @@ public:
 	virtual bool solve(Lit p, Lit q);            // Search for a model that respects two assumptions.
 	virtual bool solve(Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
 	virtual bool propagateAssignment(const vec<Lit>& assumps); //apply unit propagation to the supplied assumptions, and quit without solving
-    virtual lbool solveUntilRestart(const vec<Lit>& assumps);//attempt to solve the instance, but quit as soon as the solver restarts
+	virtual lbool solveUntilRestart(const vec<Lit>& assumps);//attempt to solve the instance, but quit as soon as the solver restarts
 	bool okay() const;                  // FALSE means solver is in a conflicting state
 
 	Lit True(){
@@ -483,9 +582,19 @@ public:
 	vec<Lit> theory_reason;
 	vec<Lit> theory_conflict;
 	vec<Theory*> theories;
-	vec<Theory*> decidable_theories;
+	vec<int> satisfied_theory_trail_pos;
+	vec<int> post_satisfied_theory_trail_pos;
+	vec<Heuristic*> decision_heuristics;
+
+	int decision_heuristic_qhead=0;
+	vec<int> decision_heuristic_trail_lim;
+
+	vec<Heuristic*> all_decision_heuristics;
+	vec<int> first_heuristic_decision_level;//the first decision made by each decision heuristic (other than vsids)
+	vec<Heuristic*> decision_heuristic_trail;//trail of decisions made by decision heuristics (other than vsids)
+	vec<int> theory_conflict_counters;
 	int theory_decision_round_robin=0;
-	Theory * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
+	Heuristic * decisionTheory=nullptr;//for opt_vsids_solver_as_theory
 	vec<Var> all_theory_vars;
 	struct LitCount {
 		char occurs :1;
@@ -507,8 +616,18 @@ public:
 	CRef cause_marker=CRef_Undef;
 	int track_min_level = 0;
 	int initial_level = 0;
+/*	struct TheorySatisfaction{
+		int theoryID=-1;
+		int trail_size=-1;
+		TheorySatisfaction(int theoryID, int trail_size):theoryID(theoryID),trail_size(trail_size){
+
+		}
+	};
+	vec<TheorySatisfaction> theory_sat_queue;*/
 	vec<int> theory_queue;
 	vec<bool> in_theory_queue;
+	vec<int> theory_reprop_trail_pos;
+	vec<int> theory_init_prop_trail_pos;
 	bool disable_theories=false;
 	int min_decision_var = 0;
 	int max_decision_var = -1;
@@ -560,9 +679,14 @@ public:
 	uint64_t pure_literal_detections=0;
 	uint64_t stats_removed_clauses=0;
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
-	long stats_theory_conflicts =0;
-	long stats_solver_preempted_decisions=0;
-	long stats_theory_decisions=0;
+	uint64_t stats_skipped_theory_prop_rounds=0;
+	uint64_t stats_theory_conflict_counter_restarts=0;
+	uint64_t stats_theory_conflicts =0;
+	double stats_theory_prop_time =0;
+	double stats_theory_conflict_time=0;
+	long dbg=0;
+	uint64_t stats_solver_preempted_decisions=0;
+	uint64_t stats_theory_decisions=0;
 	double stats_pure_lit_time=0;
 	uint64_t n_theory_conflicts=0;
 	int consecutive_theory_conflicts=0;
@@ -634,20 +758,38 @@ protected:
 				activity(act), priority(pri) {
 		}
 	};
-	struct TheoryOrderLt {
-		const vec<Theory*> & theories;
-		bool operator ()(int x, int y) const {
-			if (theories[x]->getPriority()  == theories[y]->getPriority() )
-				return theories[x]->getActivity() > theories[y]->getActivity();
-			else {
-				return theories[x]->getPriority() >theories[y]->getPriority();
+	struct HeuristicOrderLt {
+
+		bool operator ()(Heuristic* x, Heuristic* y) const {
+			if (x->getPriority()  == y->getPriority() ) {
+				if(x->getHeuristicOrder() == y->getHeuristicOrder()) {
+					return x->getActivity() > y->getActivity();
+				}else{
+					return x->getHeuristicOrder() < y->getHeuristicOrder();//lower ordered heuristic goes earlier
+				}
+			}else {
+				return x->getPriority() >y->getPriority();
 			}
 		}
-		TheoryOrderLt(const vec<Theory*> & theories) :
-				theories(theories){
+		HeuristicOrderLt() {
+
 		}
 	};
+	struct HeuristicActivityOrderLt {
 
+		bool operator ()(Heuristic* x, Heuristic* y) const {
+			if (x->getPriority()  == y->getPriority() ) {
+				//ignore heuristic order, even if it is set
+				return x->getActivity() > y->getActivity();
+
+			}else {
+				return x->getPriority() >y->getPriority();
+			}
+		}
+		HeuristicActivityOrderLt() {
+
+		}
+	};
 	struct TheoryData {
 		union {
 			struct {
@@ -674,11 +816,12 @@ protected:
 	vec<double> activity;         // A heuristic measurement of the activity of a variable.
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, vec<Watcher>, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-	int theoryConflict=-1;
+	Heuristic* conflicting_heuristic=nullptr;
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
-	vec<int> priority;		  // Static, lexicographic heuristic. Larger values are higher priority (decided first)
+	vec<int> priority;		  // Static, lexicographic heuristic. Larger values are higher priority (decided first).
+
 	vec<TheoryData> theory_vars;
 	vec<Lit> to_analyze;
 	vec<Lit> to_reenqueue;
@@ -690,13 +833,17 @@ protected:
 	int64_t simpDB_props;   // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vec<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
 	bool only_propagate_assumptions=false; //true if the solver should propagate assumptions and then quit without solving
-    bool quit_at_restart=false;//true if the solver should give up as soon as it restarts
-    int override_restart_count=-1;
-	Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
+	bool quit_at_restart=false;//true if the solver should give up as soon as it restarts
+	int override_restart_count=-1;
+	Heap<Var,VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 	double theory_inc;
 	double theory_decay;
-	Heap<TheoryOrderLt> theory_order_heap;
-	vec<std::pair<int,int>> theory_decision_trail;
+	struct HeuristicToInt {
+		int operator()(Heuristic * h) const { return h->getHeuristicIndex(); }
+	};
+
+	Heap<Heuristic*,HeuristicOrderLt,HeuristicToInt> theory_order_heap;
+	vec<std::pair<Heuristic*,int>> theory_decision_trail;
 	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.
 	double progress_estimate;       // Set by 'search()'.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -730,6 +877,7 @@ protected:
 	//
 	void insertVarOrder(Var x);                               // Insert a variable in the decision order priority queue.
 	Lit pickBranchLit();                                                      // Return the next decision variable.
+
 public:
 	void instantiateLazyDecision(Lit l, int atLevel, CRef reason);
 	Lit theoryDecisionLit(int theoryID){
@@ -765,6 +913,7 @@ protected:
 
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
 	void enqueueTheory(Lit l);
+	void enqueueAnyUnqueued(); //in some solving modes, a theory can sometimes delay enqueing some atoms. Check for any such atoms here.
 	bool propagateTheory(vec<Lit> & conflict);
 	bool solveTheory(vec<Lit> & conflict_out);
 
@@ -772,9 +921,9 @@ protected:
 	void backtrackUntil(int level);
 	//Add a clause to the clause database safely, even if the solver is in the middle of search, propagation, or clause analysis.
 	//(In reality, the clause may be added to the database sometime later)
+
 public:
 	void addClauseSafely(vec<Lit> & ps)override;
-
 	void setTheoriesEnabled(bool enableTheories){
 		disable_theories = !enableTheories;
 	}
@@ -804,6 +953,7 @@ protected:
 		tmp_conflict.clear();
 	}
 
+	void analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics,int minimimum_involved_decision_priority);
 	bool litRedundant(Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
 	lbool search(int nof_conflicts);                                     // Search for a given number of conflicts.
 	lbool solve_();                                           // Main solve method (assumptions given in 'assumptions').
@@ -819,19 +969,19 @@ protected:
 	void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
 	void claBumpActivity(Clause& c);             // Increase a clause with the current 'bump' value.
 
-	void theoryBumpActivity(int theoryID){
+	void theoryBumpActivity(Heuristic * h){
 		if(opt_vsids_both){
-			theoryBumpActivity(theoryID,var_inc*opt_theory_vsids_balance);
+			theoryBumpActivity(h,var_inc*opt_theory_vsids_balance);
 		}else{
-			theoryBumpActivity(theoryID,theory_inc);
+			theoryBumpActivity(h,theory_inc);
 		}
 
 	}
-	void theoryBumpActivity(int theoryID, double increase) {
+	void theoryBumpActivity(Heuristic * h, double increase) {
 
-		if ((theories[theoryID]->getActivity() += increase) > 1e100) {
+		if ((h->getActivity() += increase) > 1e100) {
 			// Rescale:
-			for (Theory * t:decidable_theories)
+			for (Heuristic * t:decision_heuristics)
 				t->getActivity() *= 1e-100;
 			theory_inc *= 1e-100;
 
@@ -843,8 +993,8 @@ protected:
 		}
 
 		// Update order_heap with respect to new activity:
-		if (theory_order_heap.inHeap(theoryID))
-			theory_order_heap.decrease(theoryID);
+		if (theory_order_heap.inHeap(h))
+			theory_order_heap.decrease(h);
 	}
 	inline void theoryDecayActivity() {
 		if(opt_vsids_both && opt_use_var_decay_for_theory_vsids){
@@ -872,6 +1022,9 @@ public:
 
 	CRef reason(Var x) const;
 	int level(Var x) const;
+	bool isDecisionReason(CRef r) const;
+	CRef decisionReason(Var x) const;
+	CRef reasonOrDecision(Var x) const;
 	double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 
 	bool isConstant(Var v)const{
@@ -886,6 +1039,10 @@ public:
 
 
 private:
+	IntSet<int> swapping_involved_theories;
+	vec<Heuristic*> swapping_uninvolved_pre_theories;
+	vec<Heuristic*> swapping_uninvolved_post_theories;
+	vec<Heuristic*> swapping_involved_theory_order;
 	bool withinBudget() const;
 	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false);
 
@@ -951,13 +1108,14 @@ private:
 		SolverDecisionTheory(Solver & S):S(S){
 
 		}
-		Lit decideTheory() {
+		Lit decideTheory(CRef & decision_reason) {
+			decision_reason = CRef_Undef;
 			return S.pickBranchLit();
 		}
 		bool supportsDecisions() {
 			return true;
 		}
-		int getTheoryIndex(){
+		int getTheoryIndex()const{
 			return theoryID;
 		}
 		void setTheoryIndex(int id){
@@ -986,8 +1144,34 @@ private:
 // Implementation of inline methods:
 
 inline CRef Solver::reason(Var x) const {
-	return vardata[x].reason;
+	CRef r = vardata[x].reason;
+	if(isDecisionReason(r))
+		return CRef_Undef;
+	return r;
 }
+
+inline CRef Solver::decisionReason(Var x) const {
+	CRef r = vardata[x].reason;
+	if(isDecisionReason(r))
+		return r;
+	return CRef_Undef;
+}
+
+inline CRef Solver::reasonOrDecision(Var x) const {
+	CRef r = vardata[x].reason;
+	return r;
+}
+
+
+inline bool Solver::isDecisionReason(CRef cr)const {
+	int marker = CRef_Undef - cr - 1;
+	if(marker >=0 && marker<marker_theory.size()) {
+		return marker_theory[marker] < 0;
+	}else{
+		return false;
+	}
+}
+
 inline int Solver::level(Var x) const {
 	return vardata[x].level;
 }
@@ -1011,7 +1195,7 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 		var_inc *= 1e-100;
 
 		if(opt_vsids_both){
-			for (Theory * t:decidable_theories)
+			for (Heuristic * t:decision_heuristics)
 				t->getActivity() *= 1e-100;
 			theory_inc *= 1e-100;
 		}
@@ -1213,6 +1397,7 @@ inline bool Solver::solve(const vec<Lit>& assumps) {
 	assumps.copyTo(assumptions);
 	return solve_() == l_True;
 }
+
 inline lbool Solver::solveLimited(const vec<Lit>& assumps) {
 	assumps.copyTo(assumptions);
 	return solve_();

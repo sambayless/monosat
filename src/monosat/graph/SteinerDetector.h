@@ -63,7 +63,7 @@ public:
 	vec<int> terminal_var_map;
 
 	//Map<float,int> weight_lit_map;
-	
+
 	struct WeightLit {
 		Lit l;
 		Weight min_weight;
@@ -109,12 +109,12 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
 	bool checkSatisfied();
-	Lit decide();
+	Lit decide(CRef &decision_reason);
 
 	void addWeightLit(Weight &min_weight, Var weight_var);
 	void addTerminalNode(int node, Var theoryVar);
 	SteinerDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,DynamicGraph<Weight> &_g,
-			DynamicGraph<Weight>  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+					DynamicGraph<Weight>  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 
 	virtual ~SteinerDetector() {
 		delete underapprox_detector;
@@ -146,11 +146,11 @@ public:
 			}
 		}
 	}
-	
+
 	const char* getName() {
 		return "Steiner Detector";
 	}
-	
+
 };
 }
 ;

@@ -48,7 +48,7 @@ class vec {
 	vec(vec<T>& other) {
 		assert(0);
 	}
-	
+
 	// Helpers for calculating next capacity:
 	static inline int imax(int x, int y) {
 		int mask = (y - x) >> (sizeof(int) * 8 - 1);
@@ -58,7 +58,7 @@ class vec {
 	static inline void nextCap(int& cap) {
 		cap += ((cap >> 1) + 2) & ~1;
 	}
-	
+
 public:
 	// Constructors:
 	vec() :
@@ -75,14 +75,13 @@ public:
 	~vec() {
 		clear(true);
 	}
-
 	vec(T* array, int size)     : data(array), sz(size), cap(size) { }      // (takes ownership of array -- will be deallocated with 'free')
 
 	// Pointer to first element:
 	operator T*(void) {
 		return data;
 	}
-	
+
 	// Size operations:
 	int size(void) const {
 		return sz;
@@ -129,14 +128,14 @@ public:
 	// in fact it can not since it requires that 'cap' is equal to INT_MAX. This in turn can not
 	// happen given the way capacities are calculated (below). Essentially, all capacities are
 	// even, but INT_MAX is odd.
-	
+
 	const T& last(void) const {
 		return data[sz - 1];
 	}
 	T& last(void) {
 		return data[sz - 1];
 	}
-	
+
 	// Vector interface:
 	const T& operator [](int index) const {
 		return data[index];
@@ -144,7 +143,7 @@ public:
 	T& operator [](int index) {
 		return data[index];
 	}
-	
+
 	// Duplicatation (preferred instead):
 	void copyTo(vec<T>& copy) const {
 		copy.clear();
@@ -167,16 +166,16 @@ public:
 		std::swap(sz,dest.sz);
 		std::swap(cap,dest.cap);
 	}
-	
+
 	//stl-style begin and end, to support C++11 range-based for loops
 	T* begin() const {
 		return &data[0];
 	}
-	
+
 	T* end() const {
 		return &data[sz];
 	}
-	
+
 	bool contains(const T& element) const {
 		for (int i = 0; i < sz; i++) {
 			if (data[i] == element) {
@@ -184,6 +183,16 @@ public:
 			}
 		}
 		return false;
+	}
+
+	//returns size if the element is not found
+	int indexOf(const T& element)const{
+		for (int i = 0; i < sz; i++) {
+			if (data[i] == element) {
+				return i;
+			}
+		}
+		return size();
 	}
 
 	int count(const T& element) const {
@@ -201,7 +210,7 @@ public:
 		int i, j = 0;
 		for (i = 0; i < sz; i++) {
 			if (data[i] == element) {
-				
+
 			} else {
 				data[j++] = data[i];
 			}
@@ -216,7 +225,6 @@ public:
 			this->push(copyFrom[i]);
 		}
 	}
-
 };
 
 template<class T>

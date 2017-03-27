@@ -27,47 +27,50 @@
 #include "monosat/mtl/Alg.h"
 #include "monosat/utils/Options.h"
 #include "monosat/core/SolverTypes.h"
+#include "monosat/core/Heuristic.h"
 #include <ostream>
 namespace Monosat {
 /**
  * Abstract interface to SMT theory solvers, as accessed by the SAT solver
  */
-class Theory {
-	int priority=0;
-	double activity=0;
+class Theory : public virtual Heuristic{
+
 public:
 	virtual ~Theory() {
 	}
 
-    int getPriority()const{
-		return priority;
-	}
-    void setPriority(int p){
-    	priority=p;
-    }
 
-    double & getActivity(){
-		return activity;
-	}
-    void setActivity(double p){
-    	activity=p;
-    }
 
-	virtual int getTheoryIndex()=0;
+	virtual int getTheoryIndex()const=0;
 	virtual void setTheoryIndex(int id)=0;
 	virtual void backtrackUntil(int untilLevel)=0;
 	virtual void newDecisionLevel()=0;
 	virtual void enqueueTheory(Lit p)=0;
+	virtual void enqueueAnyUnqueued(){
+
+	}
+	virtual void clearSatisfied(){
+
+	}
 	virtual bool propagateTheory(vec<Lit> & conflict)=0;
 	virtual bool solveTheory(vec<Lit> & conflict)=0;
-	virtual Lit decideTheory() {
-		return lit_Undef;
+	virtual bool theoryIsSatisfied(){
+		return false;
 	}
+	//virtual Lit decideTheory(CRef & decision_reason)=0;
 	virtual bool supportsDecisions() {
 		return false;
 	}
 	virtual void undecideTheory(Lit l){
 
+	}
+
+	virtual Heuristic * getConflictingHeuristic(){
+		if(this->supportsDecisions()){
+			return this;
+		}else{
+			return nullptr;
+		}
 	}
 
 	//Lazily construct the reason clause explaining this propagation
@@ -87,10 +90,10 @@ protected:
 public:
 	//Informs the theory solver about whether this literal (with this polarity!) ever occurs in its parent solver
 	virtual void setLiteralOccurs(Lit l, bool occurs) {
-		
+
 	}
 	virtual void printStats(int detailLevel = 0) {
-		
+
 	}
 	virtual bool check_propagated(){
 		return true;
@@ -99,7 +102,7 @@ public:
 		return true;
 	}
 	virtual void printSolution() {
-		
+
 	}
 	virtual void writeTheoryWitness(std::ostream& write_to) {
 		//do nothing

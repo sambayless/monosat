@@ -63,14 +63,14 @@ void selectionSort(T *array, int size, LessThan lt) {
 
 template<class T>
 static inline void selectionSort(T *array, int size) {
-    selectionSort(array, size, LessThan_default<T>());
+    PB::selectionSort(array, size, LessThan_default<T>());
 }
 
 
 template<class T, class LessThan>
 void sort(T *array, int size, LessThan lt, double &seed) {
     if (size <= 15)
-        selectionSort(array, size, lt);
+        PB::selectionSort(array, size, lt);
 
     else {
         T pivot = array[Monosat::irand(seed, size)];
@@ -89,20 +89,20 @@ void sort(T *array, int size, LessThan lt, double &seed) {
             array[j] = tmp;
         }
 
-        sort(array, i, lt, seed);
-        sort(&array[i], size - i, lt, seed);
+        PB::sort(array, i, lt, seed);
+        PB::sort(&array[i], size - i, lt, seed);
     }
 }
 
 template<class T, class LessThan>
 void sort(T *array, int size, LessThan lt) {
     double seed = 91648253;
-    sort(array, size, lt, seed);
+    PB::sort(array, size, lt, seed);
 }
 
 template<class T>
 static inline void sort(T *array, int size) {
-    sort(array, size, LessThan_default<T>());
+    PB::sort(array, size, LessThan_default<T>());
 }
 
 
@@ -113,7 +113,7 @@ void sortUnique(T *array, int &size, LessThan lt) {
 
     if (size == 0) return;
 
-    sort(array, size, lt);
+    PB::sort(array, size, lt);
 
     i = 1;
     last = array[0];
@@ -139,12 +139,12 @@ static inline void sortUnique(T *array, int &size) {
 
 template<class T, class LessThan>
 void sort(Monosat::vec<T> &v, LessThan lt) {
-    sort((T *) v, v.size(), lt);
+    PB::sort((T *) v, v.size(), lt);
 }
 
 template<class T>
 void sort(Monosat::vec<T> &v) {
-    sort(v, LessThan_default<T>());
+    PB::sort(v, LessThan_default<T>());
 }
 
 

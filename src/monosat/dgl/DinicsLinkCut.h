@@ -34,9 +34,9 @@
 namespace dgl {
 template<typename Weight>
 class DinitzLinkCut: public MaxFlow<Weight> {
-	
+
 public:
-	
+
 	std::vector<Weight> F;
 
 	struct LocalEdge {
@@ -45,7 +45,7 @@ public:
 		bool backward = false;
 		LocalEdge(int from = -1, int id = -1, bool backward = false) :
 				from(from), id(id), backward(backward) {
-			
+
 		}
 	};
 	bool dinics_recursive=false;
@@ -110,7 +110,7 @@ public:
 */		printf("Rounds: %ld, Augmenting Rounds: %ld\n", stats_rounds, stats_augmenting_rounds);
 		printf("Backtracks %ld (%ld avoided)\n", stats_backtracks, stats_avoided_backtracks);
 	}
-	
+
 public:
 	DinitzLinkCut(DynamicGraph<Weight>& _g,  int source = -1, int sink = -1) :
 			g(_g),  source(source), sink(sink), INF(0xF0F0F0)
@@ -120,10 +120,10 @@ public:
 		last_modification = -1;
 		last_deletion = -1;
 		last_addition = -1;
-		
+
 		history_qhead = -1;
 		last_history_clear = -1;
-		
+
 	}
 	int getSource() const {
 		return source;
@@ -133,9 +133,9 @@ public:
 	}
 
 	void dbg_print_graph(int from, int to) {
-		
-#ifndef NDEBUG
-	/*	return;
+
+#ifdef DEBUG_DGL
+		/*	return;
 		
 		printf("digraph{\n");
 		for (int i = 0; i < g.nodes(); i++) {
@@ -192,7 +192,7 @@ public:
 		
 		printf("}\n");*/
 #endif
-		
+
 	}
 	bool buildLevelGraph(int src, int dst) {
 
@@ -230,7 +230,7 @@ public:
 		return dist[dst] >= 0;
 	}
 	bool dbg_hasLink(int u) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		for (auto e : toLink) {
 			if (e.u == u)
 				return true;
@@ -239,7 +239,7 @@ public:
 		return false;
 	}
 	bool dbg_isLinkRoot(int v) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		int u = src;
 		int i = 0;
 		while (true) {
@@ -260,7 +260,7 @@ public:
 #endif
 		return true;
 	}
-	
+
 	Weight findAugmentingPath(int src, int dst) {
 		dbg_print_graph(src, dst);
 		//static int outerit = 0;
@@ -276,7 +276,7 @@ public:
 			bool foundPath = false;
 			//double starttime=rtime(4);
 			dbg_print_graph(src, dst);
-			
+
 			while (found) {
 				//++innerit;
 				found = false;
@@ -312,7 +312,7 @@ public:
 							int v = edge.node;
 							if ((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
 								continue;
-							
+
 							//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
 							if (F[edgeID]!=0) {
 								// assert(parentEdge[u].edgeID==-1);
@@ -326,11 +326,11 @@ public:
 						}
 					}
 				}
-				
+
 			}
 			dbg_isLinkRoot(u);
 			dbg_print_graph(src, dst);
-			
+
 			// double ctime = rtime(4);
 			// augtime_search+=ctime-starttime;
 			assert(!found);
@@ -367,7 +367,7 @@ public:
 				toLink.clear();
 				dbg_print_graph(src, dst);
 				assert(forest.findRoot(src) == dst);
-				
+
 				//found s-t augmenting path.
 				//Find the minimum capacity of any edge from src to dst on that path
 				Weight c = forest.minCost(src);
@@ -395,7 +395,7 @@ public:
 				toLink.clear();
 				u = forest.findRoot(src);
 				dbg_print_graph(src, dst);
-				
+
 			} else {
 				//couldn't find any s-t augmenting path.
 				//remove the vertex from the graph
@@ -406,7 +406,7 @@ public:
 						if (parentEdge[u].edgeID >= 0) {
 							assert(!forest.isRoot(u));
 							Weight c = forest.getCost(u);
-							
+
 							int edgeID = parentEdge[u].edgeID;
 							assert(c <= g.getWeight(edgeID));
 							if (!parentEdge[u].backward) {
@@ -414,15 +414,15 @@ public:
 							} else {
 								F[edgeID] = c;
 							}
-							
+
 							forest.cut(u);
 							parentEdge[u].edgeID = -1;
 						}
 						forest.undeleteNode(u);
 					}
-					
+
 					toLink.clear();
-					
+
 					break;
 				} else {
 					dist[u] = -1;    					 //prevents u from being explored again.
@@ -473,14 +473,14 @@ public:
 			}
 			// augtime_cleanup+=rtime(4)- ctime;
 		}
-		
+
 		return f;
 	}
-	
+
 	Weight findAugmentingPath_pointers(int src, int dst) {
 		Weight f = 0;
 		while (true) {
-			
+
 			bool found = true;
 			bool foundPath = false;
 
@@ -489,13 +489,13 @@ public:
 			while (found) {
 				found = false;
 				//u = forest.findRoot(src);
-				
+
 				if (u == dst) {
 					foundPath = true;
 					break;
 				} else {
 					//extend the path
-					
+
 					for (; pos[u] < g.nIncident(u); pos[u]++) {
 						//auto & edge = g.adjacency[u][pos[u]];
 						auto & edge = g.incident(u, pos[u]);
@@ -503,7 +503,7 @@ public:
 						int v = edge.node;
 						if ((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
 							continue;
-						
+
 						if (F[edgeID] < g.getWeight(edgeID)) {
 							forest.link(u, v, g.getWeight(edgeID) - F[edgeID]);
 							//tree_edges[edgeID].in_tree=true;
@@ -523,7 +523,7 @@ public:
 							int v = edge.node;
 							if ((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
 								continue;
-							
+
 							//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
 							if (F[edgeID]) {
 								forest.link(u, v, F[edgeID]);
@@ -538,7 +538,7 @@ public:
 						}
 					}
 				}
-				
+
 			}
 			//forest.dbg_print_forest(true);
 
@@ -555,7 +555,7 @@ public:
 				//forest.dbg_print_forest(true);
 				Weight minC = 0;
 				while (minC == 0) {
-					
+
 					int u = forest.ancecstorFindMin(src);
 					//forest.dbg_print_forest(true);
 					assert(forest.getCost(u) == minC);
@@ -564,7 +564,7 @@ public:
 						assert(F[edgeID] + c <= g.getWeight(edgeID));
 						F[edgeID] += c;
 					} else {
-						
+
 						assert(c <= F[edgeID]);
 						F[edgeID] -= c;
 					}
@@ -573,7 +573,7 @@ public:
 					minC = forest.minCost(src);
 					//forest.dbg_print_forest(true);
 				}
-				
+
 			} else {
 				//couldn't find any s-t augmenting path.
 				//remove the vertex from the graph
@@ -587,10 +587,10 @@ public:
 							if (!parentEdge[u].backward) {
 								F[edgeID] = g.getWeight(edgeID) - c;
 							} else {
-								
+
 								F[edgeID] = c;
 							}
-							
+
 							forest.cut(u);
 							parentEdge[u].edgeID = -1;
 						}
@@ -637,36 +637,36 @@ public:
 			}
 
 		}
-		
+
 		return f;
 	}
-	
+
 	Weight findAugmentingPath_original(int src, int dst) {
-		
+
 		Weight f = 0;
 		while (true) {
 			stats_augmenting_rounds++;
 			bool found = true;
 			bool foundPath = false;
-			
+
 			//dbg_print_graph(src,dst);
 			int u = forest.findRoot(src);
 			while (found) {
 				found = false;
-				
+
 				if (u == dst) {
 					foundPath = true;
 					break;
 				} else {
 					//extend the path
-					
+
 					for (int i = 0; i < g.nIncident(u); i++) {
 						auto & edge = g.incident(u, i);
 						int edgeID = edge.id;
 						int v = edge.node;
 						if ((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
 							continue;
-						
+
 						if (F[edgeID] < g.getWeight(edgeID)) {
 							forest.link(u, v, g.getWeight(edgeID) - F[edgeID]);
 							//tree_edges[edgeID].in_tree=true;
@@ -684,7 +684,7 @@ public:
 							int v = edge.node;
 							if ((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
 								continue;
-							
+
 							//these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
 							if (F[edgeID]) {
 								forest.link(u, v, F[edgeID]);
@@ -701,7 +701,7 @@ public:
 				u = forest.findRoot(src);
 			}
 			//forest.dbg_print_forest(true);
-			
+
 			assert(!found);
 			if (foundPath) {
 				//found s-t augmenting path.
@@ -714,7 +714,7 @@ public:
 				//forest.dbg_print_forest(true);
 				Weight minC = 0;
 				while (minC == 0) {
-					
+
 					int u = forest.ancecstorFindMin(src);
 					//forest.dbg_print_forest(true);
 					assert(forest.getCost(u) == minC);
@@ -733,7 +733,7 @@ public:
 					minC = forest.minCost(src);
 					//forest.dbg_print_forest(true);
 				}
-				
+
 			} else {
 				//couldn't find any s-t augmenting path.
 				//remove the vertex from the graph
@@ -751,7 +751,7 @@ public:
 								//assert(tree_edges[edgeID].in_tree_backward);
 								F[edgeID] = c;
 							}
-							
+
 							forest.cut(u);
 							parentEdge[u].edgeID = -1;
 						}
@@ -800,9 +800,9 @@ public:
 					}
 				}
 			}
-			
+
 		}
-		
+
 		return f;
 	}
 	long num_updates = 0;
@@ -823,9 +823,9 @@ public:
 		}
 		changed_edges.clear();
 	}
-	
+
 private:
-	
+
 	void markChanged(int edgeID) {
 		if (!changed[edgeID]) {
 			changed[edgeID] = true;
@@ -853,7 +853,7 @@ public:
 			fprintf(g.outfile, "f %d %d\n", s, t);
 			fflush(g.outfile);
 		}
-		
+
 		if (last_modification > 0 && g.modifications == last_modification) {
 			return curflow;
 		}
@@ -870,17 +870,17 @@ public:
 			forest.addNode();
 		pos.clear();
 		pos.resize(g.nodes());
-		
+
 		parentEdge.clear();
 		parentEdge.resize(g.nodes(), { false, -1 });
-		
+
 		while (buildLevelGraph(s, t)) {
 			stats_rounds++;
 
 			dbg_print_graph(s, t);
 			for (int i = 0; i < pos.size(); i++)
 				pos[i] = 0;
-			
+
 			for (int i = 0; i < parentEdge.size(); i++) {
 				parentEdge[i]= {false,-1};
 			}
@@ -895,26 +895,26 @@ public:
 			dbg_print_graph(s, t);
 
 		}
-		
+
 #ifdef DEBUG_MAXFLOW
 		Weight expected_flow = ek.maxFlow(s,t);
 #endif
-		
+
 #ifdef DEBUG_MAXFLOW
 		assert(f==expected_flow);
 #endif
-		
+
 		curflow = f;
 		num_updates++;
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
 		return f;
 	}
-	
+
 	std::vector<bool> seen;
 	std::vector<bool> visited;
 	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
@@ -934,7 +934,7 @@ public:
 		//explore the residual graph
 		for (int j = 0; j < Q.size(); j++) {
 			int u = Q[j];
-			
+
 			for (int i = 0; i < g.nIncident(u); i++) {
 				if (!g.edgeEnabled(g.incident(u, i).id))
 					continue;
@@ -953,7 +953,7 @@ public:
 				int v = g.incoming(u, i).node;
 				int id = g.incoming(u, i).id;
 				if (F[id] == 0) {
-					
+
 				} else if (!seen[v]) {
 					Q.push_back(v);
 					seen[v] = true;
@@ -968,7 +968,7 @@ public:
 			}
 		}
 		cut.resize(j);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;

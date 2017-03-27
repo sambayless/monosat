@@ -31,15 +31,18 @@
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
 #include <limits>
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 //#define DEBUG_MAXFLOW2
 #endif
 namespace dgl {
 template<typename Weight>
 class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	Weight f = 0;
+	Weight static_maxflow=-1;//the maximum possible flow in the graph.
+	Weight source_max = 0;
+	Weight dest_max = 0;
 	DynamicGraph<Weight>& g;
-
+	DynamicGraph<Weight> * flow_graph=nullptr;//optional graph that can be used to record the edges in the actual flow
 	/**
 	 * Note: The Kohli Torr implementation does _not_ support multiple edges between the same nodes.
 	 */
@@ -50,7 +53,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 		bool backward = false;
 		LocalEdge(int from = -1, int id = -1, bool backward = false) :
 				from(from), id(id), backward(backward) {
-			
+
 		}
 	};
 	int source = -1;
@@ -85,7 +88,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	static const auto KT_SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE;
 	static const auto KT_SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK;
 
-	
+
 	Weight max_capacity = 1; //start this at 1, not 0
 	Weight sum_of_edge_capacities=0;
 	std::vector<Weight> local_weights;
@@ -93,6 +96,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	std::vector<int> changed_edges;
 	std::vector<int> changed_partition;
 	bool flow_needs_recalc = true;
+	bool needs_recompute = true;
 	int alg_id;
 
 	inline typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id  getArc(int edgeID){
@@ -101,11 +105,11 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 		return kt->get_arc( arc_map[edgeID]);
 	}
 
-	 std::vector<int>::iterator  getArcEdges(int arcID){
+	std::vector<int>::iterator  getArcEdges(int arcID){
 		assert(arcID<edge_map_ind.size());
 		return edge_map.begin() + edge_map_ind[arcID].first;
 	}
-	 std::vector<int>::iterator  getArcEdgesEnd(int arcID){
+	std::vector<int>::iterator  getArcEdgesEnd(int arcID){
 		assert(arcID<edge_map_ind.size());
 		return edge_map.begin() + edge_map_ind[arcID].second;
 	}
@@ -124,26 +128,44 @@ public:
 		last_modification = -1;
 		last_deletion = -1;
 		last_addition = -1;
-		
+		needs_recompute=true;
 		history_qhead = 0;
 		last_history_clear = -1;
-        if(source==sink){
-            if (source == 0)
-                this->sink = 1; //but what if the graph has only 1 node...?
-            else
-                this->sink =0;
+		if(source==sink){
+			if (source == 0)
+				this->sink = 1; //but what if the graph has only 1 node...?
+			else
+				this->sink =0;
 
-            same_source_sink=true;
-        }
+			same_source_sink=true;
+		}
 		alg_id=g.addDynamicAlgorithm(this);
 
 	}
-	
+
 	int getSource() const {
 		return source;
 	}
 	int getSink() const {
 		return sink;
+	}
+
+	DynamicGraph<Weight> * getFlowGraph() override{
+		if(!flow_graph){
+			flow_graph = new DynamicGraph<Weight>();
+			while(flow_graph->nodes()<g.nodes()){
+				flow_graph->addNode();
+			}
+			while(flow_graph->edges()<g.edges()){
+				int edgeID = flow_graph->edges();
+				int f = g.getEdge(edgeID).from;
+				int t = g.getEdge(edgeID).to;
+				flow_graph->addEdge(f,t,edgeID,0);
+				flow_graph->disableEdge(edgeID);
+			}
+		}
+
+		return flow_graph;
 	}
 
 	void updateMaxCapacity(Weight new_max_capacity){
@@ -208,9 +230,8 @@ public:
 			same_source_sink = true;
 			return;
 		}
-
 		if (kt) {
-			
+
 			if (dynamic) {
 				Weight curweight = kt->getTweight(source);
 				Weight newWeight = curweight-max_capacity;
@@ -221,7 +242,7 @@ public:
 				}
 				//if(!backward_maxflow){
 				curweight = kt->getTweight(s);
-			    newWeight = curweight+max_capacity;
+				newWeight = curweight+max_capacity;
 				if(newWeight>=0){
 					kt->edit_tweights(s, newWeight, 0);
 				}else{
@@ -249,11 +270,42 @@ public:
 				}
 			}
 		}
+		needs_recompute=true;
 		source = s;
 		last_modification = g.modifications - 1;
 		flow_needs_recalc = true;
+		updateSourceSink();
 	}
-	
+	void updateSourceSink(){
+		static_maxflow=-1;
+		if(source!=sink) {
+			source_max = 0;
+			for (int i = 0; i < g.nIncident(getSource()); i++){
+				int edgeID = g.incident(getSource(),i).id;
+				int t =  g.incident(getSource(),i).node;
+				if(t!=getSource()){
+					Weight w = g.getWeight(edgeID);
+					assert(w>=0);
+					source_max+=w;
+				}
+			}
+			dest_max = 0;
+			for (int i = 0; i < g.nIncoming(getSink()); i++){
+				int edgeID = g.incoming(getSink(),i).id;
+				int t =  g.incoming(getSink(),i).node;
+				if(t!=getSink()){
+					Weight w = g.getWeight(edgeID);
+					assert(w>=0);
+					dest_max+=w;
+				}
+			}
+			if(source_max<dest_max){
+				static_maxflow=source_max;
+			}else{
+				static_maxflow=dest_max;
+			}
+		}
+	}
 	void setSink(int t) {
 		same_source_sink=false;
 		assert(source!=sink);
@@ -300,15 +352,17 @@ public:
 			}
 		}
 		sink = t;
+		needs_recompute=true;
 		last_modification = std::min(last_modification, g.modifications - 1);
 		flow_needs_recalc = true;
+		updateSourceSink();
 	}
-	
+
 	void setCapacity(int u, int w, Weight c) {
-		
+
 	}
 	void setAllEdgeCapacities(Weight c) {
-		
+
 	}
 	long num_updates = 0;
 	int numUpdates() const {
@@ -324,6 +378,7 @@ public:
 		if(same_source_sink)
 			return;
 		stats_inits++;
+		needs_recompute=true;
 		clearChangedEdges();
 		edge_enabled.clear();
 		flow_needs_recalc = true;
@@ -357,7 +412,6 @@ public:
 		edge_map.clear();//.resize(kt->get_arc_num());
 		for(int i = 0;i<tmp_edge_map.size();i++)
 			tmp_edge_map[i].clear();
-
 
 
 		tmp_edges.clear();
@@ -436,7 +490,7 @@ public:
 				edge_map_ind[arc_id]={first_ind,last_ind};
 
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 				for(int edgeID:tmp_edge_map[i]){
 					int arcID=arc_map[edgeID];
 					assert(arcID==arc_id);
@@ -460,15 +514,15 @@ public:
 				tmp_edges[to]=-1;
 			}
 
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 			for(int i = 0;i<tmp_edges.size();i++)
 				assert(tmp_edges[i]==-1);
 #endif
 
 		}
 
-#ifndef NDEBUG
-				for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+#ifdef DEBUG_DGL
+		for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
 					if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
 							continue;
 					int arcID = arc_map[edgeID];
@@ -483,57 +537,58 @@ public:
 					}
 					assert(found);
 				}
-	#endif
+#endif
 
-				for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
-					if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
-							continue;
-					assert(arc_map[edgeID]>-1);
-					if (g.edgeEnabled(edgeID)) {
-						int from = g.getEdge(edgeID).from;
-						int to = g.getEdge(edgeID).to;
-						edge_enabled[edgeID] = true;
-						set_local_weight(edgeID,g.getWeight(edgeID));
-						kt->edit_edge_inc(from, to, g.getWeight(edgeID), 0,getArc(edgeID));
-					}else{
-						set_local_weight(edgeID,0);
-					}
-				}
-				int s = source;
-					int t = sink;
-				if(source!=sink){
-					assert(max_capacity>=0);
-					if(max_capacity<1){
-						max_capacity=1;//if max capacity is 0, then kt allows the cut to be between the actual kt source and s, which can lead to incorrect results here.
-					}
-					if (dynamic) {
-						//if(!backward_maxflow){
-						kt->edit_tweights(s, max_capacity, 0);
-						kt->edit_tweights(t, 0, max_capacity);
-					/*	}else{
-						 kt->edit_tweights(t,max_capacity,0);
-						 kt->edit_tweights(s,0,max_capacity);
-						 }*/
-					} else {
-						//if(!backward_maxflow){
-						kt->edit_tweights_wt(s, max_capacity, 0);
-						kt->edit_tweights_wt(t, 0, max_capacity);
+		for (int edgeID = 0; edgeID < g.edges(); edgeID++) {
+			if (!g.hasEdge(edgeID) || g.selfLoop(edgeID))
+				continue;
+			assert(arc_map[edgeID]>-1);
+			if (g.edgeEnabled(edgeID)) {
+				int from = g.getEdge(edgeID).from;
+				int to = g.getEdge(edgeID).to;
+				edge_enabled[edgeID] = true;
+				set_local_weight(edgeID,g.getWeight(edgeID));
+				kt->edit_edge_inc(from, to, g.getWeight(edgeID), 0,getArc(edgeID));
+			}else{
+				set_local_weight(edgeID,0);
+			}
+		}
+		int s = source;
+		int t = sink;
+		if(source!=sink){
+			assert(max_capacity>=0);
+			if(max_capacity<1){
+				max_capacity=1;//if max capacity is 0, then kt allows the cut to be between the actual kt source and s, which can lead to incorrect results here.
+			}
+			if (dynamic) {
+				//if(!backward_maxflow){
+				kt->edit_tweights(s, max_capacity, 0);
+				kt->edit_tweights(t, 0, max_capacity);
+				/*	}else{
+                     kt->edit_tweights(t,max_capacity,0);
+                     kt->edit_tweights(s,0,max_capacity);
+                     }*/
+			} else {
+				//if(!backward_maxflow){
+				kt->edit_tweights_wt(s, max_capacity, 0);
+				kt->edit_tweights_wt(t, 0, max_capacity);
 				/*			}else{
 						 kt->edit_tweights_wt(t,max_capacity,0);
 						 kt->edit_tweights_wt(s,0,max_capacity);
 						 }*/
-					}
-				}
+			}
+		}
+		updateSourceSink();
 	}
 
 	const Weight update() {
 		int s = source;
 		int t = sink;
-		if(same_source_sink)
+		if (same_source_sink)
 			return INF;
 		//see http://cstheory.stackexchange.com/a/10186
 		static int it = 0;
-		if (++it == 95) {
+		if (++it == 89) {
 			int a = 1;
 		}
 
@@ -542,82 +597,128 @@ public:
 			fflush(g.outfile);
 		}
 
-
 		//C.resize(g.nodes());
-
+		bool any_changed=false;
 		if (last_modification > 0 && g.modifications == last_modification) {
 #ifdef DEBUG_MAXFLOW2
 			EdmondsKarpDynamic<Weight> ek(g,source,sink);
-			Weight expected_flow =ek.maxFlow(source,sink);
-			assert(curflow==expected_flow);
-			bassert(curflow == expected_flow);
+            Weight expected_flow =ek.maxFlow(source,sink);
+            assert(curflow==expected_flow);
+            bassert(curflow == expected_flow);
 #endif
 			return curflow;
 		} else if (!kt || last_modification <= 0 || kt->get_node_num() != g.nodes()
-				|| edge_enabled.size() != g.edges()) {
+				   || edge_enabled.size() != g.edges()) {
 			initKT();
-		} else if (g.historyclears != last_history_clear || g.changed()) {
+		} else if(! g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize() ){
+			//no information was lost in the history clear
+			history_qhead = 0;
+			last_history_clear = g.historyclears;
+		}else if (g.historyclears != last_history_clear || g.changed()) {
 			stats_reinits++;
-			flow_needs_recalc = true;
+
 			for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 				if (!g.hasEdge(edgeid) || g.selfLoop(edgeid))
 					continue;
+				int from = g.getEdge(edgeid).from;
+				int to = g.getEdge(edgeid).to;
 				if (g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
+
+
+
 					assert(local_weight(edgeid)==0);
 					edge_enabled[edgeid] = true;
 					set_local_weight(edgeid,g.getWeight(edgeid));
 
 					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
+					if(curflow<static_maxflow) {
 
+						needs_recompute=true;
+					}
 				}else if (g.edgeEnabled(edgeid) && edge_enabled[edgeid] && g.getWeight(edgeid) != local_weight(edgeid)){
 					Weight dif =g.getWeight(edgeid)- local_weight(edgeid);
+					typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id   arcID = getArc(edgeid);
 
+					if(dif <0 && kt->get_flow(arcID)>0) {
+						flow_needs_recalc = true;
+						needs_recompute=true;
+					}
 					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0,getArc(edgeid));
 					set_local_weight(edgeid, g.getWeight(edgeid));
+					if (dif >0 && curflow<static_maxflow){
+
+						needs_recompute=true;
+					}
 				}else if (!g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
+					typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id   arcID = getArc(edgeid);
 					assert(edge_enabled[edgeid]);
 					edge_enabled[edgeid] = false;
-					//if(!backward_maxflow){
+					if(kt->get_flow(arcID)>0){
+
+						needs_recompute=true;
+					}
 					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,getArc(edgeid));
 					set_local_weight(edgeid,0);
-					/*	}else{
-					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-g.getWeight(edgeID),0);
-					 }*/
+
 				}
 			}
 			history_qhead = g.historySize();
 		}
-		flow_needs_recalc = true;
+
 		assert(kt);
-		
+
 		for (int i = history_qhead; i < g.historySize(); i++) {
 			int edgeid = g.getChange(i).id;
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
 			if (g.selfLoop(edgeid))
 				continue; //skip self loops
 			if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
-				
+
+
 				assert(local_weight(edgeid)==0);
 				edge_enabled[edgeid] = true;
 				set_local_weight(edgeid,g.getWeight(edgeid));
-				//if(!backward_maxflow){
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
 
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
+				if(curflow<static_maxflow) {
+
+					needs_recompute=true;
+				}
 			}else if ((g.getChange(i).weight_increase || g.getChange(i).weight_decrease) && g.edgeEnabled(edgeid) && edge_enabled[edgeid] && g.getWeight(edgeid) != local_weight(edgeid)){
+				typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id   arcID = getArc(edgeid);
 				Weight dif = g.getWeight(edgeid)-local_weight(edgeid);
+
+				if(dif <0 && kt->get_flow(arcID)>0) {
+
+					needs_recompute=true;
+				}
 				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0,getArc(edgeid));
 				set_local_weight(edgeid, g.getWeight(edgeid));
-			}else if (g.getChange(i).deletion && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
+				if (dif >0 && curflow<static_maxflow){
+
+					needs_recompute=true;
+				}
+			}else if (g.getChange(i).deletion && !g.edgeEnabled(edgeid) && edge_enabled[edgeid] ) {
+				typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id   arcID = getArc(edgeid);
 				assert(edge_enabled[edgeid]);
 				edge_enabled[edgeid] = false;
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,getArc(edgeid));
+
+				if(kt->get_flow(arcID)>0){
+
+					needs_recompute=true;
+				}
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,arcID);
 				set_local_weight(edgeid,0);
 			}
 		}
 		if(sum_of_edge_capacities>max_capacity){
 			updateMaxCapacity(sum_of_edge_capacities);
 		}
-		f = kt->maxflow(dynamic);
-		
+		if(needs_recompute) {
+			f = kt->maxflow(dynamic);
+			needs_recompute=false;
+		}
 #ifdef DEBUG_MAXFLOW2
 		EdmondsKarpDynamic<Weight> ek(g,source,sink);
 		Weight expected_flow =ek.maxFlow(source,sink);
@@ -625,14 +726,14 @@ public:
 #endif
 		//dbg_print_graph(s,t,true);
 		//g.drawFull(true);
-#ifndef NDEBUG
-		
+#ifdef DEBUG_DGL
+
 		for (int i = 0; i < g.edges(); i++) {
 			if (g.getEdge(i).from == g.getEdge(i).to)
 				continue; //skip self edges.
 			assert(edge_enabled[i] == g.edgeEnabled(i));
 		}
-		
+
 #endif
 
 		dbg_check_flow(s, t);
@@ -641,13 +742,18 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
+
+		if(flow_graph){
+			getChangedEdges();//keep the flow graph up to date, if it is defined
+		}
+
 		return f;
 	}
-	
+
 	std::vector<int> & getChangedEdges()override {
 		calc_flow();
 		while (kt->changed_edges.size()) {
@@ -657,13 +763,23 @@ public:
 			for (auto  it = getArcEdges(arc);it!=getArcEdgesEnd(arc);++it){
 				int edgeID = *it;
 				assert(arc_map[edgeID]==arc);
-			//for (int edgeID =  : edge_map[arc]) {
+				//for (int edgeID =  : edge_map[arc]) {
 				changed_edges.push_back(edgeID);
+				if(flow_graph) {
+					Weight f = getEdgeFlow(edgeID);
+					if(f>0) {
+						flow_graph->enableEdge(edgeID);
+						flow_graph->setEdgeWeight(edgeID, f);
+					}else{
+						flow_graph->disableEdge(edgeID);
+						flow_graph->setEdgeWeight(edgeID, 0);
+					}
+				}
 			}
 		}
 		return changed_edges;
 	}
-	
+
 	void clearChangedEdges() override{
 		changed_edges.clear();
 	}
@@ -689,12 +805,49 @@ private:
 		return local_weights[edgeid];
 	}
 	inline void set_local_weight(int edgeid, Weight  w){
-		sum_of_edge_capacities-=local_weights[edgeid];
-		local_weights[edgeid]=w;
+		flow_needs_recalc = true;
+		Weight dif = w-local_weight(edgeid);
+		if(dif!=0) {
+			sum_of_edge_capacities -= local_weights[edgeid];
+			local_weights[edgeid] = w;
 
-		sum_of_edge_capacities+=w;
-		if(sum_of_edge_capacities<0){//this is a total hack... how should overflows be dealt with, properly, here?
-			sum_of_edge_capacities=std::numeric_limits<Weight>::max()/2;
+			sum_of_edge_capacities += w;
+			if (sum_of_edge_capacities <
+				0) {//this is a total hack... how should overflows be dealt with, properly, here?
+				sum_of_edge_capacities = std::numeric_limits<Weight>::max() / 2;
+			}
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
+			if(from!=to) {
+				if (from == getSource()) {
+					source_max += dif;
+					if (source_max < dest_max) {
+						if (static_maxflow != source_max) {
+							static_maxflow = source_max;
+							//needs_recompute = true;
+						}
+					} else {
+						if (static_maxflow != dest_max) {
+							static_maxflow = dest_max;
+							//needs_recompute = true;
+						}
+					}
+
+				} else if (to == getSink()) {
+					dest_max += dif;
+					if (source_max < dest_max) {
+						if (static_maxflow != source_max) {
+							static_maxflow = source_max;
+							//needs_recompute = true;
+						}
+					} else {
+						if (static_maxflow != dest_max) {
+							static_maxflow = dest_max;
+							//needs_recompute = true;
+						}
+					}
+				}
+			}
 		}
 	}
 /*	inline void collect_multi_edges(int for_edge) {
@@ -711,9 +864,9 @@ private:
 			}
 		}
 	}*/
-	
+
 	void dbg_print_graph(int from, int to, bool only_flow = false) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 
 		if (edge_enabled.size() < g.edges())
 			return;
@@ -773,17 +926,17 @@ private:
 #endif
 	}
 	void bassert(bool c) {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		assert(c);
 		if (!c) {
 			throw std::logic_error("Assertion Fail!");
 		}
 #endif
 	}
-	
+
 
 	void dbg_check_flow(int s, int t) {
-#ifndef NDEBUG
+/*#ifdef DEBUG_DGL
 		//check that the flow is legal
 		for (int i = 0; i < g.edges(); i++) {
 			Weight flow = getEdgeFlow(i);
@@ -819,69 +972,67 @@ private:
 				bassert(excess==f);
 				//bassert(flow_in == 0);//this doesn't have to be the case - their can be spurious flow loops...
 				//bassert(flow_out == f);
-				/*}else{
+				*//*}else{
 				 bassert(flow_in==0);
 				 bassert(flow_out==f);
-				 }*/
+				 }*//*
 			} else if (n == t) {
 				//if(!backward_maxflow){
 				Weight excess = flow_in-flow_out;
 				bassert(excess==f);
 				//bassert(flow_out == 0);
 				//bassert(flow_in == f);
-				/*}else{
+				*//*}else{
 				 bassert(flow_out==0);
 				 bassert(flow_in==f);
-				 }*/
+				 }*//*
 			} else {
 				bassert(flow_in == flow_out);
 			}
-			
+
 		}
 
-#endif
+#endif*/
 	}
-	
+
 	std::vector<bool> seen;
 	std::vector<bool> visited;
 
 	inline void calc_flow() {
 		if(same_source_sink)
 			return;
+
+		if(needs_recompute){
+			update();
+		}
 		if (!flow_needs_recalc)
 			return;
 		if(!kt){
 			update();
 		}
 		//double startflowtime = Monosat::rtime(0);
-		flow_needs_recalc = false;
+
 		stats_flow_calcs++;
 
-		//apply edmonds karp to the current flow.
+
 		Weight maxflow = kt->maxflow(true, nullptr);
-		//double startcalctime = Monosat::rtime(2);
-		//if(backward_maxflow){
-		
-		/*kt->clear_t_edges(sink,source);
-
-		 dbg_check_flow(source,sink);*/
-		/*}else{*/
-
+		needs_recompute=false;
+		flow_needs_recalc = false;
 		kt->clear_t_edges(source, sink);
-		
+
 		dbg_check_flow(source, sink);
 		//}
-		
+
 		assert(kt->maxflow(true, nullptr) == maxflow);
 		//stats_calc_time+=  Monosat::rtime(0)-startcalctime;
 		//stats_flow_time+=  startcalctime-startflowtime;
 		//printf("flow calc time %f %f\n", stats_flow_time,stats_calc_time);
 	}
-	
+
 	std::vector<int> Q;
 
 public:
-	
+
 	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
 		if(same_source_sink)
 			return INF;
@@ -896,13 +1047,13 @@ public:
 		}
 
 		cut.clear();
-		dbg_print_graph(s, t);
+		//dbg_print_graph(s, t);
 		/*   	if(f==0)
 		 return 0;*/
 
 		auto SOURCE = kohli_torr::Graph<Weight, Weight, Weight>::SOURCE; // backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SINK : kohli_torr::Graph<Weight,Weight,Weight>::SOURCE;
 		auto SINK = kohli_torr::Graph<Weight, Weight, Weight>::SINK; //backward_maxflow? kohli_torr::Graph<Weight,Weight,Weight>::SOURCE :  kohli_torr::Graph<Weight,Weight,Weight>::SINK;
-		
+
 		//KT allows for all the nodes to be source or sink, if the cut is placed at the final source->'outer source' or 'outer sink' -> sink edge.
 		//Ideally, this shouldn't happen here, because those should have infinite weight edges.
 		if (kt->what_segment(s, SOURCE) == SINK) {
@@ -910,7 +1061,7 @@ public:
 		} else if (kt->what_segment(t, SOURCE) == SOURCE) {
 			throw std::logic_error("Error in mincut analysis");
 		}
-		
+
 		for (int n = 0; n < g.nodes(); n++) {
 			auto t = kt->what_segment(n, SINK);
 			if (t == SINK) {
@@ -929,9 +1080,9 @@ public:
 				}
 			}
 		}
-		
+
 		//kohli-torr is unusual in that it maintains the _mincut_, explicitly.
-		
+
 		/*calc_flow();
 		 cut.clear();
 		 Q.clear();
@@ -978,7 +1129,7 @@ public:
 		 }
 		 cut.resize(j);
 		 */
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight dbg_sum = 0;
 		for (int i = 0; i < cut.size(); i++) {
 			int id = cut[i].id;
@@ -987,14 +1138,14 @@ public:
 		}
 		bassert(dbg_sum == f);
 #endif
-		
+
 		return f;
 	}
 	const Weight getEdgeCapacity(int id) {
 		assert(g.edgeEnabled(id));
 		return local_weight(id);
 	}
-	
+
 public:
 	const bool inSourcePartition(int node){
 		if(same_source_sink)
@@ -1051,7 +1202,7 @@ public:
 			int edgeid = *it;
 			assert(g.getEdge(edgeid).from == g.getEdge(flow_edge).from);
 			assert(g.getEdge(edgeid).to == g.getEdge(flow_edge).to);
-			
+
 			if (g.edgeEnabled(edgeid)) {
 				assert(arc_map[edgeid] == arc_id);
 				//assert(local_weight(edgeid)==g.getWeight(edgeid)); //these might not be in sync, if this is called during backtracking.
@@ -1073,7 +1224,7 @@ public:
 				}
 			}
 		}
-		
+
 		return 0;
 	}
 	const Weight getEdgeResidualCapacity(int id) {

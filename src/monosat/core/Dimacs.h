@@ -62,6 +62,10 @@ public:
 		return dimacsParser->mapVar(S,v);
 	}
 
+	Lit mapLit(Solver & S, Lit l){
+		Var m = mapVar(S,var(l));
+		return mkLit(m,sign(l));
+	}
 	void setDimacs(DimacsMap * dimacs){
 		this->dimacsParser=dimacs;
 	}
@@ -222,6 +226,9 @@ private:
 			char * ln = (char*) line; //intentionally discard const qualifier
 			try{
 				if (p->parseLine(ln, S)) {
+					if(opt_parser_immediate_mode){
+						p->implementConstraints(S);
+					}
 					return true;
 				}
 			}catch(const parse_error& e){
@@ -310,6 +317,12 @@ private:
 				}
 				solves++;
 				solve=true;
+			}else if (match(b,"priority")) {
+				int parsed_int = parseInt(b);
+				int var = abs(parsed_int)-1;
+				var = mapVar(S,var);
+				int priority = parseInt(b);
+				S.setDecisionPriority(var, priority);
 			}else if (match(b,"clear_opt")) {
 				objectives.clear();
 			}else if (match(b,"minimize bv")){

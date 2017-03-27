@@ -327,6 +327,7 @@ void AllPairsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 	} else {
 		assert(false);
 	}
+	outer->toSolver(reason);
 }
 template<typename Weight>
 bool AllPairsDetector<Weight>::propagate(vec<Lit> & conflict) {
@@ -388,7 +389,7 @@ bool AllPairsDetector<Weight>::propagate(vec<Lit> & conflict) {
 			if(S->dbg_solver)
 			S->dbg_check(conflict);
 #endif
-			
+			outer->toSolver(conflict);
 			return false;
 		} else {
 			int a = 1;
@@ -482,7 +483,7 @@ bool AllPairsDetector<Weight>::checkSatisfied() {
 	return true;
 }
 template<typename Weight>
-Lit AllPairsDetector<Weight>::decide() {
+Lit AllPairsDetector<Weight>::decide(CRef &decision_reason) {
 	
 	//AllPairs * over = (FloydWarshall<AllPairsDetector<Weight>::ReachStatus>*) negative_reach_detector;
 	

@@ -32,17 +32,17 @@ namespace dgl {
 template<typename Weight>
 class Distance: public Reach {
 public:
-	
+
 	struct NullStatus {
 		void setReachable(int u, bool reachable) {
-			
+
 		}
 		bool isReachable(int u) const {
 			return false;
 		}
-		
+
 		void setMininumDistance(int u, bool reachable, Weight distance) {
-			
+
 		}
 	};
 	static NullStatus nullStatus;
@@ -55,7 +55,7 @@ public:
 	virtual void setSource(int s)=0;
 	virtual int getSource()=0;
 	//virtual addSource(int s)=0;
-	
+
 	virtual void update()=0;
 
 	virtual bool connected_unsafe(int t)=0;
@@ -73,8 +73,9 @@ public:
 	virtual int incomingEdge(int node)=0;
 	//The maximum distance to compute up to.
 	virtual void setMaxDistance(Weight & maxDistance) {
-		
+
 	}
+
 };
 template<typename Weight>
 typename Distance<Weight>::NullStatus Distance<Weight>::nullStatus;

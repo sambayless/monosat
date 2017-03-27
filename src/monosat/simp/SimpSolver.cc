@@ -110,7 +110,7 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 	lbool result = l_True;
 	clearInterrupt();
 	cancelUntil(0);
-	do_simp &= ok && use_simplification;
+	do_simp &=ok && use_simplification;
 	if (do_simp) {
 		if(pbsolver){
 			pbsolver->convert();
@@ -149,7 +149,7 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 }
 
 bool SimpSolver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
-#ifndef NDEBUG
+#ifdef DEBUG_CORE
 	for (int i = 0; i < ps.size(); i++)
 		assert(!isEliminated(var(ps[i])));
 #endif

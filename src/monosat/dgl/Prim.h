@@ -33,7 +33,7 @@ namespace dgl {
 template<class Status, typename Weight = int>
 class Prim: public MinimumSpanningTree<Weight> {
 public:
-	
+
 	DynamicGraph<Weight> & g;
 
 	Status & status;
@@ -75,13 +75,13 @@ public:
 		}
 	};
 	//bool hasComponents;
-	Heap<VertLt> Q;
+	alg::Heap<VertLt> Q;
 
 	std::vector<int> mst;
 	std::vector<int> prev;
 
 public:
-	
+
 	int stats_full_updates;
 	int stats_fast_updates;
 	int stats_fast_failed_updates;
@@ -95,8 +95,8 @@ public:
 
 	Prim(DynamicGraph<Weight> & graph,  Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
-					0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), Q(VertLt(keys)) {
-		
+			0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), Q(VertLt(keys)) {
+
 		mod_percentage = 0.2;
 		stats_full_updates = 0;
 		stats_fast_updates = 0;
@@ -109,7 +109,7 @@ public:
 		min_weight = -1;
 		numsets = 0;
 	}
-	
+
 	void setNodes(int n) {
 		q.reserve(n);
 		check.reserve(n);
@@ -143,25 +143,25 @@ public:
 		}
 		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
 			INF = 1;	//g.nodes()+1;
-					
+
 			for (auto & w : g.getWeights())
 				INF += w;
 		}
 		stats_full_updates++;
-		
+
 		if (last_deletion == g.deletions) {
 			stats_num_skipable_deletions++;
 		}
-		
+
 		setNodes(g.nodes());
-		
+
 		min_weight = 0;
-		
+
 		mst.clear();
-		
+
 		in_tree.clear();
 		in_tree.resize(g.edges());
-		
+
 		for (int i = 0; i < g.nodes(); i++) {
 			parents[i] = -1;
 			parent_edges[i] = -1;	//not really needed
@@ -207,14 +207,14 @@ public:
 							parents[v] = u;
 							parent_edges[v] = edgeid;
 							keys[v] = w;
-							
+
 							Q.update(v);
 						}
 					}
 				}
 			}
 		}
-		
+
 		/*		for(int i = 0;i<g.nodes();i++){
 		 if(parents[i] ==-1) {
 		 numsets++;
@@ -239,10 +239,10 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
-		
+
 		;
 	}
 	std::vector<int> & getSpanningTree() {
@@ -260,10 +260,10 @@ public:
 			return -1;
 	}
 	bool dbg_mst() {
-		
+
 		return true;
 	}
-	
+
 	bool edgeInTree(int edgeid) {
 		update();
 		//int u = g.all_edges[edgeid].from;
@@ -293,25 +293,25 @@ public:
 		 assert(getParent(0)==-1);//because we always build the tree from 0
 		 return 0;*/
 	}
-	
+
 	Weight& weight() {
 		update();
-		
+
 		assert(dbg_uptodate());
 		if (numsets > 1) {
 			return INF;
 		}
 		return min_weight;
 	}
-	
+
 	Weight& forestWeight() {
 		update();
 		assert(dbg_uptodate());
 		return min_weight;
 	}
-	
+
 	bool dbg_uptodate() {
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Weight sumweight = 0;
 		in_tree.resize(g.nEdgeIDs());
 		for (int i = 0; i < g.edges(); i++) {
@@ -320,7 +320,7 @@ public:
 			}
 		}
 		assert(sumweight == min_weight || min_weight == INF);
-		
+
 #endif
 		return true;
 	}

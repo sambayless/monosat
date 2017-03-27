@@ -63,6 +63,8 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <sstream>
+#include <string>
+#include <monosat/amo/AMOTheory.h>
 
 using namespace dgl;
 namespace Monosat {
@@ -78,8 +80,9 @@ private:
 	Solver * S;
 	int local_q = 0;
 	bool lazy_backtracking_enabled=false;
+	vec<Theory*> propagation_required_theories;
 public:
-
+	int n_satisfied_detectors=0;
 	bool all_edges_unit = true;
 	bool all_edges_positive=true;
 	bool has_any_bitvector_edges=false;
@@ -121,6 +124,7 @@ public:
 		};
 	vec<MaxflowConstraintBV> unimplemented_maxflow_constraints_bv;
 
+	CRef graph_decision_reason = CRef_Undef;
 
 	DynamicGraph<Weight> g_under;
 	DynamicGraph<Weight> g_over;
@@ -162,9 +166,10 @@ public:
 
 	//typedef BVTheorySolver<Weight,ComparisonStatus>::BitVector BitVector;
 	//if bitvectors weights are supplied, then this manages the resulting weights.
-	BVTheorySolver<Weight> * comparator=nullptr;
+	BVTheorySolver<Weight> * bvTheory=nullptr;
 
-
+	vec<const char*> node_symbols;
+	vec<const char*> edge_symbols;
 
 	struct Trail{
 		//Lit l=lit_Undef;
@@ -341,6 +346,9 @@ public:
 		//dbg_check_trails();
 		int lev =trail[v].level;
 		if(lev>=0 || lev==-2){
+			while(bvtrail.size() && bvtrail.last().graphAssign==v){
+				bvtrail.pop();
+			}
 
 			Var prev = trail[v].prev_var;
 			Var next = trail[v].next_var;
@@ -381,6 +389,9 @@ public:
 	}
 	//Returns true if the trail at this level is now empty.
 	inline bool _removeFromTrail(Var v, int lev){
+			while(bvtrail.size() && bvtrail.last().graphAssign==v){
+				bvtrail.pop();
+			}
 
 			assert(lev>=0);
 			Var prev = trail[v].prev_var;
@@ -409,8 +420,8 @@ public:
 			return false;
 		}
 	void dbg_check_trail(int lev){
-#ifndef NDEBUG
-		/*static vec<bool> seen;
+#ifdef DEBUG_GRAPH
+		static vec<bool> seen;
 		seen.clear();
 		seen.growTo(vars.size());
 		if(lev>=0){
@@ -453,13 +464,25 @@ public:
 					v=trail[v].next_var;
 				}
 			}
-		}*/
+		}
 #endif
 	}
 
 	void dbg_check_trails(){
-#ifndef NDEBUG
-		/*dbg_check_trail(-2);//lazy trail
+/*#ifdef DEBUG_GRAPH
+
+		int last_pos=-1;
+		for(int i = 0;i<bvtrail.size();i++){
+			Var v = bvtrail[i].graphAssign;
+			int bvpos = bvtrail[i].bvTrail;
+			if(v!=var_Undef)
+				assert(value(v)!=l_Undef);
+			assert(bvpos>=last_pos);
+			last_pos=bvpos;
+			assert(bvpos<bvTheory->trail.size());
+		}
+
+		dbg_check_trail(-2);//lazy trail
 		for(int l = 0;l<decisions.size();l++){
 			dbg_check_trail(l);
 		}
@@ -472,8 +495,8 @@ public:
 				assert(opt_lazy_backtrack && supportsLazyBacktracking());
 				assert(lazy_trail_head!=var_Undef);
 			}
-		}*/
-#endif
+		}
+#endif*/
 	}
 
 	//vec<Assignment> trail;
@@ -496,6 +519,7 @@ public:
 	vec<ReachInfo> connect_info;
 public:
 	vec<Theory*> theories;
+	vec<bool> satisfied_detectors;
 	vec<Detector*> detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
@@ -506,8 +530,9 @@ public:
 	vec<SteinerDetector<Weight>*> steiner_detectors;
 
 	struct MarkerEntry{
-		int id;
-		bool forTheory;
+		int id=-1;
+		bool forTheory=false;
+        bool forHeuristic=false;
 	};
 	vec<MarkerEntry> marker_map;
 
@@ -536,13 +561,14 @@ public:
 	vec<vec<int> > comparisons_leq;
 	vec<vec<int> > comparisons_geq;
 
-/*
-	struct BVInfo{
-		int edgeID;
-	};
-*/
 
-	vec<int> edge_bitvectors;
+	struct BVInfo{
+		int edgeID=-1;
+		int detectorID=-1;
+	};
+
+
+	vec<BVInfo> bitvector_data;
 /*
 	vec<bool> bv_needs_update;
 	vec<int> bvs_to_update;
@@ -551,7 +577,7 @@ public:
 	bool requiresPropagation = true;
 	//int n_decisions = 0;
 	//vec<int> var_decision_pos;
-
+	int n_theory_solves=0;
 	vec<char> seen;
 	vec<int> to_visit;
 
@@ -560,16 +586,27 @@ public:
 	struct VarData {
 		int isEdge :1;
 		int isBV:1;
-		int isTheoryVar;
-		int occursPositive :1;
-		int occursNegative :1;
-		int detector_edge :27;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int isTheoryVar:1;
+		int isSatisfied:1;
+		//int occursPositive :1;
+		//int occursNegative :1;
+		int detector_edge :26;	//the detector this variable belongs to, or its edge number, if it is an edge variable
 
 		Var solverVar;
 		Var theory_var;
 	};
 
 	vec<VarData> vars;
+
+	struct SatisfiedLit{
+		int level=-1;
+		Lit l=lit_Undef;
+		SatisfiedLit(int level, Lit l):level(level),l(l){
+
+		}
+	};
+	vec<SatisfiedLit> satisfied_lits;
+
 	int theory_index = 0;
 public:
 	
@@ -578,27 +615,33 @@ public:
 	double unreachtime = 0;
 	double pathtime = 0;
 	double propagationtime = 0;
-	long propagations =-1;
-	long stats_propagations = 0;
-	long stats_num_conflicts = 0;
-	long stats_num_lazy_conflicts=0;
-	long stats_decisions = 0;
-	long stats_num_reasons = 0;
-
+	int64_t propagations =-1;
+	int64_t stats_propagations = 0;
+	int64_t stats_num_conflicts = 0;
+	int64_t stats_num_skipped_edgeset_props=0;
+	int64_t stats_num_lazy_conflicts=0;
+	int64_t stats_decisions = 0;
+	int64_t stats_num_reasons = 0;
+	long stats_bv_backtracks =0;
+	long stats_bv_enqueues =0;
+	long stats_bv_enqueue_while_sat=0;
+	long stats_backtrack_assigns = 0;
+	long stats_enqueues=0;
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
 	double stats_initial_propagation_time = 0;
 	double stats_decision_time = 0;
 	double stats_reason_initial_time = 0;
 	double stats_reason_time = 0;
-	long num_learnt_paths = 0;
-	long learnt_path_clause_length = 0;
-	long num_learnt_cuts = 0;
-	long learnt_cut_clause_length = 0;
-	long stats_pure_skipped = 0;
-	long stats_mc_calls = 0;
-	long stats_propagations_skipped = 0;
-	long stats_lazy_decisions = 0;
+	int64_t num_learnt_paths = 0;
+	int64_t learnt_path_clause_length = 0;
+	int64_t num_learnt_cuts = 0;
+	int64_t learnt_cut_clause_length = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_mc_calls = 0;
+	int64_t stats_propagations_skipped = 0;
+
+	int64_t stats_lazy_decisions = 0;
 	vec<Lit> reach_cut;
 
 	struct CutStatus {
@@ -683,7 +726,8 @@ public:
 
 
 		this->rnd_seed=drand(S->random_seed);
-
+        S->addTheory(this);
+        graph_decision_reason = S->newReasonMarker(this,true);
 	}
 	Lit const_true= lit_Undef;
 	Lit True(){
@@ -720,6 +764,7 @@ public:
 		printf("Conflicts: %ld (lazy conflicts %ld)\n", stats_num_conflicts,stats_num_lazy_conflicts);
 		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
+		printf("enqueues %ld, backtracks %ld (bv enqueues %ld (%ld while sat), bv backtracks %ld)\n",stats_enqueues,stats_backtrack_assigns,stats_bv_enqueues,stats_bv_enqueue_while_sat,stats_bv_backtracks);
 
 		fflush(stdout);
 
@@ -739,7 +784,7 @@ public:
 		
 	}
 	
-	inline int getTheoryIndex() {
+	inline int getTheoryIndex()const {
 		return theory_index;
 	}
 	inline void setTheoryIndex(int id) {
@@ -757,10 +802,14 @@ public:
 	}
 
 	void setBVTheory(BVTheorySolver<Weight> * bv){
-		comparator = bv;
+		if(bvTheory!=bv){
+			bvTheory = bv;
+
 		if(bv){
+				this->propagation_required_theories.push(bv);
 			bv->addTheory(this);
 		}
+	}
 	}
 
 	inline bool isEdgeVar(Var v) {
@@ -805,13 +854,14 @@ public:
 		tmp_clause.push(~o2);
 		S->addClauseSafely(tmp_clause);
 	}
-	void addClause(Lit l1) {
+	bool addClause(Lit l1) {
 		Lit o1 = toSolver(l1);
 		tmp_clause.clear();
 		tmp_clause.push(o1);
 		S->addClauseSafely(tmp_clause);
+		return true;
 	}
-	void addClause(Lit l1, Lit l2) {
+	bool addClause(Lit l1, Lit l2) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		tmp_clause.clear();
@@ -819,8 +869,9 @@ public:
 		tmp_clause.push(o2);
 
 		S->addClauseSafely(tmp_clause);
+		return true;
 	}
-	void addClause(Lit l1, Lit l2, Lit l3) {
+	bool addClause(Lit l1, Lit l2, Lit l3) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		Lit o3 = toSolver(l3);
@@ -829,6 +880,7 @@ public:
 		tmp_clause.push(o2);
 		tmp_clause.push(o3);
 		S->addClauseSafely(tmp_clause);
+		return true;
 	}
 	void addClauseToSolver(Lit l1) {
 		tmp_clause.clear();
@@ -850,11 +902,12 @@ public:
 		S->addClauseSafely(tmp_clause);
 	}
 
-	void addClause(vec<Lit> & c) {
+	bool addClause(const vec<Lit> & c) {
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
 		S->addClauseSafely(tmp_clause);
+		return true;
 	}
 	void addClauseSafely(vec<Lit> & c) {
 		tmp_clause.clear();
@@ -878,9 +931,13 @@ public:
 		vars[v].isEdge = false;
 		vars[v].isBV=true;
 		vars[v].isTheoryVar=false;
+		vars[v].isSatisfied=false;
 		vars[v].detector_edge = bvID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
+
+		//vars[v].occursPositive=0;
+		//vars[v].occursNegative=0;
 		assigns.push(l_Undef);
 		trail.growTo(v+1);
 		S->setTheoryVar(solverVar, getTheoryIndex(), v);
@@ -891,6 +948,20 @@ public:
 	void setDecisionVar(Var solverVar, bool decidable){
 		S->setDecisionVar(toSolver(solverVar),decidable);
 	}
+	bool bvHasDetector(int bvID){
+		return bvID<bitvector_data.size() && bitvector_data[bvID].detectorID>=0;
+	}
+	int getBVDetectorID(int bvID){
+		assert(bvHasDetector(bvID));
+		return bitvector_data[bvID].detectorID;
+	}
+	void setBVDetectorID(int bvID, int detectorID){
+		bitvector_data.growTo(bvID+1);
+		assert(bitvector_data[bvID].edgeID<0);
+		assert(bitvector_data[bvID].detectorID<0);
+		bitvector_data[bvID].detectorID = detectorID;
+	}
+
 	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
 
 
@@ -903,9 +974,12 @@ public:
 		vars[v].isEdge = false;
 		vars[v].isBV=false;
 		vars[v].isTheoryVar=true;
+		vars[v].isSatisfied=false;
 		vars[v].detector_edge = theoryID;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=theoryVar;
+		//vars[v].occursPositive=0;
+		//vars[v].occursNegative=0;
 		trail.growTo(v+1);
 		assigns.push(l_Undef);
 		return v;
@@ -923,9 +997,12 @@ public:
 		vars[v].isEdge = isEdge;
 		vars[v].isBV=false;
 		vars[v].isTheoryVar=false;
+		vars[v].isSatisfied=false;
 		vars[v].detector_edge = detector;
 		vars[v].solverVar = solverVar;
 		vars[v].theory_var=var_Undef;
+		//vars[v].occursPositive=0;
+		//vars[v].occursNegative=0;
 		trail.growTo(v+1);
 		assigns.push(l_Undef);
 
@@ -955,6 +1032,8 @@ public:
 	}
 	
 	inline Lit toSolver(Lit l)const {
+		if(l==lit_Undef)
+			return lit_Undef;
 		//assert(S->hasTheory(vars[var(l)].solverVar));
 		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar, sign(l));
@@ -971,27 +1050,27 @@ public:
 	}
 	
 	inline bool edgeWeightDecidable(int edgeID,DetectorComparison op, Weight edgeWeight) {
-		if (! hasBitVector(edgeID))
+		if (! hasBitVector(edgeID) || !opt_decide_graph_bv)
 			return false;
 		int bvID = getEdgeBV(edgeID).getID();
 		Comparison bvOp;
 		if (op==DetectorComparison::leq){
 			bvOp=Comparison::leq;
-			return comparator->decidableBV(bvOp,bvID,edgeWeight);
+			return bvTheory->decidableBV(bvOp,bvID,edgeWeight);
 
 		}else if (op==DetectorComparison::lt){
 			bvOp=Comparison::lt;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::geq){
 			/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
 			std::cout << edgeWeight <<"\n";*/
 			bvOp=Comparison::geq;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::gt){
 			bvOp=Comparison::gt;
-			return comparator->decidableBV(bvOp, bvID, edgeWeight);
+			return bvTheory->decidableBV(bvOp, bvID, edgeWeight);
 		}else if (op==DetectorComparison::eq){
-			return comparator->decidableBV(Comparison::leq, bvID, edgeWeight) || comparator->decidableBV(Comparison::geq, bvID, edgeWeight);
+			return bvTheory->decidableBV(Comparison::leq, bvID, edgeWeight) || bvTheory->decidableBV(Comparison::geq, bvID, edgeWeight);
 
 		}else{
 			assert(false);
@@ -1030,10 +1109,125 @@ public:
 			return false;
 		}
 	}
-	
-	~GraphTheorySolver() {
+	struct BVAssign{
+		Var graphAssign;//last assignment on the graph theory trail at the time of assignment
+		int bvTrail;
+		int bvID:31;
+		int theory_is_satisfied:1;
+		int level;//this is redundant and can likely be removed
+	};
+	vec<BVAssign> bvtrail;//connects the graph theory and bv theory trails, for conflict analysis.
+
+	inline bool assignBV(int bvID, Comparison comp,Weight value,typename BVTheorySolver<Weight>::Operation*bvOp){
+		dbg_check_trails();
+		if(bvTheory && opt_graph_bv_prop){
+			int bvTrailSize = bvTheory->trail.size();
+
+			bool conflict = !bvTheory->assignBV(bvID,comp,value,*bvOp);
+			if(bvTheory->trail.size()>bvTrailSize){
+				int lev = decisionLevel();
+				Var v = getBack(lev);
+				//temporarily backtrack until the graphTrailPos
+				while(v==-1 && lev>0 ){
+					lev--;
+					v = getBack(lev);
+				}
+				//if this enqueue was successful, AND it led to a refinment in the bvTheory
+				bvtrail.push({v ,bvTrailSize,bvID,lev});
+				dbg_check_trails();
+			}
+			return !conflict;
+		}
+		return true;
 	}
 
+	class GraphTheoryOp: public  BVTheorySolver<Weight>::Operation{
+		using BVTheorySolver<Weight>::Operation::getID;
+		using BVTheorySolver<Weight>::Operation::theory;
+
+		 GraphTheorySolver * outer;
+	public:
+		GraphTheoryOp(BVTheorySolver<Weight> &theory,GraphTheorySolver * outer):BVTheorySolver<Weight>::Operation(theory),outer(outer){
+
+		}
+		 typename BVTheorySolver<Weight>::OperationType getType()const override{
+			return  BVTheorySolver<Weight>::OperationType::cause_is_theory;
+		}
+
+
+		int getBV()override=0;
+
+		bool propagate(bool & changed, vec<Lit> & conflict)override{return true;}
+
+	    void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{}
+
+		virtual void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override{
+			outer->dbg_check_trails();
+			int bvTrailPos = theory.analysis_trail_pos;//current position in the bitvector trail that analysis is occuring at.
+			//lookup the corresponding position in the graph theory trail that we should be applying the bv theory analysis
+			bool found=false;
+			Var lastAssign=var_Undef;
+			int graphLevel=-1;
+			const vec<BVAssign> & bvtrail = outer->bvtrail;
+			for(int i = bvtrail.size()-1;i>=0;i--){
+
+				int bvTrail = bvtrail[i].bvTrail;
+				if(bvTrail<=bvTrailPos){
+					found=true;
+					graphLevel = bvtrail[i].level;
+					lastAssign =  bvtrail[i].graphAssign;
+					break;
+				}
+			}
+			if(!found){
+				throw std::runtime_error("Internal error in bv/graph clause learning");
+			}
+
+			outer->rewindUntil(lastAssign);
+		}
+		void completeAnalysis(){
+			outer->undoRewind();
+		}
+
+		bool checkSolved()override{	return true;}
+	};
+
+	~GraphTheorySolver() {
+		for(int i = 0;i<node_symbols.size();i++){
+			if(node_symbols[i]){
+				delete(node_symbols[i]);
+	}
+		}
+		node_symbols.clear();
+		for(int i = 0;i<edge_symbols.size();i++){
+			if(edge_symbols[i]){
+				delete(edge_symbols[i]);
+			}
+		}
+		edge_symbols.clear();
+	}
+	void setNodeName(int node,const char * symbol){
+		node_symbols.growTo(node+1,nullptr);
+		node_symbols[node]=strdup(symbol);
+	}
+	const char * getNodeName(int node){
+		if(node>=node_symbols.size())
+			return nullptr;
+		else
+			return node_symbols[node];
+	}
+	void setEdgeName(Var edgeVar,const char * symbol){
+		int edgeID = getEdgeID(edgeVar);
+		edge_symbols.growTo(edgeID+1,nullptr);
+		edge_symbols[edgeID]=strdup(symbol);
+	}
+	const char * getEdgeName(Var edgeVar){
+		int edgeID = getEdgeID(edgeVar);
+		if(edgeID>=edge_symbols.size())
+			return nullptr;
+		else
+			return edge_symbols[edgeID];
+	}
 	int newNode() {
 		
 		inv_adj.push();
@@ -1064,13 +1258,15 @@ public:
 	bool hasBitVector(int edgeID){
 		return edge_list[edgeID].bvID>=0;
 	}
-
+	BitVector<Weight> getBV(int bvID){
+		return bvTheory->getBV(bvID);
+	}
 	BitVector<Weight> getEdgeBV(int edgeID){
-		return comparator->getBV(edge_list[edgeID].bvID);
+		return bvTheory->getBV(edge_list[edgeID].bvID);
 	}
 
 	bool dbg_propgation(Lit l) {
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		static vec<Lit> c;
 		c.clear();
 		for (int i = 0; i < S->trail.size(); i++) {
@@ -1098,152 +1294,21 @@ public:
 	}
 	
 	void dbg_sync_reachability() {
-		
+/*
 #ifdef DEBUG_GRAPH
 		
 		for(int i = 0;i<reach_detectors.size();i++) {
 			ReachDetector* d = reach_detectors[i];
 			d->dbg_sync_reachability();
 		}
-#endif
-		
+#endif*/
+
 	}
+
 	void dbg_sync() {
-#ifndef NDEBUG
-		dbg_check_trails();
 
-		if (opt_conflict_min_cut) {
-			for (int i = 0; i < edge_list.size(); i++) {
-				if (value(edge_list[i].v) == l_False) {
-					assert(cutGraph.edgeEnabled(i * 2));
-					assert(!cutGraph.edgeEnabled(i * 2 + 1));
-				} else {
-					assert(!cutGraph.edgeEnabled(i * 2));
-					assert(cutGraph.edgeEnabled(i * 2 + 1));
-				}
-			}
-		}
-		for (int i = 0; i < edge_list.size(); i++) {
-			if (edge_list[i].v < 0)
-				continue;
-			Edge & e = edge_list[i];
-			lbool val = value(e.v);
-			if(edge_bv_weights.size()){
-				BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
-				if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
-					assert( false);
-				}
-				if(g_over.getWeight(e.edgeID)!=bv.getOver()){
-					assert( false);
-				}
-			}
-			if (val == l_True) {
-				if (!g_under.edgeEnabled(e.edgeID)) {
-					assert( false);
-				}
-				if (!g_over.edgeEnabled(e.edgeID)) {
-					assert( false);
-				}
+#ifdef DEBUG_GRAPH
 
-			} else  if (val == l_False) {
-				if (g_under.edgeEnabled(e.edgeID)) {
-					assert( false);
-				}
-				if (g_over.edgeEnabled(e.edgeID)) {
-					assert( false);
-				}
-			}
-		}
-
-#endif
-#ifdef DEBUG_DIJKSTRA
-		
-		for(int i = 0;i<assigns.size();i++) {
-			lbool val = assigns[i];
-
-			if(val!=l_Undef) {
-				bool found=false;
-				for(int j = 0;j<trail.size();j++) {
-					if(trail[j].var==i) {
-						assert(!found);
-						assert(trail[j].assign== (val==l_True));
-						found=true;
-					}
-				}
-				assert(found);
-			} else {
-				for(int j = 0;j<trail.size();j++) {
-					if(trail[j].var==i) {
-						assert(false);
-					}
-				}
-			}
-			if(val!=l_Undef)
-			assert(val==S->value(toSolver(i)));
-		}
-		/*static vec<lbool> assigned;
-		 assigned.clear();*.
-		 */
-
-		/*for(int i = 0;i<edge_list.size();i++)
-		 assigned.push(l_Undef);
-		 int lev = 0;
-		 int j =0;
-		 for(int i = 0;i<trail.size();i++){
-		 while(j<trail_lim.size() && i>=trail_lim[j]){
-		 lev++;
-		 j++;
-		 }
-
-		 Assignment e = trail[i];
-		 if(e.isEdge){
-
-		 Lit l = mkLit( e.var,!e.assign);
-		 assert(value(l)==l_True);
-		 int expected_level = level(var(l));
-		 assert(level(var(l))==lev);
-		 int edge_num = getEdgeID(e.var); //e.var-min_edge_var;
-		 if(edge_list[edge_num].v<0)
-		 continue;
-		 assert(assigned[edge_num]==l_Undef);
-
-		 assigned[edge_num] = sign(l)?l_False:l_True;
-		 }else{
-		 //Reachability assignment
-
-
-		 }
-		 }
-
-		 for(int i = 0;i<assigned.size();i++){
-		 assert(ass[i]== assigned[i]);
-		 }
-
-		 for(int i = 0;i<S->trail.size();i++){
-
-		 Lit l = S->trail[i];
-		 if(S->getTheoryID(l)==getTheoryIndex()){
-		 l = S->getTheoryLit(l);
-		 Var v = var(l);
-
-		 int lev = level(v);
-		 if(isEdgeVar(v)){
-		 int edge_num = getEdgeID(v);
-		 if(edge_list[edge_num].v<0)
-		 continue;
-		 lbool assigned_val=assigned[edge_num];
-		 assert(assigned_val== (sign(l)?l_False:l_True));
-		 }
-		 if(v>= min_edge_var && v<min_edge_var+num_edges){
-		 int edge_num = v-min_edge_var;
-		 if(edge_list[edge_num].v<0)
-		 continue;
-		 lbool assigned_val=assigned[edge_num];
-		 assert(assigned_val== (sign(l)?l_False:l_True));
-		 }
-
-		 }
-		 }*/
 
 #endif
 	}
@@ -1263,6 +1328,8 @@ public:
 #endif
 	}
 	void backtrackAssign(Lit l){
+		stats_backtrack_assigns++;
+		assert(l!=lit_Undef);
 		Var v = var(l);
 		assert(value(l)==l_True);
 		lbool assign = sign(l)?l_False:l_True;
@@ -1300,12 +1367,37 @@ public:
 	void backtrackUntil(int untilLevel) {
 		static int it = 0;
 		++it;
+		undoRewind();
+
 		//printf("g%d: backtrack until level %d\n", this->id,untilLevel);
 		//assert(to_reenqueue.size()==0);
 		bool changed = false;
+
+		while(satisfied_lits.size() && satisfied_lits.last().level>untilLevel){
+			int lev = satisfied_lits.last().level;
+			assert(lev>untilLevel);
+			Lit l = satisfied_lits.last().l;
+			assert(value(l)==l_True);
+			assert(vars[var(l)].isSatisfied);
+			vars[var(l)].isSatisfied=false;
+			satisfied_lits.pop();
+			int detector = getDetector(var(l));
+			if(detector>=0) {
+
+				detectors[detector]->setSatisfied(l, false);
+				if(satisfied_detectors[detector] && !detectors[detector]->detectorIsSatisfied()){
+					satisfied_detectors[detector]=false;
+					n_satisfied_detectors--;
+					assert(n_satisfied_detectors>=0);
+				}
+			}
+
+		}
+
 		//first, undo any assignments in the lazy trail
 		if(lazy_trail_head!=var_Undef){
 			requiresPropagation = true;
+			S->needsPropagation(getTheoryIndex());
 			Var v = getPrev(lazy_trail_head);
 			while(true){
 				Lit l = mkLit(v, value(v)==l_False);
@@ -1339,7 +1431,9 @@ public:
 				while(v!=var_Undef){
 					Lit l = mkLit(v, value(v)==l_False);
 					assert(assigns[v]!=l_Undef);
-
+					if(assigns[v]==l_Undef){
+						throw std::runtime_error("Internal error in backtracking");
+					}
 			/*		if(S->level(toSolver(v))<=untilLevel){
 						if(value(v) != S->value(toSolver(v))){
 							changed=true;
@@ -1388,9 +1482,38 @@ public:
 	void backtrackUntil(Lit p) {
 		static int it=0;
 		++it;
+		undoRewind();
 		//printf("g%d : backtrack until lit %d\n", this->id,dimacs(p));
 		//need to remove and add edges in the two graphs accordingly.
 		assert(onTrail(var(p))||onLazyTrail(var(p)));
+
+		//is this safe? there is a bit of a problem here, since I don't know where in the trail the 'satisfied'
+		//information was enqueued (only the level at which it was enqueued).
+		//on the other hand, a satisfied lit shouldn't be involved in a conflict, and
+		//everything should end up correctly in sync after the solver backtracks post-conflict, so this will
+		//*hopefully* not matter...
+		int untilLevel = level(var(p));
+		while(satisfied_lits.size() && satisfied_lits.last().level>untilLevel){
+			int lev = satisfied_lits.last().level;
+			assert(lev>untilLevel);
+			Lit l = satisfied_lits.last().l;
+			assert(value(l)==l_True);
+			assert(vars[var(l)].isSatisfied);
+			vars[var(l)].isSatisfied=false;
+			satisfied_lits.pop();
+			int detector = getDetector(var(l));
+			if(detector>=0) {
+
+				detectors[detector]->setSatisfied(l, false);
+				if(satisfied_detectors[detector] && !detectors[detector]->detectorIsSatisfied()){
+					satisfied_detectors[detector]=false;
+					n_satisfied_detectors--;
+					assert(n_satisfied_detectors>=0);
+				}
+			}
+
+		}
+
 		Var v;
 		if(!onLazyTrail(var(p))){
 
@@ -1441,6 +1564,57 @@ public:
 
 
 	}
+
+
+	vec<Lit> rewound_assigns;
+	void rewindUntil(Var until){
+		dbg_check_trails();
+		if(decisionLevel()==0)
+			return;
+		if(until==-1){
+			until = getBack(0);
+		}
+		assert(onTrail(until)||onLazyTrail(until));
+		assert(rewound_assigns.size()==0);
+		int lev;
+		Var v;
+		if(lazy_trail_head==var_Undef){
+			v= getBack(decisionLevel());
+			lev = decisionLevel();
+		}else{
+			lev=decisionLevel()+1;
+			assert(lazy_trail_head!=var_Undef);
+			v = getPrev(lazy_trail_head);
+		}
+		while(lev>0){
+
+			//assert(to_reenqueue.size()==0);
+			while(v!=var_Undef){
+				if(v==until){
+					return;
+				}
+				Lit l = mkLit(v, value(v)==l_False);
+				rewound_assigns.push(l);
+				assert(assigns[v]!=l_Undef);
+				backtrackAssign(l);
+				Var p = _getPrev(v);
+				if(p==v || p==getBack(lev))
+					break;
+				v=p;
+			}
+			lev--;
+			v = getBack(lev);
+		}
+	}
+
+	void undoRewind(){
+		while(rewound_assigns.size()){
+			Lit l =rewound_assigns.last();
+			rewound_assigns.pop();
+			_assign(l);
+		}
+	}
+
 	void undecideBV(int bvID){
 
 		if(isEdgeBV(bvID)){
@@ -1453,6 +1627,7 @@ public:
 	}
 	void undecideTheory(Lit l){
 		//assert(value(l)==l_True); //the value can be locally unassigned if we backtracked while building a propagation reason
+		//The value can also be unassigned if the theory was marked satisfied
 
 		if(supportsLazyBacktracking()){
 			prependToLazyTrail(l);
@@ -1468,21 +1643,16 @@ public:
 	bool supportsDecisions()override {
 		return true;
 	}
-	Lit decideTheory() {
+	Lit decideTheory(CRef & decision_reason) {
 		if (!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
 		static int iter = 0;
 		iter++;
 
-		if(iter==5940){
-			int a=1;
-		}
-		/*if(iter>128451){
-			fflush(stdout);
-			exit(1);
-		}*/
-		dbg_full_sync();
+
+
+        //dbg_full_sync();
 		if(opt_lazy_backtrack && supportsLazyBacktracking() && opt_lazy_backtrack_decisions && detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
 			//assert(n_decisions<=decisionLevel());
 			//printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
@@ -1500,10 +1670,15 @@ public:
 				return solverLit;
 			}
 		}
+        if (!opt_monolothic_theory_decisions)
+            return lit_Undef;
 
 		for (int i = 0; i < detectors.size(); i++) {
 			Detector * r = detectors[i];
-			Lit l = r->decide();
+            if(satisfied_detectors[r->getID()])
+                continue;
+			decision_reason = CRef_Undef;
+            Lit l = r->decide(decision_reason);
 			if (l != lit_Undef) {
 
 				if(opt_decide_graph_bv && !sign(l) && isEdgeVar(var(l)) && hasBitVector(getEdgeID(var(l))) && r->supportsEdgeDecisions()){
@@ -1518,43 +1693,51 @@ public:
 						Comparison bvOp;
 						if (op==DetectorComparison::leq){
 							bvOp=Comparison::leq;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+                            bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 
 
 						}else if (op==DetectorComparison::lt){
 							bvOp=Comparison::lt;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+                            bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::geq){
 							/*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
 							std::cout << edgeWeight <<"\n";*/
 							bvOp=Comparison::geq;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+                            bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::gt){
 							bvOp=Comparison::gt;
-							bv_decision = comparator->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
+                            bv_decision = bvTheory->decideBV(bvOp, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else if (op==DetectorComparison::eq){
-							bv_decision = comparator->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
+                            bv_decision = bvTheory->decideBV(Comparison::leq, getEdgeBV(edgeID).getID(), edgeWeight);
 							if(bv_decision==lit_Undef)
-								bv_decision = comparator->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
+                                bv_decision = bvTheory->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else{
 							exit(1);//ne not supported yet...
 						}
 
 						if(bv_decision!=lit_Undef){
+                            assert(S->value(bv_decision)==l_Undef);
 							stats_decisions++;
 							r->undecide(l);
 							stats_decision_time += rtime(1) - start;
+                            if(S->value(bv_decision)!=l_Undef){
 
+                                printf("%d %d\n",var(l), dimacs(bv_decision));
+                                throw std::runtime_error("error in decision heuristic");
+                            }
 							return bv_decision;
 						}
 					}
 				}
-
+                assert(l==lit_Undef || value(l)==l_Undef);
+                assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
 				stats_decisions++;
 				r->stats_decisions++;
 				stats_decision_time += rtime(1) - start;
 				if(opt_verb>2)
 					printf("g%d: graph decision %d: %d\n", this->getTheoryIndex(), iter, dimacs(l));
+                assert(l==lit_Undef || value(l)==l_Undef);
+                assert(l==lit_Undef || S->value(toSolver(l))==l_Undef);
 				return toSolver(l);
 			}
 		}
@@ -1566,13 +1749,14 @@ public:
 	void newDecisionLevel() {
 		//trail_lim.push(trail.size());
 		decisions.push(var_Undef);
+		assert(decisionLevel()<=S->decisionLevel());
 	}
 
 
 	void buildBVReason(int bvID, Comparison comp, Weight compareTo, vec<Lit> &reason){
 		static int iter = 0;
 		//todo: optimize this for case where bv is statically known to satisfy or fail the constraint...
-		BitVector<Weight> bv = comparator->getBV(bvID);
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		Lit c = getBV_COMP(bvID,-comp,compareTo);
 		assert(dbg_value(c)==l_False);
 		reason.push(c);
@@ -1588,7 +1772,7 @@ public:
 			double start = rtime(1);
 			assert(d < detectors.size());
 			theories[d]->buildReason(p, reason,marker);
-			toSolver(reason);
+			//toSolver(reason);
 			double finish = rtime(1);
 			stats_reason_time += finish - start;
 			stats_num_reasons++;
@@ -1601,7 +1785,7 @@ public:
 
 			assert(d < detectors.size());
 			detectors[d]->buildReason(p, reason, marker);
-			toSolver(reason);
+			//toSolver(reason);
 			double finish = rtime(1);
 			stats_reason_time += finish - start;
 			stats_num_reasons++;
@@ -1629,7 +1813,7 @@ public:
 	
 	bool dbg_notreachable(int from, int to, bool undirected = false) {
 		
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		//drawFull(from,to);
 		
 		/*DynamicGraph<Weight> g;
@@ -1661,7 +1845,7 @@ public:
 	}
 	
 	bool dbg_graphsUpToDate() {
-#ifdef DEBUG_GRAPH
+#ifdef DEBUG_GRAPH2
 		for(int i = 0;i<edge_list.size();i++) {
 			if(edge_list[i].v<0)
 			continue;
@@ -1754,15 +1938,25 @@ public:
 			//don't do anything
 		} else {
 			//this is a graph property detector var
-			if (!sign(l) && vars[var(l)].occursPositive != occurs)
+			//if (!sign(l) && vars[var(l)].occursPositive != occurs)
 				detectors[getDetector(var(l))]->setOccurs(l, occurs);
-			else if (sign(l) && vars[var(l)].occursNegative != occurs)
-				detectors[getDetector(var(l))]->setOccurs(l, occurs);
+			//else if (sign(l) && vars[var(l)].occursNegative != occurs)
+			//	detectors[getDetector(var(l))]->setOccurs(l, occurs);
 		}
 		
 	}
 	
 	void enqueueBV(int bvID){
+		if(!S->model.size() && theoryIsSatisfied()){
+			stats_bv_enqueue_while_sat++;
+		}
+		if(!S->model.size())
+			stats_bv_enqueues++;
+
+		int lev = bvTheory->decisionLevel();//decision level must be synced with bvtheory to ensure the correctness of the enqueueSat method.
+		while (lev > decisionLevel()) {
+            newDecisionLevel();
+        }
 		requiresPropagation=true;
 		S->needsPropagation(getTheoryIndex());
 		if(isEdgeBV(bvID)){
@@ -1770,12 +1964,20 @@ public:
 			if(edgeID==11){
 				int a=1;
 			}
+/*			if((!S->model.size()) && g_under.getEdgeWeight(edgeID) == edge_bv_weights[edgeID].getUnder() && g_over.getEdgeWeight(edgeID) == edge_bv_weights[edgeID].getOver()){
+				printf("useless edge weight update: graph %d edge %d bv %d\n",getTheoryIndex(),edgeID,bvID);
+			}*/
 			g_under.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getUnder());
 			g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
 			if(using_neg_weights){
 				g_under_weights_over.setEdgeWeight(edgeID,edge_bv_weights[edgeID].getOver());
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
+
+		}else if(bvHasDetector(bvID)){
+			int detectorID = getBVDetectorID(bvID);
+			assert(detectorID>=0);assert(detectorID<detectors.size());assert(detectors[detectorID]);
+			detectors[detectorID]->assignBV(bvID);
 		}
 	}
 	void backtrackBV(int bvID){
@@ -1792,11 +1994,51 @@ public:
 				g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
 			}
 
+		}else if(bvHasDetector(bvID)){
+			int detectorID = getBVDetectorID(bvID);
+			assert(detectorID>=0);assert(detectorID<detectors.size());assert(detectors[detectorID]);
+			detectors[detectorID]->unassignBV(bvID);
 		}
 	}
+	//mark an atom as satisfied in the theory, so it doesn't need to be tracked in the future
+	void enqueueSat(Lit l){
+		assert(value(l)==l_True);//the literal must be assigned true
+		if(opt_detect_satisfied_predicates) {
+			if (!vars[var(l)].isSatisfied) {
+				//int lev = S->decisionLevel();
+				/*while (lev > decisionLevel()) {
+					newDecisionLevel();
+				}*/
+				while (decisionLevel()<S->decisionLevel()) {
+					newDecisionLevel();
+				}
+				satisfied_lits.push(SatisfiedLit(decisionLevel(), l));
+				vars[var(l)].isSatisfied = 1;
+				int d = getDetector(var(l));
+				detectors[d]->setSatisfied(l, true);
+				if(!satisfied_detectors[d] && detectors[d]->detectorIsSatisfied()){
+					//if edge sets are used, also set any equivalent detectors in the other edge sets to satisfied.
+					n_satisfied_detectors++;
+					assert(n_satisfied_detectors<=detectors.size());
+					satisfied_detectors[d]=true;
+				}
+
+			}
+		}
+	}
+	bool isSatisfied(Lit l){
+		assert(!(vars[var(l)].isSatisfied && value(l)!=l_True ));//if the var is marked satisfied, it SHOULD be the case
+		//that it is assigned true.
+		return vars[var(l)].isSatisfied;
+	}
+	bool theoryIsSatisfied() override{
+		return n_satisfied_detectors==detectors.size();
+	}
+
+
 	void enqueueTheory(Lit l) {
 		Var v = var(l);
-
+		stats_enqueues++;
 		int lev = level(v);//level from the SAT solver.
 		if(!opt_lazy_backtrack){
 			assert(decisionLevel() <= lev);
@@ -1809,13 +2051,23 @@ public:
 		//if we are assigning lazily, then there are additional possibilities.
 		//bool on_trail=false;
 		if (value(v)==S->value(toSolver(v))) {
+			if(value(v)==l_Undef){
+				throw std::runtime_error("Internal error in graph enqueue");
+			}
+			if(lev == decisionLevel()) {
 			//this is already enqueued.
 			//place it into the correct place on the trail
 			removeFromTrail(var(l));
 			appendToTrail(l,decisionLevel());
+			}
 			return;
 		}else if (opt_lazy_backtrack && value(v)!=l_Undef){
-
+			if(!opt_lazy_backtrack){
+				assert(decisionLevel() <= lev);
+				if(decisionLevel() > lev){
+					throw std::runtime_error("Internal error in graph enqueue");
+				}
+			}
 			assert(value(v)!=S->value(toSolver(v)));
 			//this literal was already assigned, and then we backtracked _lazily_ without unassigning it in the theory solver.
 			//unassign it now, by itself.
@@ -1851,17 +2103,12 @@ public:
 			}
 			removeFromTrail(var(l));
 		}
-		assert(!onTrail(var(l)));
-
-		assert(assigns[var(l)]==l_Undef);
-		assigns[var(l)] = sign(l) ? l_False : l_True;
-		appendToTrail(l,decisionLevel());
-		requiresPropagation = true;
-
-
-		assert(onTrail(var(l)));
-
-
+		if(!opt_lazy_backtrack){
+			assert(decisionLevel() <= lev);
+			if(decisionLevel() > lev){
+				throw std::runtime_error("Internal error in graph enqueue");
+			}
+		}
 
 		if (g_under.outfile) {
 			fprintf(g_under.outfile, "enqueue %d\n", dimacs(l));
@@ -1875,6 +2122,19 @@ public:
 			fflush(g_over.outfile);
 		}
 
+		assert(!onTrail(var(l)));
+		appendToTrail(l,decisionLevel());
+		requiresPropagation = true;
+
+		assert(onTrail(var(l)));
+
+		_assign(l);
+
+	};
+
+	void _assign(Lit l){
+		assert(assigns[var(l)]==l_Undef);
+		assigns[var(l)] = sign(l) ? l_False : l_True;
 		if(hasTheory(var(l))){
 			theories[getTheoryID(var(l))]->enqueueTheory(getTheoryLit(l));
 			return;
@@ -1901,7 +2161,7 @@ public:
 			}
 
 			if(decisionLevel()==0){
-				assert(g_under.edgeEnabled(edge_num)== g_over.edgeEnabled(edge_num));
+				//assert(g_under.edgeEnabled(edge_num)== g_over.edgeEnabled(edge_num));
 				g_under.makeEdgeAssignmentConstant(edge_num);
 				g_over.makeEdgeAssignmentConstant(edge_num);
 			}
@@ -1920,10 +2180,16 @@ public:
 			}
 		} else {
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
-			detectors[getDetector(var(l))]->assign(l);
+            int id = getDetector(var(l));
+			detectors[id]->assign(l);
+            if(detectors[id]->default_heuristic){
+                activateHeuristic(detectors[id]->default_heuristic);
 		}
-		
-	};
+		}
+	}
+    void activateHeuristic(Heuristic * h) override{
+        S->activateHeuristic(h);
+    }
 /*
 	bool backtrackWhileConflicting(Detector * d,vec<Lit> & conflict){
 		conflict.clear();
@@ -1961,10 +2227,41 @@ public:
 	bool propagateTheory(vec<Lit> & conflict) {
 		return propagateTheory(conflict,false);
 	}
+    Heuristic * conflictingHeuristic=nullptr;
+    virtual Heuristic * getConflictingHeuristic()override{
+        return conflictingHeuristic;
+    }
+
 
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
+		dbg_check_trails();
+        conflictingHeuristic=this;
+		if(theoryIsSatisfied()){
+			S->setTheorySatisfied(this);
+			if(bvTheory){
+				bvTheory->setTheorySatisfied(this);
+			}
+			stats_propagations_skipped++;
+			return true;
+		}
+#ifdef DEBUG_GRAPH
+		for(int v = 0;v<nVars();v++){
+			if(v==var(const_true))
+				continue;
+			Var solverVar = toSolver(v);
+			if(S->hasTheory(solverVar)) {
+				lbool val = value(v);
+				lbool solverVal = S->value(solverVar);
+				if (val != solverVal) {
+					exit(2);
+				}
+			}
+		}
+#endif
+
+
 		static int itp = 0;
-		if (++itp == 584) {
+		if (++itp == 4) {
 			int a = 1;
 		}
 		dbg_graphsUpToDate();
@@ -1987,11 +2284,13 @@ public:
 			return true;
 		}
 
-
-		//this is ugly... what is a cleaner way to ensure that the bitvector theory propagates before this one?
-		if(comparator && !comparator->propagateTheory(conflict)){
+		for(Theory * t:propagation_required_theories){
+			if(!t->propagateTheory(conflict)) {
+                conflictingHeuristic=t->getConflictingHeuristic();
 			return false;
 		}
+		}
+		S->theoryPropagated(this);
 
 		if (opt_lazy_backtrack &&
 				!lazy_backtracking_enabled && decisionLevel()==0 ){
@@ -2009,11 +2308,11 @@ public:
 
 		dbg_sync();
 		conflict.clear();
-		//printf("monosat/graph prop %d\n",stats_propagations);
+		//printf("graph prop %d\n",stats_propagations);
 		for(Theory * t:theories){
 			if(!t->propagateTheory(conflict)){
+                conflictingHeuristic=t->getConflictingHeuristic();
 
-				toSolver(conflict);
 				return false;
 			}
 		}
@@ -2041,10 +2340,12 @@ public:
 		}
 		bvs_to_update.clear();*/
 
-		dbg_sync();
+		//dbg_sync();
 		assert(dbg_graphsUpToDate());
 
 		for (int d = 0; d < detectors.size(); d++) {
+				if(satisfied_detectors[d])
+					continue;
 			assert(conflict.size() == 0);
 			Lit l = lit_Undef;
 			bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts==3) &&  lazy_trail_head!=var_Undef;
@@ -2072,19 +2373,7 @@ public:
 
 					//if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
 
-#ifndef NDEBUG
-					for (Lit l:conflict){
-						if(S->value(toSolver(l))!=value(l)){
-							assert(onLazyTrail(var(l)));
-							if(!onLazyTrail(var(l))){
-								exit(5);
-							}
-							if(value(~l)!=l_True){
-								exit(4);
-							}
-						}
-					}
-#endif
+
 
 					//assert(!seen.contains(true));
 					//seen.growTo(vars.size());
@@ -2155,7 +2444,7 @@ public:
 
 						//the conflict should now be eliminated.
 						if(opt_keep_lazy_conflicts){
-							toSolver(conflict);
+
 							S->addClauseSafely(conflict);
 						}
 						stats_num_lazy_conflicts++;
@@ -2167,12 +2456,12 @@ public:
 					}
 				}
 				stats_num_conflicts++;
-				toSolver(conflict);
+                    conflictingHeuristic=detectors[d]->getConflictingHeuristic();
 				propagationtime += rtime(1) - startproptime;
 				return false;
 			}
 		}
-		
+
 		dbg_full_sync();
 		
 		requiresPropagation = false;
@@ -2193,6 +2482,15 @@ public:
 		propagationtime += elapsed;
 		dbg_sync();
 		dbg_sync_reachability();
+		dbg_check_trails();
+
+		if(theoryIsSatisfied()){
+			S->setTheorySatisfied(this);
+			if(bvTheory){
+				bvTheory->setTheorySatisfied(this);
+			}
+		}
+
 		return true;
 	}
 
@@ -2201,6 +2499,7 @@ public:
 	}
 
 	bool solveTheory(vec<Lit> & conflict) {
+		n_theory_solves++;
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict,true);
 		if(ret){
@@ -2238,28 +2537,42 @@ public:
 		
 		printf("}\n");
 	}
-	void drawFull() {
-#ifndef NDEBUG
+	void drawFull(bool forceDraw=false, bool drawDisabled=true) {
+
+#ifndef DEBUG_GRAPH
+		if(!forceDraw)
+			return;
+#endif
 		printf("digraph{\n");
 		for (int i = 0; i < nNodes(); i++) {
+			if(getNodeName(i)){
+				printf("n%d[label=\"n%d_%s\"]\n",i,i,getNodeName(i));
+			}else{
 			printf("n%d\n", i);
 		}
-		
+		}
+
 		for (int i = 0; i < edge_list.size(); i++) {
 			Edge & e = edge_list[i];
 			const char * s = "black";
 			if (value(e.v) == l_True)
 				s = "blue";
-			else if (value(e.v) == l_False)
+			else if (value(e.v) == l_False){
+				if(!drawDisabled)
+					continue;
 				s = "red";
-			else {
+			}else {
 				int a = 1;
 			}
+			if(getEdgeName(e.v)){
+				printf("n%d -> n%d [label=\"v%d_%s\",color=\"%s\"]\n", e.from, e.to, e.v,getEdgeName(e.v), s);
+			}else{
 			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
 		}
-		
+		}
+
 		printf("}\n");
-#endif
+
 	}
 	
 	bool check_solved() {
@@ -2272,9 +2585,11 @@ public:
 				continue;
 			Edge & e = edge_list[i];
 			lbool val = value(e.v);
-			if (val == l_Undef) {
+			//this can be allowed
+			/*if (val == l_Undef) {
+				throw std::runtime_error("BAD SOLUTION: Unassigned edge!");
 				return false;
-			}
+			}*/
 			
 			if (val == l_True) {
 				/*	if(!g.hasEdge(e.from,e.to)){
@@ -2284,28 +2599,34 @@ public:
 				 return false;
 				 }*/
 				if (!g_under.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: missing true edge in g_under");
 					return false;
 				}
 				if (!g_over.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: missing true edge in g_over");
 					return false;
 				}
 				if(edge_bv_weights.size()){
 					BitVector<Weight> & bv = edge_bv_weights[e.edgeID];
 					if(g_under.getWeight(e.edgeID)!= bv.getUnder()){
+						throw std::runtime_error("BAD SOLUTION: bad edge weight in g_under");
 						return false;
 					}
 					if(g_over.getWeight(e.edgeID)!=bv.getOver()){
+						throw std::runtime_error("BAD SOLUTION: bad edge weight in g_over");
 						return false;
 					}
 				}
-			} else {
+			} else if(val==l_False) {
 				/*if(g.hasEdge(e.from,e.to)){
 				 return false;
 				 }*/
 				if (g_under.edgeEnabled(e.edgeID)) {
+					throw std::runtime_error("BAD SOLUTION: included false edge in g_under");
 					return false;
 				}
 				if (g_over.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: included false edge in g_over");
 					return false;
 				}
 				/*if(antig.hasEdge(e.from,e.to)){
@@ -2357,6 +2678,8 @@ public:
 		}
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
+				printf("Error in solution of graph theory %d, in detector %d (%s)\n", this->getTheoryIndex(), i, detectors[i]->getName());
+				throw std::runtime_error("BAD SOLUTION: failure in graph theory detector");
 				return false;
 			}
 		}
@@ -2405,7 +2728,7 @@ public:
 	}
 	
 	void drawCurrent() {
-#ifndef NDEBUG
+#ifdef DEBUG_GRAPH
 		int from = -1;
 		int to = -1;
 		printf("digraph{\n");
@@ -2445,6 +2768,13 @@ public:
 		marker_map[mnum].id = detectorID;
 		return reasonMarker;
 	}
+
+    void addHeuristic(Heuristic * h){
+        S->addHeuristic(h);
+    }
+    Solver * getSolver(){
+        return S;
+    }
 private:
 	vec<vec<int> > & getComparisonSet(Comparison op){
 		switch(op){
@@ -2484,10 +2814,10 @@ public:
 				return l;
 			}
 			int comparisonID = comparisons.size();
-			Lit gt = comparator->newComparison(op,bvID,w,var_Undef,opt_cmp_lits_decidable);
+			Lit gt = bvTheory->newComparison(op,bvID,w,var_Undef,opt_cmp_lits_decidable);
 			l = mkLit(newVar());
 
-			makeEqualInSolver(comparator->toSolver(gt),toSolver(l));
+			makeEqualInSolver(bvTheory->toSolver(gt),toSolver(l));
 
 			comparisons.push({w,l,bvID,true});
 
@@ -2561,18 +2891,18 @@ public:
 	}*/
 
 	bool isEdgeBV(int bvID){
-		return bvID<edge_bitvectors.size() && edge_bitvectors[bvID]>=0;
+		return bvID<bitvector_data.size() && bitvector_data[bvID].edgeID>=0;
 	}
 	int getBVEdge(int bvID){
 		assert(isEdgeBV(bvID));
-		return edge_bitvectors[bvID];
+		return bitvector_data[bvID].edgeID;
 	}
 
 	bool isBVVar(Var v){
 		return vars[v].isBV;
 	}
 
-	int getBV(Var v){
+	int getBVForVar(Var v){
 		assert(isBVVar(v));
 		return vars[v].detector_edge;
 	}
@@ -2588,12 +2918,12 @@ public:
 	BitVector<Weight> newBV(Weight constval=-1,int bitwidth=-1) {
 		if (bitwidth<0)
 			bitwidth = getEdgeWeightBitWidth();
-		BitVector<Weight> bv = comparator->newBitvector(-1,bitwidth,constval);
+		BitVector<Weight> bv = bvTheory->newBitvector(-1,bitwidth,constval);
 		return bv;
 	}
 
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
-		if(!comparator ){
+		if(!bvTheory ){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
 		while(from>=nNodes()||to>=nNodes())
@@ -2604,24 +2934,24 @@ public:
 			/*	if(outerVar==var_Undef)
 			 outerVar = S->newVar();*/
 			vec<Var> internalBV;
-			int bvID = edge_bitvectors.size();
+			int bvID = bitvector_data.size();
 			int index = edge_list.size();
 			for (Var v:bitVector){
 				internalBV.push(newBVVar(v,bvID,index));
 			}
 
-		/*	if(!comparator){
-				comparator = new BVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *comparator));
+		/*	if(!bvTheory){
+				bvTheory = new BVTheorySolver<Weight,ComparisonStatus>(ComparisonStatus(*this, *bvTheory));
 			}*/
-			BitVector<Weight> bv = comparator->newBitvector(bvID,bitVector);
-			comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
-			edge_bitvectors.growTo(bv.getID()+1,-1);
-			if(edge_bitvectors[bv.getID()]!=-1){
+			BitVector<Weight> bv = bvTheory->newBitvector(bvID,bitVector);
+			bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
+			bitvector_data.growTo(bv.getID()+1);
+			if(bitvector_data[bv.getID()].edgeID!=-1 || bitvector_data[bv.getID()].detectorID!=-1){
 				//else, this is already used!
 				fprintf(stderr,"Each bitvector can only be used for one edge!\n");
 				exit(1);
 			}
-			edge_bitvectors[bv.getID()]=index;
+			bitvector_data[bv.getID()].edgeID=index;
 			//bv_needs_update.growTo(bv.getID()+1);
 			all_edges_unit &= (bv.getUnder()== 1 && bv.getOver()==1);
 			all_edges_positive &= bv.getUnder()>0;
@@ -2689,14 +3019,14 @@ public:
 			return mkLit(v, false);
 		}
 	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		if(comparator->hasTheory(bvID)){
-			bvID = comparator->duplicateBV(bvID).getID();
+		if(bvTheory->hasTheory(bvID)){
+			bvID = bvTheory->duplicateBV(bvID).getID();
 		}
 		if(isEdgeBV(bvID)){
 			fprintf(stderr,"Bitvector %d used for multiple edge weights\n", bvID);exit(1);
@@ -2707,11 +3037,11 @@ public:
 		assert(outerVar!=var_Undef);
 		assert(edge_weights.size()==0);
 		int index = edge_list.size();
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
-		BitVector<Weight> bv = comparator->getBV(bvID);
-		edge_bitvectors.growTo(bv.getID()+1,-1);
-		edge_bitvectors[bv.getID()]=index;
-		//comparator->setCallback(bv.getID(),&bvcallback);
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
+		bitvector_data.growTo(bv.getID()+1);
+		bitvector_data[bv.getID()].edgeID=index;
+		//bvTheory->setCallback(bv.getID(),&bvcallback);
 		comparisons_lt.growTo(bv.getID()+1);
 		comparisons_gt.growTo(bv.getID()+1);
 		comparisons_leq.growTo(bv.getID()+1);
@@ -2763,7 +3093,7 @@ public:
 
 		/*	if(outerVar==var_Undef)
 		 outerVar = S->newVar();*/
-		assert(edge_bitvectors.size()==0);
+		assert(bitvector_data.size()==0);
 		all_edges_unit &= (weight == 1);
 		all_edges_positive &= weight>0;
 		int index = edge_list.size();
@@ -2825,6 +3155,9 @@ public:
 		return edge_weights[edgeID];
 	}*/
 	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps) {
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if(to >= g_under.nodes()){
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
@@ -2839,7 +3172,9 @@ public:
 		if (dist_info[from].source < 0) {
 			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 					from, drand(rnd_seed));
-			detectors.push(d);
+
+			addDetector(d);
+
 			distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			dist_info[from].source = from;
@@ -2880,6 +3215,9 @@ public:
 			exit(1);
 		}
 		
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if (weighted_dist_info[from].source < 0) {
 			WeightedDistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
@@ -2890,7 +3228,8 @@ public:
 				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 						from, drand(rnd_seed));
 			}
-			detectors.push(d);
+			addDetector(d);
+
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			weighted_dist_info[from].source = from;
@@ -2905,6 +3244,9 @@ public:
 	}
 
 	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if(to >= g_under.nodes()){
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
@@ -2913,13 +3255,13 @@ public:
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
 		}
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		assert(from < g_under.nodes());
 
 		if (weighted_dist_info[from].source < 0) {
@@ -2932,7 +3274,8 @@ public:
 				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
 						from, drand(rnd_seed));
 			}
-			detectors.push(d);
+			addDetector(d);
+
 			weighted_distance_detectors.push(d);
 			assert(detectors.last()->getID() == detectors.size() - 1);
 			weighted_dist_info[from].source = from;
@@ -2941,20 +3284,16 @@ public:
 
 		WeightedDistanceDetector<Weight> * d = (WeightedDistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
-		BitVector<Weight> bv = comparator->getBV(bvID);
+		BitVector<Weight> bv = bvTheory->getBV(bvID);
 		d->addWeightedShortestPathBVLit(from, to, reach_var,bv,strictComparison );
 
 	}
 
 	void implementMaxflowBV(int from, int to, Var v, int bvID, bool strictComparison) {
-		if(to >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
 		}
-		if(from >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
-		}
+
 		if(from==to){
 			//The maxflow from a node to itself is always infinite, and so that flow is never less than any specific weight
 			if(v!=var_Undef) {
@@ -2962,25 +3301,27 @@ public:
 			}
 			return;
 		}
-
-		if(!comparator){
+		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
-		if(!comparator->hasBV(bvID)){
+		if(!bvTheory->hasBV(bvID)){
 			fprintf(stderr,"Undefined bitvector\n");exit(1);
 		}
-		comparator->setBitvectorTheory(bvID,this->getTheoryIndex());
+		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
-				flow_detectors[i]->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+				flow_detectors[i]->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v,!strictComparison);
 				return;
 			}
 		}
 		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
-		detectors.push(f);
-		f->addFlowBVLessThan(comparator->getBV(bvID), v,!strictComparison);
+		int detectorID = detectors.size();
+		addDetector(f);
+		//setBVDetectorID(bvID, detectorID);
+		f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v, !strictComparison);
+
 	}
 
 	void implementConstraints() {
@@ -3048,14 +3389,16 @@ public:
 	
 	void allpairs(int from, int to, Var reach_var, int within_steps = -1) {
 		//for now, reachesWithinSteps to be called instead
-		
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		assert(from < g_under.nodes());
 		if (within_steps > g_under.nodes())
 			within_steps = -1;
 		
 		if (reach_info[from].source < 0) {
 			
-			detectors.push(new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed)));
+			addDetector((new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed))));
 			//reach_detectors.push(reach_detectors.last());
 			
 			assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3079,6 +3422,9 @@ public:
 	
 	void reaches_private(int from, int to, Var reach_var, int within_steps = -1) {
 		//for now, reachesWithinSteps to be called instead
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if (within_steps >= 0 || opt_force_distance_solver) {
 			reachesWithinSteps(from, to, reach_var, within_steps);
 			return;
@@ -3092,7 +3438,7 @@ public:
 			
 			ReachDetector<Weight>*rd = new ReachDetector<Weight>(detectors.size(), this, g_under, g_over, from,
 					drand(rnd_seed));
-			detectors.push(rd);
+			addDetector(rd);
 			reach_detectors.push(rd);
 			
 			assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3155,14 +3501,16 @@ public:
 	void minimumSpanningTree(Var v, Weight minimum_weight, bool inclusive) {
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
-			detectors.push(mstDetector);
+			addDetector(mstDetector);
+
 		}
 		mstDetector->addWeightLit(v, minimum_weight,inclusive);
 	}
 	void edgeInMinimumSpanningTree(Var edgeVar, Var var) {
 		if (!mstDetector) {
 			mstDetector = new MSTDetector<Weight>(detectors.size(), this, g_under, g_over,  drand(rnd_seed));
-			detectors.push(mstDetector);
+			addDetector(mstDetector);
+
 		}
 		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())
 				|| !isEdgeVar(S->getTheoryVar(edgeVar))) {
@@ -3179,6 +3527,9 @@ public:
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
 	void maxflow(int from, int to,Var v, Weight  max_flow,  bool inclusive=true) {
+		while(from >= g_under.nodes() || to >= g_under.nodes()){
+			newNode();
+		}
 		if(to >= g_under.nodes()){
 			fprintf(stderr, "Undefined node %d\n",to);
 			exit(1);
@@ -3205,7 +3556,8 @@ public:
 		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
 				to, drand(rnd_seed));
 		flow_detectors.push(f);
-		detectors.push(f);
+		addDetector(f);
+
 		f->addFlowLit(max_flow, v,inclusive);
 	}
 
@@ -3213,14 +3565,19 @@ public:
 		if (!component_detector) {
 			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,
 					drand(rnd_seed));
-			detectors.push(component_detector);
+			addDetector(component_detector);
+
 		}
 		component_detector->addConnectedComponentsLit(v, min_components);
+	}
+	void addDetector(Detector* detector){
+		detectors.push(detector);
+		satisfied_detectors.push(false);
 	}
 	void acyclic(Var v,bool directed) {
 		if (!cycle_detector) {
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
-			detectors.push(cycle_detector);
+			addDetector(cycle_detector);
 		}
 		cycle_detector->addAcyclicLit(directed, v);
 	}
@@ -3230,7 +3587,7 @@ public:
 		assert(!steiner_detectors[steinerTreeID]);
 		steiner_detectors[steinerTreeID] = new SteinerDetector<Weight>(detectors.size(), this,  g_under, g_over,
 				drand(rnd_seed));
-		detectors.push(steiner_detectors[steinerTreeID]);
+		addDetector(steiner_detectors[steinerTreeID]);
 		for (int i = 0; i < terminals.size(); i++) {
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first, terminals[i].second);
 		}
@@ -3282,12 +3639,13 @@ public:
 		return S->addConflictClause(ps,confl_out,permanent);
 	}
 
-	CRef newReasonMarker(Theory * theory) {
-		CRef reasonMarker = S->newReasonMarker(this);
+	CRef newReasonMarker(Heuristic * theory,bool is_decision=false) override{
+		CRef reasonMarker = S->newReasonMarker(is_decision ? theory:this, is_decision);
 		int mnum = CRef_Undef - reasonMarker;
 		marker_map.growTo(mnum + 1);
-		marker_map[mnum].forTheory=true;
-		marker_map[mnum].id = theory->getTheoryIndex();
+		marker_map[mnum].forTheory=!is_decision;
+        marker_map[mnum].forHeuristic=is_decision;
+		marker_map[mnum].id = is_decision ? theory->getHeuristicIndex() :  theory->getTheoryIndex();
 		return reasonMarker;
 	}
 
@@ -3316,9 +3674,12 @@ public:
 
 	void needsPropagation(int theoryID){
 		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
 	}
 
-
+	bool check_propagated()override{
+		return !requiresPropagation;
+	}
 	Weight getModel_MaximumFlow(Lit theoryLit){
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];

@@ -25,16 +25,21 @@
 #include "monosat/pb/Pb.h"
 
 namespace Monosat {
+
 /**
  * Abstract interface to SMT theory solvers, as accessed by components of the theory solver.
  */
 class TheorySolver {
 public:
 	virtual ~TheorySolver() {
-		
+
 	}
 	virtual double & getRandomSeed()=0;
 	virtual void addTheory(Theory * t)=0;
+	virtual void addHeuristic(Heuristic*h)=0;
+	virtual void activateHeuristic(Heuristic*h){
+
+	}
 	virtual lbool value(Lit l)const=0;
 	virtual lbool value(Var v)const=0;
 	virtual bool isConstant(Var v)const=0;
@@ -45,6 +50,7 @@ public:
 	virtual void instantiateLazyDecision(Lit l,int atLevel, CRef reason=CRef_Undef){
 
 	}
+
 	virtual void setBVTheory(Theory * t){
 
 	}
@@ -64,15 +70,27 @@ public:
 	virtual Var newVar(bool polarity = true, bool dvar = true)=0;
 	virtual int nVars()const=0;
 	virtual bool enqueue(Lit l, CRef reason=CRef_Undef)=0;
-	virtual CRef newReasonMarker(Theory * forTheory)=0;
+	virtual CRef newReasonMarker(Heuristic * forTheory, bool is_decision=false)=0;
 	virtual CRef reason(Var v)const=0;
-
+	virtual bool addClause(Lit l1)=0;
+	virtual bool addClause(Lit l1, Lit l2) =0;
+	virtual bool addClause(Lit l1, Lit l2, Lit l3)=0;
+	virtual bool addClause(const vec<Lit> & c) =0;
 	virtual void addClauseSafely(vec<Lit> & clause)=0;
 	virtual bool addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent)=0;
+	virtual void setTheorySatisfied(Theory * theory){
+
+	}
+	virtual bool theorySatisfied(Theory * theory){
+		return false;
+	}
 	virtual int level(Var v)const=0;
 	virtual int decisionLevel()const=0;
 	virtual Lit theoryDecisionLit(int theoryID){
 		return mkLit(newVar(true,false));
+	}
+	virtual void theoryPropagated(Theory* t){
+
 	}
 	//If variables have been renumbered from a user's original input, this will return them to their original numbering, for user-facing output
 	//(Otherwise, it should simply return the original lit)

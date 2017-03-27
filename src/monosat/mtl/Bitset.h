@@ -29,24 +29,24 @@ namespace Monosat {
 
 //=================================================================================================
 #define BITSET_ELEMENT_SIZE (sizeof(uint64_t))
-class Bitset {
-    vec<uint64_t>  buf;
-    int sz;
+class Bitset{
+	vec<uint64_t>  buf;
+	int sz;
 
 public:
-    Bitset():sz(0)  {}
-    Bitset(int size):sz(size)  {buf.growTo(size/BITSET_ELEMENT_SIZE + 1);}
-    Bitset(int size, bool default_value):sz(size)  {
-    	buf.growTo(size/BITSET_ELEMENT_SIZE + 1);
-    	if(default_value){
-    		for(int i = 0;i<buf.size();i++){
-    			buf[i]= std::numeric_limits<uint64_t>::max();
-    		}
-    	}
-    }
+	Bitset():sz(0)  {}
+	Bitset(int size):sz(size)  {buf.growTo(size/BITSET_ELEMENT_SIZE + 1);}
+	Bitset(int size, bool default_value):sz(size)  {
+		buf.growTo(size/BITSET_ELEMENT_SIZE + 1);
+		if(default_value){
+			for(int i = 0;i<buf.size();i++){
+				buf[i]= std::numeric_limits<uint64_t>::max();
+			}
+		}
+	}
 
-    void memset(bool to){
-    	if(to){
+	void memset(bool to){
+		if(to){
 			for(int i = 0;i<buf.size();i++){
 				buf[i]= std::numeric_limits<uint64_t>::max();
 			}
@@ -55,27 +55,27 @@ public:
 				buf[i]= 0;
 			}
 		}
-    }
+	}
 
-    void growTo(int size){
-    	buf.growTo(size/BITSET_ELEMENT_SIZE + 1);
-    	sz=size;
-    }
-    void clear (bool dealloc = false) { buf.clear(dealloc);sz=0; }
-    void zero(){
-    	for(int i = 0;i<buf.size();i++)
-    		buf[i]=0;
-    }
-    void ones(){
-    	for(int i = 0;i<buf.size();i++)
-    		buf[i]=std::numeric_limits<uint64_t>::max();
-    }
-    void invert(){
-    	for(int i = 0;i<buf.size();i++){
-    		buf[i]=~buf[i];
-    	}
-    }
-    int  size  () const { return sz; }
+	void growTo(int size){
+		buf.growTo(size/BITSET_ELEMENT_SIZE + 1);
+		sz=size;
+	}
+	void clear (bool dealloc = false) { buf.clear(dealloc);sz=0; }
+	void zero(){
+		for(int i = 0;i<buf.size();i++)
+			buf[i]=0;
+	}
+	void ones(){
+		for(int i = 0;i<buf.size();i++)
+			buf[i]=std::numeric_limits<uint64_t>::max();
+	}
+	void invert(){
+		for(int i = 0;i<buf.size();i++){
+			buf[i]=~buf[i];
+		}
+	}
+	int  size  () const { return sz; }
 
 private:
 	static int popcount(uint64_t i){
@@ -102,46 +102,46 @@ public:
 		return n;
 	}
 
-    void copyFrom(const Bitset & from){
-    	from.buf.copyTo(buf);
-    	sz=from.size();
-    }
-    void copyTo(Bitset & to) const{
-       	buf.copyTo(to.buf);
-       	to.sz=sz;
+	void copyFrom(const Bitset & from){
+		from.buf.copyTo(buf);
+		sz=from.size();
+	}
+	void copyTo(Bitset & to) const{
+		buf.copyTo(to.buf);
+		to.sz=sz;
 
-       }
-    inline const bool operator [] (int index) const  {
-    	int i = index/BITSET_ELEMENT_SIZE ;
-    	int rem = index % BITSET_ELEMENT_SIZE;
-    	assert(i<buf.size());
-    	return buf[i] & (1<<rem);
-    }
+	}
+	inline const bool operator [] (int index) const  {
+		int i = index/BITSET_ELEMENT_SIZE ;
+		int rem = index % BITSET_ELEMENT_SIZE;
+		assert(i<buf.size());
+		return buf[i] & (1<<rem);
+	}
 
-    inline void set(int index){
-    	assert(index<size());
-    	int i = index/BITSET_ELEMENT_SIZE;
-    	int r = index %BITSET_ELEMENT_SIZE;
+	inline void set(int index){
+		assert(index<size());
+		int i = index/BITSET_ELEMENT_SIZE;
+		int r = index %BITSET_ELEMENT_SIZE;
 
-    	buf[i]|=(1<<r);
+		buf[i]|=(1<<r);
 
-    }
-    inline void clear(int index){
-    	assert(index<size());
-    	int i = index/BITSET_ELEMENT_SIZE;
-    	int r = index %BITSET_ELEMENT_SIZE;
+	}
+	inline void clear(int index){
+		assert(index<size());
+		int i = index/BITSET_ELEMENT_SIZE;
+		int r = index %BITSET_ELEMENT_SIZE;
 
-    	buf[i]&= ~(1<<r);
+		buf[i]&= ~(1<<r);
 
-    }
-    inline void toggle(int index){
-    	assert(index<size());
-    	int i = index/BITSET_ELEMENT_SIZE;
-    	int r = index %BITSET_ELEMENT_SIZE;
+	}
+	inline void toggle(int index){
+		assert(index<size());
+		int i = index/BITSET_ELEMENT_SIZE;
+		int r = index %BITSET_ELEMENT_SIZE;
 
-    	buf[i]^= (1<<r);
+		buf[i]^= (1<<r);
 
-    }
+	}
 	bool equals(Bitset & c){
 		if(c.size()!=size())
 			return false;
@@ -171,104 +171,104 @@ public:
 		return true;
 	}
 
-    void Not(Bitset & out){
-        	out.clear();
-        	out.growTo(size());
+	void Not(Bitset & out){
+		out.clear();
+		out.growTo(size());
 
-        	for(int i = 0;i<buf.size();i++){
-        		uint64_t a = buf[i];
-        		out.buf[i]=~a;
-        	}
-        	out.sz=sz;
-      }
-    void And(const Bitset & with){
+		for(int i = 0;i<buf.size();i++){
+			uint64_t a = buf[i];
+			out.buf[i]=~a;
+		}
+		out.sz=sz;
+	}
+	void And(const Bitset & with){
 
-        	int max = size();
-        	if(max>with.size()){
-        		max= with.size();
-        	}
-        	int max_i=max/BITSET_ELEMENT_SIZE+1;
-        	for(int i = 0;i<max_i;i++){
+		int max = size();
+		if(max>with.size()){
+			max= with.size();
+		}
+		int max_i=max/BITSET_ELEMENT_SIZE+1;
+		for(int i = 0;i<max_i;i++){
 
-        		uint64_t b = with.buf[i];
-        		buf[i]&=b;
-        	}
+			uint64_t b = with.buf[i];
+			buf[i]&=b;
+		}
 
-        }
+	}
 
-    void Or(const Bitset & with){
+	void Or(const Bitset & with){
 
-          	int max = size();
-          	if(max>with.size()){
-          		max= with.size();
-          	}
-          	int max_i=max/BITSET_ELEMENT_SIZE+1;
-          	for(int i = 0;i<max_i;i++){
+		int max = size();
+		if(max>with.size()){
+			max= with.size();
+		}
+		int max_i=max/BITSET_ELEMENT_SIZE+1;
+		for(int i = 0;i<max_i;i++){
 
-          		uint64_t b = with.buf[i];
-          		buf[i]|=b;
-          	}
+			uint64_t b = with.buf[i];
+			buf[i]|=b;
+		}
 
-          }
-    void And(const Bitset & with, Bitset & out){
-    	out.clear();
-    	out.growTo(size());
-    	int max = size();
-    	if(max>with.size()){
-    		max= with.size();
-    	}
-    	int max_i=max/BITSET_ELEMENT_SIZE+1;
-    	for(int i = 0;i<max_i;i++){
-    		uint64_t a = buf[i];
-    		uint64_t b = with.buf[i];
-    		out.buf[i]=a&b;
-    	}
-    	for(int i = max_i;i<buf.size();i++){
-    		uint64_t a = buf[i];
-    		out.buf[i]=a;
-    	}
-    	out.sz=sz;
-    }
+	}
+	void And(const Bitset & with, Bitset & out){
+		out.clear();
+		out.growTo(size());
+		int max = size();
+		if(max>with.size()){
+			max= with.size();
+		}
+		int max_i=max/BITSET_ELEMENT_SIZE+1;
+		for(int i = 0;i<max_i;i++){
+			uint64_t a = buf[i];
+			uint64_t b = with.buf[i];
+			out.buf[i]=a&b;
+		}
+		for(int i = max_i;i<buf.size();i++){
+			uint64_t a = buf[i];
+			out.buf[i]=a;
+		}
+		out.sz=sz;
+	}
 
-    void Or(const Bitset & with, Bitset & out){
-        	out.clear();
-        	out.growTo(size());
-        	int max = size();
-        	if(max>with.size()){
-        		max= with.size();
-        	}
-        	int max_i=max/BITSET_ELEMENT_SIZE+1;
-        	for(int i = 0;i<max_i;i++){
-        		uint64_t a = buf[i];
-        		uint64_t b = with.buf[i];
-        		out.buf[i]=a|b;
-        	}
-        	for(int i = max_i;i<buf.size();i++){
-        		uint64_t a = buf[i];
-        		out.buf[i]=a;
-        	}
-        	out.sz=sz;
-        }
-        
-         bool GreaterThan(const Bitset & with){
-         //Thanks to Tobias for this implementation
-          	int max = size();
-          	if(max != with.size()){
-          		return false;
-          	}
-          	if(size() == 0){
-          		return false;
-          	}
-          	int max_i=max/BITSET_ELEMENT_SIZE;
-          	for(int i = max_i;i>=0;i--){
-          		if (buf[i] < with.buf[i]) {
-          			return false;
-          		} if (buf[i] > with.buf[i]) {
-          			return true;
-          		}
-          	}
-          	return false;
-    	}
+	void Or(const Bitset & with, Bitset & out){
+		out.clear();
+		out.growTo(size());
+		int max = size();
+		if(max>with.size()){
+			max= with.size();
+		}
+		int max_i=max/BITSET_ELEMENT_SIZE+1;
+		for(int i = 0;i<max_i;i++){
+			uint64_t a = buf[i];
+			uint64_t b = with.buf[i];
+			out.buf[i]=a|b;
+		}
+		for(int i = max_i;i<buf.size();i++){
+			uint64_t a = buf[i];
+			out.buf[i]=a;
+		}
+		out.sz=sz;
+	}
+
+	bool GreaterThan(const Bitset & with){
+		//Thanks to Tobias for this implementation
+		int max = size();
+		if(max != with.size()){
+			return false;
+		}
+		if(size() == 0){
+			return false;
+		}
+		int max_i=max/BITSET_ELEMENT_SIZE;
+		for(int i = max_i;i>=0;i--){
+			if (buf[i] < with.buf[i]) {
+				return false;
+			} if (buf[i] > with.buf[i]) {
+				return true;
+			}
+		}
+		return false;
+	}
 };
 //=================================================================================================
 }

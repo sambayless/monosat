@@ -49,7 +49,7 @@ class LinkCut {
 	bool isRoot(Node *x) {
 		return x->parent == NULL || (x->parent->left != x && x->parent->right != x);
 	}
-	
+
 	void connect(Node* ch, Node* p, bool leftChild) {
 		if (leftChild)
 			p->left = ch;
@@ -58,11 +58,11 @@ class LinkCut {
 		if (ch != NULL)
 			ch->parent = p;
 	}
-	
+
 	void rotR(Node* p) {
 		Node* q = p->parent;
 		Node* r = q->parent;
-		
+
 		if ((q->left = p->right) != NULL)
 			q->left->parent = q;
 		p->right = q;
@@ -73,13 +73,13 @@ class LinkCut {
 			else if (r->right == q)
 				r->right = p;
 		}
-		
+
 	}
-	
+
 	void rotL(Node* p) {
 		Node * q = p->parent;
 		Node * r = q->parent;
-		
+
 		if ((q->right = p->left) != NULL)
 			q->right->parent = q;
 		p->left = q;
@@ -90,9 +90,9 @@ class LinkCut {
 			else if (r->right == q)
 				r->right = p;
 		}
-		
+
 	}
-	
+
 	void splay(Node *p) {
 		while (!isRoot(p)) {
 			Node* q = p->parent;
@@ -135,7 +135,7 @@ class LinkCut {
 		splay(x);
 		return last;
 	}
-	
+
 	Node * _findRoot(Node * x) {
 		expose(x);
 		while (x->right != NULL) {
@@ -144,7 +144,7 @@ class LinkCut {
 		//splay(x);
 		return x;
 	}
-	
+
 	bool dbgSetCount() {
 		int count = 0;
 		for (int i = 0; i < nodes.size(); i++) {
@@ -156,23 +156,23 @@ class LinkCut {
 		}
 		return count == setCount;
 	}
-	
+
 	// prerequisite: x and y are in distinct trees
 	void _link(Node* x, Node* y) {
 		//assert (_findRoot(x) != _findRoot(y));
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		Node* sY = _findRoot(y);
 		Node* sX = _findRoot(x);
 		assert(sY != sX);  //else this is a bug
 #endif
-		
+
 		setCount--;
 		expose(x);
 		assert(!x->parent);
 		x->parent = y;
 		assert(dbgSetCount());
 	}
-	
+
 	bool _connected(Node* x, Node *y) {
 		if (x == y)
 			return true;
@@ -180,7 +180,7 @@ class LinkCut {
 		expose(y);
 		return x->parent != NULL;
 	}
-	
+
 	void _cut(Node *x, Node *y) {
 		expose(x);
 		expose(y);
@@ -188,18 +188,18 @@ class LinkCut {
 			setCount++;
 		}
 		assert(! (y->right != x || x->left != NULL || x->right != NULL));
-		
+
 		y->right->parent = NULL;
 		y->right = NULL;
 		assert(dbgSetCount());
 	}
-	
+
 public:
 	LinkCut() :
 			setCount(0) {
-		
+
 	}
-	
+
 	int addNode() {
 		//return new Node();
 		setCount++;
@@ -209,11 +209,11 @@ public:
 	int nNodes() {
 		return nodes.size();
 	}
-	
+
 	int findRoot(int x) {
 		return _findRoot(nodes[x])->id;
 	}
-	
+
 	// prerequisite: x and y are in distinct trees
 	// and that p is a root of its tree, this links p to q
 	void link(int x, int y) {
@@ -223,7 +223,7 @@ public:
 		Node * ynode = nodes[y];
 		_link(xnode, ynode);
 	}
-	
+
 	bool connected(int x, int y) {
 		if (x == y)
 			return true;
@@ -231,7 +231,7 @@ public:
 		Node * ynode = nodes[y];
 		expose(xnode);
 		expose(ynode);
-#ifndef NDEBUG
+#ifdef DEBUG_DGL
 		int s1 = findRoot(x);
 		int s2 = findRoot(y);
 		bool dbg_connected = s1 == s2;
@@ -240,23 +240,23 @@ public:
 		} else {
 			assert(xnode->parent==NULL);
 		}
-		
+
 #endif
 		return xnode->parent != NULL;
-		
+
 	}
-	
+
 	void cut(int x, int y) {
 		Node * xnode = nodes[x];
 		Node * ynode = nodes[y];
 		_cut(xnode, ynode);
 	}
-	
+
 	int numRoots() {
 		assert(dbgSetCount());
 		return setCount;
 	}
-	
+
 	void reset() {
 		for (int i = 0; i < nodes.size(); i++) {
 			nodes[i]->parent = NULL;
@@ -265,6 +265,6 @@ public:
 		}
 		setCount = nodes.size();
 	}
-	
+
 };
 #endif

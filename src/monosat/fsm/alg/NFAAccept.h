@@ -5,13 +5,14 @@
  *      Author: sam
  */
 
-#ifndef NFAREACH_H_
-#define NFAREACH_H_
+#ifndef NFA_ACCEPT_H_
+#define NFA_ACCEPT_H_
 
-#include <monosat/dgl/DynamicGraph.h>
-#include <monosat/fsm/alg/NFATypes.h>
-#include <monosat/fsm/DynamicFSM.h>
-#include <monosat/mtl/Vec.h>
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/fsm/alg/NFATypes.h"
+#include "monosat/fsm/alg/NFAAcceptor.h"
+#include "monosat/fsm/DynamicFSM.h"
+#include "monosat/mtl/Vec.h"
 //#include "monosat/mtl/Bitset.h"
 #include <cassert>
 #include <vector>
@@ -20,7 +21,7 @@ using namespace Monosat;
 
 
 template<class Status=FSMNullStatus>
-class NFAAccept{
+class NFAAccept: public NFAAcceptor{
 	DynamicFSM & g;
 	Status & status;
 	int last_modification=-1;
@@ -76,13 +77,13 @@ private:
 	void buildStringTrackers(){
 		states_to_track_positive.growTo(strings.size());
 		states_to_track_negative.growTo(strings.size());
-		n_trackingString.growTo(strings.size(),g.states()*2);
+		n_trackingString.growTo(strings.size(),0);//g.states()*2
 		states_were_accepting.growTo(strings.size());
 		//states_were_rejecting.growTo(strings.size());
 
 		for(int i = 0;i<strings.size();i++){
-			states_to_track_positive[i].growTo(g.states(),true);
-			states_to_track_negative[i].growTo(g.states(),true);
+			states_to_track_positive[i].growTo(g.states(),false);
+			states_to_track_negative[i].growTo(g.states(),false);
 
 			states_were_accepting[i].growTo(g.states());
 			//states_were_rejecting[i].growTo(f.states());
@@ -129,8 +130,15 @@ private:
 		assert(labelOut==0);
 		if(checkUsed){
 			hasUsed=true;
+			usedTransitions.growTo(g.nEdgeIDs());
+			usedTransitions[edgeID].growTo(g.inAlphabet()+1);
 			usedTransitions[edgeID][labelIn]=true;
 		}
+	}
+	long num_updates=0;
+	int numUpdates() const {
+
+		return num_updates;
 	}
 
 	void find_accepts(int str){
@@ -355,11 +363,11 @@ public:
 		if(hasUsed){
 			//clear used
 			hasUsed=false;
-		/*	for(int i = 0;i<usedTransitions.size();i++){
-				for(int l = 0;l<usedTransitions[i].size()){
-					usedTransitions[i][l]=false;
-				}
-			}*/
+			/*	for(int i = 0;i<usedTransitions.size();i++){
+                    for(int l = 0;l<usedTransitions[i].size()){
+                        usedTransitions[i][l]=false;
+                    }
+                }*/
 		}
 
 		//for(int i = 0;i<g.states();i++)
@@ -425,7 +433,7 @@ public:
 				}
 			}
 		}
-
+		num_updates++;
 		hasAcceptanceStates=true;
 
 		last_modification = g.modifications;
@@ -464,7 +472,28 @@ public:
 		return path_rec(source,state,string,0,0,path);
 	}
 
-
+	vec<Bitset> used_transition;
+	bool getAbstractPath(int string, int state, vec<NFATransition> &path, bool reversed) {
+		update();
+		getPath(string,state,path);
+		used_transition.growTo(g.edges());
+		int i,j=0;
+		for(i = 0;i<path.size();i++){
+			NFATransition & t = path[i];
+			used_transition[t.edgeID].growTo(g.inAlphabet()+1);
+			if(!used_transition[t.edgeID][t.input]) {
+				path[j++]=t;
+				used_transition[t.edgeID].set(t.input);
+			}
+		}
+		path.shrink(i-j);
+		for(NFATransition & t:path){
+			used_transition[t.edgeID].clear(t.input);
+		}
+		if(reversed)
+			reverse(path);
+		return true;
+	}
 
 };
 

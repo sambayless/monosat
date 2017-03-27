@@ -33,11 +33,12 @@ namespace Monosat {
 //atached to the central graph theory. This allows them to share their edge atoms and a lot of other infrastructure.
 class FSMDetector {
 public:
-	
+
 	int detectorID;
 
 	int unassigned_positives = 0;
 	int unassigned_negatives = 0;
+	long last_negated_check=0;
 
 	//Stats
 	double stats_under_update_time = 0;
@@ -58,40 +59,41 @@ public:
 	int getID() {
 		return detectorID;
 	}
-	
+
 	virtual const char* getName() {
 		return "<unknown>";
 	}
-	
+
 	virtual void printStats() {
 		if (opt_verb > 0) {
 			printf("Detector %d (%s):\n", getID(), getName());
 			//printf("Updates: %d (under), %d over\n", stats_under_updates, stats_over_updates);
 			printf("\tUnder-approx updates: %ld (%ld skipped) (%f s total, %f s avg)\n", stats_under_updates,
-					stats_skipped_under_updates, (double) stats_under_update_time,
-					(double) stats_under_update_time / (double) (stats_under_updates + 1));
+				   stats_skipped_under_updates, (double) stats_under_update_time,
+				   (double) stats_under_update_time / (double) (stats_under_updates + 1));
 			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,
-					stats_skipped_over_updates, (double) stats_over_update_time,
-					(double) stats_over_update_time / (double) (stats_over_updates + 1));
+				   stats_skipped_over_updates, (double) stats_over_update_time,
+				   (double) stats_over_update_time / (double) (stats_over_updates + 1));
 			printf("\tTheory Decisions: %ld (%f s total, %f s avg)\n", stats_decisions, (double) stats_decide_time,
-					(double) stats_decide_time / (double) (stats_decisions + 1));
+				   (double) stats_decide_time / (double) (stats_decisions + 1));
 			printf(
 					"\tConflicts (under,over): %ld (clause literals: %ld), %ld, (clause literals: %ld), (under time %f s, over time %f s)\n",
 					stats_under_conflicts, stats_under_clause_length, stats_over_conflicts, stats_over_clause_length,
 					stats_under_conflict_time, stats_over_conflict_time);
-			
+
 		}
 	}
-	
+
 	virtual void printSolution(std::ostream & write_to = std::cout) {
 	}
-	
+
 	virtual bool propagate(vec<Lit> & conflict)=0;
 	virtual void buildReason(Lit p, vec<Lit> & reason, CRef marker)=0;
 	virtual bool checkSatisfied()=0;
 	virtual void preprocess() {
-		
+
 	}
+
 	virtual void backtrack(int level) {
 		//do nothing
 	}
@@ -99,6 +101,9 @@ public:
 		return lit_Undef;
 	}
 	virtual void setOccurs(Lit l, bool occurs) {
+		if(this->detectorID==1){
+			int a=1;
+		}
 		if (!occurs) {
 			if (sign(l))
 				unassigned_negatives--;
@@ -114,19 +119,35 @@ public:
 		assert(unassigned_negatives >= 0);
 	}
 	virtual void assign(Lit l) {
-		if (sign(l))
+		if (!sign(l))
+			unassigned_negatives++;
+		else
+			unassigned_positives++;
+		assert(unassigned_positives >= 0);
+		assert(unassigned_negatives >= 0);
+
+	}
+	virtual void unassign(Lit l) {
+		if (!sign(l))
 			unassigned_negatives--;
 		else
 			unassigned_positives--;
 		assert(unassigned_positives >= 0);
 		assert(unassigned_negatives >= 0);
-		
 	}
-	virtual void unassign(Lit l) {
-		if (sign(l))
-			unassigned_negatives++;
-		else
-			unassigned_positives++;
+	virtual void setSatisfied(Lit l, bool isSatisfied){
+
+	}
+	virtual bool checkNegatedPolarity(){
+		if(opt_detect_satisfied_predicates<=0)
+			return false;
+
+		if (++last_negated_check>=opt_detect_satisfied_predicates){
+			last_negated_check=0;
+			return true;
+		}else{
+			return false;
+		}
 	}
 	//virtual vec<int> & getLitMap();
 	FSMDetector(int detectorID) :
@@ -134,21 +155,21 @@ public:
 	}
 	;
 	virtual ~FSMDetector() {
-		
+
 	}
-	
+
 	/*	virtual void addLit(Lit l){
 	 unassigned_negatives++;
 	 unassigned_positives++;
 	 }*/
 	virtual void addVar(Var v) {
-		unassigned_negatives++;
-		unassigned_positives++;
+		//unassigned_negatives++;
+		//unassigned_positives++;
 	}
 };
 
 class FSMLevelDetector: public FSMDetector {
-	
+
 	vec<int> level_trail;
 
 public:
@@ -159,7 +180,7 @@ public:
 
 	virtual ~FSMLevelDetector() {
 	}
-	
+
 	virtual void backtrack(int level) {
 		while (level_trail.size() && level < level_trail.last()) {
 			level_trail.pop();
@@ -173,12 +194,12 @@ public:
 	int decisionLevel() {
 		return level_trail.size();
 	}
-	
+
 	void newDecisionLevel(int outer_level) {
-		
+
 		level_trail.push(outer_level);
 	}
-	
+
 };
 
 }

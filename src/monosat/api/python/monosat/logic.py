@@ -67,6 +67,19 @@ class Var:
     def getSymbol(self):
         return self.symbol
     
+    def setDecisionPriority(self,priority):
+        _monosat.setDecisionPriority(self.getVar(),priority)
+
+    def getDecisionPriority(self):
+        return _monosat.getDecisionPriority(self.getVar())
+
+    def setDecisionPolarity(self, b):
+        _monosat.setDecisionPolarity(self.getVar(),b)
+
+    def getDecisionPolarity(self):
+        return self.monosat_c.getDecisionPolarity(self.getVar())
+
+
     def setSymbol(self,s):
         pass
         #if self.symbol is not None and self.symbol in _monosat.symbolmap:

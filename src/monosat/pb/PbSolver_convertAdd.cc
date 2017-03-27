@@ -39,7 +39,7 @@ static void lte(vec<Formula> &xs, vec<Formula> &ys, vec<Formula> &out) {
         for (int j = i + 1; j < max(xs.size(), ys.size()); j++) {
             Formula x = j < xs.size() ? xs[j] : _0_;
             Formula y = j < ys.size() ? ys[j] : _0_;
-            c = c | x ^ y;
+            c = c |  (x ^ y);
         }
         c = c | ~xs[i] | (i < ys.size() ? ys[i] : _0_);
         assert(c != _0_);

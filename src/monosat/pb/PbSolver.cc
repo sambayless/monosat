@@ -80,7 +80,7 @@ void PbSolver::addGoal(const vec<Lit> &ps_, const vec<Int> &Cs) {
     tmp.clear();
     fromSolver(ps_, tmp);
     goal = new(xmalloc<char>(sizeof(Linear) + tmp.size() * (sizeof(Lit) + sizeof(Int)))) Linear(tmp, Cs, Int_MIN,
-                                                                                               Int_MAX);
+                                                                                                Int_MAX);
 }
 bool PbSolver:: addConstr(const vec<Lit> &solver_ps, const vec<Int> &Cs, Int rhs, int ineq){
     tmp.clear();
@@ -89,7 +89,7 @@ bool PbSolver:: addConstr(const vec<Lit> &solver_ps, const vec<Int> &Cs, Int rhs
 }
 bool PbSolver::addConstr_(const vec<Lit> &ps, const vec<Int> &Cs, Int rhs, int ineq) {
     sat_solver.cancelUntil(0);
-#ifndef NDEBUG
+#ifdef DEBUG_PB
     for(Lit l:ps){
         assert(var(l)<nVars());
     }
@@ -202,7 +202,7 @@ bool PbSolver::normalizePb(vec<Lit> &ps, vec<Int> &Cs, Int &C) {
 
     // Sort literals on growing constant values:
     //
-    sort(Csps);     // (use lexicographical order of 'Pair's here)
+    PB::sort(Csps);     // (use lexicographical order of 'Pair's here)
     Int sum = 0;
     for (int i = 0; i < Csps.size(); i++) {
         Cs[i] = Csps[i].fst, ps[i] = Csps[i].snd, sum += Cs[i];
@@ -580,10 +580,10 @@ void PbSolver::solve(solve_Command cmd) {
         return;
     }
 
- /*   if (opt_cnf != NULL)
-        reportf("Exporting CNF to: \b%s\b\n", opt_cnf),
-                sat_solver.toDimacs(opt_cnf),
-                exit(0);*/
+    /*   if (opt_cnf != NULL)
+           reportf("Exporting CNF to: \b%s\b\n", opt_cnf),
+                   sat_solver.toDimacs(opt_cnf),
+                   exit(0);*/
 
     bool sat = false;
     int n_solutions = 0;    // (only for AllSolutions mode)

@@ -17,7 +17,7 @@ class VecAlloc {
     Slot *table;
     int index;
     Slot *recycle;
-#ifdef DEBUG
+#ifdef DEBUG_PB
     int     nallocs;
 #endif
 
@@ -32,14 +32,14 @@ public:
     VecAlloc(void) {
         recycle = NULL;
         table = NULL;
-#ifdef DEBUG
+#ifdef DEBUG_PB
         nallocs = 0;
 #endif
         newTable();
     }
 
     ~VecAlloc(void) {
-#ifdef DEBUG
+#ifdef DEBUG_PB
         //if (nallocs != 0) fprintf(stderr, "WARNING! VecAlloc detected leak of %d unit(s) of type '%s'.\n", nallocs, typeid(T).name());
         if (nallocs != 0) fprintf(stderr, "WARNING! VecAlloc detected leak of %d unit(s) of size %lu.\n", nallocs, sizeof(T));
 #endif
@@ -52,7 +52,7 @@ public:
     }
 
     T *alloc(void) {
-#ifdef DEBUG
+#ifdef DEBUG_PB
         nallocs++;
 #endif
         if (recycle == NULL) {
@@ -67,7 +67,7 @@ public:
     }
 
     void free(T *ptr) {
-#ifdef DEBUG
+#ifdef DEBUG_PB
         nallocs--;
 #endif
         ((Slot *) ptr)->next = recycle;
