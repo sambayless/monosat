@@ -217,7 +217,7 @@ public:
 	}
 	~FSMTheorySolver(){
 		if(this->strings){
-			delete(this->strings);
+			//delete(this->strings);//why is this problematic?
 		}
 		for (DynamicFSM * f:g_unders){
 			delete(f);

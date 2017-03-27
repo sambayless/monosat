@@ -711,8 +711,8 @@ public:
 		return connected_unsafe(t);
 	}
 	bool connected(int t) {
-		if (last_modification != g.modifications)
-			update();
+
+		update();
 
 		assert(dbg_uptodate());
 		if(has_zero_weights){
@@ -721,8 +721,8 @@ public:
 		return dist[t] < INF;
 	}
 	Weight & distance(int t) {
-		if (last_modification != g.modifications)
-			update();
+
+		update();
 		if(has_zero_weights){
 			return dijkstras.distance(t);
 		}
