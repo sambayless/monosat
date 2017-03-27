@@ -24,17 +24,17 @@
 #define STR_VALUE(macro) QUOTE(macro)
 
 //define MONOSAT_VERSION and MONOSAT_BUILD when building to include more precise version information
-#define VERSION_NUM "1.4"
+#define VERSION_NUM "1.4.0"
 
 #ifdef MONOSAT_BUILD
-#define BUILD_TYPE STR_VALUE(MONOSAT_BUILD)
+#define BUILD_TYPE ", " STR_VALUE(MONOSAT_BUILD)
 #else
 #define BUILD_TYPE ""
 #endif
 
 
 #ifdef MONOSAT_VERSION
-#define VERSION_STR STR_VALUE(MONOSAT_VERSION)
+#define VERSION_STR ", " STR_VALUE(MONOSAT_VERSION)
 #else
 #define VERSION_STR ""
 #endif
