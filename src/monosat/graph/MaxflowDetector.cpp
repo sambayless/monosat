@@ -27,6 +27,7 @@
 #include <monosat/dgl/BFS.h>
 #include <monosat/graph/GraphTheory.h>
 #include <monosat/graph/GraphHeuristic.h>
+
 //#include "monosat/dgl/KohliTorr.h"
 using namespace Monosat;
 
@@ -113,6 +114,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 		if (opt_conflict_min_cut_maxflow || opt_adaptive_conflict_mincut)
 			learn_cut = new EdmondsKarpAdj<Weight>(learn_graph, source, target);
 	}
+
 	if (opt_adaptive_history_clear > 0) {
 		learn_graph.adaptive_history_clear = true;
 		learn_graph.historyClearInterval = opt_adaptive_history_clear;

@@ -419,7 +419,7 @@ IntOption Monosat::opt_height("GRAPH", "height", "Height of graph.\n", 0, IntRan
 IntOption Monosat::opt_bits("GRAPH", "bits", "Bits per position in graph.\n", 1, IntRange(0, INT32_MAX));
 
 BoolOption Monosat::opt_graph_cache_propagation(_cat_graph,"cache-graph-propagation","",false);
-BoolOption Monosat::opt_graph_use_cache_for_decisions(_cat_graph,"cached-decisions","",true);
+IntOption Monosat::opt_graph_use_cache_for_decisions(_cat_graph,"cache-graph-decisions", "(when using cache-graph-propagation, 2== use cache for all decisions, 1 = clear cache before decisions, 0=never use cache for decisions",2, IntRange(0,2));
 
 BoolOption Monosat::opt_csv("GRAPH", "csv", "Output in CSV format", false);
 

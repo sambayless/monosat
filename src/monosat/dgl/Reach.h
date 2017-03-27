@@ -71,6 +71,9 @@ public:
 	virtual void removeDestination(int node){
 
 	}
+	virtual void clearCache(){
+
+	}
 };
 }
 ;

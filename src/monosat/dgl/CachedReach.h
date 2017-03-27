@@ -1,6 +1,24 @@
-//
-// Created by sam on 20/03/17.
-//
+/****************************************************************************************[Solver.h]
+ The MIT License (MIT)
+
+ Copyright (c) 2017, Sam Bayless
+
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in all copies or
+ substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **************************************************************************************************/
+
 
 #ifndef MONOSAT_CACHED_REACH_H
 #define MONOSAT_CACHED_REACH_H
@@ -51,14 +69,14 @@ public:
 
     }
 
-    //Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-
     void setSource(int s) {
-
-        last_modification = -1;
-        last_addition = -1;
-        last_deletion = -1;
-        reach->setSource(s);
+        if(s!=reach->getSource()) {
+            needs_recompute = true;
+            last_modification = -1;
+            last_addition = -1;
+            last_deletion = -1;
+            reach->setSource(s);
+        }
     }
     int getSource() {
         return reach->getSource();
@@ -77,6 +95,10 @@ public:
     std::vector<bool> has_path_to;
     std::vector<int> previous_edge;
     bool has_non_reach_destinations=false;
+    bool needs_recompute=true;
+    void clearCache(){
+        needs_recompute=true;
+    }
 
      void addDestination(int node) override{
          if(!destinations.has(node)) {
@@ -88,6 +110,7 @@ public:
 
     }
     void recompute(){
+        needs_recompute=false;
         reach->update();
         //do not need to reset previous_edge vector here; instead we allow it to contain incorrect values on the assumption they will be corrected before being accessed
         edge_in_path.clear();//clear and rebuild the path tree
@@ -140,10 +163,11 @@ public:
     void update() override{
         static int iteration = 0;
         int local_it = ++iteration;
-        if (last_modification > 0 && g.modifications == last_modification){
+
+        if (!needs_recompute && last_modification > 0 && g.modifications == last_modification){
             return;
         }
-        bool needs_recompute=false;
+
 
         if (last_modification <= 0 || g.changed()) {//Note for the future: there is probably room to improve this further.
             edge_in_path.clear();
@@ -159,7 +183,7 @@ public:
 
         }
 
-        if (last_history_clear != g.historyclears) {
+        if (!needs_recompute && last_history_clear != g.historyclears) {
             if (!g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize()){
                 //no information was lost in the history clear
                 history_qhead = 0;
@@ -182,26 +206,26 @@ public:
                 }
             }
         }
+        if(!needs_recompute) {
+            for (int i = history_qhead; i < g.historySize(); i++) {
+                int edgeid = g.getChange(i).id;
 
-        for (int i = history_qhead; i < g.historySize(); i++) {
-            int edgeid = g.getChange(i).id;
-
-            if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-                int v = g.getEdge(edgeid).to;
-                if(has_non_reach_destinations){
-                    //needs recompute
-                    needs_recompute=true;
-                    break;
-                }
-            } else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
-                int v = g.getEdge(edgeid).to;
-                if(edge_in_path.has(edgeid)){
-                    needs_recompute=true;
-                    break;
+                if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
+                    int v = g.getEdge(edgeid).to;
+                    if (has_non_reach_destinations) {
+                        //needs recompute
+                        needs_recompute = true;
+                        break;
+                    }
+                } else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
+                    int v = g.getEdge(edgeid).to;
+                    if (edge_in_path.has(edgeid)) {
+                        needs_recompute = true;
+                        break;
+                    }
                 }
             }
         }
-
 
         if(needs_recompute){
             recompute();
@@ -224,12 +248,12 @@ public:
         return has_path_to[t];
     }
     bool connected_unchecked(int t) {
-        assert(last_modification == g.modifications);
+        assert(last_modification == g.modifications && ! needs_recompute);
         return connected_unsafe(t);
     }
     bool connected(int t) {
-        if (last_modification != g.modifications)
-            update();
+        //if (last_modification != g.modifications)
+        update();
         return has_path_to[t];
     }
     int distance(int t) {
@@ -245,10 +269,12 @@ public:
             return -1;
     }
     int incomingEdge(int t) {
+        assert(last_modification == g.modifications && ! needs_recompute);
         assert(previous_edge[t]>=0);
         return previous_edge[t]; //reach->incomingEdge(t);
     }
     int previous(int t) {
+        assert(last_modification == g.modifications && ! needs_recompute);
         int edgeID = incomingEdge(t);
         assert(edgeID>=0);
         assert(g.edgeEnabled(edgeID));

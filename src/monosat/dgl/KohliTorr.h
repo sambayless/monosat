@@ -38,6 +38,9 @@ namespace dgl {
 template<typename Weight>
 class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	Weight f = 0;
+	Weight static_maxflow=-1;//the maximum possible flow in the graph.
+	Weight source_max = 0;
+	Weight dest_max = 0;
 	DynamicGraph<Weight>& g;
 	DynamicGraph<Weight> * flow_graph=nullptr;//optional graph that can be used to record the edges in the actual flow
 	/**
@@ -93,6 +96,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	std::vector<int> changed_edges;
 	std::vector<int> changed_partition;
 	bool flow_needs_recalc = true;
+	bool needs_recompute = true;
 	int alg_id;
 
 	inline typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id  getArc(int edgeID){
@@ -124,7 +128,7 @@ public:
 		last_modification = -1;
 		last_deletion = -1;
 		last_addition = -1;
-		
+		needs_recompute=true;
 		history_qhead = 0;
 		last_history_clear = -1;
         if(source==sink){
@@ -266,11 +270,42 @@ public:
 				}
 			}
 		}
+		needs_recompute=true;
 		source = s;
 		last_modification = g.modifications - 1;
 		flow_needs_recalc = true;
+		updateSourceSink();
 	}
-	
+	void updateSourceSink(){
+		static_maxflow=-1;
+		if(source!=sink) {
+			source_max = 0;
+			for (int i = 0; i < g.nIncident(getSource()); i++){
+				int edgeID = g.incident(getSource(),i).id;
+				int t =  g.incident(getSource(),i).node;
+				if(t!=getSource()){
+					Weight w = g.getWeight(edgeID);
+					assert(w>=0);
+					source_max+=w;
+				}
+			}
+			dest_max = 0;
+			for (int i = 0; i < g.nIncoming(getSink()); i++){
+				int edgeID = g.incoming(getSink(),i).id;
+				int t =  g.incoming(getSink(),i).node;
+				if(t!=getSink()){
+					Weight w = g.getWeight(edgeID);
+					assert(w>=0);
+					dest_max+=w;
+				}
+			}
+			if(source_max<dest_max){
+				static_maxflow=source_max;
+			}else{
+				static_maxflow=dest_max;
+			}
+		}
+	}
 	void setSink(int t) {
 		same_source_sink=false;
 		assert(source!=sink);
@@ -317,8 +352,10 @@ public:
 			}
 		}
 		sink = t;
+		needs_recompute=true;
 		last_modification = std::min(last_modification, g.modifications - 1);
 		flow_needs_recalc = true;
+		updateSourceSink();
 	}
 	
 	void setCapacity(int u, int w, Weight c) {
@@ -341,6 +378,7 @@ public:
 		if(same_source_sink)
 			return;
 		stats_inits++;
+		needs_recompute=true;
 		clearChangedEdges();
 		edge_enabled.clear();
 		flow_needs_recalc = true;
@@ -374,7 +412,6 @@ public:
 		edge_map.clear();//.resize(kt->get_arc_num());
 		for(int i = 0;i<tmp_edge_map.size();i++)
 			tmp_edge_map[i].clear();
-
 
 
 		tmp_edges.clear();
@@ -541,6 +578,7 @@ public:
 						 }*/
 					}
 				}
+		updateSourceSink();
 	}
 
 	const Weight update() {
@@ -550,7 +588,7 @@ public:
 			return INF;
 		//see http://cstheory.stackexchange.com/a/10186
 		static int it = 0;
-		if (++it == 95) {
+		if (++it == 89) {
 			int a = 1;
 		}
 
@@ -558,7 +596,6 @@ public:
 			fprintf(g.outfile, "f %d %d\n", s, t);
 			fflush(g.outfile);
 		}
-
 
 		//C.resize(g.nodes());
 		bool any_changed=false;
@@ -579,31 +616,50 @@ public:
 				last_history_clear = g.historyclears;
 		}else if (g.historyclears != last_history_clear || g.changed()) {
 			stats_reinits++;
-			flow_needs_recalc = true;
+
 			for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 				if (!g.hasEdge(edgeid) || g.selfLoop(edgeid))
 					continue;
+				int from = g.getEdge(edgeid).from;
+				int to = g.getEdge(edgeid).to;
 				if (g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
+
+
+
 					assert(local_weight(edgeid)==0);
 					edge_enabled[edgeid] = true;
 					set_local_weight(edgeid,g.getWeight(edgeid));
 
 					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
+					if(curflow<static_maxflow) {
 
+						needs_recompute=true;
+					}
 				}else if (g.edgeEnabled(edgeid) && edge_enabled[edgeid] && g.getWeight(edgeid) != local_weight(edgeid)){
 					Weight dif =g.getWeight(edgeid)- local_weight(edgeid);
+					typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id   arcID = getArc(edgeid);
 
+					if(dif <0 && kt->get_flow(arcID)>0) {
+						flow_needs_recalc = true;
+						needs_recompute=true;
+					}
 					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0,getArc(edgeid));
 					set_local_weight(edgeid, g.getWeight(edgeid));
+					if (dif >0 && curflow<static_maxflow){
+
+						needs_recompute=true;
+					}
 				}else if (!g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
+					typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id   arcID = getArc(edgeid);
 					assert(edge_enabled[edgeid]);
 					edge_enabled[edgeid] = false;
-					//if(!backward_maxflow){
+					if(kt->get_flow(arcID)>0){
+
+						needs_recompute=true;
+					}
 					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,getArc(edgeid));
 					set_local_weight(edgeid,0);
-					/*	}else{
-					 kt->edit_edge_inc(g.getEdge(edgeid).to,g.getEdge(edgeid).from,-g.getWeight(edgeID),0);
-					 }*/
+
 				}
 			}
 			history_qhead = g.historySize();
@@ -613,34 +669,56 @@ public:
 		
 		for (int i = history_qhead; i < g.historySize(); i++) {
 			int edgeid = g.getChange(i).id;
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
 			if (g.selfLoop(edgeid))
 				continue; //skip self loops
 			if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
-				flow_needs_recalc = true;
+
+
 				assert(local_weight(edgeid)==0);
 				edge_enabled[edgeid] = true;
 				set_local_weight(edgeid,g.getWeight(edgeid));
-				//if(!backward_maxflow){
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
 
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, g.getWeight(edgeid), 0,getArc(edgeid));
+				if(curflow<static_maxflow) {
+
+					needs_recompute=true;
+				}
 			}else if ((g.getChange(i).weight_increase || g.getChange(i).weight_decrease) && g.edgeEnabled(edgeid) && edge_enabled[edgeid] && g.getWeight(edgeid) != local_weight(edgeid)){
-				flow_needs_recalc = true;
+				typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id   arcID = getArc(edgeid);
 				Weight dif = g.getWeight(edgeid)-local_weight(edgeid);
+
+				if(dif <0 && kt->get_flow(arcID)>0) {
+
+					needs_recompute=true;
+				}
 				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0,getArc(edgeid));
 				set_local_weight(edgeid, g.getWeight(edgeid));
-			}else if (g.getChange(i).deletion && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
-				flow_needs_recalc = true;
+				if (dif >0 && curflow<static_maxflow){
+
+					needs_recompute=true;
+				}
+			}else if (g.getChange(i).deletion && !g.edgeEnabled(edgeid) && edge_enabled[edgeid] ) {
+				typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id   arcID = getArc(edgeid);
 				assert(edge_enabled[edgeid]);
 				edge_enabled[edgeid] = false;
-				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,getArc(edgeid));
+
+				if(kt->get_flow(arcID)>0){
+
+					needs_recompute=true;
+				}
+				kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, -local_weight(edgeid), 0,arcID);
 				set_local_weight(edgeid,0);
 			}
 		}
 		if(sum_of_edge_capacities>max_capacity){
 			updateMaxCapacity(sum_of_edge_capacities);
 		}
-		f = kt->maxflow(dynamic);
-		
+		if(needs_recompute) {
+			f = kt->maxflow(dynamic);
+			needs_recompute=false;
+		}
 #ifdef DEBUG_MAXFLOW2
 		EdmondsKarpDynamic<Weight> ek(g,source,sink);
 		Weight expected_flow =ek.maxFlow(source,sink);
@@ -727,12 +805,49 @@ private:
 		return local_weights[edgeid];
 	}
 	inline void set_local_weight(int edgeid, Weight  w){
-		sum_of_edge_capacities-=local_weights[edgeid];
-		local_weights[edgeid]=w;
+		flow_needs_recalc = true;
+		Weight dif = w-local_weight(edgeid);
+		if(dif!=0) {
+			sum_of_edge_capacities -= local_weights[edgeid];
+			local_weights[edgeid] = w;
 
-		sum_of_edge_capacities+=w;
-		if(sum_of_edge_capacities<0){//this is a total hack... how should overflows be dealt with, properly, here?
-			sum_of_edge_capacities=std::numeric_limits<Weight>::max()/2;
+			sum_of_edge_capacities += w;
+			if (sum_of_edge_capacities <
+				0) {//this is a total hack... how should overflows be dealt with, properly, here?
+				sum_of_edge_capacities = std::numeric_limits<Weight>::max() / 2;
+			}
+			int from = g.getEdge(edgeid).from;
+			int to = g.getEdge(edgeid).to;
+			if(from!=to) {
+				if (from == getSource()) {
+					source_max += dif;
+					if (source_max < dest_max) {
+						if (static_maxflow != source_max) {
+							static_maxflow = source_max;
+							//needs_recompute = true;
+						}
+					} else {
+						if (static_maxflow != dest_max) {
+							static_maxflow = dest_max;
+							//needs_recompute = true;
+						}
+					}
+
+				} else if (to == getSink()) {
+					dest_max += dif;
+					if (source_max < dest_max) {
+						if (static_maxflow != source_max) {
+							static_maxflow = source_max;
+							//needs_recompute = true;
+						}
+					} else {
+						if (static_maxflow != dest_max) {
+							static_maxflow = dest_max;
+							//needs_recompute = true;
+						}
+					}
+				}
+			}
 		}
 	}
 /*	inline void collect_multi_edges(int for_edge) {
@@ -886,25 +1001,23 @@ private:
 	inline void calc_flow() {
 		if(same_source_sink)
 			return;
+
+		if(needs_recompute){
+			update();
+		}
 		if (!flow_needs_recalc)
 			return;
 		if(!kt){
 			update();
 		}
 		//double startflowtime = Monosat::rtime(0);
-		flow_needs_recalc = false;
+
 		stats_flow_calcs++;
 
-		//apply edmonds karp to the current flow.
+
 		Weight maxflow = kt->maxflow(true, nullptr);
-		//double startcalctime = Monosat::rtime(2);
-		//if(backward_maxflow){
-		
-		/*kt->clear_t_edges(sink,source);
-
-		 dbg_check_flow(source,sink);*/
-		/*}else{*/
-
+		needs_recompute=false;
+		flow_needs_recalc = false;
 		kt->clear_t_edges(source, sink);
 		
 		dbg_check_flow(source, sink);

@@ -192,7 +192,12 @@ public:
 	void debug_decidable(Var v);
 	void assignBV(int bvID)override ;
 	void unassignBV(int bvID) override;
-
+	void assign(Lit l)override{
+		Detector::assign(l);
+		if(default_heuristic){
+			outer->activateHeuristic(default_heuristic);
+		}
+	}
 	void setSatisfied(Lit l, bool isSatisfied)override;
 	bool detectorIsSatisfied()override;
 	Lit decide(CRef &decision_reason);
