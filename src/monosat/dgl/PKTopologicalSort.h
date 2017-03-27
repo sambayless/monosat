@@ -523,7 +523,7 @@ public:
 			has_topo=false;
 			cycle.clear();
 			history_qhead =  g.historySize();
-
+			stats_history_clears++;
 			for(int edgeID = 0;edgeID<g.edges();edgeID++){
 				edge_enabled[edgeID]=g.edgeEnabled(edgeID);
 			}

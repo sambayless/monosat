@@ -581,7 +581,7 @@ class MonosatTheoryPB:
             assert(len(clause)>0)
             f.write("pb_lt " + str(len(clause)) + " ");
             for v in clause:
-                #assert(v.isInput())
+
                 f.write(str(v.getInputLiteral()) + " ")
             f.write(str(len(weights)) + " ")
             for w in weights:
@@ -595,7 +595,7 @@ class MonosatTheoryPB:
                     f.write("1 ")
                 else:
                     f.write("2 ")
-                #assert(conditionVar.isInput())
+
                 f.write(str(conditionVar.getInputLiteral()))
             f.write("\n")
             pass

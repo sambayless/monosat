@@ -1600,8 +1600,8 @@ public:
 		return connected_unsafe(t);
 	}
 	bool connected(int t) {
-		if (last_modification < 0 ||  last_modification != g.modifications)
-			update();
+
+		update();
 
 
 		assert(dbg_uptodate());
@@ -1609,8 +1609,8 @@ public:
 		return dist[t] < INF;
 	}
 	int& distance(int t) {
-		if (last_modification < 0 ||  last_modification != g.modifications)
-			update();
+
+		update();
 
 		if (connected_unsafe(t))
 			return dist[t];

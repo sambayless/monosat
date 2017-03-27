@@ -650,9 +650,6 @@ public:
 		//double initial_start = rtime(1);
 		double start = rtime(1);
 		backtrackUntil(p);
-		if (var(p) == 1003){
-			int a=1;
-		}
 		assert(d < detectors.size());
 		detectors[d]->buildReason(p, reason, marker);
 		toSolver(reason);
@@ -746,9 +743,7 @@ public:
 			trail.push( Assignment(false, !sign(l),-1, v ));
 			//this is an assignment to a non-edge atom. (eg, a reachability assertion)
 			detectors[getDetector(var(l))]->assign(l);
-			if(getDetector(var(l))==1){
-				int a=1;
-			}
+
 		}
 		
 	}

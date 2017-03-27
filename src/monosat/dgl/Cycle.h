@@ -29,12 +29,13 @@ public:
 	
 	bool marked;
 
-	int stats_full_updates;
-	int stats_fast_updates;
-	int stats_fast_failed_updates;
-	int stats_skip_deletes;
-	int stats_skipped_updates;
-	int stats_num_skipable_deletions;
+	int stats_full_updates=0;
+	int stats_fast_updates=0;
+	int stats_fast_failed_updates=0;
+	int stats_skip_deletes=0;
+	int stats_skipped_updates=0;
+	int stats_num_skipable_deletions=0;
+	long stats_history_clears=0;
 	double mod_percentage;
 
 	double stats_full_update_time;

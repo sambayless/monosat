@@ -249,6 +249,7 @@ set(SOURCE_FILES
         src/monosat/api/Logic.h
         src/monosat/graph/GraphHeuristic.h
         src/monosat/dgl/CachedReach.h
+        src/monosat/dgl/DStarLite.h
         )
 
 set(SOURCE_FILES_PB
@@ -332,7 +333,7 @@ if (${UNIX})
     target_link_libraries(monosat_static rt) #not static
 endif (${UNIX})
 
-add_library(libmonosat SHARED ${SOURCE_FILES} src/monosat/dgl/DStarLite.h)
+add_library(libmonosat SHARED ${SOURCE_FILES})
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 target_link_libraries(libmonosat m)

@@ -116,12 +116,12 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 		overapprox_unweighted_distance_detector =
 				new UnweightedRamalReps<Weight,typename DistanceDetector<Weight>::ReachStatus>(from, _antig,
 						*(negativeReachStatus), 0);
-		//fix this? Can RamalReps report paths?
+
 		if(underapprox_unweighted_distance_detector){
 			underapprox_path_detector = underapprox_unweighted_distance_detector;
 		}else{
-			underapprox_path_detector =  underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight>::ReachStatus>(
-									from, _g, *positiveReachStatus, 0);
+			underapprox_path_detector =  underapprox_unweighted_distance_detector =  new UnweightedRamalReps<Weight,
+					typename DistanceDetector<Weight>::ReachStatus>(from, _g, *(positiveReachStatus), 0);
 		}
 		 //new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 0);
 	} else {

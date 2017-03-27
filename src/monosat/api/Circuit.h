@@ -325,7 +325,7 @@ public:
 				tmp.push(l);
 			}
 		}
-		//all arguments are constant true
+		//all arguments are constant false
 		if(tmp.size()==0){
 			if(out!=lit_Undef){
 				Assert(~out);

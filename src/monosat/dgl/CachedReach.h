@@ -33,16 +33,17 @@
 
 namespace dgl {
 
-template<typename Weight, bool undirected = false>
+template<typename Weight,class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
 class CachedReach: public Reach {
 public:
 
     DynamicGraph<Weight> & g;
-
+    Status & status;
     int last_modification=-1;
     int last_addition=-1;
     int last_deletion=-1;
     int history_qhead=0;
+    int reportPolarity=0;
     Reach * reach;
     int last_history_clear=0;
 
@@ -63,9 +64,12 @@ public:
 public:
 
 
-    CachedReach(Reach * reach,DynamicGraph<Weight> & graph) :
-            g(graph), reach(reach) {
+    CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0) :
+            g(graph),status(status), reach(reach),reportPolarity(reportPolarity){
 
+    }
+    CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0) :
+            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity){
 
     }
 
@@ -126,6 +130,9 @@ public:
 
             if(reach->connected(d)){
                 has_path_to[d]=true;
+                if (reportPolarity >= 0) {
+                    status.setReachable(d, true);
+                }
                 //extract path
                 int edgeID = reach->incomingEdge(d);
                 assert(edgeID>=0);
@@ -148,6 +155,9 @@ public:
                 has_path_to[d]=false;
                 previous_edge[d]=-1;
                 has_non_reach_destinations=true;
+                if (reportPolarity <= 0) {
+                    status.setReachable(d, false);
+                }
             }
         }
 

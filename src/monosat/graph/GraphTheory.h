@@ -2076,9 +2076,7 @@ public:
         static int iter = 0;
         iter++;
 
-        if(iter==91 && theory_index==4){
-            int a=1;
-        }
+
 
         //dbg_full_sync();
         if(opt_lazy_backtrack && supportsLazyBacktracking() && opt_lazy_backtrack_decisions && detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
@@ -2647,9 +2645,7 @@ public:
 
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
-			if(edge_num==764){
-				int a=1;
-			}
+
 			assert(edge_list[edge_num].v == var(l));
 			int edgeSetID = getEdgeSetID(edge_num);
 
@@ -2792,7 +2788,7 @@ public:
 			stats_propagations_skipped++;
 			return true;
 		}
-#ifdef DEBUG_GRAPH
+/*#ifdef DEBUG_GRAPH
 		for(int v = 0;v<nVars();v++){
 			if(v==var(const_true))
 				continue;
@@ -2805,7 +2801,7 @@ public:
 				}
 			}
 		}
-#endif
+#endif*/
 
 		if(invalid_edgeset_lit!=lit_Undef){
 			return true;

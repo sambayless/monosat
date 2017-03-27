@@ -448,6 +448,7 @@ BVTheorySolver<int64_t> *getBVTheory() {
 GraphTheorySolver<int64_t> *newGraph() {
     SimpSolver &S = Internal::getCircuit().getSolver();
     GraphTheorySolver<int64_t> *G = new GraphTheorySolver<int64_t>(&S);
+
     G->setBVTheory(Internal::getBVTheory());//you only need this if you are using weighted edges
     return G;
 }

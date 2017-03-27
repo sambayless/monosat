@@ -195,9 +195,7 @@ class FSMParser: public Parser<B, Solver> {
 		int input = parseInt(in);
 		int output = parseInt(in);
 		int edgeVar = parseInt(in) - 1;
-		if(edgeVar==1){
-			int a =1;
-		}
+
 		if (fsmID < 0 || fsmID >= fsmIDs.size()) {
 			parse_errorf("Undeclared fsm identifier %d for edge %d\n", fsmID, edgeVar);
 		}
@@ -216,9 +214,7 @@ class FSMParser: public Parser<B, Solver> {
 		}
 
 		edgeVar= mapVar(S,edgeVar);
-		if(edgeVar==1){
-			int a =1;
-		}
+
 		inAlphabets[fsmID]=std::max(inAlphabets[fsmID],input);
 		outAlphabets[fsmID]=std::max(outAlphabets[fsmID],output);
 		transitions[fsmID].push({fsmID,from,to,input,output,edgeVar});
@@ -412,7 +408,9 @@ public:
 	FSMParser():Parser<B, Solver>("Finite State Machine"){
 		strings = new vec<vec<int>>();
 	}
-
+	virtual ~FSMParser(){
+		delete strings;
+	}
 	bool parseLine(B& in, Solver& S) {
 
 		skipWhitespace(in);

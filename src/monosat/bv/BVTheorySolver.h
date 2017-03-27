@@ -630,9 +630,6 @@ public:
 
 			for (int i = 0; i < bv.size(); i++) {
 				lbool val = value(bv[i]);
-                /*if(bvID==7040){
-                    printf("Checking bvid %d bit %d (var %d) assigned %d\n", bvID, i, toSolver(var(bv[i])), val);
-                }*/
 				if (val == l_True) {
 					Weight bit = 1 << i;
 					under += bit;
@@ -3124,17 +3121,6 @@ public:
 			int bID = arg2->bvID;
 			int width = theory.bitvectors[bvID].size();
 			Weight max_val = (1L << width) - 1;
-			/*printf("bv %d: ", bvID);
-            for (int i = 0; i < blasted.size(); i++) {
-                Lit l = blasted[i];
-                lbool val = theory.S->value(l);
-                if (val == l_True) {
-                    printf("1");
-                } else {
-                    printf("0");
-                }
-            }
-            printf("\n");*/
 			//assert(aID<bvID);
 			//assert(bID<bvID);
 			Weight underadd = under_approx[aID] + under_approx[bID];
@@ -5272,9 +5258,6 @@ public:
 			solverVar = S->newVar();
 		}
 		Var v = vars.size();
-		if (v == 7019) {
-			int a = 1;
-		}
 		if (connectToTheory) {
 			S->newTheoryVar(solverVar, getTheoryIndex(), v);
 
@@ -6195,55 +6178,17 @@ private:
 	Weight refine_lbound_check(int bvID, Weight bound, Var ignore_bit);
 
 	void dbg_evaluate(int bvID, int pos, vec<Weight> &vals, Weight val);
-	/* void test(){
-    	  printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
-		printf("test\n");
 
-    }*/
 public:
 	bool updateApproximations(int bvID, int ignoreCID = -1, Var ignore_bv = var_Undef) {
 		if (isConst(bvID))
 			return false;
-		if (bvID == 2 || bvID==565) {
-			int a = 1;
-		}
+
 		double update_start_time = rtime(3);
 		statis_bv_updates++;
 		static int iter = 0;
 		++iter;
-		if(iter==9253){
-			int a=1;
 
-		}
 #ifdef DEBUG_BV
 /*		for(int i = 0;i<vars.size();i++){
 			if(value(i)==l_True){
@@ -6582,9 +6527,7 @@ public:
 			assert(under_approx[bvID] == under);
 			return true;
 		} else {
-			if(bvID==565 || bvID==2){
-				int a =1;
-			}
+
 
 			for (int opID:operation_ids[bvID]) {
 				getOperation(opID).checkApproxUpToDate(under, over);
@@ -6719,9 +6662,7 @@ public:
 	bool propagateTheory(vec<Lit> &conflict, bool force_propagation) {
 		static int realprops = 0;
 		stats_propagations++;
-		if (stats_propagations == 77) {
-			int a = 1;
-		}
+
 		if (!force_propagation && !requiresPropagation) {
 			stats_propagations_skipped++;
 			assert(dbg_uptodate());
@@ -6737,13 +6678,11 @@ public:
 		}
 		S->theoryPropagated(this);
 		rewind_trail_pos(trail.size());
-		if (++realprops == 129 || realprops == 130 || realprops == 108 || realprops == 104) {
+		if (++realprops == 129 ) {
 			int a = 1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
-		if (stats_propagations == 359) {
-			int a = 1;
-		}
+
 		bool any_change = false;
 		double startproptime = rtime(2);
 		//static vec<int> detectors_to_check;
@@ -6763,9 +6702,7 @@ public:
 				alteredBV[bvID] = false;
 				continue;
 			}
-			if(bvID==50){
-				int a=1;
-			}
+
 			//for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			assert(alteredBV[bvID]);
 			Weight underApprox_prev = under_approx[bvID];
@@ -7005,9 +6942,6 @@ public:
 		static int iter = 0;
 		++iter;
 		//printf("reason %d: %d\n",iter,bvID);
-		if (iter == 6) {
-			int a = 1;
-		}
 
 		//rewind_trail_pos(trail_pos);
 		//trail_pos  = rewindUntil(bvID,op,to);

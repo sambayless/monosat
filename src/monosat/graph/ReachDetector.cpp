@@ -201,7 +201,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	if(opt_graph_cache_propagation){
 		if(underapprox_detector){
 			Reach* original_underapprox_detector = underapprox_detector;
-			underapprox_detector = new CachedReach<Weight>(original_underapprox_detector, _g);
+			underapprox_detector = new CachedReach<Weight,ReachDetector<Weight>::ReachStatus>(original_underapprox_detector, _g,*(positiveReachStatus),1);
             if(opt_graph_use_cache_for_decisions>=1) {
                 if (underapprox_path_detector == original_underapprox_detector) {
                     underapprox_path_detector = underapprox_detector;
@@ -212,7 +212,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		}
 		if(overapprox_reach_detector){
 			Reach* original_overapprox_detector = overapprox_reach_detector;
-			overapprox_reach_detector = new CachedReach<Weight>(original_overapprox_detector, _antig);
+			overapprox_reach_detector = new CachedReach<Weight,ReachDetector<Weight>::ReachStatus>(original_overapprox_detector, _antig,*(negativeReachStatus),-1);
             if(opt_graph_use_cache_for_decisions>=1) {
                 if (overapprox_path_detector == original_overapprox_detector) {
                     overapprox_path_detector = overapprox_reach_detector;
@@ -907,7 +907,7 @@ public:
 			return lit_Undef;//if the reach lit is unassigned, do not make any decisions here
 		}
         static int iter = 0;
-        if(++iter==11){
+        if(++iter==226){
             int a=1;
         }
 
@@ -1115,11 +1115,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 }
 template<typename Weight>
 void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable) {
-/*	if (reachable) {
-		assert(!detector.outer->dbg_notreachable(detector.source, u));
-	} else {
-		assert(detector.outer->dbg_notreachable(detector.source, u));
-	}*/
+
 	if (polarity == reachable && u < detector.reach_lits.size()) {
 		Lit l = detector.reach_lits[u];
 		if (l != lit_Undef && polarity && !detector.is_changed_under[u]) {
@@ -1680,7 +1676,7 @@ void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 template<typename Weight>
 bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
-	if (++iter == 18) {
+	if (++iter == 2374) {
 		int a = 1;
 	}
     conflictingHeuristic=nullptr;
@@ -1728,6 +1724,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		} else if (overapprox_reach_detector && !polarity && !overapprox_reach_detector->connected(u)) {
 			l = mkLit(v, true);
 		} else {
+
 			if(sz == changed.size()){
 				//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
 				//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
@@ -1819,10 +1816,11 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		}
 	}
 	
-#ifdef DEBUG_DIJKSTRA
+#ifdef DEBUG_GRAPH
 	for(int i = 0;i<reach_lits.size();i++) {
 		Lit l = reach_lits[i];
 		if(l!=lit_Undef) {
+			lbool val = outer->value(l);
 			int u = getNode(var(l));
 			if((underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives>0) && underapprox_detector->connected_unsafe(u))) {
 				assert(outer->value(l)==l_True);

@@ -147,7 +147,7 @@ class GraphParser: public Parser<B, Solver> {
 
 	struct ParseEdgeSet{
 		int graphID=-1;
-		vec<int> edges;
+		vec<Var> edges;
 	};
 	vec<ParseEdgeSet> edge_sets;
 
@@ -312,7 +312,7 @@ class GraphParser: public Parser<B, Solver> {
 
 		edge_sets.push();
 		edge_sets.last().graphID=graphID;
-		vec<int> & edges = edge_sets.last().edges;
+		vec<Var> & edges = edge_sets.last().edges;
 		for(int i = 0;i<n_edges;i++){
 			int edgeVar = parseInt(in)- 1;
 			edges.push(edgeVar);

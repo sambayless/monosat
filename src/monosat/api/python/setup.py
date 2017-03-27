@@ -40,7 +40,7 @@ if not os.path.exists(copy_lib):
     print("Warning: could not find libmonosat.so or libmonosat.dll. See README for instructions on compiling the library, the re-install",file=sys.stderr)
 
 setup(name='monosat',
-      version='1.0',
+      version='1.4',
       description='MonoSAT Python Interface',
       author='Sam Bayless',
       author_email='sbayless@cs.ubc.ca',
