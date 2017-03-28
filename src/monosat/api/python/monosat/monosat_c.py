@@ -355,7 +355,7 @@ class Monosat(metaclass=Singleton):
         
         self.monosat_c.newEdgeSet.argtypes=[c_solver_p,c_graph_p,c_literal_p,c_int, c_bool]
 
-        self.monosat_c.useFlowAsDecision.argtypes=[c_solver_p,c_graph_p,c_literal_p,c_literal_p]
+        self.monosat_c.useFlowAsDecision.argtypes=[c_solver_p,c_graph_p,c_literal,c_literal]
 
 
 
@@ -1120,7 +1120,7 @@ class Monosat(metaclass=Singleton):
 
     def useFlowAsDecision(self,graph,reachlit, flowlit):
         self.backtrack()
-        self.monosat_c.useFlowAsDecision(self.solver._ptr,graph,c_int(reachlit),c_int(flowlit))
+        self.monosat_c.useFlowAsDecision(self.solver._ptr,graph,c_literal(reachlit),c_literal(flowlit))
 
     def reaches(self, graph, u,v):
         self.backtrack()

@@ -1334,7 +1334,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  int shortestPath_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int64_t dist){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_lt %d %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),dist);
+	  write_out(S,"weighted_distance_lt %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),dist);
 	  G->distance(from, to, v,dist, false);
 	  G->implementConstraints();
 	  return toInt(l);
@@ -1342,7 +1342,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  int shortestPath_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int64_t dist){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_leq %d %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),dist);
+	  write_out(S,"weighted_distance_leq %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),dist);
 	  G->distance(from, to, v,dist, true);
 	  G->implementConstraints();
 	  return toInt(l);
@@ -1350,7 +1350,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  int shortestPath_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_bv_lt %d %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
+	  write_out(S,"weighted_distance_bv_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
 	  G->distanceBV(from,to, v, bvID,false);
 	  G->implementConstraints();
 	  return toInt(l);
@@ -1358,7 +1358,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  int shortestPath_leq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_bv_leq %d %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
+	  write_out(S,"weighted_distance_bv_leq %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
 	  G->distanceBV(from,to, v, bvID,true);
 	  G->implementConstraints();
 	  return toInt(l);
@@ -1366,7 +1366,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  int maximumFlow_geq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
-	  write_out(S,"maximum_flow_geq %d %d %d %d %d %ld\n",G->getGraphID(),source,sink, dimacs(l),weight);
+	  write_out(S,"maximum_flow_geq %d %d %d %d %ld\n",G->getGraphID(),source,sink, dimacs(l),weight);
 	  G->maxflow(source, sink, v, weight,true);
 	  G->implementConstraints();
 	  return toInt(l);
@@ -1374,7 +1374,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  int maximumFlow_gt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
-	 write_out(S,"maximum_flow_gt %d %d %d %d %d %ld\n",G->getGraphID(),source,sink, dimacs(l),weight);
+	 write_out(S,"maximum_flow_gt %d %d %d %d %ld\n",G->getGraphID(),source,sink, dimacs(l),weight);
 	  G->maxflow(source, sink, v, weight,false);
 	  G->implementConstraints();
 	  return toInt(l);
@@ -1382,7 +1382,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  int maximumFlow_geq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
-	  write_out(S,"maximum_flow_bv_geq %d %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
+	  write_out(S,"maximum_flow_bv_geq %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
 	  G->maxflowBV(source, sink, v, bvID,true);
 	  G->implementConstraints();
 	  return toInt(l);
@@ -1390,7 +1390,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
-	  write_out(S,"maximum_flow_bv_gt %d %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
+	  write_out(S,"maximum_flow_bv_gt %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
 	  G->maxflowBV(source, sink, v, bvID,false);
 	  G->implementConstraints();
 	  return toInt(l);

@@ -54,23 +54,23 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		//to print out the solution
 		//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		//negative_reach_detector = new ReachDetector::CNFReachability(*this,true);
-		
+
 		underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
 		overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
 		underapprox_fast_detector = underapprox_path_detector;
 		return;
 	}
-	
+
 	if (opt_decide_graph_chokepoints) {
 		chokepoint_detector = new DFSReachability<Weight, Reach::NullStatus>(from, _antig, Reach::nullStatus, 1);
-		
+
 	}
 	if (opt_shrink_theory_conflicts) {
 		cutgraph_detector = new UnweightedRamalReps<Weight,Reach::NullStatus>(from, cutgraph, Reach::nullStatus, 0);
 	}
-	
 
-	
+
+
 	/* if(opt_use_optimal_path_for_decisions){
 	 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
 	 }*/
@@ -85,10 +85,10 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 					*(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
-		
+
 		overapprox_reach_detector = new BFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1);
-		
+
 		underapprox_path_detector = underapprox_detector;
 		overapprox_path_detector = overapprox_reach_detector;
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
@@ -101,14 +101,14 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 					*(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
-		
+
 		overapprox_reach_detector = new DFSReachability<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1);
 		if (opt_conflict_shortest_path)
 			underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
 		else
 			underapprox_path_detector = underapprox_detector;
-		
+
 		negative_distance_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
 		overapprox_path_detector = overapprox_reach_detector;
 	} else if (reachalg == ReachAlg::ALG_DISTANCE) {
@@ -120,7 +120,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 					*(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
-		
+
 		overapprox_reach_detector = new UnweightedBFS<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_detector;
@@ -137,7 +137,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
-		
+
 		overapprox_reach_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*(negativeReachStatus), -1, false);
 
@@ -184,9 +184,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
-			
+
 			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
-			
+
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
 				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph,  source, 0,
@@ -227,7 +227,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		underapprox_detector->setSource(source);
 	if (overapprox_reach_detector)
 		overapprox_reach_detector->setSource(source);
-	
+
 	underprop_marker = outer->newReasonMarker(getID());
 	overprop_marker = outer->newReasonMarker(getID());
 	forced_edge_marker = outer->newReasonMarker(getID());
@@ -247,32 +247,32 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 		return;
 	if (!onlyUnderApprox && constraintsBuiltOver >= within_steps)
 		return;
-	
+
 	//there is no reason to encode these variables in the theory solver!
-	
+
 	if (!onlyUnderApprox) {
 		assert(outer->decisionLevel() == 0);
 		vec<Lit> c;
-		
+
 		if (constraintsBuiltOver <= 0) {
 			constraintsBuiltOver = 0;
 			dist_lits.push();
 			Lit True = mkLit(outer->newVar());
 			outer->addClause(True);
-			
+
 			Lit False = ~True;
-			
+
 			for (int i = 0; i < g_under.nodes(); i++) {
 				dist_lits[0].push(False);
 			}
 			dist_lits[0][source] = True;
 		}
-		
+
 		vec<Lit> reaches;
-		
+
 		vec<Lit> incomingEdges;
 		vec<Lit> incomingNodes;
-		
+
 		//Note (thanks to Roberto Sebastiani for this): clauses added here do not count towards pure literal counts.
 
 		//bellman-ford:
@@ -280,11 +280,11 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 			dist_lits.last().copyTo(reaches);
 			dist_lits.push();
 			reaches.copyTo(dist_lits.last());
-			
+
 			//For each edge:
 			for (int j = 0; j < g_under.nodes(); j++) {
 				Lit r_cur = reaches[j];
-				
+
 				for (Edge & e : outer->inv_adj[j]) {
 					//Edge e = outer->edges[j][k];
 					assert(e.to == j);
@@ -294,9 +294,9 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 						//do nothing
 					} else {
 						Lit l = mkLit(e.v, false);
-						
+
 						Lit r = mkLit(outer->newVar(), false);
-						
+
 						c.clear();
 						c.push(~r);
 						c.push(r_cur);
@@ -317,17 +317,17 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 						c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
 						outer->addClause(c);
 						r_cur = r;
-						
+
 					}
 				}
 				dist_lits.last()[j] = r_cur;
 			}
-			
+
 		}
 		assert(dist_lits.size() == within_steps + 1);
 		if (within_steps == g_under.nodes() || within_steps == g_under.edges()) {
 			reach_lits.growTo(g_under.nodes());
-			
+
 			for (int i = 0; i < dist_lits.last().size(); i++) {
 				Lit d = dist_lits.last()[i];
 				if (reach_lits[i] == lit_Undef) {
@@ -336,9 +336,9 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					outer->makeEqual(reach_lits[i], d);
 				}
 			}
-			
+
 		}
-		
+
 		constraintsBuiltOver = within_steps;
 	} else {
 		if (constraintsBuiltUnder < 0) {
@@ -358,14 +358,14 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					//}
 					cnf_reach_lits[n] = mkLit(reach_var); //since this is _only_ the underapproximation, these variables _do_ need to be connected to the theory solver
 
-					
+
 				}
 			}
-			
+
 			vec<Lit> c;
 			vec<Lit> t;
 			for (int n = 0; n < g_under.nodes(); n++) {
-				
+
 				if (n == source) {
 					outer->addClause(cnf_reach_lits[n]); //source node is unconditionally reachable
 				} else {
@@ -382,7 +382,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 							c.push(mkLit(v));
 						}
 					}
-					
+
 					//Either an edge must be true, or the reach_lit must be false (unless this is the source reach node);
 					outer->addClause(c);
 					c.clear();
@@ -398,7 +398,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					}
 					//Either at least one incoming node must be true, or the reach_lit must be false (unless this is the source reach node);
 					outer->addClause(c);
-					
+
 					//Either at least incoming edge AND its corresponding from node must BOTH be simultaneously true, or the node is must not be reachable
 					c.clear();
 					//either an incoming node must be true, or reach_lit must be false
@@ -410,7 +410,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 						if (from != n) { //ignore trivial cycles
 							Lit e = mkLit(outer->getEdgeVar(edgeID));
 							Lit incoming = cnf_reach_lits[from];
-							
+
 							Lit andGate = mkLit(outer->newVar());
 							//Either the andgate is true, or at least one of e, incoming is false
 							outer->addClause(andGate, ~incoming, ~e);
@@ -423,7 +423,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 					//Either one andGate must be true, or the reach_lit must be false
 					outer->addClause(c);
 				}
-				
+
 				//If this node is reachable, the for each outgoing edge, if that edge is enabled, its to node must also be reachable
 				for (int i = 0; i < g_under.nIncident(n); i++) {
 					auto & edge = g_under.incident(n, i);
@@ -435,7 +435,7 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 						outer->addClause(~cnf_reach_lits[n], ~e, outgoing);
 					}
 				}
-				
+
 			}
 		}
 	}
@@ -1015,7 +1015,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		reach_lits.push(lit_Undef);
 	while (original_reach_lits.size() < g_under.nodes())
 		original_reach_lits.push(false);
-	
+
 	original_reach_lits[to] = true;
 	if (reach_lits[to] != lit_Undef) {
 		Lit r = reach_lits[to];
@@ -1023,10 +1023,10 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
 		return;
 	}
-	
+
 	g_under.invalidate();
 	g_over.invalidate();
-	
+
 	Var reach_var = outer->newVar(outer_reach_var, getID());
 
 	if (first_reach_var == var_Undef) {
@@ -1083,18 +1083,18 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 						conflict_flow_t = new EdmondsKarpDynamic< int64_t>(outer->cutGraph,  source,
 								i);
 					} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-						
+
 						conflict_flow_t = new EdmondsKarpAdj< int64_t>(outer->cutGraph,  source, i);
-						
+
 					} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-						
+
 						conflict_flow_t = new Dinitz< int64_t>(outer->cutGraph,  source, i);
-						
+
 					} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 						//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
-						
+
 						conflict_flow_t = new Dinitz< int64_t>(outer->cutGraph,  source, i);
-						
+
 					} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 						if (opt_use_kt_for_conflicts) {
 							conflict_flow_t = new KohliTorr< int64_t>(outer->cutGraph,  source, i,
@@ -1103,9 +1103,9 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 							conflict_flow_t = new EdmondsKarpDynamic< int64_t>(outer->cutGraph,
 									source, i);
 					} else {
-						
+
 						conflict_flow_t = new EdmondsKarpAdj< int64_t>(outer->cutGraph,  source, i);
-						
+
 					}
 					conflict_flows[i] = conflict_flow_t;
 				}
@@ -1185,9 +1185,9 @@ void ReachDetector<Weight>::buildReachReason(int node, vec<Lit> & conflict) {
 	Reach & d = *underapprox_path_detector;
 	double starttime = rtime(2);
 	d.update();
-	
+
 	assert(outer->dbg_reachable(d.getSource(), node));
-	
+
 	assert(d.connected_unchecked(node));
 	if (opt_learn_reaches == 0 || opt_learn_reaches == 2) {
 		int u = node;
@@ -1199,7 +1199,7 @@ void ReachDetector<Weight>::buildReachReason(int node, vec<Lit> & conflict) {
 			assert(outer->value(e)==l_True);
 			conflict.push(mkLit(e, true));
 			u = p;
-			
+
 		}
 	} else {
 		//Instead of a complete path, we can learn reach variables, if they exist
@@ -1222,12 +1222,12 @@ void ReachDetector<Weight>::buildReachReason(int node, vec<Lit> & conflict) {
 				break;
 			}
 		}
-		
+
 	}
 	stats_under_conflicts++;
 	outer->num_learnt_paths++;
 	outer->learnt_path_clause_length += (conflict.size() - 1);
-	
+
 	stats_under_clause_length += (conflict.size() - 1);
 	double elapsed = rtime(2) - starttime;
 	outer->pathtime += elapsed;
@@ -1250,14 +1250,14 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 		printf("Reach conflict %d, graph %d\n", it, outer->getTheoryIndex());
 	}*/
 	if ((force_maxflow || opt_conflict_min_cut) && (conflict_flow || conflict_flows[node])) {
-		
+
 		//g_over.drawFull();
 		cut.clear();
 		int64_t f;
 		if (!conflict_flow) {
 			assert(conflict_flows[node]->getSink() == node);
 			assert(conflict_flows[node]->getSource() == source);
-			
+
 			f = conflict_flows[node]->minCut(cut);
 		} else {
 			assert(conflict_flow->getSource() == source);
@@ -1286,18 +1286,18 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 	} else {
 		//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 		//or perhaps we can learn something equivalent to the 1-uip cut?
-		
+
 		vec<int>& to_visit = outer->to_visit;
 		vec<char>& seen = outer->seen;
-		
+
 		to_visit.clear();
 		to_visit.push(node);
 		seen.clear();
 		seen.growTo(outer->nNodes());
 		seen[node] = true;
-		
+
 		do {
-			
+
 			assert(to_visit.size());
 			int u = to_visit.last();
 			assert(u != source);
@@ -1318,7 +1318,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 				assert(from != u);
 				assert(outer->inv_adj[u][i].to == u);
 				//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
-				
+
 				if (outer->value(v) == l_False) {
 					//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 					//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
@@ -1343,9 +1343,9 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 				}
 			}
 		} while (to_visit.size());
-		
+
 	}
-	
+
 	if (opt_shrink_theory_conflicts) {
 		//visit each edge lit in this initial conflict, and see if unreachability is preserved if we add the edge back in (temporarily)
 		/*	int i,j=0;
@@ -1415,7 +1415,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 		 */
 
 	}
-	
+
 	if (!force_maxflow && opt_adaptive_conflict_mincut > 0 && (conflict.size() - 1 > opt_adaptive_conflict_mincut)
 			&& (conflict_flow || conflict_flows[node])) { //-1 to ignore the predicate's literal stored at position 0
 		conflict.shrink(conflict.size() - 1);
@@ -1423,7 +1423,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 		buildNonReachReason(node, conflict, true);
 		return;
 	}
-	
+
 	if (opt_learn_unreachable_component && conflict.size() > 1) {
 		//Taking a page from clasp, instead of just learning that node u is unreachable unless one of these edges is flipped,
 		//we are going to learn that the whole strongly connected component attached to u is unreachable (if that component has more than one node, that is)
@@ -1444,7 +1444,7 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 		assert(reach_component.size());
 		if (reach_component.size() > 1) {
 			//create a new literal in the solver
-			
+
 			//component must be reachable
 			bool must_be_reached = false;
 			for (Lit l : reach_component) {
@@ -1453,24 +1453,24 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 				}
 			}
 			extra_conflict.clear();
-			
+
 			if (must_be_reached) {
-				
+
 				for (int i = 1; i < conflict.size(); i++)
 					extra_conflict.push(conflict[i]);
 				outer->addClauseSafely(extra_conflict);
 				stats_learnt_components++;
 				stats_learnt_components_sz += reach_component.size();
 			} else {
-				
+
 				stats_learnt_components++;
 				stats_learnt_components_sz += reach_component.size();
 				Lit component_reachable = mkLit(outer->newVar());
 				conflict.copyTo(extra_conflict);
 				extra_conflict[0] = ~component_reachable;
-				
+
 				outer->addClauseSafely(extra_conflict);
-				
+
 				for (Lit l : reach_component) {
 					if (outer->value(l) == l_True && outer->level(var(l)) == 0) {
 						continue;
@@ -1485,14 +1485,14 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
 			//just learn the normal conflict clause
 		}
 	}
-	
+
 	stats_over_clause_length += (conflict.size() - 1);
 	outer->learnt_cut_clause_length += (conflict.size() - 1);
-	
+
 	double elapsed = rtime(2) - starttime;
 	outer->mctime += elapsed;
 	stats_over_conflict_time += elapsed;
-	
+
 }
 
 /**
@@ -1504,22 +1504,22 @@ template<typename Weight>
 void ReachDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict) {
 	static int it = 0;
 	++it;
-	
+
 	assert(outer->value(outer->edge_list[forced_edge_id].v)==l_True);
 	Lit edgeLit = mkLit(outer->edge_list[forced_edge_id].v, false);
-	
+
 	conflict.push(edgeLit);
-	
+
 	int forced_edge_from = outer->edge_list[forced_edge_id].from;
 	int forced_edge_to = outer->edge_list[forced_edge_id].to;
-	
+
 	int u = reach_node;
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
 	assert(outer->dbg_notreachable(source, u));
 	double starttime = rtime(2);
 	outer->cutGraph.clearHistory();
 	outer->stats_mc_calls++;
-	
+
 	/*if(opt_conflict_min_cut){
 	 if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 	 //ok, set the weights for each edge in the cut graph.
@@ -1561,18 +1561,18 @@ void ReachDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edg
 	 }else*/{
 		//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 		//or perhaps we can learn the actual 1-uip cut?
-		
+
 		vec<int>& to_visit = outer->to_visit;
 		vec<char>& seen = outer->seen;
-		
+
 		to_visit.clear();
 		to_visit.push(reach_node);
 		seen.clear();
 		seen.growTo(outer->nNodes());
 		seen[reach_node] = true;
-		
+
 		do {
-			
+
 			assert(to_visit.size());
 			int u = to_visit.last();
 			assert(u != source);
@@ -1587,7 +1587,7 @@ void ReachDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edg
 				assert(outer->inv_adj[u][i].to == u);
 				//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 				int edge_num = outer->getEdgeID(v);						// v-outer->min_edge_var;
-						
+
 				if (edge_num == forced_edge_id || outer->value(v) == l_False) {
 					//note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
 					//if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
@@ -1612,22 +1612,22 @@ void ReachDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edg
 				}
 			}
 		} while (to_visit.size());
-		
+
 	}
-	
+
 	outer->num_learnt_cuts++;
 	outer->learnt_cut_clause_length += (conflict.size() - 1);
-	
+
 	double elapsed = rtime(2) - starttime;
 	outer->mctime += elapsed;
-	
+
 }
 template<typename Weight>
 void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	if (marker == underprop_marker) {
 		reason.push(p);
 		//	double startpathtime = rtime(2);
-		
+
 		/*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
 		 //the reason is a path from s to p(provided by d)
 		 //p is the var for a reachability detector in dijkstra, and corresponds to a node
@@ -1645,22 +1645,22 @@ void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 		Var v = var(p);
 		int u = getNode(v);
 		buildReachReason(u, reason);
-		
+
 		//double elapsed = rtime(2)-startpathtime;
 		//	pathtime+=elapsed;
 	} else if (marker == overprop_marker) {
 		reason.push(p);
-		
+
 		//the reason is a cut separating p from s;
 		//We want to find a min-cut in the full graph separating, where activated edges (ie, those still in antig) are weighted infinity, and all others are weighted 1.
-		
+
 		//This is a cut that describes a minimal set of edges which are disabled in the current graph, at least one of which would need to be activated in order for s to reach p
 		//assign the mincut edge weights if they aren't already assigned.
-		
+
 		Var v = var(p);
 		int t = getNode(v); // v- var(reach_lits[d][0]);
 		buildNonReachReason(t, reason);
-		
+
 	} else if (marker == forced_edge_marker) {
 		Var v = var(p);
 		//The forced variable is an EDGE that was forced.
@@ -1705,11 +1705,11 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		skipped_negative = true;
 		stats_skipped_over_updates++;
 	}
-	
+
 	if (opt_rnd_shuffle) {
 		randomShuffle(rnd_seed, changed);
 	}
-	
+
 	while (changed.size()) {
 		int sz = changed.size();
 		Change & ch = changed.last();
@@ -1718,7 +1718,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		int u = ch.u;
 		assert(polarity ? is_changed_under[u]:is_changed_over[u]);
 		Lit l;
-		
+
 		if (underapprox_detector && polarity && underapprox_detector->connected(u)) {
 			l = mkLit(v, false);
 		} else if (overapprox_reach_detector && !polarity && !overapprox_reach_detector->connected(u)) {
@@ -1741,7 +1741,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 			//this can happen if the changed node's reachability status was reported before a backtrack in the solver.
 			continue;
 		}
-		
+
 		bool reach = !sign(l);
 		if (outer->value(l) == l_True) {
 			//do nothing
@@ -1760,23 +1760,23 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
                 drawGrid(g_under, u);
             }
 			if (reach) {
-				
+
 				//conflict
 				//The reason is a path in g from to s in d
 				buildReachReason(u, conflict);
 				//add it to s
 				//return it as a conflict
-				
+
 			} else {
 				//The reason is a cut separating s from t
 				buildNonReachReason(u, conflict);
-				
+
 			}
 
 			outer->toSolver(conflict);
 			return false;
 		}
-		
+
 		/*if(opt_reach_prop){
 		 forced_edges.clear();
 		 chokepoint.collectForcedEdges(forced_edges);
@@ -1815,7 +1815,7 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 			changed.pop();
 		}
 	}
-	
+
 #ifdef DEBUG_GRAPH
 	for(int i = 0;i<reach_lits.size();i++) {
 		Lit l = reach_lits[i];
@@ -1838,10 +1838,10 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 
 template<typename Weight>
 void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
-	
+
 	vec<bool> to_show;
 	to_show.growTo(g_under.nodes());
-	
+
 	for (int i = 0; i < reach_lits.size(); i++) {
 		if (!original_reach_lits[i])//only print paths to nodes that the user asked for (this matters if we are using a CNF reachability encoding, which may have invented extra reach lits)
 			continue;
@@ -1855,7 +1855,7 @@ void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
 	for (int to = 0; to < g_under.nodes(); to++) {
 		if (!to_show[to])
 			continue;
-		
+
 		Reach & d = *underapprox_path_detector;
 		d.update();
 		if (d.connected(to)) {
@@ -1869,7 +1869,7 @@ void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
 				path.push(p);
 				u = p;
 			}
-			
+
 			for (int i = path.size() - 1; i >= 0; i--) {
 				write_to << path[i] << ",";
 			}
@@ -1878,16 +1878,16 @@ void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
 			write_to << "No path from" << source << "->" << to << "\n";
 		}
 	}
-	
+
 }
 template<typename Weight>
 bool ReachDetector<Weight>::checkSatisfied() {
-	
+
 	UnweightedDijkstra<Weight> under(source, g_under);
 	UnweightedDijkstra<Weight> over(source, g_over);
 	under.update();
 	over.update();
-	
+
 	for (int j = 0; j < reach_lits.size(); j++) {
 		Lit l = reach_lits[j];
 		if (l != lit_Undef) {
@@ -1910,7 +1910,7 @@ bool ReachDetector<Weight>::checkSatisfied() {
 			}
 		}
 	}
-	
+
 	return true;
 }
 template<typename Weight>
@@ -1922,14 +1922,14 @@ void ReachDetector<Weight>::dbg_sync_reachability() {
 		Lit l = reach_lits[j];
 		if (l != lit_Undef) {
 			int node = getNode(var(l));
-			
+
 			if (underapprox_detector->connected(node)) {
 				assert(outer->value(l)==l_True);
 			} else if (!overapprox_reach_detector->connected(node)) {
 				assert(outer->value(l)==l_False);
 			}
 		}
-		
+
 	}
 #endif
 }
@@ -2359,12 +2359,13 @@ void ReachDetector<Weight>::useFlowAsDecision(Lit outer_reach_lit, Lit outer_flo
         Lit l = reach_lits[i];
         if(l !=lit_Undef && var(outer->toSolver(l))==var(outer_reach_lit)){
             assert(reach_heuristics[i]);
-            int to_node = i;
+			to = i;
             ReachHeuristic<Weight> * h = (ReachHeuristic<Weight>*) reach_heuristics[i];
             assert(h);
 
-            Heuristic * f = new FlowPathHeuristic<Weight>(outer, this,mf,l, outer_flow_literal, to_node);
+            Heuristic * f = new FlowPathHeuristic<Weight>(outer, this,mf,l, outer_flow_literal, to);
             h->setSubHeuristic(f);
+			break;
         }
     }
     if(to<0){
