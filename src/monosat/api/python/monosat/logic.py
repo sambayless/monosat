@@ -89,8 +89,11 @@ class Var:
         #    _monosat.symbolmap[self.symbol]=self
             
     def __hash__(self):
-        return self.lit          
-        
+        return self.lit
+
+    def __eq__(self, other):
+        return isinstance(other, Var) and self.lit == other.lit
+
     def getLit(self):
         return self.lit
 
@@ -364,10 +367,7 @@ def And(*args):
         return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            a=VAR(args[0][0])
-            for i in range(1,len(args[0])):
-                a=a.And(VAR(args[0][i]))
-            return a
+            return And(*args[0])
         return VAR(args[0])
     else:
         a=VAR(args[0])
@@ -380,10 +380,7 @@ def Or(*args):
         return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            a=VAR(args[0][0])
-            for i in range(1,len(args[0])):
-                a=a.Or(VAR(args[0][i]))
-            return a
+            return Or(*args[0])
         return VAR(args[0])
     else:
         a=VAR(args[0])
@@ -405,10 +402,7 @@ def Xor(*args):
         return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            a=VAR(args[0][0])
-            for i in range(1,len(args[0])):
-                a=a.Xor(VAR(args[0][i]))
-            return a
+            return Xor(*args[0])
         return VAR(args[0])
     else:
         a=VAR(args[0])
