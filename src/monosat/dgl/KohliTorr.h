@@ -599,7 +599,7 @@ public:
 
 		//C.resize(g.nodes());
 		bool any_changed=false;
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (!needs_recompute && last_modification > 0 && g.modifications == last_modification) {
 #ifdef DEBUG_MAXFLOW2
 			EdmondsKarpDynamic<Weight> ek(g,source,sink);
             Weight expected_flow =ek.maxFlow(source,sink);
@@ -1002,14 +1002,12 @@ private:
 		if(same_source_sink)
 			return;
 
-		if(needs_recompute){
-			update();
-		}
+		//if(needs_recompute){
+		update();
+		//}
 		if (!flow_needs_recalc)
 			return;
-		if(!kt){
-			update();
-		}
+
 		//double startflowtime = Monosat::rtime(0);
 
 		stats_flow_calcs++;
@@ -1037,7 +1035,7 @@ public:
 		if(same_source_sink)
 			return INF;
 		Weight f = this->maxFlow();
-
+		calc_flow();//it is critical to ensure that the flow assignment is up to date, or else the identified cut may be inaccurate
 		int s = source;
 		int t = sink;
 

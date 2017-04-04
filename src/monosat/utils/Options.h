@@ -35,6 +35,8 @@ namespace Monosat {
 // Top-level option parse/help functions:
 
 extern void parseOptions(int& argc, char** argv, bool strict = false);
+extern void parseOptions_(int& argc, char** argv, bool strict = false);
+extern void parseOptionSets_(int argc, char** argv);
 extern void printUsageAndExit(int argc, char** argv, bool verbose = false);
 extern void setUsageHelp(const char* str);
 extern void setHelpPrefixStr(const char* str);
@@ -42,12 +44,19 @@ extern void setHelpPrefixStr(const char* str);
 //==================================================================================================
 // Options is an abstract class that gives the interface for all types options:
 
+class OptionSet;
+
 class Option {
 protected:
 	const char* name;
 	const char* description;
 	const char* category;
 	const char* type_name;
+
+	static vec<OptionSet*>& getOptionSetList() {
+		static vec<OptionSet*> optionset;
+		return optionset;
+	}
 
 	static vec<Option*>& getOptionList() {
 		static vec<Option*> options;
@@ -61,7 +70,7 @@ protected:
 		static const char* help_prefix_str = "";
 		return help_prefix_str;
 	}
-	
+
 	struct OptionLt {
 		bool operator()(const Option* x, const Option* y) {
 			int test1 = strcmp(x->category, y->category);
@@ -73,15 +82,17 @@ protected:
 			name(name_), description(desc_), category(cate_), type_name(type_) {
 		getOptionList().push(this);
 	}
-	
+
 public:
 	virtual ~Option() {
 	}
-	
+
 	virtual bool parse(const char* str) = 0;
 	virtual void help(bool verbose = false) = 0;
 
 	friend void parseOptions(int& argc, char** argv, bool strict);
+	friend void parseOptions_(int& argc, char** argv, bool strict);
+	friend void parseOptionSets_(int argc, char** argv);
 	friend void printUsageAndExit(int argc, char** argv, bool verbose);
 	friend void setUsageHelp(const char* str);
 	friend void setHelpPrefixStr(const char* str);
@@ -116,6 +127,8 @@ struct DoubleRange {
 	}
 };
 
+
+
 //==================================================================================================
 // Double options:
 
@@ -126,11 +139,11 @@ protected:
 
 public:
 	DoubleOption(const char* c, const char* n, const char* d, double def = double(),
-			DoubleRange r = DoubleRange(-HUGE_VAL, false, HUGE_VAL, false)) :
+				 DoubleRange r = DoubleRange(-HUGE_VAL, false, HUGE_VAL, false)) :
 			Option(n, d, c, "<double>"), range(r), value(def) {
 		// FIXME: set LC_NUMERIC to "C" to make sure that strtof/strtod parses decimal point correctly.
 	}
-	
+
 	operator double(void) const {
 		return value;
 	}
@@ -141,16 +154,16 @@ public:
 		value = x;
 		return *this;
 	}
-	
+
 	virtual bool parse(const char* str) {
 		const char* span = str;
-		
+
 		if (!match(span, "-") || !match(span, name) || !match(span, "="))
 			return false;
-		
+
 		char* end;
 		double tmp = strtod(span, &end);
-		
+
 		if (end == NULL)
 			return false;
 		else if (tmp >= range.end && (!range.end_inclusive || tmp != range.end)) {
@@ -160,13 +173,13 @@ public:
 			fprintf(stderr, "ERROR! value <%s> is too small for option \"%s\".\n", span, name);
 			exit(1);
 		}
-		
+
 		value = tmp;
 		// fprintf(stderr, "READ VALUE: %g\n", value);
-		
+
 		return true;
 	}
-	
+
 	virtual void help(bool verbose = false) {
 		fprintf(stderr, "  -%-12s = %-8s %c%4.2g .. %4.2g%c (default: %g)\n", name, type_name,
 				range.begin_inclusive ? '[' : '(', range.begin, range.end, range.end_inclusive ? ']' : ')', value);
@@ -187,10 +200,10 @@ protected:
 
 public:
 	IntOption(const char* c, const char* n, const char* d, int32_t def = int32_t(),
-			IntRange r = IntRange(INT32_MIN, INT32_MAX)) :
+			  IntRange r = IntRange(INT32_MIN, INT32_MAX)) :
 			Option(n, d, c, "<int32>"), range(r), value(def) {
 	}
-	
+
 	operator int32_t(void) const {
 		return value;
 	}
@@ -201,16 +214,16 @@ public:
 		value = x;
 		return *this;
 	}
-	
+
 	virtual bool parse(const char* str) {
 		const char* span = str;
-		
+
 		if (!match(span, "-") || !match(span, name) || !match(span, "="))
 			return false;
-		
+
 		char* end;
 		int32_t tmp = strtol(span, &end, 10);
-		
+
 		if (end == NULL)
 			return false;
 		else if (tmp > range.end) {
@@ -220,25 +233,25 @@ public:
 			fprintf(stderr, "ERROR! value <%s> is too small for option \"%s\".\n", span, name);
 			exit(1);
 		}
-		
+
 		value = tmp;
-		
+
 		return true;
 	}
-	
+
 	virtual void help(bool verbose = false) {
 		fprintf(stderr, "  -%-12s = %-8s [", name, type_name);
 		if (range.begin == INT32_MIN)
 			fprintf(stderr, "imin");
 		else
 			fprintf(stderr, "%4d", range.begin);
-		
+
 		fprintf(stderr, " .. ");
 		if (range.end == INT32_MAX)
 			fprintf(stderr, "imax");
 		else
 			fprintf(stderr, "%4d", range.end);
-		
+
 		fprintf(stderr, "] (default: %d)\n", value);
 		if (verbose) {
 			fprintf(stderr, "\n        %s\n", description);
@@ -257,10 +270,10 @@ protected:
 
 public:
 	Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(),
-			Int64Range r = Int64Range(INT64_MIN, INT64_MAX)) :
+				Int64Range r = Int64Range(INT64_MIN, INT64_MAX)) :
 			Option(n, d, c, "<int64>"), range(r), value(def) {
 	}
-	
+
 	operator int64_t(void) const {
 		return value;
 	}
@@ -271,16 +284,16 @@ public:
 		value = x;
 		return *this;
 	}
-	
+
 	virtual bool parse(const char* str) {
 		const char* span = str;
-		
+
 		if (!match(span, "-") || !match(span, name) || !match(span, "="))
 			return false;
-		
+
 		char* end;
 		int64_t tmp = strtoll(span, &end, 10);
-		
+
 		if (end == NULL)
 			return false;
 		else if (tmp > range.end) {
@@ -290,25 +303,25 @@ public:
 			fprintf(stderr, "ERROR! value <%s> is too small for option \"%s\".\n", span, name);
 			exit(1);
 		}
-		
+
 		value = tmp;
-		
+
 		return true;
 	}
-	
+
 	virtual void help(bool verbose = false) {
 		fprintf(stderr, "  -%-12s = %-8s [", name, type_name);
 		if (range.begin == INT64_MIN)
 			fprintf(stderr, "imin");
 		else
 			fprintf(stderr, "%4" PRIi64, range.begin);
-		
+
 		fprintf(stderr, " .. ");
 		if (range.end == INT64_MAX)
 			fprintf(stderr, "imax");
 		else
 			fprintf(stderr, "%4" PRIi64, range.end);
-		
+
 		fprintf(stderr, "] (default: %" PRIi64 ")\n", value);
 		if (verbose) {
 			fprintf(stderr, "\n        %s\n", description);
@@ -327,7 +340,7 @@ public:
 	StringOption(const char* c, const char* n, const char* d, const char* def = NULL) :
 			Option(n, d, c, "<string>"), value(def) {
 	}
-	
+
 	operator const char*(void) const {
 		return value;
 	}
@@ -338,17 +351,17 @@ public:
 		value = x;
 		return *this;
 	}
-	
+
 	virtual bool parse(const char* str) {
 		const char* span = str;
-		
+
 		if (!match(span, "-") || !match(span, name) || !match(span, "="))
 			return false;
-		
+
 		value = span;
 		return true;
 	}
-	
+
 	virtual void help(bool verbose = false) {
 		fprintf(stderr, "  -%-10s = %8s\n", name, type_name);
 		if (verbose) {
@@ -368,7 +381,7 @@ public:
 	BoolOption(const char* c, const char* n, const char* d, bool v) :
 			Option(n, d, c, "<bool>"), value(v) {
 	}
-	
+
 	operator bool(void) const {
 		return value;
 	}
@@ -379,18 +392,18 @@ public:
 		value = b;
 		return *this;
 	}
-	
+
 	virtual bool parse(const char* str) {
 		const char* span = str;
-		
+
 		if (strstr(span, "=")) {
-			
+
 			if (!match(span, "-") || !match(span, name) || !match(span, "="))
 				return false;
-			
+
 			char* end;
 			int32_t tmp = strtol(span, &end, 10);
-			
+
 			if (end == NULL)
 				return false;
 			else if (tmp > 1) {
@@ -400,35 +413,78 @@ public:
 				fprintf(stderr, "ERROR! value <%s> is too small for option \"%s\".\n", span, name);
 				exit(1);
 			}
-			
+
 			value = tmp;
 			return true;
 		} else if (match(span, "-")) {
-			
+
 			bool b = !match(span, "no-");
-			
+
 			if (strcmp(span, name) == 0) {
 				value = b;
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	virtual void help(bool verbose = false) {
-		
+
 		fprintf(stderr, "  -%s, -no-%s", name, name);
-		
+
 		//Note: Changed this to signed int, otherwise this can overflow if name is longer than 32...
 		for (int i = 0; i < 32 - (int) (strlen(name)) * 2; i++)
 			fprintf(stderr, " ");
-		
+
 		fprintf(stderr, " ");
 		fprintf(stderr, "(default: %s)\n", value ? "on" : "off");
 		if (verbose) {
 			fprintf(stderr, "\n        %s\n", description);
 			fprintf(stderr, "\n");
+		}
+	}
+};
+
+
+class OptionSet: public BoolOption {
+	//char ** opts_array;
+	vec<char *> opts_array;
+public:
+	OptionSet(const char* c, const char* n, const char* d, const char * opts, bool v) :
+			BoolOption(c, n, d, v){
+		Option::getOptionSetList().push(this);
+		parseOptsArray(opts);
+	}
+	virtual ~OptionSet(){
+		while (opts_array.size()){
+			delete(opts_array.last());
+			opts_array.pop();
+		}
+	}
+	/*char **getOpts() const{
+		return &(*opts_array);
+	}*/
+	vec<char*>& getOpts(){
+		return opts_array;
+	}
+private:
+	void parseOptsArray(const char * opts_){
+		opts_array.clear();
+		char* opts = strdup(opts_);
+		if(opts) {
+			int i;
+			char *t;
+			for (i = 0, t = strtok(opts, " "); t != nullptr; ++i) {
+				int len = strlen(t);
+				if(len>0) {
+					opts_array.push(strdup(t));
+					//opts_array.push(new char[len + 1]);
+					//strncpy(opts_array.last(), t, len);
+				}
+				t = strtok(nullptr, " ");
+			}
+			free (opts);
 		}
 	}
 };

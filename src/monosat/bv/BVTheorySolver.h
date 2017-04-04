@@ -402,12 +402,7 @@ public:
 				}
 				new_change = theory.updateApproximations(bvID);
 				changed|=new_change;
-				/*if(new_change){
-					printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
-						std::cout<<underApprox << " over ";
-						std::cout<<overApprox << "\n";
-						fflush(stdout);
-				}*/
+
 			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
 			return true;
 		}
@@ -5243,9 +5238,6 @@ public:
 
 				if (e.isBoundAssignment()){
 					int bvID = e.bvID;
-					if(bvID==6){
-						int a =1;
-					}
 					under_approx[bvID]=e.new_under;
 					over_approx[bvID]=e.new_over;
 					under_causes[bvID]=e.new_under_cause;
@@ -5559,7 +5551,8 @@ public:
 				}
 				repropagate_comparisons.clear();
 			}
-			analysis_trail_pos = trail.size()-1;
+			if(analysis_trail_pos>trail.size() - 1)
+			    analysis_trail_pos = trail.size()-1;
 
 		}
 
@@ -5998,18 +5991,6 @@ public:
 		static int iter = 0;
 		++iter;
 
-#ifdef DEBUG_BV
-/*		for(int i = 0;i<vars.size();i++){
-			if(value(i)==l_True){
-				std::cout << "1";
-			}else if (value(i)==l_False){
-				std::cout << "0";
-			}else{
-				std::cout << "x";
-			}
-		}
-		std::cout<<"\n";*/
-#endif
 
 
 
@@ -6330,9 +6311,7 @@ public:
 			assert(under_approx[bvID]==under);
 			return true;
 		}else{
-			if(bvID==565 || bvID==2){
-				int a =1;
-			}
+
 
 			for (int opID:operation_ids[bvID]){
 				getOperation(opID).checkApproxUpToDate(under,over);
@@ -6466,9 +6445,7 @@ public:
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		static int realprops = 0;
 		stats_propagations++;
-		if(stats_propagations==55){
-			int a=1;
-		}
+
 		if (!force_propagation && !requiresPropagation ) {
 			stats_propagations_skipped++;
 			assert(dbg_uptodate());
@@ -7123,8 +7100,12 @@ public:
 #endif
 
 	}
+	//the bv theory does not properly update the bitvectors that need to be propagated after backtracking if it is skipped during propagation, so do not allow that to happen.
+	bool unskipable()const override{
+		return true;
+	}
 
-	bool solveTheory(vec<Lit> & conflict) {
+	bool solveTheory(vec<Lit> & conflict) override {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict);
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).

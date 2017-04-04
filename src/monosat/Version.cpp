@@ -34,7 +34,7 @@
 
 
 #ifdef MONOSAT_VERSION
-#define VERSION_STR ", " STR_VALUE(MONOSAT_VERSION)
+#define VERSION_STR ", (" STR_VALUE(MONOSAT_VERSION) ")"
 #else
 #define VERSION_STR ""
 #endif

@@ -2244,7 +2244,7 @@ public:
 			stats_propagations_skipped++;
 			return true;
 		}
-#ifdef DEBUG_GRAPH
+/*#ifdef DEBUG_GRAPH
 		for(int v = 0;v<nVars();v++){
 			if(v==var(const_true))
 				continue;
@@ -2257,7 +2257,7 @@ public:
 				}
 			}
 		}
-#endif
+#endif*/
 
 
 		static int itp = 0;

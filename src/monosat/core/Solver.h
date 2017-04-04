@@ -626,6 +626,7 @@ public:
 	vec<TheorySatisfaction> theory_sat_queue;*/
 	vec<int> theory_queue;
 	vec<bool> in_theory_queue;
+	IntSet<int> unskippable_theory_q;
 	vec<int> theory_reprop_trail_pos;
 	vec<int> theory_init_prop_trail_pos;
 	bool disable_theories=false;
@@ -827,6 +828,7 @@ protected:
 	vec<Lit> to_reenqueue;
 	vec<Lit> trail;            // Assignment stack; stores all assigments made in the order they were made.
 	vec<int> trail_lim;        // Separator indices for different decision levels in 'trail'.
+	vec<int> partially_propagated_levels;//a list of the levels in the sovler for which theory_q was not empty when newDecisionLevel() was called. Used to force theories to be repropagated if theory propagation was skipped, in certain configurations.
 	vec<VarData> vardata;          // Stores reason and level for each variable.
 	int qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
 	int simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
@@ -932,10 +934,15 @@ public:
 	}
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
 	inline void needsPropagation(int theoryID){
+		if(theories[theoryID]->unskipable()){
+			unskippable_theory_q.insert(theoryID);
+		}else {
 		if (!in_theory_queue[theoryID]) {
 			in_theory_queue[theoryID] = true;
 			theory_queue.push(theoryID);
 			assert(theory_queue.size() <= theories.size());
+
+			}
 		}
 	}
 protected:
@@ -1098,6 +1105,8 @@ private:
 	inline bool super_interface(Var v) const {
 		return v >= min_super && v <= max_super;
 	}
+
+	bool propagateTheorySolver(int theoryID, CRef & confl, vec<Lit> & theory_conflict);
 
 	class SolverDecisionTheory:public Theory{
 		//This is a stub theory solver, that is only used to conveniently allow the main solver to make Boolean-decisions
@@ -1272,6 +1281,12 @@ inline bool Solver::locked(const Clause& c) const {
 	return value(c[0]) == l_True && ca.isClause(reason(var(c[0]))) && ca.lea(reason(var(c[0]))) == &c;
 }
 inline void Solver::newDecisionLevel() {
+	assert(partially_propagated_levels.size() ==0 || partially_propagated_levels.last()<decisionLevel());
+	assert(unskippable_theory_q.size()==0);
+	if(theory_queue.size()){
+		//some theories were not propagated
+		 partially_propagated_levels.push(decisionLevel());
+	}
 	trail_lim.push(trail.size());
 }
 

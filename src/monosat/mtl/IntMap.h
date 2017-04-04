@@ -110,6 +110,12 @@ public:
     bool     has         (K k) { in_set.reserve(k, 0); return in_set[k]; }
     bool     contains         (K k) { return has(k);}
 
+        //warning: takes linear time
+        void remove(K k){
+            assert(has(k));
+            in_set[k]=0;
+            xs.remove(k);
+        }
     //stl-style begin and end, to support C++11 range-based for loops
     K* begin() const {
         return xs.begin();
