@@ -37,7 +37,7 @@ class Var:
 
     def __init__(self,symbol=None, allow_simplification=False):
         #Warning: if allow_simplification is set to true, then the variable may be eliminated by the solver at the next Solve();
-        #After that point, the variable would no longer be safe to use in clauses or constraints in subsequent calls to Solve(). 
+        #After that point, the variable would no longer be safe to use in clauses or constraints in subsequent calls to Solve().
         #Use carefully!
         self._solver = _monosat.getSolver();
         if isinstance(symbol,bool):
@@ -85,11 +85,14 @@ class Var:
         #if self.symbol is not None and self.symbol in _monosat.symbolmap:
         #    del _monosat.symbolmap[self.symbol]
         #if s is not None:
-        #    self.symbol = str(s)        
+        #    self.symbol = str(s)
         #    _monosat.symbolmap[self.symbol]=self
 
     def __hash__(self):
         return self.lit
+
+    def __eq__(self, other):
+        return isinstance(other, Var) and self.lit == other.lit
 
     def getLit(self):
         return self.lit
@@ -364,10 +367,7 @@ def And(*args):
         return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            a=VAR(args[0][0])
-            for i in range(1,len(args[0])):
-                a=a.And(VAR(args[0][i]))
-            return a
+            return And(*args[0])
         return VAR(args[0])
     else:
         a=VAR(args[0])
@@ -380,10 +380,7 @@ def Or(*args):
         return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            a=VAR(args[0][0])
-            for i in range(1,len(args[0])):
-                a=a.Or(VAR(args[0][i]))
-            return a
+            return Or(*args[0])
         return VAR(args[0])
     else:
         a=VAR(args[0])
@@ -405,10 +402,7 @@ def Xor(*args):
         return false()
     elif len(args)==1:
         if isinstance(args[0], collections.Iterable):
-            a=VAR(args[0][0])
-            for i in range(1,len(args[0])):
-                a=a.Xor(VAR(args[0][i]))
-            return a
+            return Xor(*args[0])
         return VAR(args[0])
     else:
         a=VAR(args[0])
@@ -541,6 +535,7 @@ def Assert(a):
 
     if(a is False or a is True):
         raise Exception("Error: asserted python Boolean literal (not symbolic variable)")
+
     a=VAR(a)
     if(a.isConstFalse()):
         print("Warning: asserted constant false variable")
@@ -990,272 +985,272 @@ def _PopCountTable(vars, max_value=None):
     if(max_value>10):
         print("Warning: building a pop-count table for more than 10 values (was %d) may require a large amount of memory!"%(max_value), file=sys.stderr)
 
-    output = []
-    maxwidth = math.ceil( math.log(len(vars),2))
-    for v in maxwidth:
-        output.append(Var())
+        output = []
+        maxwidth = math.ceil( math.log(len(vars),2))
+        for v in maxwidth:
+            output.append(Var())
 
-    for n in range((1<<len(vars)) -1):
-        pop = bin(n).count("1")
-        if pop<=max_value: #make this faster in the future!!
-            a = true()
-            for i,b in enumerate(bin(n)):
-                v= vars[i]
-                if b=='0':
-                    a = a.And(Not(v))
+        for n in range((1<<len(vars)) -1):
+            pop = bin(n).count("1")
+            if pop<=max_value: #make this faster in the future!!
+                a = true()
+                for i,b in enumerate(bin(n)):
+                    v= vars[i]
+                    if b=='0':
+                        a = a.And(Not(v))
+                    else:
+                        a = a.And(v)
+                for i in range(maxwidth):
+                    bit = 1<<i
+                    if pop & bit:
+                        AssertImplies(a, output[i])
+                    else:
+                        AssertImplies(a, Not(output[i]))
+
+        #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+        any_vars=Or(vars)
+        any_outs = Or(output)
+        AssertEq(any_vars,any_outs)
+
+        return output;
+
+
+
+    def _PopCountPairs(vars):
+        #From Hackers Delight, 2nd ed.
+        #required_len = _next_power_of_2(len(vars))
+        #while( len(vars)<required_len):
+        #    vars = vars+false()
+        maxwidth = math.ceil( math.log(len(vars),2)) +1
+        total = [false()]*maxwidth #is it safe to make this maxwidth-1?
+        #ones=[false()]*len(vars)
+        ones = false()
+        size = 2
+        #Split the vars into adjacent pairs, sum each pair, the repeat.
+        sums = []
+
+        for a,b in _grouper(2,vars,None):
+            sums.append( (a,b))
+
+        while(len(sums)>1):
+            next_sums=[]
+            for a,b in _grouper(2,sums,None):
+                assert(a is not None)
+                if b is not None:
+                    s,carry  = _AddArray(a, b)
+                    #carry will always be false
                 else:
-                    a = a.And(v)
-            for i in range(maxwidth):
-                bit = 1<<i
-                if pop & bit:
-                    AssertImplies(a, output[i])
-                else:
-                    AssertImplies(a, Not(output[i]))
+                    s = a
+                next_sums.append(s)
+            sums = next_sums
 
-    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
-    any_vars=Or(vars)
-    any_outs = Or(output)
-    AssertEq(any_vars,any_outs)
+            #assert(ignore.isConstFalse())
+        assert(len(sums)==1)
+        output=sums[0]
+        #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+        any_vars=Or(vars)
+        any_outs = Or(output)
+        AssertEq(any_vars,any_outs)
 
-    return output;
+        #Can't do this, unless vars is a power of 2...
+        #all_vars=And(vars)
+        #all_outs=And(total2)
+        #AssertEq(all_vars,all_outs)
+        return output
 
+    def _CSA(a,b,c):
+        assert(isinstance(a, collections.Iterable) == isinstance(b, collections.Iterable))
+        assert(isinstance(a, collections.Iterable) ==isinstance(c, collections.Iterable))
+        if isinstance(a, collections.Iterable):
+            assert(len(a)==len(b))
+            assert(len(a)==len(c))
+            ps = []
+            sc = []
+            for i in range(len(a)):
+                psi,sci = _SCA(a[i],b[i],c[i])
+                ps.append(psi)
+                sc.append(sci)
+            return ps,sc
 
-
-def _PopCountPairs(vars):
-    #From Hackers Delight, 2nd ed.
-    #required_len = _next_power_of_2(len(vars))
-    #while( len(vars)<required_len):
-    #    vars = vars+false()
-    maxwidth = math.ceil( math.log(len(vars),2)) +1
-    total = [false()]*maxwidth #is it safe to make this maxwidth-1?
-    #ones=[false()]*len(vars)
-    ones = false()
-    size = 2
-    #Split the vars into adjacent pairs, sum each pair, the repeat.
-    sums = []
-
-    for a,b in _grouper(2,vars,None):
-        sums.append( (a,b))
-
-    while(len(sums)>1):
-        next_sums=[]
-        for a,b in _grouper(2,sums,None):
-            assert(a is not None)
-            if b is not None:
-                s,carry  = _AddArray(a, b)
-                #carry will always be false
-            else:
-                s = a
-            next_sums.append(s)
-        sums = next_sums
-
-        #assert(ignore.isConstFalse())
-    assert(len(sums)==1)
-    output=sums[0]
-    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
-    any_vars=Or(vars)
-    any_outs = Or(output)
-    AssertEq(any_vars,any_outs)
-
-    #Can't do this, unless vars is a power of 2...
-    #all_vars=And(vars)
-    #all_outs=And(total2)
-    #AssertEq(all_vars,all_outs)
-    return output
-
-def _CSA(a,b,c):
-    assert(isinstance(a, collections.Iterable) == isinstance(b, collections.Iterable))
-    assert(isinstance(a, collections.Iterable) ==isinstance(c, collections.Iterable))
-    if isinstance(a, collections.Iterable):
-        assert(len(a)==len(b))
-        assert(len(a)==len(c))
-        ps = []
-        sc = []
-        for i in range(len(a)):
-            psi,sci = _SCA(a[i],b[i],c[i])
-            ps.append(psi)
-            sc.append(sci)
+        #from wikipedia
+        #ps = a xor b xor c
+        #sc = and(a,  b) or and(a,c) or and(b,c)
+        ps = Xor(a,b,c)
+        sc = Or(And(a,b),And(a,c),And(b,c))
         return ps,sc
 
-    #from wikipedia
-    #ps = a xor b xor c
-    #sc = and(a,  b) or and(a,c) or and(b,c)
-    ps = Xor(a,b,c)
-    sc = Or(And(a,b),And(a,c),And(b,c))
-    return ps,sc
+    def _PopCountHarleySeal(vars):
+        #From Hackers Delight, 2nd ed.
+        if len(vars)%2==1:
+            vars = vars+false()
+        maxwidth = math.ceil( math.log(len(vars),2)) +1
+        total = [false()]*maxwidth #is it safe to make this maxwidth-1?
+        #ones=[false()]*len(vars)
+        ones = false()
+        for i in range(0,len(vars),2):
+            twos,ones = _CSA(ones,vars[i],vars[i+1])
+            total,ignore = AddOne(total,twos) #_AddArray(total,)
+            #assert(ignore.isConstFalse())
+        #total = 2*total + pop(ones) - operating at the bit level, this is equivalent to left shifting total, and putting 'ones' in the 1's column
+        total2 = [ones]
+        total2.extend(total)
 
-def _PopCountHarleySeal(vars):
-    #From Hackers Delight, 2nd ed.
-    if len(vars)%2==1:
-        vars = vars+false()
-    maxwidth = math.ceil( math.log(len(vars),2)) +1
-    total = [false()]*maxwidth #is it safe to make this maxwidth-1?
-    #ones=[false()]*len(vars)
-    ones = false()
-    for i in range(0,len(vars),2):
-        twos,ones = _CSA(ones,vars[i],vars[i+1])
-        total,ignore = AddOne(total,twos) #_AddArray(total,)
-        #assert(ignore.isConstFalse())
-    #total = 2*total + pop(ones) - operating at the bit level, this is equivalent to left shifting total, and putting 'ones' in the 1's column
-    total2 = [ones]
-    total2.extend(total)
+        #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
+        any_vars=Or(vars)
+        any_outs = Or(total2)
+        AssertEq(any_vars,any_outs)
 
-    #Add some redundant constraints, so that the sovler doesn't need to work to learn them:
-    any_vars=Or(vars)
-    any_outs = Or(total2)
-    AssertEq(any_vars,any_outs)
-
-    #Can't do this, unless vars is a power of 2...
-    #all_vars=And(vars)
-    #all_outs=And(total2)
-    #AssertEq(all_vars,all_outs)
-    return total2
+        #Can't do this, unless vars is a power of 2...
+        #all_vars=And(vars)
+        #all_outs=And(total2)
+        #AssertEq(all_vars,all_outs)
+        return total2
 
 
-"""def _PopCountHarleySeal4_3(vars):
+    """def _PopCountHarleySeal4_3(vars):
 
-    while len(vars)%4!=0:
-        vars = vars+false()
+        while len(vars)%4!=0:
+            vars = vars+false()
 
-    sums=[]
-    for i in range(0,len(vars),4):
-        sum,carry =  Add( vars[i+1],vars[i+2],vars[i+3])
-        sum2,z0 = HalfAdd(vars[i],carry)
-        z2,z1 = Add(sum,sum2)
-        sums.append([z0,z1,z2])"""
+        sums=[]
+        for i in range(0,len(vars),4):
+            sum,carry =  Add( vars[i+1],vars[i+2],vars[i+3])
+            sum2,z0 = HalfAdd(vars[i],carry)
+            z2,z1 = Add(sum,sum2)
+            sums.append([z0,z1,z2])"""
 
 
-def _PopCountNaive(vars):
-    if(isinstance(vars,(int, float, complex))):
-        return bin(vars).count('1')
+    def _PopCountNaive(vars):
+        if(isinstance(vars,(int, float, complex))):
+            return bin(vars).count('1')
 
-    allconst = True
-    for v in vars:
-        aV = VAR(v)
-        if(not aV.isConst()):
-            allconst=False
-            break
-
-    if allconst:
-        count = 0
+        allconst = True
         for v in vars:
             aV = VAR(v)
-            if (v.isConstTrue()):
-                count+=1
-        n=0
+            if(not aV.isConst()):
+                allconst=False
+                break
+
+        if allconst:
+            count = 0
+            for v in vars:
+                aV = VAR(v)
+                if (v.isConstTrue()):
+                    count+=1
+            n=0
+            output=[]
+            while (1<<n <= count):
+                if (1<<n & count) ==0:
+                    output.append(false())
+                else:
+                    output.append(true())
+                n+=1
+            return output
+
+
+        maxwidth = math.ceil( math.log(len(vars),2))+2
         output=[]
-        while (1<<n <= count):
-            if (1<<n & count) ==0:
-                output.append(false())
-            else:
-                output.append(true())
-            n+=1
+        for i in range(maxwidth):
+            output.append(false())
+        #simple, suboptimal adder
+
+        for v in vars:
+            a = VAR(v)
+            if(not a.isConstFalse()):
+                output,carry = Add(output,[a])
+
+
+
         return output
 
 
-    maxwidth = math.ceil( math.log(len(vars),2))+2
-    output=[]
-    for i in range(maxwidth):
-        output.append(false())
-    #simple, suboptimal adder
 
-    for v in vars:
-        a = VAR(v)
-        if(not a.isConstFalse()):
-            output,carry = Add(output,[a])
-
-
-
-    return output
-
-
-
-    while(len(vars)>1):
-        next=[]
-        next_carry=[]
-        for i in range(0,len(vars),3):
-            assert(i<len(vars))
-            a=vars[i]
-            b=false()
-            c=false()
-            if(i+1<len(vars)):
-                b= vars[i+1]
-            if(i+2<len(vars)):
-                c= vars[i+2]
-            sum,carry = Add(a,b,c);
-            next.append(sum)
-            next.append(carry)
-        vars=next
+        while(len(vars)>1):
+            next=[]
+            next_carry=[]
+            for i in range(0,len(vars),3):
+                assert(i<len(vars))
+                a=vars[i]
+                b=false()
+                c=false()
+                if(i+1<len(vars)):
+                    b= vars[i+1]
+                if(i+2<len(vars)):
+                    c= vars[i+2]
+                sum,carry = Add(a,b,c);
+                next.append(sum)
+                next.append(carry)
+            vars=next
 
 
-#Returns true if exactly one variable in the array is true.
-def OneHot(*arrayVars):
-    sum,carry = false(),false()
-    eversum = false()
-    evercarry=false()
-    for x in arrayVars:
-        sum,carry = Add(sum,x,carry)
-        eversum = Or(eversum, sum)
-        evercarry = Or(evercarry, carry)
+    #Returns true if exactly one variable in the array is true.
+    def OneHot(*arrayVars):
+        sum,carry = false(),false()
+        eversum = false()
+        evercarry=false()
+        for x in arrayVars:
+            sum,carry = Add(sum,x,carry)
+            eversum = Or(eversum, sum)
+            evercarry = Or(evercarry, carry)
 
-    return And(eversum, ~evercarry)
+        return And(eversum, ~evercarry)
 
-def PopLE( constant,*arrayVars):
-    return PopLT(constant+1,*arrayVars)
-#True if the population count of the vars in the array is exactly equal to the (integer) constant
-#Note: this is an UNSIGNED comparison
+    def PopLE( constant,*arrayVars):
+        return PopLT(constant+1,*arrayVars)
+    #True if the population count of the vars in the array is exactly equal to the (integer) constant
+    #Note: this is an UNSIGNED comparison
 
 
-def PopEq( compareTo,*arrayVars):
-    if len(arrayVars)==1 and isinstance(arrayVars[0], collections.Iterable):
-        arrayVars=arrayVars[0]
-    #build up a tree of add operations
-    if (isinstance(compareTo,(bool, int,  float, complex))):
-        if(compareTo<0):
-            print("Warning: Passed negative constant to popcount methods, which expect unsigned arguments")
-            return false();#shouldn't really come up... 
-        elif (compareTo==0):
-            return Not(Or(*arrayVars))
-        elif(compareTo==1):
-            return OneHot(*arrayVars)
-        elif compareTo==len(arrayVars):
-            return And(*arrayVars)
-        elif compareTo>len(arrayVars):
-            return false()
+    def PopEq( compareTo,*arrayVars):
+        if len(arrayVars)==1 and isinstance(arrayVars[0], collections.Iterable):
+            arrayVars=arrayVars[0]
+        #build up a tree of add operations
+        if (isinstance(compareTo,(bool, int,  float, complex))):
+            if(compareTo<0):
+                print("Warning: Passed negative constant to popcount methods, which expect unsigned arguments")
+                return false();#shouldn't really come up...
+            elif (compareTo==0):
+                return Not(Or(*arrayVars))
+            elif(compareTo==1):
+                return OneHot(*arrayVars)
+            elif compareTo==len(arrayVars):
+                return And(*arrayVars)
+            elif compareTo>len(arrayVars):
+                return false()
 
-    count = PopCount(arrayVars)
-    return Equal(count,compareTo)
+        count = PopCount(arrayVars)
+        return Equal(count,compareTo)
 
-#Note: this is an UNSIGNED comparison
-def PopLT( compareTo,*arrayVars):
-    if len(arrayVars)==1 and isinstance(arrayVars[0], collections.Iterable):
-        arrayVars=arrayVars[0]
-    #build up a tree of add operations
-    if (isinstance(compareTo,(bool, int, float, complex))):
-        if(compareTo<0):
-            print("Warning: Passed negative constant to popcount methods, which expect unsigned arguments")
-            return false();#shouldn't really come up... 
-        elif (compareTo==0):
-            return false()
-        elif(compareTo==1):
-            return Not(Or(arrayVars))
-        elif (compareTo==2):
-            return OneHot(*arrayVars)
-        elif compareTo==len(arrayVars):
-            return Not(And(arrayVars))
-        elif compareTo>len(arrayVars):
-            return true()
-    count = PopCount(arrayVars)
-    return LessThan(count,compareTo)
+    #Note: this is an UNSIGNED comparison
+    def PopLT( compareTo,*arrayVars):
+        if len(arrayVars)==1 and isinstance(arrayVars[0], collections.Iterable):
+            arrayVars=arrayVars[0]
+        #build up a tree of add operations
+        if (isinstance(compareTo,(bool, int, float, complex))):
+            if(compareTo<0):
+                print("Warning: Passed negative constant to popcount methods, which expect unsigned arguments")
+                return false();#shouldn't really come up...
+            elif (compareTo==0):
+                return false()
+            elif(compareTo==1):
+                return Not(Or(arrayVars))
+            elif (compareTo==2):
+                return OneHot(*arrayVars)
+            elif compareTo==len(arrayVars):
+                return Not(And(arrayVars))
+            elif compareTo>len(arrayVars):
+                return true()
+        count = PopCount(arrayVars)
+        return LessThan(count,compareTo)
 
-#Note: this is an UNSIGNED comparison
-def PopGE( constant,*arrayVars):
-    return PopGT(constant-1,*arrayVars)
+    #Note: this is an UNSIGNED comparison
+    def PopGE( constant,*arrayVars):
+        return PopGT(constant-1,*arrayVars)
 
-#True if the population count of the vars in the array is exactly equal to the (integer) constant
-#Note: this is an UNSIGNED comparison
-def PopGT( constant,*arrayVars):
-    return Not(PopLE(constant,*arrayVars))   
+    #True if the population count of the vars in the array is exactly equal to the (integer) constant
+    #Note: this is an UNSIGNED comparison
+    def PopGT( constant,*arrayVars):
+        return Not(PopLE(constant,*arrayVars))
 
 
 

@@ -1,0 +1,69 @@
+This is a summary of the PCRT format for describing constrained, grid-based circuit routing problems, a superset of the
+one used for Alexander Nadel's paper "Routing Under Constraints" (FMCAD 2016).
+
+Each .pcrt file describes:
+        (a) A 2D grid (X,Y) where a vertex is associated with every grid point and an edge is created between every two
+            adjacent vertices (more on this below).
+        (b) A set of nets, each of which specifies two or more vertices to be routed to each other.
+        (c) A set of mutually exclusive constraints, where each constraint is a list of 1 or more vids that cannot be
+            routed simultaneously. A vertex ID for (x,y) is y*X+x.
+        (d) A set of disabled vertices, which must not be routed.
+
+The format is as follows:
+		; 2D Grid definition (90-degree)
+		G X Y; Comments
+		; Nets
+		N vid1 vid2 ... vidn; Comments
+		; Constraints (at most one vertex routed)
+		C vid1 vid2 ... vidn; Comments		
+		; Disabled vertices
+		D vid1; Comments
+
+The file may have multiple 'N', 'C', and 'D' lines; there may be at most one 'G' line.
+Each net 'N' describes two or more vertices that should be routed to each other.
+Typically there are two vertices in each net, to be connected with an (acyclic) path.
+If there are more than two vertices in a single net, then they may be connected by a tree.
+There must not exist a path from the vertices a net to the vertices of any other net.
+
+There are two types of constraints: C constraints and D constraints.
+Each C constraint describes a set of mutually exclusive vertices: at most one of them can be routed in any solution.
+Each D constraint describes a single disabled vertex (an obstacle) which must not be routed in any solution.
+
+The pcrt file format supports 90-degree or 45-degree routing.
+Grids defined using 'G X Y 90' headers support 90-degree routing. If the '90' is omitted, 90-degree routing is implied.
+Grids may instead be defined using the header 'G X Y 45', in which case they support 45-degree routing.
+
+Edges are implicitly defined in the pcrt format:
+For 90-degree routing, each vertex has up to four undirected edges connecting it to its 4 cardinal neighbors.
+For 45-degree routing, each vertex may have as many as 8 undirected edges, to its 4 cardinal and 4 diagonal neighbors.
+
+An example .pcrt file follows between the dashed lines (which are not part of the .pcrt file):
+-------------------
+;These are comments
+G 10 10
+N 40 48
+N 5 95
+C 45 30 23
+D 62
+D 63
+-------------------
+
+The above file defining a 10 by 10 grid with 90-degree routing, two nets, one constraint, and two disabled vertices.
+In a grid of width X, each vertex id V defines a tuple (x,y), with V=y*X+x.
+Net 1 connects vid 40, which is located at position (0,4), to vid 48, located at position (8,4).
+Net 2 connects vid 5, at (5,0) to vid 95, at (5,9).
+The constraint asserts that at most one of vid 45, vid 30, and vid 23 may be routed. 
+Those vertices are located at positions (5,4), (0,3), and (3,2).
+The vertices with vid 62 and 63, at positions (2,6) and (3,6), are disabled, and must not be routed in the grid.
+
+The following .pcrt file is the same as the above, except that it uses 45-degree routing (allowing diagonals):
+-------------------
+;These are comments
+G 10 10 45
+N 40 48
+N 5 95
+C 45 30 23
+D 62
+D 63
+-------------------
+
