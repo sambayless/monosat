@@ -775,11 +775,11 @@ public:
 	}
 
     void drawGrid(DynamicGraph<Weight> & g, bool only_path=false){
-        int width =60;
-        int height = 60;
+        int width =10;
+        int height = 10;
 
 
-		int sourcenodes[] = {43, 46, 57, 55, 53, 55, 46, 12, 9, 1, 2, 7, 50, 19, 23, 46, 0, 6, 52, 16, 11, 8, 27, 9, 2, 50, 2, 43, 7, 55, 29, 42, 42, 18, 29, 27, 13, 16, 31, 22, 9, 33, 21, 59, 44, 37, 38, 44, 35, 30, 53, 46, 31, 20, 56, 33, 16, 1, 45, 45, 44, 27, 56, 5, 46, 9, 13, 17, 24, 15, 42, 45, 14, 27, 14, 44, 3, 50, 7, 48};
+
 		vec<int> startsX;
 		vec<int> endsX;
 		vec<int> startsY;
@@ -791,7 +791,7 @@ public:
 		IntSet<int> endsY;*/
 		vec<std::pair<int,int>> starts;
 		vec<std::pair<int,int>> ends;
-		for(int i = 0;i<80;i+=4){
+		/*for(int i = 0;i<80;i+=4){
 			int sY = sourcenodes[i];
 			int sX = sourcenodes[i+1];
 			int eY = sourcenodes[i+2];
@@ -806,22 +806,22 @@ public:
 			ends.push();
 			ends.last().first = eX;
 			ends.last().second = eY;
-		}
+		}*/
 
         bool found_source = false;
         bool found_dest = false;
         printf("\n");
         for(int y = 0;y<height;y++) {
             for (int x = 0; x < width; x++){
-                int f_node = y*height + x;
+                int f_node = (y*height + x)*2+1;
 				std::pair <int, int> p = std::make_pair(x,y);
                 if (f_node == r->source){
-					assert(starts.contains(p));
+					//assert(starts.contains(p));
                     found_source=true;
                     printf("*");
                 }else if (f_node == dest_node){
                     found_dest=true;
-					assert(ends.contains(p));
+					//assert(ends.contains(p));
                     printf("@");
                 }else{
 
@@ -837,7 +837,7 @@ public:
 					}
 				}
                 if (x<width-1) {
-                    int t_node = y*height+x+1;
+                    int t_node = (y*height+x+1)*2;
                     //assert(g.hasEdge(f_node,t_node));
                     if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
                         if(only_path){
@@ -936,14 +936,14 @@ public:
 		if(needsRecompute()){
             r->stats_heuristic_recomputes++;
 			computePath();
-            if(opt_verb>=4) {
+           /* if(opt_verb>=4) {
                 printf("Over:\n");
                 drawGrid(g_over);
                 printf("Under:\n");
                 drawGrid(g_under);
                 printf("Path:\n");
                 drawGrid(g_over, true);
-            }
+            }*/
 			last_over_modification = g_over.modifications;
 			last_over_deletion = g_over.deletions;
 			last_over_addition = g_over.additions;
@@ -1755,10 +1755,10 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 		} else if (outer->value(l) == l_False) {
 			conflict.push(l);
             conflictingHeuristic= u < reach_heuristics.size() ?  reach_heuristics[u]:nullptr;
-            if(opt_verb>=4){
+     /*       if(opt_verb>=4){
                 drawGrid(g_over, u);
                 drawGrid(g_under, u);
-            }
+            }*/
 			if (reach) {
 
 				//conflict
@@ -2165,53 +2165,32 @@ public:
     }
 
     void drawGrid(DynamicGraph<Weight> & g, bool only_path=false){
-        int width =60;
-        int height = 60;
+        int width =10;
+        int height = 10;
 
-
-        int sourcenodes[] = {43, 46, 57, 55, 53, 55, 46, 12, 9, 1, 2, 7, 50, 19, 23, 46, 0, 6, 52, 16, 11, 8, 27, 9, 2, 50, 2, 43, 7, 55, 29, 42, 42, 18, 29, 27, 13, 16, 31, 22, 9, 33, 21, 59, 44, 37, 38, 44, 35, 30, 53, 46, 31, 20, 56, 33, 16, 1, 45, 45, 44, 27, 56, 5, 46, 9, 13, 17, 24, 15, 42, 45, 14, 27, 14, 44, 3, 50, 7, 48};
         vec<int> startsX;
         vec<int> endsX;
         vec<int> startsY;
         vec<int> endsY;
 
-        /*IntSet<int> startsX;
-        IntSet<int> endsX;
-        IntSet<int> startsY;
-        IntSet<int> endsY;*/
         vec<std::pair<int,int>> starts;
         vec<std::pair<int,int>> ends;
-        for(int i = 0;i<80;i+=4){
-            int sY = sourcenodes[i];
-            int sX = sourcenodes[i+1];
-            int eY = sourcenodes[i+2];
-            int eX = sourcenodes[i+3];
-            startsX.push(sX);
-            startsY.push(sY);
-            endsX.push(eX);
-            endsY.push(eY);
-            starts.push();
-            starts.last().first = sX;
-            starts.last().second = sY;
-            ends.push();
-            ends.last().first = eX;
-            ends.last().second = eY;
-        }
+
 
         bool found_source = false;
         bool found_dest = false;
         printf("\n");
         for(int y = 0;y<height;y++) {
             for (int x = 0; x < width; x++){
-                int f_node = y*height + x;
+				int f_node = (y*height + x)*2+1;
                 std::pair <int, int> p = std::make_pair(x,y);
-                if (f_node == r->source){
-                    assert(starts.contains(p));
+                if (f_node == r->source || f_node-1==r->source){
+                    //assert(starts.contains(p));
                     found_source=true;
                     printf("*");
-                }else if (f_node == dest){
+                }else if (f_node == dest || f_node-1==dest){
                     found_dest=true;
-                    assert(ends.contains(p));
+                   // assert(ends.contains(p));
                     printf("@");
                 }else{
 
@@ -2227,9 +2206,9 @@ public:
                     }
                 }
                 if (x<width-1) {
-                    int t_node = y*height+x+1;
+                    int t_node = (y*height+x+1)*2;
                     //assert(g.hasEdge(f_node,t_node));
-                    if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
+                    if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node+1, f_node-1) || g.hasEdge(t_node, f_node) || g.hasEdge(f_node-1,t_node+1)){
                         if(only_path){
                             int edgea =    g.getEdge(f_node, t_node);
                             int edgeb =    g.getEdge(t_node, f_node);
@@ -2250,9 +2229,9 @@ public:
             }
             printf("\n");
             for (int x = 0; x < width; x++) {
-                int f_node = y*height + x;
+                int f_node = (y*height + x)*2+1;
                 if (y < height - 1) {
-                    int t_node = (y + 1) * height + x;
+                    int t_node = ((y + 1) * height + x)*2;
                     //assert(g.hasEdge(f_node, t_node));
                     if(only_path) {
                         int edgea = g.getEdge(f_node, t_node);
@@ -2267,7 +2246,7 @@ public:
                         } else {
                             printf("  ");
                         }
-                    }else if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
+                    }else if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node+1, f_node-1) || g.hasEdge(t_node, f_node) || g.hasEdge(f_node-1,t_node+1)){
                         //int to_edge = g.getEdge(f_node, t_node);
                         //if(g.edgeEnabled(to_edge)){
                         //int to_edge = g.getEdge(f_node,t_node);
@@ -2295,13 +2274,17 @@ public:
         if(needsRecompute()){
             r->stats_heuristic_recomputes++;
             computePath();
-            if(opt_verb>=4) {
-                printf("Over:\n");
-                drawGrid(g_over);
-                printf("Under:\n");
-                drawGrid(g_under);
-                printf("Path:\n");
-                drawGrid(g_over, true);
+            if(opt_verb>=4 && (path_edges.size() || to_decide.size())) {
+
+                printf("FlowGraph:\n");
+	/*			for(int i = 0;i<flow_graph->edges();i++){
+					int f = flow_graph->getEdge(i).from;
+					int t = flow_graph->getEdge(i).to;
+					if(flow_graph->edgeEnabled(i)){
+						printf("%d: %d->%d\n",i,f,t);
+					}
+				}*/
+                drawGrid(*flow_graph);
             }
             last_over_modification = g_over.modifications;
             last_over_deletion = g_over.deletions;

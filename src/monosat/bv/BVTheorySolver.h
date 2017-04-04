@@ -324,6 +324,7 @@ public:
 		void enqueue(Lit l, bool alter_trail) {
 			importTheory(theory);
 			Var v = var(l);
+
 			if (alter_trail) {
 
 				addAlteredBV(bvID);
@@ -431,12 +432,7 @@ public:
 				}
 				new_change = theory.updateApproximations(bvID);
 				changed |= new_change;
-				/*if(new_change){
-					printf("iter %d, bv %d, under ",realprops , bvID); //: %d, over %d\n", bvID, underApprox,overApprox);
-						std::cout<<underApprox << " over ";
-						std::cout<<overApprox << "\n";
-						fflush(stdout);
-				}*/
+
 			} while (new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
 			return true;
 		}
@@ -469,6 +465,7 @@ public:
 		void updateApprox(Var ignore_bv, Weight &under_new, Weight &over_new, Cause &under_cause_new,
 						  Cause &over_cause_new) override {
 			importTheory(theory);
+
 			Weight under = 0;
 			Weight over = 0;
 			vec<Lit> &bv = theory.bitvectors[bvID];
@@ -504,6 +501,7 @@ public:
 				over_cause_new.setType(getType());
 				over_cause_new.index = getID();
 			}
+
 		}
 
 		void buildReason(Lit p, CRef marker, vec<Lit> &reason) override {
@@ -5420,13 +5418,12 @@ public:
 
 				if (e.isBoundAssignment()) {
 					int bvID = e.bvID;
-					if (bvID == 6) {
-						int a = 1;
-					}
+
 					under_approx[bvID] = e.new_under;
 					over_approx[bvID] = e.new_over;
 					under_causes[bvID] = e.new_under_cause;
 					over_causes[bvID] = e.new_over_cause;
+
 					if (hasTheory(bvID)) {
 						int theoryID = getTheory(bvID)->getTheoryIndexBV();
 						getTheory(bvID)->rewindBV(bvID);
@@ -5545,6 +5542,7 @@ public:
 				over_approx[bvID] = e.previous_over;
 				under_causes[bvID] = e.prev_under_cause;
 				over_causes[bvID] = e.prev_over_cause;
+
 				if (hasTheory(bvID)) {
 					int theoryID = getTheory(bvID)->getTheoryIndexBV();
 					/*if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
@@ -5740,7 +5738,8 @@ public:
 				}
 				repropagate_comparisons.clear();
 			}
-			analysis_trail_pos = trail.size() - 1;
+			if(analysis_trail_pos>trail.size() - 1)
+				analysis_trail_pos = trail.size() - 1;
 
 		}
 
@@ -6048,6 +6047,7 @@ public:
 		if (changed) {
 			assert_in_range(under_new, bvID);
 			assert_in_range(over_new, bvID);
+
 			under_approx[bvID] = under_new;
 			over_approx[bvID] = over_new;
 			under_causes[bvID] = under_cause_new;
@@ -6189,18 +6189,7 @@ public:
 		static int iter = 0;
 		++iter;
 
-#ifdef DEBUG_BV
-/*		for(int i = 0;i<vars.size();i++){
-			if(value(i)==l_True){
-				std::cout << "1";
-			}else if (value(i)==l_False){
-				std::cout << "0";
-			}else{
-				std::cout << "x";
-			}
-		}
-		std::cout<<"\n";*/
-#endif
+
 
 
 		Weight under_old = under_approx[bvID];
@@ -6358,6 +6347,7 @@ public:
 		over_approx[bvID] = over_new;
 		under_causes[bvID] = under_cause_new;
 		over_causes[bvID] = over_cause_new;
+
 		long under = getLong(under_new);
 		long over = getLong( over_new);
 		if (decisionLevel() == 0) {
@@ -7320,8 +7310,12 @@ public:
 #endif
 
 	}
+	//the bv theory does not properly update the bitvectors that need to be propagated after backtracking if it is skipped during propagation, so do not allow that to happen.
+	bool unskipable()const override{
+		return true;
+	}
 
-	bool solveTheory(vec<Lit> &conflict) {
+	bool solveTheory(vec<Lit> &conflict) override{
 		requiresPropagation = true;        //Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict);
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).

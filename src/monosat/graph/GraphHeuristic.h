@@ -54,7 +54,7 @@ public:
 
     Lit decideTheory(CRef &decision_reason) override {
         static int iter = 0;
-        if(++iter==67749){
+        if(++iter==10){
             int a=1;
         };
 
@@ -95,23 +95,22 @@ public:
         //: normal_detector;
         Lit l = lit_Undef;
         decision_reason = local_decision_reason;
+        Detector * current_detector = detector;
         if (require_edge_set_detector && !detector->is_edge_set_detector) {
-            Detector * edge_set_detector =detector->getEdgeSetDetector();
-            if (outer->satisfied_detectors[edge_set_detector->getID()])
-                return lit_Undef;
-            l = edge_set_detector->decide(decision_reason);
-        }else {
-            if (outer->satisfied_detectors[detector->getID()])
-                return lit_Undef;
-            l = decide(decision_reason);
+            current_detector=detector->getEdgeSetDetector();
+            if(!current_detector){
+                current_detector = detector;
+            }
         }
-
+        if (outer->satisfied_detectors[current_detector->getID()])
+            return lit_Undef;
+        l = current_detector->decide(decision_reason);
         if (l != lit_Undef) {
 
             if (opt_decide_graph_bv && !sign(l) && outer->isEdgeVar(var(l)) &&
                 outer->hasBitVector(outer->getEdgeID(var(l))) && detector->supportsEdgeDecisions()) {
                 int edgeID = outer->getEdgeID(var(l));
-                EdgeDecider<Weight> *d = dynamic_cast<EdgeDecider<Weight> *>(detector); //(EdgeDecider<Weight>*)r;
+                EdgeDecider<Weight> *d = dynamic_cast<EdgeDecider<Weight> *>(current_detector); //(EdgeDecider<Weight>*)r;
                 Weight edgeWeight = -1;
 
                 DetectorComparison op;
@@ -148,7 +147,7 @@ public:
                     if (bv_decision != lit_Undef) {
                         assert(S->value(bv_decision) == l_Undef);
                         outer->stats_decisions++;
-                        detector->undecide(l);
+                        current_detector->undecide(l);
                         if (S->value(bv_decision) != l_Undef) {
                             throw std::runtime_error("error in decision heuristic");
                         }
@@ -156,10 +155,12 @@ public:
                     }
                 }
             }
+            lbool val = outer->value(l);
+            lbool sval = S->value(outer->toSolver(l));
             //assert(l == lit_Undef || outer->value(l) == l_Undef);
             assert(l == lit_Undef || S->value(outer->toSolver(l)) == l_Undef);
             outer->stats_decisions++;
-            detector->stats_decisions++;
+            current_detector->stats_decisions++;
 
 
             //assert(l == lit_Undef || outer->value(l) == l_Undef);

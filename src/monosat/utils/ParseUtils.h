@@ -200,6 +200,21 @@ static bool eagerMatch(B& in, const char* str) {
 	return true;
 }
 
+// String matching: in case of a match the input iterator will be advanced the corresponding
+// number of characters. The matching much end the input string.
+template<class B>
+static bool match_end(B& in, const char* str) {
+	int i;
+	for (i = 0; str[i] != '\0'; i++)
+		if (in[i] != str[i])
+			return false;
+	if (in[i]!= '\0'){
+		return false;
+	}
+	in += i;
+
+	return true;
+}
 //=================================================================================================
 }
 

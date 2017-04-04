@@ -792,7 +792,7 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 
 	static int it = 0;
 	++it;
-	if (it == 3) {
+	if (it == 55) {
 		int a = 1;
 	}
 	if(opt_verb>1){
@@ -1781,7 +1781,7 @@ Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
 		return lit_Undef;
 
 	static int it = 0;
-	if (++it == 51085) {
+	if (++it == 6) {
 		int a = 1;
 	}
 	double startdecidetime = rtime(2);
@@ -1830,13 +1830,16 @@ Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
                 for(int edgeID = 0;edgeID<g_over.edges();edgeID++){
                     if(g_over.hasEdge(edgeID) && g_over.edgeEnabled(edgeID)){
                         Var v = outer->getEdgeVar(edgeID);
+                        Lit l = mkLit(v);
                         lbool val = outer->value(v);
                         Weight flow =  overapprox_conflict_detector->getEdgeFlow(edgeID);
                         int bvID = outer->getEdgeBV(edgeID).getID();
                         Weight over_weight = outer->getEdgeBV(edgeID).getOver();
                         Weight under_weight = outer->getEdgeBV(edgeID).getUnder();
                         if(opt_decide_graph_bv){
-                            if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
+                            //if((val==l_Undef && flow>0) || (flow>0 && flow>under_weight)){
+                            if((flow>0 && outer->decidable(l)) || (opt_decide_graph_bv &&  outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)))  && flow > 0 ){
+
                                 if(!in_decision_q[edgeID]){
                                     throw std::runtime_error("Error in maxflow");
                                 }

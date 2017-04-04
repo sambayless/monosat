@@ -23,6 +23,40 @@
 using namespace Monosat;
 
 void Monosat::parseOptions(int& argc, char** argv, bool strict) {
+	parseOptionSets_(argc,argv);//parse option sets first
+	parseOptions_(argc,argv,strict);
+}
+
+void Monosat::parseOptionSets_(int argc, char** argv) {
+	vec<OptionSet*> parsed_opts;
+	int i, j;
+	for (i = j = 1; i < argc; i++) {
+		const char* str = argv[i];
+
+		bool parsed_ok = false;
+
+		for (int k = 0; !parsed_ok && k < Option::getOptionSetList().size(); k++) {
+			parsed_ok= Option::getOptionSetList()[k]->parse(argv[i]);
+			if(parsed_ok){
+				parsed_opts.push(Option::getOptionSetList()[k]);
+			}
+		}
+	}
+
+	//only process parsed option sets here, to avoid non-terminating recursion
+	for (OptionSet * opt:parsed_opts) {
+		if(*opt) {
+			//if the option was set to true, then parse its default option set
+			vec<char*> & opts = opt->getOpts();
+			int size = opts.size();
+			char ** opts_ = &(*opts);
+			parseOptions(size,opts_,true);
+		}
+	}
+
+}
+
+void Monosat::parseOptions_(int& argc, char** argv, bool strict) {
 	int i, j;
 	for (i = j = 1; i < argc; i++) {
 		const char* str = argv[i];
@@ -33,23 +67,27 @@ void Monosat::parseOptions(int& argc, char** argv, bool strict) {
 				printUsageAndExit(argc, argv, true);
 		} else {
 			bool parsed_ok = false;
-			
+
 			for (int k = 0; !parsed_ok && k < Option::getOptionList().size(); k++) {
 				parsed_ok = Option::getOptionList()[k]->parse(argv[i]);
-				
+
 				// fprintf(stderr, "checking %d: %s against flag <%s> (%s)\n", i, argv[i], Option::getOptionList()[k]->name, parsed_ok ? "ok" : "skip");
 			}
-			
+
 			if (!parsed_ok){
-				if (strict && match(argv[i], "-"))
-					fprintf(stderr, "ERROR! Unknown flag \"%s\". Use '--%shelp' for help.\n", argv[i],
-							Option::getHelpPrefixString()), exit(1);
-				else
-					argv[j++] = argv[i];
+				if (match(str, "-") && match(str, Option::getHelpPrefixString()) && match_end(str, "h")) {
+					printUsageAndExit(argc, argv);
+				}else {
+					if (strict && match(argv[i], "-"))
+						fprintf(stderr, "ERROR! Unknown flag \"%s\". Use '--%shelp' for help.\n", argv[i],
+								Option::getHelpPrefixString()), exit(1);
+					else
+						argv[j++] = argv[i];
+				}
 			}
 		}
 	}
-	
+
 	argc -= (i - j);
 }
 

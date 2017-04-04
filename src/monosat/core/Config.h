@@ -184,7 +184,7 @@ extern IntOption opt_detect_satisfied_predicates;
 extern BoolOption opt_propagate_theories_during_simplification;
 extern BoolOption opt_propagate_theories_during_fast_simplification;
 extern BoolOption opt_shrink_theory_conflicts;
-extern BoolOption opt_early_theory_prop;
+
 extern IntOption opt_width;
 extern IntOption opt_height;
 extern IntOption opt_bits;
@@ -242,6 +242,8 @@ extern BoolOption opt_only_prop_edgeset;
 
 extern BoolOption opt_graph_cache_propagation;
 extern IntOption opt_graph_use_cache_for_decisions;
+
+extern OptionSet opt_route;
 
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT

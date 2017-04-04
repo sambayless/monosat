@@ -27,6 +27,7 @@
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"
 #include "monosat/graph/GraphTheory.h"
+#include "monosat/amo/AMOTheory.h"
 #include "monosat/bv/BVTheorySolver.h"
 #include "monosat/core/Config.h"
 #include "monosat/pb/PbTheory.h"

@@ -64,6 +64,11 @@ public:
 	virtual void undecideTheory(Lit l){
 
 	}
+	//Some theory solvers do not have data structures that allow them to skip theory propagation.
+	//This function should be overridden to return 'true' if the theory cannot be skipped.
+	virtual bool unskipable()const{
+		return false;
+	}
 
     virtual Heuristic * getConflictingHeuristic(){
 		if(this->supportsDecisions()){
