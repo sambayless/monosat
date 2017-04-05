@@ -132,6 +132,7 @@ set(SOURCE_FILES
         src/monosat/fsm/alg/NFATypes.h
         src/monosat/fsm/alg/NP0LAcceptor.h
         src/monosat/fsm/alg/NFAAcceptor.h
+        src/monosat/fsm/alg/NFAGraphAccept.h
         src/monosat/fsm/DynamicFSM.h
         src/monosat/fsm/FSMAcceptDetector.cpp
         src/monosat/fsm/FSMAcceptDetector.h
