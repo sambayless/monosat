@@ -56,7 +56,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	int last_history_clear=0;
 	std::vector<LocalEdge> prev;
 	std::vector<Weight> M;
-	std::vector<int> changed_edges;
+	alg::IntSet<int> changed_edges;
 	std::vector<bool> changed;
 	DynamicGraph<Weight>& g;
 
@@ -399,7 +399,7 @@ public:
 	void updateHistory(){
 		update();
 	}
-	std::vector<int> & getChangedEdges() {
+	alg::IntSet<int> & getChangedEdges() {
 		return changed_edges;
 	}
 	void clearChangedEdges() {
@@ -415,7 +415,7 @@ private:
 	void markChanged(int edgeID) {
 		if (!changed[edgeID]) {
 			changed[edgeID] = true;
-			changed_edges.push_back(edgeID);
+			changed_edges.insert(edgeID);
 		}
 	}
 	

@@ -199,8 +199,8 @@ public:
 	const Weight update() {
 		return maxFlow(source, sink);
 	}
-	std::vector<int> changed_edges;
-	std::vector<int> & getChangedEdges() {
+	alg::IntSet<int>  changed_edges;
+	alg::IntSet<int> & getChangedEdges() {
 		return changed_edges;
 	}
 	void clearChangedEdges() {
@@ -216,7 +216,7 @@ private:
 	void markChanged(int edgeID) {
 		if (!changed[edgeID]) {
 			changed[edgeID] = true;
-			changed_edges.push_back(edgeID);
+			changed_edges.insert(edgeID);
 		}
 	}
 public:

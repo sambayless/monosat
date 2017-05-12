@@ -25,6 +25,7 @@
 #include <climits>
 #include <vector>
 #include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/alg/IntMap.h"
 namespace dgl {
 struct MaxFlowEdge {
 	int u;
@@ -56,7 +57,7 @@ public:
 	virtual void setSource(int s)=0;
 	virtual void setSink(int t)=0;
 
-	virtual std::vector<int> & getChangedEdges()=0;
+	virtual alg::IntSet<int> & getChangedEdges()=0;
 	virtual void clearChangedEdges() {
 		
 	}

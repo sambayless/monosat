@@ -49,7 +49,16 @@ public:
         return outer->getTheoryIndex();
     }
     virtual Lit decide(CRef &decision_reason){
-        return detector->decide(decision_reason);
+        Detector * current_detector = detector;
+        bool require_edge_set_detector=(outer->hasEdgeSets() && outer->allEdgeSetsAssigned());
+        if (require_edge_set_detector && !detector->is_edge_set_detector) {
+            current_detector=detector->getEdgeSetDetector();
+            if(!current_detector){
+                current_detector = detector;
+            }
+        }
+
+        return current_detector->decide(decision_reason);
     }
 
     Lit decideTheory(CRef &decision_reason) override {
@@ -104,7 +113,7 @@ public:
         }
         if (outer->satisfied_detectors[current_detector->getID()])
             return lit_Undef;
-        l = current_detector->decide(decision_reason);
+        l = decide(decision_reason);
         if (l != lit_Undef) {
 
             if (opt_decide_graph_bv && !sign(l) && outer->isEdgeVar(var(l)) &&

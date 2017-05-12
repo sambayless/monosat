@@ -28,6 +28,7 @@
 #include "MaxFlow.h"
 #include <vector>
 #include "monosat/dgl/alg/dyncut/graph.h"
+#include "monosat/dgl/alg/IntMap.h"
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
 #include <limits>
@@ -93,7 +94,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	Weight sum_of_edge_capacities=0;
 	std::vector<Weight> local_weights;
 	std::vector<bool> edge_enabled;
-	std::vector<int> changed_edges;
+	alg::IntSet<int> changed_edges;
 	std::vector<int> changed_partition;
 	bool flow_needs_recalc = true;
 	bool needs_recompute = true;
@@ -750,14 +751,21 @@ public:
 		last_history_clear = g.historyclears;
 
 		if(flow_graph){
-			getChangedEdges();//keep the flow graph up to date, if it is defined
+			calc_flow_unchecked();
+			getChangedEdges_Unchecked();//keep the flow graph up to date, if it is defined
 		}
 
 		return f;
 	}
-	
-	std::vector<int> & getChangedEdges()override {
+
+	alg::IntSet<int> & getChangedEdges()override {
 		calc_flow();
+		getChangedEdges_Unchecked();
+		return changed_edges;
+	}
+
+	alg::IntSet<int> & getChangedEdges_Unchecked() {
+
 		while (kt->changed_edges.size()) {
 			int arc = kt->changed_edges.back();
 			kt->changed_edges.pop_back();
@@ -765,10 +773,10 @@ public:
 			for (auto  it = getArcEdges(arc);it!=getArcEdgesEnd(arc);++it){
 				int edgeID = *it;
 				assert(arc_map[edgeID]==arc);
-			//for (int edgeID =  : edge_map[arc]) {
-				changed_edges.push_back(edgeID);
+				//for (int edgeID =  : edge_map[arc]) {
+				changed_edges.insert(edgeID);
 				if(flow_graph) {
-					Weight f = getEdgeFlow(edgeID);
+					Weight f = getEdgeFlow_unchecked(edgeID);
 					if(f>0) {
 						flow_graph->enableEdge(edgeID);
 						flow_graph->setEdgeWeight(edgeID, f);
@@ -781,7 +789,9 @@ public:
 		}
 		return changed_edges;
 	}
-	
+
+
+
 	void clearChangedEdges() override{
 		changed_edges.clear();
 	}
@@ -1028,7 +1038,29 @@ private:
 		//stats_flow_time+=  startcalctime-startflowtime;
 		//printf("flow calc time %f %f\n", stats_flow_time,stats_calc_time);
 	}
-	
+
+	inline void calc_flow_unchecked() {
+		if(same_source_sink)
+			return;
+
+		if (!flow_needs_recalc)
+			return;
+
+		//double startflowtime = Monosat::rtime(0);
+
+		stats_flow_calcs++;
+
+
+		Weight maxflow = kt->maxflow(true, nullptr);
+		needs_recompute=false;
+		flow_needs_recalc = false;
+		kt->clear_t_edges(source, sink);
+
+		assert(kt->maxflow(true, nullptr) == maxflow);
+		//stats_calc_time+=  Monosat::rtime(0)-startcalctime;
+		//stats_flow_time+=  startcalctime-startflowtime;
+		//printf("flow calc time %f %f\n", stats_flow_time,stats_calc_time);
+	}
 	std::vector<int> Q;
 
 public:
@@ -1180,6 +1212,18 @@ public:
 
 		calc_flow();
 
+		return getEdgeFlow_unchecked(flow_edge);
+	}
+
+
+	const Weight getEdgeFlow_unchecked(int flow_edge) {
+		if(same_source_sink)
+			return 0;
+		if (g.getEdge(flow_edge).from == g.getEdge(flow_edge).to)
+			return 0;    	//self edges have no flow.
+
+
+
 		//we need to pick, possibly arbitrarily (but deterministically), which of the edges have flow
 		int arc_id = arc_map[flow_edge];
 		assert(arc_id >= 0);
@@ -1202,7 +1246,7 @@ public:
 			int edgeid = *it;
 			assert(g.getEdge(edgeid).from == g.getEdge(flow_edge).from);
 			assert(g.getEdge(edgeid).to == g.getEdge(flow_edge).to);
-			
+
 			if (g.edgeEnabled(edgeid)) {
 				assert(arc_map[edgeid] == arc_id);
 				//assert(local_weight(edgeid)==g.getWeight(edgeid)); //these might not be in sync, if this is called during backtracking.
@@ -1224,9 +1268,10 @@ public:
 				}
 			}
 		}
-		
+
 		return 0;
 	}
+
 	const Weight getEdgeResidualCapacity(int id) {
 		return getEdgeCapacity(id) - getEdgeFlow(id);
 	}

@@ -775,55 +775,30 @@ public:
 	}
 
     void drawGrid(DynamicGraph<Weight> & g, bool only_path=false){
-        int width =10;
-        int height = 10;
-
-
+		int width =10;
+		int height = 10;
 
 		vec<int> startsX;
 		vec<int> endsX;
 		vec<int> startsY;
 		vec<int> endsY;
 
-		/*IntSet<int> startsX;
-		IntSet<int> endsX;
-		IntSet<int> startsY;
-		IntSet<int> endsY;*/
 		vec<std::pair<int,int>> starts;
 		vec<std::pair<int,int>> ends;
-		/*for(int i = 0;i<80;i+=4){
-			int sY = sourcenodes[i];
-			int sX = sourcenodes[i+1];
-			int eY = sourcenodes[i+2];
-			int eX = sourcenodes[i+3];
-			startsX.push(sX);
-			startsY.push(sY);
-			endsX.push(eX);
-			endsY.push(eY);
-			starts.push();
-			starts.last().first = sX;
-			starts.last().second = sY;
-			ends.push();
-			ends.last().first = eX;
-			ends.last().second = eY;
-		}*/
 
-        bool found_source = false;
-        bool found_dest = false;
-        printf("\n");
-        for(int y = 0;y<height;y++) {
-            for (int x = 0; x < width; x++){
-                int f_node = (y*height + x)*2+1;
+
+		bool found_source = false;
+		bool found_dest = false;
+		printf("\n");
+		for(int y = 0;y<height;y++) {
+			for (int x = 0; x < width; x++){
+				int f_node = (y*height + x)*2+1;
 				std::pair <int, int> p = std::make_pair(x,y);
-                if (f_node == r->source){
+				if (f_node == r->source || f_node-1==r->source){
 					//assert(starts.contains(p));
-                    found_source=true;
-                    printf("*");
-                }else if (f_node == dest_node){
-                    found_dest=true;
-					//assert(ends.contains(p));
-                    printf("@");
-                }else{
+					found_source=true;
+					printf("*");
+				}else{
 
 					if(starts.contains(p)){
 						int id = starts.indexOf(p)%10;
@@ -836,34 +811,34 @@ public:
 						printf("+");
 					}
 				}
-                if (x<width-1) {
-                    int t_node = (y*height+x+1)*2;
-                    //assert(g.hasEdge(f_node,t_node));
-                    if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
-                        if(only_path){
-                            int edgea =    g.getEdge(f_node, t_node);
-                            int edgeb =    g.getEdge(t_node, f_node);
-                            if(path_edges.has(edgea) || path_edges.has(edgeb)){
-                                printf("-");
-                            }else{
-                                printf(" ");
-                            }
-                        }else {
-                            //int to_edge = g.getEdge(f_node,t_node);
-                            //if(g.edgeEnabled(to_edge)){
-                            printf("-");
-                        }
-                    }else{
-                        printf(" ");
-                    }
-                }
-            }
-            printf("\n");
-            for (int x = 0; x < width; x++) {
-                int f_node = y*height + x;
-                if (y < height - 1) {
-                    int t_node = (y + 1) * height + x;
-                    //assert(g.hasEdge(f_node, t_node));
+				if (x<width-1) {
+					int t_node = (y*height+x+1)*2;
+					//assert(g.hasEdge(f_node,t_node));
+					if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node+1, f_node-1) || g.hasEdge(t_node, f_node) || g.hasEdge(f_node-1,t_node+1)){
+						if(only_path){
+							int edgea =    g.getEdge(f_node, t_node);
+							int edgeb =    g.getEdge(t_node, f_node);
+							if(path_edges.has(edgea) || path_edges.has(edgeb)){
+								printf("-");
+							}else{
+								printf(" ");
+							}
+						}else {
+							//int to_edge = g.getEdge(f_node,t_node);
+							//if(g.edgeEnabled(to_edge)){
+							printf("-");
+						}
+					}else{
+						printf(" ");
+					}
+				}
+			}
+			printf("\n");
+			for (int x = 0; x < width; x++) {
+				int f_node = (y*height + x)*2+1;
+				if (y < height - 1) {
+					int t_node = ((y + 1) * height + x)*2;
+					//assert(g.hasEdge(f_node, t_node));
 					if(only_path) {
 						int edgea = g.getEdge(f_node, t_node);
 						int edgeb = g.getEdge(t_node, f_node);
@@ -877,22 +852,22 @@ public:
 						} else {
 							printf("  ");
 						}
-					}else if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node, f_node)){
-                    //int to_edge = g.getEdge(f_node, t_node);
-                    //if(g.edgeEnabled(to_edge)){
-                            //int to_edge = g.getEdge(f_node,t_node);
-                            //if(g.edgeEnabled(to_edge)){
-                            printf("| ");
-                    }else{
-                        printf("  ");
-                    }
-                }
-            }
-            printf("\n");
-        }
-        printf("\n");
-        assert(found_source);
-        assert(found_dest);
+					}else if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node+1, f_node-1) || g.hasEdge(t_node, f_node) || g.hasEdge(f_node-1,t_node+1)){
+						//int to_edge = g.getEdge(f_node, t_node);
+						//if(g.edgeEnabled(to_edge)){
+						//int to_edge = g.getEdge(f_node,t_node);
+						//if(g.edgeEnabled(to_edge)){
+						printf("| ");
+					}else{
+						printf("  ");
+					}
+				}
+			}
+			printf("\n");
+		}
+		printf("\n");
+
+
     }
 
     Lit decide(CRef &decision_reason)override{
@@ -981,7 +956,12 @@ public:
 			}
 		}
 #endif
-
+		if(opt_verb>=4){ //&& (path_edges.size() || to_decide.size())) {
+			printf("r over graph:\n");
+			drawGrid(g_over);
+			printf("r under graph:\n");
+			drawGrid(g_under);
+		}
 		if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
             // are assigned true, as the over approx graph will always register as having been updated.
             //instead, check the history of the dynamic graph to see if any of the edges on the path have been assigned false, and only recompute in that case.
@@ -1953,6 +1933,7 @@ void ReachDetector<Weight>::dbg_sync_reachability() {
 
 template<typename Weight>
 Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
+    assert(false);//this should not be called.
 	return lit_Undef;
 
 }
@@ -1981,6 +1962,14 @@ class FlowPathHeuristic : public Heuristic{
     int last_under_modification=-1;
     int last_under_addition=-1;
     int last_under_deletion=-1;
+
+
+
+	int last_flow_history_clear=0;
+	int flow_history_qhead=0;
+	int last_flow_modification=-1;
+	int last_flow_addition=-1;
+	int last_flow_deletion=-1;
 
     DynamicGraph<Weight> & g_over;
     DynamicGraph<Weight> & g_under;
@@ -2092,18 +2081,21 @@ public:
 
 
         //check if any edges on the path have been removed since the last update
-        if (last_over_modification > 0 && g_over.modifications == last_over_modification && last_under_modification > 0 && g_under.modifications == last_under_modification){
+        if (last_over_modification > 0 && g_over.modifications == last_over_modification && last_under_modification > 0 && g_under.modifications == last_under_modification &&
+				last_flow_modification > 0 && flow_graph->modifications == last_flow_modification){
             return false;
         }
-        if (last_over_modification <= 0 || g_over.changed() || last_under_modification <= 0 || g_under.changed()) {//Note for the future: there is probably room to improve this further.
+        if (last_over_modification <= 0 || g_over.changed() || last_under_modification <= 0 || g_under.changed() || last_flow_modification <= 0) {//Note for the future: there is probably room to improve this further.
             return true;
         }
 
-        if (last_over_history_clear != g_over.historyclears || last_under_history_clear != g_under.historyclears) {
+        if (last_over_history_clear != g_over.historyclears || last_under_history_clear != g_under.historyclears  || last_flow_history_clear != flow_graph->historyclears) {
             over_history_qhead = g_over.historySize();
             last_over_history_clear = g_over.historyclears;
             under_history_qhead = g_under.historySize();
             last_under_history_clear = g_under.historyclears;
+			flow_history_qhead = flow_graph->historySize();
+			last_flow_history_clear = flow_graph->historyclears;
             to_decide.clear();
             for(int edgeID:path_edges){
                 if(!path_is_cut) {
@@ -2161,6 +2153,44 @@ public:
                 }
             }
         }
+
+		for (int i = flow_history_qhead; i < flow_graph->historySize(); i++) {
+			int edgeid = flow_graph->getChange(i).id;
+			if (flow_graph->getChange(i).addition && flow_graph->edgeEnabled(edgeid)) {
+					if(!to_decide.size()){
+						return true;
+					}
+			} else if (!flow_graph->getChange(i).addition && !flow_graph->edgeEnabled(edgeid)) {
+				if(!path_is_cut) {
+					if (path_edges.has(edgeid)) {
+						return true;
+					}
+				}else{
+					Var edge_var = outer->getEdgeVar(edgeid);
+					if (outer->value(edge_var) == l_Undef) {
+						to_decide.push(mkLit(edge_var, true));
+					}
+				}
+			}
+		}
+
+        last_over_modification = g_over.modifications;
+        last_over_deletion = g_over.deletions;
+        last_over_addition = g_over.additions;
+        over_history_qhead = g_over.historySize();
+        last_over_history_clear = g_over.historyclears;
+
+        last_under_modification = g_under.modifications;
+        last_under_deletion = g_under.deletions;
+        last_under_addition = g_under.additions;
+        under_history_qhead = g_under.historySize();
+        last_under_history_clear = g_under.historyclears;
+
+		last_flow_modification = flow_graph->modifications;
+		last_flow_deletion = flow_graph->deletions;
+		last_flow_addition = flow_graph->additions;
+		flow_history_qhead = flow_graph->historySize();
+		last_flow_history_clear = flow_graph->historyclears;
         return false;
     }
 
@@ -2268,24 +2298,16 @@ public:
         if (outer->value(reach_lit)==l_Undef){
             return lit_Undef;//if the reach lit is unassigned, do not make any decisions here
         }
-
+		static int iter = 0;
+		if(++iter==22){
+			int a=1;
+		};
 
 
         if(needsRecompute()){
             r->stats_heuristic_recomputes++;
             computePath();
-            if(opt_verb>=4 && (path_edges.size() || to_decide.size())) {
 
-                printf("FlowGraph:\n");
-	/*			for(int i = 0;i<flow_graph->edges();i++){
-					int f = flow_graph->getEdge(i).from;
-					int t = flow_graph->getEdge(i).to;
-					if(flow_graph->edgeEnabled(i)){
-						printf("%d: %d->%d\n",i,f,t);
-					}
-				}*/
-                drawGrid(*flow_graph);
-            }
             last_over_modification = g_over.modifications;
             last_over_deletion = g_over.deletions;
             last_over_addition = g_over.additions;
@@ -2298,7 +2320,27 @@ public:
             under_history_qhead = g_under.historySize();
             last_under_history_clear = g_under.historyclears;
 
+			last_flow_modification = flow_graph->modifications;
+			last_flow_deletion = flow_graph->deletions;
+			last_flow_addition = flow_graph->additions;
+			flow_history_qhead = flow_graph->historySize();
+			last_flow_history_clear = flow_graph->historyclears;
         }
+		if(opt_verb>=4){ //&& (path_edges.size() || to_decide.size())) {
+			printf("over graph:\n");
+			drawGrid(g_over);
+			printf("FlowGraph:\n");
+			/*			for(int i = 0;i<flow_graph->edges();i++){
+                            int f = flow_graph->getEdge(i).from;
+                            int t = flow_graph->getEdge(i).to;
+                            if(flow_graph->edgeEnabled(i)){
+                                printf("%d: %d->%d\n",i,f,t);
+                            }
+                        }*/
+			drawGrid(*flow_graph);
+			printf("under graph:\n");
+			drawGrid(g_under);
+		}
         for(Lit l:to_decide){
             assert(outer->value(l)!=l_False);
         }
@@ -2313,19 +2355,27 @@ public:
         }
 
 
-        if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
-            // are assigned true, as the over approx graph will always register as having been updated.
-            //instead, check the history of the dynamic graph to see if any of the edges on the path have been assigned false, and only recompute in that case.
-            while (to_decide.size()) {
-                Lit l = to_decide.last();
-                to_decide.pop();
-                if (outer->value(l) == l_Undef) {
-                    //stats_decide_time += rtime(2) - startdecidetime;
-                    return l;
-                }
-            }
-        }
+		if (to_decide.size()) {//  && last_decision_status == over_path->numUpdates() the numUpdates() monitoring strategy doesn't work if the constraints always force edges to be assigned false when other edges
+			// are assigned true, as the over approx graph will always register as having been updated.
+			//instead, check the history of the dynamic graph to see if any of the edges on the path have been assigned false, and only recompute in that case.
+			while (to_decide.size()) {
+				Lit l = to_decide.last();
 
+				if (outer->value(l) == l_Undef) {
+					//stats_decide_time += rtime(2) - startdecidetime;
+					return l;
+				}else if(outer->value(l)==l_True){
+					//only pop a decision that was actually made
+					to_decide.pop();
+				}else if(outer->value(l)==l_False){
+					//is this even a reachable state? it probably shouldn't be.
+					to_decide.clear();
+					path_edges.clear();
+					//needs recompute!
+					return decideTheory(decision_reason);
+				}
+			}
+		}
         return lit_Undef;
     }
 };

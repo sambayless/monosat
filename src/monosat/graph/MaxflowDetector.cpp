@@ -1379,10 +1379,10 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
 
 		buildLearnGraph();
 	}
-	
 
 
-	std::vector<int> & changed_edges = overapprox_conflict_detector->getChangedEdges();
+
+	alg::IntSet<int> & changed_edges = overapprox_conflict_detector->getChangedEdges();
 
 
 	//for(int j = 0;j<changed_edges.size();j++){
