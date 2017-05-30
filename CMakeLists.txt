@@ -280,6 +280,10 @@ set(SOURCE_FILES_PB
         src/monosat/pb/ADTs/StackAlloc.h
         src/monosat/pb/ADTs/VecAlloc.h
         src/monosat/pb/ADTs/VecMaps.h
+        src/monosat/nn/NN.cpp
+        src/monosat/nn/NN.h
+        src/monosat/nn/NNParser.h
+        src/monosat/nn/NNTheory.h
         )
 
 if (${PB_SUPPORT})
@@ -309,6 +313,14 @@ target_link_libraries(monosat z)
 target_link_libraries(monosat m)
 target_link_libraries(monosat gmpxx)
 target_link_libraries(monosat gmp)
+target_link_libraries(monosat cblas)
+target_link_libraries(monosat glog)
+target_link_libraries(monosat gflags)
+target_link_libraries(monosat protobuf)
+target_link_libraries(monosat opencv_core)
+target_link_libraries(monosat opencv_highgui)
+target_link_libraries(monosat opencv_imgproc)
+target_link_libraries(monosat caffe)
 
 if (${UNIX})
     #librt is needed for clock_gettime, which is enabled for linux only
@@ -323,6 +335,14 @@ target_link_libraries(monosat_static z.a)
 target_link_libraries(monosat_static m.a)
 target_link_libraries(monosat_static gmpxx.a)
 target_link_libraries(monosat_static gmp.a)
+target_link_libraries(monosat_static cblas.a)
+target_link_libraries(monosat_static glog.a)
+target_link_libraries(monosat_static gflags.a)
+target_link_libraries(monosat_static protobuf.a)
+target_link_libraries(monosat_static opencv_core.a)
+target_link_libraries(monosat_static opencv_highgui.a)
+target_link_libraries(monosat_static opencv_imgproc.a)
+target_link_libraries(monosat_static caffe.a)
 
 if (${UNIX})
     #librt is needed for clock_gettime, which is enabled for linux only
@@ -336,6 +356,15 @@ target_link_libraries(libmonosat z)
 target_link_libraries(libmonosat m)
 target_link_libraries(libmonosat gmpxx)
 target_link_libraries(libmonosat gmp)
+target_link_libraries(libmonosat cblas)
+target_link_libraries(libmonosat glog)
+target_link_libraries(libmonosat gflags)
+target_link_libraries(libmonosat protobuf)
+target_link_libraries(libmonosat opencv_core)
+target_link_libraries(libmonosat opencv_highgui)
+target_link_libraries(libmonosat opencv_imgproc)
+target_link_libraries(libmonosat caffe)
+
 if (${UNIX})
     #librt is needed for clock_gettime, which is enabled for linux only
     #(clock_gettime is used for capturing detailed timing statistics only)

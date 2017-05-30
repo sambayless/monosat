@@ -82,6 +82,15 @@ extern BoolOption opt_write_bv_analysis;
 extern FILE* opt_write_learnt_clauses;
 //extern StringOption opt_fsm_model;
 
+extern BoolOption opt_nn_rnd_init;
+extern StringOption opt_nn_path;
+extern IntOption opt_nn_backprop_limit;
+extern BoolOption opt_nn_prop_during;
+extern IntOption opt_nn_init;
+extern IntOption opt_nn_learn_in;
+extern IntOption opt_nn_learn_out;
+extern IntOption opt_nn_learn_max;
+extern IntOption opt_nn_weaken_learnt_rnd;
 
 extern BoolOption opt_graph;
 extern BoolOption opt_inc_graph;

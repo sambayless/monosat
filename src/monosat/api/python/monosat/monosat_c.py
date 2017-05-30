@@ -100,6 +100,8 @@ class Solver():
         self.symbolmap=dict()  
         self.graphs = []
         self.graph_ids=dict()
+        self.nns=[]
+        self.nn_ids=dict()
         self._true = None
       
     def delete(self):        
@@ -376,6 +378,12 @@ class Monosat(metaclass=Singleton):
 
         self.monosat_c.fsmCompositionAccepts.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int,c_int, c_int, c_int, c_int,c_int]
         self.monosat_c.fsmCompositionAccepts.restype=c_int
+
+        self.monosat_c.newNeuralNetwork.argtypes=[c_solver_p,c_char_p,c_char_p]
+        self.monosat_c.newNeuralNetwork.restype=c_nn_p
+        self.monosat_c.newNN_BV.argtypes=[c_solver_p,c_nn_p,c_bool,c_int_p, c_int, c_bvID,c_double, c_double]
+
+
 
         self.monosat_c.getModel_Literal.argtypes=[c_solver_p,c_literal]
         self.monosat_c.getModel_Literal.restype=c_int      
@@ -1216,9 +1224,33 @@ class Monosat(metaclass=Singleton):
         l= self.monosat_c.acyclic_directed(self.solver._ptr,graph)
         if self.solver.output:                      
             self._echoOutput("acyclic " + str(self.getGID(graph)) + " " +  str(dimacs(l)) + "\n" );
-        return l  
-  
-    #0 = true, 1=false, 2=unassigned
+        return l
+
+
+    def newNeuralNetwork(self,prototxt, caffemodel):
+        self.backtrack()
+        nn = self.monosat_c.newNeuralNetwork(self.solver._ptr,c_char_p(prototxt.encode('ascii')),c_char_p(caffemodel.encode('ascii')))
+
+        nnid = len(self.solver.nns)
+        self.solver.nns.append(nn)
+        self.solver.nn_ids[nn]=nnid
+
+        if self.solver.output:
+            self._echoOutput("neural_network %d %s ; %s\n"%(nnid, prototxt, caffemodel))
+
+        return nn
+
+    def newNN_BV(self,nn,bvID,input,index,min=0.0,max=1.0):
+        self.backtrack()
+        lp = self.getIntArray(index)
+        self.monosat_c.newNN_BV(self.solver._ptr,nn,1 if input else 0,lp,len(index),bvID,min,max)
+
+        if self.solver.output:
+            instr=" ".join((str(i) for i in index))
+            self._echoOutput("nn %d bv %d %s %d %s %f %f\n"%(self.getNNID(nn),bvID,"input" if input else "output", len(index),instr,min,max ))
+
+
+            #0 = true, 1=false, 2=unassigned
     def getModel_Literal(self, lit):
         return self.monosat_c.getModel_Literal(self.solver._ptr, lit);
 

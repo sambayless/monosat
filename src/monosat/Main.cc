@@ -53,6 +53,7 @@
 #include "bv/BVParser.h"
 #include "amo/AMOTheory.h"
 #include "amo/AMOParser.h"
+#include "nn/NNParser.h"
 #include "core/Optimize.h"
 #include "core/Config.h"
 #include "pb/Config_pb.h"

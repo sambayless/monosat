@@ -30,7 +30,7 @@ int dbg_total_iterations = 0;
 static const char* _cat = "CORE";
 static const char* _cat_opt = "OPT";
 static const char* _cat_theory = "THEORY";
-
+static const char* _cat_nn = "NN";
 static const char* _cat_sms = "SMS";
 static const char* _cat_graph = "GRAPH";
 static const char* _cat_bv = "BV";
@@ -422,6 +422,19 @@ IntOption Monosat::opt_graph_use_cache_for_decisions(_cat_graph,"cache-graph-dec
 OptionSet Monosat::opt_route(_cat_graph,"route","Use RUC-syle heuristics for routing circuits","-cache-graph-propagation -cache-graph-decisions=2 -only-prop-theories-on-heuristic-change -theory-order-swapping-preserve -no-theory-order-conflict-sort-vsids -no-theory-order-initial-sort -no-theory-order-swapping-first-on-unit -theory-order-conflict-restart=10 -theory-order-swapping-luby -no-theory-order-restart-sorting -no-theory-order-swapping-last-decision -decide-theories -theory-order-swapping -no-theory-order-vsids",false);
 
 BoolOption Monosat::opt_csv("GRAPH", "csv", "Output in CSV format", false);
+
+
+BoolOption Monosat::opt_nn_rnd_init(_cat_nn,"nn-rnd-init","",false);
+StringOption Monosat::opt_nn_path(_cat_nn,"nn-path","path to directory containing neural network files",".");
+IntOption Monosat::opt_nn_backprop_limit(_cat_nn,"nn-limit","",10000,IntRange(1,INT32_MAX));
+IntOption Monosat::opt_nn_learn_in(_cat_nn,"nn-learn-in","",0,IntRange(0,3));
+IntOption Monosat::opt_nn_learn_out(_cat_nn,"nn-learn-out","",0,IntRange(0,3));
+IntOption Monosat::opt_nn_learn_max(_cat_nn,"nn-learn-max","",0,IntRange(0,INT32_MAX));
+IntOption  Monosat::opt_nn_weaken_learnt_rnd(_cat_nn,"nn-learn-weaken-rnd","",0,IntRange(0,INT32_MAX));
+BoolOption Monosat::opt_nn_prop_during(_cat_nn,"nn-propagate-during","",false);
+IntOption Monosat::opt_nn_init(_cat_nn,"nn-init","Initialize out-of-bound inputs to - 0: nearest bound, 1: farthest bound, 2: random value inside bounds, 3: Middle of bounds",0,IntRange(0,3));
+
+
 
 MinCutAlg Monosat::mincutalg = MinCutAlg::ALG_EDMONSKARP;
 ReachAlg Monosat::reachalg = ReachAlg::ALG_RAMAL_REPS;

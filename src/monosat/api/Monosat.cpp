@@ -35,6 +35,7 @@
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
+#include "monosat/nn/NNTheory.h"
 #include "monosat/Version.h"
 #include <csignal>
 #include <set>
@@ -1456,6 +1457,25 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 		}
 	}
 }
+
+
+void * newNeuralNetwork(Monosat::SimpSolver * S, char * prototxt, char * caffemodel){
+	MonosatData * d = (MonosatData*) S->_external_data;
+	Monosat::NNTheory<int64_t> *nn = new Monosat::NNTheory<int64_t>(S);
+	S->addTheory(nn);
+	//d->nns.push(nn);
+	nn->loadNeuralNetwork(prototxt,caffemodel);
+
+	return nn;
+}
+
+void newNN_BV(Monosat::SimpSolver * S, Monosat::NNTheory<long> *nn,bool input, int* index,int n_index, int bvID, double min, double max){
+	std::vector<int> indices;
+	for(int i = 0;i<n_index;i++)
+		indices.push_back(index[i]);
+	nn->newNNBv(input,indices,bvID,min,max);
+}
+
 //FSM Interface
 
 Monosat::FSMTheorySolver * initFSMTheory(Monosat::SimpSolver * S){
