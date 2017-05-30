@@ -214,7 +214,9 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 			}
 		}
 		
-	} else if (undirected_acyclic_lit != lit_Undef) {
+	}
+
+	if (undirected_acyclic_lit != lit_Undef) {
 		
 		if (outer->value(undirected_acyclic_lit) !=l_False && underapprox_undirected_cycle_detector->hasUndirectedCycle()) {
 
