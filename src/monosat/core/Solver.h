@@ -431,8 +431,12 @@ public:
 		assert(value(p)==l_True);
 
 #ifdef DEBUG_CORE
-		for(Lit l:theory_reason)
-			assert(value(l)!=l_Undef);
+		for(Lit l:theory_reason) {
+			assert(value(l) != l_Undef);
+			if(var(l)!=var(p)){
+				assert(value(l)==l_False);
+			}
+		}
 #endif
 #ifdef DEBUG_SOLVER
 		//assert all the other reasons in this cause are earlier on the trail than p...

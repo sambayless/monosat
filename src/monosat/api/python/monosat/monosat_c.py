@@ -54,6 +54,7 @@ c_graph_p = c_void_p
 c_bv_p = c_void_p
 c_fsm_theory_p = c_void_p
 c_fsm_p = c_void_p
+c_nn_p = c_void_p
 
 c_literal = c_int
 c_literal_p = c_int_p
@@ -1229,6 +1230,8 @@ class Monosat(metaclass=Singleton):
 
     def newNeuralNetwork(self,prototxt, caffemodel):
         self.backtrack()
+        prototxt =  os.path.abspath(prototxt);
+        caffemodel =  os.path.abspath(caffemodel);
         nn = self.monosat_c.newNeuralNetwork(self.solver._ptr,c_char_p(prototxt.encode('ascii')),c_char_p(caffemodel.encode('ascii')))
 
         nnid = len(self.solver.nns)

@@ -41,7 +41,7 @@ template<class B, class Solver>
 class NNParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
 	using Parser<B, Solver>::mapBV;
-	vec<NNTheory<long>*> nns;
+	vec<NNTheory<int64_t>*> nns;
 	vec<Var> vars;
 	vec<char>  tmp;
 
@@ -110,7 +110,7 @@ public:
 			if(weights_name[0] != '/' && weights_name[0]!='~'){
 				weights_name = string(opt_nn_path)+ "/" + weights_name;
 			}
-			nns[id]=new NNTheory<long>(&S);
+			nns[id]=new NNTheory<int64_t>(&S);
 			nns[id]->loadNeuralNetwork(prototype_name,weights_name);
 			return true;
 		}else if (match(in,"nn")){
@@ -203,16 +203,21 @@ public:
 			int nnID =c.nnID;
 			nns[nnID]->addGEQ(c.index,c.input,c.geq,var(c.l));
 		}*/
+
+		for(auto & nn:nns){
+		    nn->setBVTheory((BVTheorySolver<int64_t>*)S.getBVTheory());
+		}
 		for(auto & b:bvnns){
 			int nnID =b.nnID;
 			b.bvID= mapBV(S,b.bvID);
 			int bvID = b.bvID;
 
-			BVTheorySolver<long>* bvTheory =(BVTheorySolver<long>*) S.getBVTheory();
+			BVTheorySolver<int64_t>* bvTheory =(BVTheorySolver<int64_t>*) S.getBVTheory();
 
 			if(!bvTheory->hasBV(bvID)){
 				parse_errorf("Undefined bvID");
 			}
+
 			nns[nnID]->newNNBv(b.input,b.indices,bvID,b.min,b.max);
 
 

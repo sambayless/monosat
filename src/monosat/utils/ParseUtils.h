@@ -176,7 +176,19 @@ static double parseDouble(B& in, vec<char> & tmp) {
 	
 	return strtod(&tmp[0], nullptr);
 }
+template<class B>
+static float parseFloat(B& in, vec<char> & tmp) {
 
+	skipWhitespace(in);
+	tmp.clear();
+	while (*in == '+' || *in == '-' || *in == '.' || *in == 'E' || *in == 'e' || (*in >= '0' && *in <= '9')) {
+		tmp.push(*in);
+		++in;
+	}
+	tmp.push(0);
+
+	return strtof(&tmp[0], nullptr);
+}
 // String matching: in case of a match the input iterator will be advanced the corresponding
 // number of characters.
 template<class B>

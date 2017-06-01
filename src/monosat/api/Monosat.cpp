@@ -369,6 +369,7 @@ struct MonosatData{
 	vec<Objective> optimization_objectives;
 	FILE * outfile =nullptr;
 	string args = "";
+    vec< Monosat::NNTheory<int64_t> *> nns;
 };
 
 //Supporting function for throwing parse errors
@@ -717,7 +718,9 @@ Monosat::BVTheorySolver<int64_t> * initBVTheory(Monosat::SimpSolver * S){
 	d->bv_theory=bv;
 	for (auto graph:d->graphs)
 		graph->setBVTheory(bv);
-
+	for(auto nn:d->nns){
+		nn->setBVTheory(bv);
+	}
 	return bv;
 }
 bool solve(Monosat::SimpSolver * S){
@@ -1462,10 +1465,15 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 void * newNeuralNetwork(Monosat::SimpSolver * S, char * prototxt, char * caffemodel){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	Monosat::NNTheory<int64_t> *nn = new Monosat::NNTheory<int64_t>(S);
-	S->addTheory(nn);
-	//d->nns.push(nn);
-	nn->loadNeuralNetwork(prototxt,caffemodel);
 
+	int nnid = d->nns.size();
+	d->nns.push(nn);
+	if( d->bv_theory){
+		nn->setBVTheory(d->bv_theory);
+	}
+	nn->setNNID(nnid);
+	nn->loadNeuralNetwork(prototxt,caffemodel);
+	write_out(S,"neural_network %d %s ; %s\n",nnid, prototxt, caffemodel);
 	return nn;
 }
 
@@ -1474,6 +1482,14 @@ void newNN_BV(Monosat::SimpSolver * S, Monosat::NNTheory<long> *nn,bool input, i
 	for(int i = 0;i<n_index;i++)
 		indices.push_back(index[i]);
 	nn->newNNBv(input,indices,bvID,min,max);
+
+
+	write_out(S,"nn %d bv %d %s %d ",nn->getNNID(),bvID,input ? "input":"output", n_index);
+    for(int i = 0;i<n_index;i++){
+        write_out(S,"%d ",index[i]);
+    }
+    write_out(S,"%f %f\n",min,max );
+
 }
 
 //FSM Interface

@@ -148,6 +148,19 @@ private:
 
 	vec<int> tobitblast;
 
+	enum class BitOp{
+		Or,And,Nand,Nor,Xor,Xnor,Not
+	};
+	struct BitOpBV{
+
+		BitOp type;
+		int aBV;
+		int bBV;
+		int resultID;
+	};
+	vec<BitOpBV> bitopbvs;
+
+
 	void readConstBV(B& in,  Solver& S) {
 		//bv id width l0 l1 l2 ...
 
@@ -351,8 +364,26 @@ private:
 
 	}
 
+	void readBitOpBV(B& in, BitOp type, Solver& S){
+		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
+		int arg1ID = -1;
+		int arg2ID = -1;
+		int resultID =-1;
+		if(type==BitOp::Not) {
+			 arg1ID = parseInt(in);
+			 resultID = parseInt(in);
 
-	void readNotBV(B& in, Solver& S){
+		}else{
+
+			 arg1ID = parseInt(in);
+			 arg2ID = parseInt(in);
+			 resultID = parseInt(in);
+
+		}
+		bitopbvs.push({type,arg1ID,arg2ID,resultID});
+
+	}
+	void readInvertBV(B& in, Solver& S){
 		//"bv ite %d %d %d %d\n"%(dimacs(condition_lit),aID,bID,resultID))
 
 		int argID = parseInt(in);
@@ -564,7 +595,28 @@ public:
 				readPopCount(in,S);
 				return true;
 			}else if (match(in,"not")){
-				readNotBV(in,S);
+				readBitOpBV(in,BitOp::Not,S);
+				return true;
+			}else if (match(in,"and")){
+				readBitOpBV(in,BitOp::And,S);
+				return true;
+			}else if (match(in,"nand")){
+				readBitOpBV(in,BitOp::Nand,S);
+				return true;
+			}else if (match(in,"or")){
+				readBitOpBV(in,BitOp::Or,S);
+				return true;
+			}else if (match(in,"nor")){
+				readBitOpBV(in,BitOp::Nor,S);
+				return true;
+			}else if (match(in,"xor")){
+				readBitOpBV(in,BitOp::Xor,S);
+				return true;
+			}else if (match(in,"xnor")){
+				readBitOpBV(in,BitOp::Xnor,S);
+				return true;
+			}else if (match(in,"inv")){
+				readInvertBV(in,S);
 				return true;
 			}else if (match(in,"bitblast")){
 				readBitblast(in,S);
@@ -608,6 +660,34 @@ public:
 				}
 			}
 			bvs.clear();
+
+			for(auto & b : bitopbvs){
+				switch(b.type){
+					case BitOp::Not:
+						theory->bitwiseNot(theory->getBV(b.aBV),theory->getBV(b.resultID));
+						break;
+					case BitOp::And:
+						theory->bitwiseAnd(theory->getBV(b.aBV),theory->getBV(b.bBV),theory->getBV(b.resultID));
+						break;
+					case BitOp::Nand:
+						theory->bitwiseNand(theory->getBV(b.aBV),theory->getBV(b.bBV),theory->getBV(b.resultID));
+						break;
+					case BitOp::Or:
+						theory->bitwiseOr(theory->getBV(b.aBV),theory->getBV(b.bBV),theory->getBV(b.resultID));
+						break;
+					case BitOp::Nor:
+						theory->bitwiseNor(theory->getBV(b.aBV),theory->getBV(b.bBV),theory->getBV(b.resultID));
+						break;
+					case BitOp::Xor:
+						theory->bitwiseXor(theory->getBV(b.aBV),theory->getBV(b.bBV),theory->getBV(b.resultID));
+						break;
+					case BitOp::Xnor:
+						theory->bitwiseXnor(theory->getBV(b.aBV),theory->getBV(b.bBV),theory->getBV(b.resultID));
+						break;
+				}
+			}
+			bitopbvs.clear();
+
 			for(auto & c:compares){
 				c.bvID = mapBV(S,c.bvID);
 				if(!theory->hasBV(c.bvID)){

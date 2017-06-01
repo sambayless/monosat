@@ -41,9 +41,14 @@ class NNTheory: public Theory,public BVTheory {
 	double rnd_seed;
 	int theory_index=-1;
 	bool connectedToBV=false;
-
+	int nnid=-1;
 public:
-
+	int getNNID()const{
+		return nnid;
+	}
+	void setNNID(int nnid){
+		this->nnid = nnid;
+	}
 	CRef assign_reason;
 
 
@@ -105,10 +110,19 @@ public:
 
 	vec<bool> fixed_input;
 public:
-	
+	void setBVTheory(BVTheorySolver<Weight> * bv){
+		if(bvTheory!=bv){
+			bvTheory = bv;
+
+			if(bv){
+
+				bv->addTheory(this);
+			}
+		}
+	}
 	NNTheory(Solver * S) :
 			S(S){
-		bvTheory=(BVTheorySolver<Weight>*)S->getBVTheory();
+
 
 		rnd_seed=drand(S->getRandomSeed());
 
@@ -139,6 +153,7 @@ public:
 	}
 
 	void newNNBv(bool input,std::vector<int> & indices,int bvID,float min,float max){
+		assert(bvTheory);
 		if(!connectedToBV){
 			connectedToBV=true;
 			bvTheory->addTheory(this);
@@ -147,7 +162,7 @@ public:
 		bvTheory->setBitvectorTheory(bvID,getTheoryIndex());
 		bvs.growTo(bvID+1);
 		assert(bvs[bvID].index==-1);
-		int index = nn->getIndex(indices,input);
+		int index = nn->getIndex(indices,input);assert(index>=0);
 		bvs[bvID].index=index;
 		bvs[bvID].input=input;
 		bvs[bvID].min=min;
@@ -438,7 +453,7 @@ public:
 				bvTheory->buildComparisonReason(Comparison::geq,bvID,bvTheory->getUnderApprox(bvID),conflict);
 			}
 		}
-		bvTheory->toSolver(conflict);
+		//bvTheory->toSolver(conflict);
 	}
 
 	void buildBoundsClause(vec<Lit> & conflict, bool input){
@@ -474,7 +489,7 @@ public:
 				}
 			}
 		}
-		bvTheory->toSolver(conflict);
+		//bvTheory->toSolver(conflict);
 	}
 
 	void buildBackPropClause(vec<Lit> & conflict,bool input){
@@ -516,7 +531,7 @@ public:
 			}
 
 		}
-		bvTheory->toSolver(conflict);
+		//bvTheory->toSolver(conflict);
 	}
 	std::vector<std::pair<float,int>> clause;
 
@@ -590,7 +605,7 @@ public:
 				}
 				}
 			}
-			bvTheory->toSolver(conflict);
+			//bvTheory->toSolver(conflict);
 		}
 	void buildBoundHitClause(vec<Lit> & conflict, bool input){
 		if(!input){
@@ -647,7 +662,7 @@ public:
 				}
 			}
 		}
-		bvTheory->toSolver(conflict);
+		//bvTheory->toSolver(conflict);
 	}
 
 	void dbg_sync(){
@@ -804,7 +819,7 @@ public:
 							bvTheory->buildComparisonReason(Comparison::geq,bvID,bvTheory->getUnderApprox(bvID),tmp_conflict);
 						}
 					}
-					bvTheory->toSolver(tmp_conflict);
+					//bvTheory->toSolver(tmp_conflict);
 					for (Lit l:tmp_conflict)
 						conflict.push(l);
 					tmp_conflict.clear();
@@ -881,7 +896,7 @@ public:
 	}
 	inline void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
 		stats_reasons++;
-		reason.push(p);
+		reason.push(bvTheory->toSolver(p));
 		if(reason_marker==output_geq || reason_marker==output_leq){
 			//just build naive clause for now... should really do proper clause learning here
 			for(int i = 0;i<nn->nInputs();i++){
@@ -894,7 +909,7 @@ public:
 				bvTheory->buildComparisonReason(Comparison::geq,bvID,bvTheory->getUnderApprox(bvID),reason);
 			}
 		}
-		bvTheory->toSolver(reason);
+
 	}
 	bool check_solved() {
 		for(int i =0;i<nn->nOutputs();i++){

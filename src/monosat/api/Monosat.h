@@ -40,6 +40,7 @@
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
+#include "monosat/nn/NNTheory.h"
 extern "C"
 {
 typedef Monosat::SimpSolver *  SolverPtr;
@@ -47,6 +48,7 @@ typedef Monosat::GraphTheorySolver<int64_t> * GraphTheorySolver_long;
 typedef Monosat::GraphTheorySolver<double>*  GraphTheorySolver_double;
 typedef Monosat::BVTheorySolver<int64_t>* BVTheoryPtr;
 typedef Monosat::FSMTheorySolver * FSMTheorySolverPtr;
+typedef Monosat::NNTheory<long> * NNTheoryPtr;
 typedef int64_t Weight;
 #else
 typedef void * SolverPtr;
@@ -54,6 +56,7 @@ typedef void*  BVTheoryPtr;
 typedef void*  GraphTheorySolver_long;
 typedef void*  GraphTheorySolver_double;
 typedef void*  FSMTheorySolverPtr;
+typedef void * NNTheoryPtr;
 typedef int Var;
 typedef int64_t Weight;
 #endif
@@ -223,6 +226,13 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
   void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges, bool enforceEdgeAssignment);
+
+
+  //Theory interface for Neural Networks
+
+  void * newNeuralNetwork(SolverPtr S, char * prototxt, char * caffemodel);
+  void newNN_BV(SolverPtr S,  NNTheoryPtr nn,bool input, int* index,int n_index, int bvID, double min, double max);
+
 
   //theory interface for finite state machines
   FSMTheorySolverPtr initFSMTheory(SolverPtr S);

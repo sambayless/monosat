@@ -4556,6 +4556,9 @@ public:
 	void addOperation(int bvID,Operation* op){
 		/*assert(op->getID()==operations.size());
 		operations.push(op);*/
+        if(bvID==794){
+            int a=1;
+        }
 		operation_ids[bvID].push(op->getID());
 
 	}

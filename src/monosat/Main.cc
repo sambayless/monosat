@@ -624,6 +624,9 @@ int main(int argc, char** argv) {
 		LSystemParser<char*,SimpSolver>  lparser;
 		parser.addParser(&lparser);
 
+		NNParser<char*, SimpSolver> nnparser;
+		parser.addParser(&nnparser);
+
 		AMOParser<char *, SimpSolver> amo;
 		parser.addParser(&amo);
 		GeometryParser<char *, SimpSolver, mpq_class>  preciseGeometryParser;
@@ -680,8 +683,9 @@ int main(int argc, char** argv) {
 			printf("Parsing time = %f\n", parsing_time);
 		}
 		S.preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
-
+        bool do_simp=true;
 		if (opt_pre){
+		    do_simp=false;
 			if (opt_verb > 0){
 				printf("simplify:\n");
 				fflush(stdout);
@@ -715,7 +719,7 @@ int main(int argc, char** argv) {
 
 
 
-		lbool ret = optimize_and_solve(S,parser.assumptions,parser.objectives,false,found_optimal);
+		lbool ret = optimize_and_solve(S,parser.assumptions,parser.objectives,do_simp,found_optimal);
 		double solving_time = rtime(0) - after_preprocessing;
 		if (opt_verb > 0) {
 			printf("Solving time = %f\n", solving_time);

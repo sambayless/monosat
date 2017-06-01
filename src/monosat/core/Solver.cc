@@ -2048,7 +2048,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  16662) {//3150 //3144
+		if (++iter ==  67236) {//3150 //3144
 			int a = 1;
 		}
 		propagate:
