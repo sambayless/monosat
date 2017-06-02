@@ -105,7 +105,7 @@ void Monosat::printUsageAndExit(int argc, char** argv, bool verbose) {
 	sort(Option::getOptionList(), Option::OptionLt());
 
 	const char* prev_cat = NULL;
-	const char* prev_type = NULL;
+	const char* prev_type = NULL;set
 
 	for (int i = 0; i < Option::getOptionList().size(); i++) {
 		const char* cat = Option::getOptionList()[i]->category;

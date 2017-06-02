@@ -25,19 +25,19 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} " (set with -DCMAKE_BUI
 message("* Adding build types...")
 SET(CMAKE_CXX_FLAGS_SANITIZE
         "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
-        CACHE STRING "Flags used by the C++ compiler during address sanetize  builds."
+        CACHE STRING "Flags used by the C++ compiler during address sanitize  builds."
         FORCE )
 SET(CMAKE_C_FLAGS_SANITIZE
         "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
-        CACHE STRING "Flags used by the C compiler during address sanetize builds."
+        CACHE STRING "Flags used by the C compiler during address sanitize builds."
         FORCE )
 SET(CMAKE_EXE_LINKER_FLAGS_SANITIZE
         "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined"
-        CACHE STRING "Flags used for linking binaries during address sanetize builds."
+        CACHE STRING "Flags used for linking binaries during address sanitize builds."
         FORCE )
 SET(CMAKE_SHARED_LINKER_FLAGS_SANITIZE
         "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined"
-        CACHE STRING "Flags used by the shared libraries linker during address sanetize builds."
+        CACHE STRING "Flags used by the shared libraries linker during address sanitize builds."
         FORCE )
 MARK_AS_ADVANCED(
         CMAKE_CXX_FLAGS_SANETIZE
