@@ -634,7 +634,7 @@ public:
 
 	void implementConstraints(Solver & S) {
 		theory = (BVTheorySolver<int64_t>*) S.bvtheory;
-		if(bvs.size() || multbvs.size() || divbvs.size()  || subtractionbvs.size() || addbvs.size() || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
+		if(bvs.size() || multbvs.size() || divbvs.size()  || bitopbvs.size() || subtractionbvs.size() || addbvs.size() || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
 
 			if(!theory){
 				theory = new BVTheorySolver<int64_t>(&S);

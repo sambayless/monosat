@@ -56,6 +56,10 @@ public:
 	enum class ConstraintSide {
 		Upper, Lower, Both
 	};
+
+	const char * getTheoryName()const override{
+		return "PB";
+	}
 private:
 	ConstraintSide invert(ConstraintSide c) {
 		if (c == ConstraintSide::Upper)

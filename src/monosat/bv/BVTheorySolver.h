@@ -4804,6 +4804,9 @@ public:
 	int64_t stats_propagations_skipped = 0;
 	int64_t statis_bv_updates = 0;
 
+    const char * getTheoryName()const override{
+        return "BV";
+    }
 	BVTheorySolver(TheorySolver * S ) :
 			S(S){
 		rnd_seed = drand(S->getRandomSeed());
@@ -5740,7 +5743,7 @@ public:
 
 	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
 		static int iter = 0;
-		if(++iter==39){//17
+		if(++iter==2){//17
 			int a =1;
 		}
 		assert(value(p)!=l_False);

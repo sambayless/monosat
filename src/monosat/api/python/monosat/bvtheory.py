@@ -199,7 +199,7 @@ class BitVector():
                     self._bv[i]=true() 
                 else:
                     self._bv[i]=false()
-        elif  (args is None and op=="anon") or op=='~':
+        elif  (args is None and op=="anon") or op=='~':# or op=='max' or op=='min': #fix this later...
             #create an anomymous bitvector (has no literals)
             self.pid = mgr._monosat.newBitvector_anon(width)
         else:

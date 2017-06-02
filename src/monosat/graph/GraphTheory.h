@@ -2232,6 +2232,9 @@ public:
         return conflictingHeuristic;
     }
 
+    const char * getTheoryName()const override{
+        return "Graph";
+    }
 
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
 		dbg_check_trails();

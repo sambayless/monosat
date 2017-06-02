@@ -76,6 +76,9 @@ public:
 	virtual bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);           // Add a clause to the solver without making superflous internal copy. Will
 
+    const char * getTheoryName()const override{
+        return "SAT";
+    }
 
 	void setDecisionPriority(Var v, unsigned int p) {
 		priority[v] = p;
@@ -408,7 +411,7 @@ public:
 	//Lazily construct a reason for a literal propagated from a theory
 	CRef constructReason(Lit p) {
 		static int iterp =0;
-		if(++iterp==45){
+		if(++iterp==4){
 			int a=1;
 		}
 		assert(value(p)==l_True);
@@ -1121,6 +1124,10 @@ private:
 		SolverDecisionTheory(Solver & S):S(S){
 
 		}
+
+        const char * getTheoryName()const override{
+            return "SolverDecisionTheory";
+        }
 		Lit decideTheory(CRef & decision_reason) {
 			decision_reason = CRef_Undef;
 			return S.pickBranchLit();

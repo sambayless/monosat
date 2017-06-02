@@ -39,7 +39,7 @@ public:
 	virtual ~Theory() {
 	}
 
-
+	virtual const char * getTheoryName()const=0;
 
 	virtual int getTheoryIndex()const=0;
 	virtual void setTheoryIndex(int id)=0;

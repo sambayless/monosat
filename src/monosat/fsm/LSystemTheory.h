@@ -72,6 +72,10 @@ private:
 	Solver * S;
 
 public:
+
+	const char * getTheoryName()const override{
+		return "LSystem";
+	}
 	int id;
 
 	vec<lbool> assigns;

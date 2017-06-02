@@ -852,10 +852,11 @@ public:
 						throw std::runtime_error("Inconsistent nn model propagation");
 
 					if(under>bv.getUnder()){
-						Lit l = bvTheory->toSolver(bvTheory->newComparison(Comparison::geq,bvID,under,var_Undef,false));
-						if(S->value(l)==l_Undef){
-							S->enqueue(l,output_geq);
-						}else if (S->value(l)==l_False){
+						Lit l = bvTheory->newComparison(Comparison::geq,bvID,under,var_Undef,false);
+                        Lit sl = bvTheory->toSolver(l);
+						if(S->value(sl)==l_Undef){
+							S->enqueue(sl,output_geq);
+						}else if (S->value(sl)==l_False){
 							buildReason(l,conflict,output_geq);
 							return false;
 						}
@@ -867,10 +868,11 @@ public:
 					if(over_m<model)
 						throw std::runtime_error("Inconsistent nn model propagation");
 					if(over<bv.getOver()){
-						Lit l =  bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,over,var_Undef,false));
-						if(S->value(l)==l_Undef){
-							S->enqueue(l,output_leq);
-						}else if (S->value(l)==l_False){
+						Lit l = bvTheory->newComparison(Comparison::leq,bvID,over,var_Undef,false);
+                        Lit sl = bvTheory->toSolver(l);
+						if(S->value(sl)==l_Undef){
+							S->enqueue(sl,output_leq);
+						}else if (S->value(sl)==l_False){
 							buildReason(l,conflict,output_leq);
 							return false;
 						}
@@ -883,6 +885,10 @@ public:
 	void printStats(int detailLevel) {
 
 	}
+
+    const char * getTheoryName()const override{
+        return "NN";
+    }
 	void preprocess(){
 		if(nn){
 			nn->initializeValues(false);

@@ -71,6 +71,10 @@ public:
 
 		}
 	};
+
+	const char * getTheoryName()const override{
+		return "Geometry";
+	}
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 

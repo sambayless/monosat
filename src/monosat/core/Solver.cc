@@ -986,14 +986,21 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 				assert(level(x) > 0);
 				out_conflict.push(~trail[i]);
 			} else {
+
 				if (isTheoryCause(reason(x))) {
 					constructReason(trail[i]);
 				}
-				Clause& c = ca[reason(x)];
-				assert(var(c[0]) == x);
-				for (int j = 1; j < c.size(); j++)
-					if (level(var(c[j])) > 0)
-						seen[var(c[j])] = 1;
+				//this can happen, if the reason was a theory reason of size 1 or 0
+				if(reason(x)==CRef_Undef){
+					//note that this is NOT an assumption; it is really a theory implication that should be at level 0
+				}else{
+
+					Clause& c = ca[reason(x)];
+					assert(var(c[0]) == x);
+					for (int j = 1; j < c.size(); j++)
+						if (level(var(c[j])) > 0)
+							seen[var(c[j])] = 1;
+				}
 			}
 			seen[x] = 0;
 		}
@@ -1027,6 +1034,7 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assert(value(p) == l_Undef);
+
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);
@@ -1074,14 +1082,21 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict) {
 				//int lev = level(v);
 				out_conflict.push(~trail[i]);
 			} else {
+
+
 				if (isTheoryCause(r)) {
 					r = constructReason(trail[i]);
 				}
-				Clause& c = ca[r];
-				for (int j = 0; j < c.size(); j++) {
+				if(r==CRef_Undef){
+					//note that this is NOT an assumption; it is really a theory implication that should be at level 0
+				}else{
+					Clause& c = ca[r];
 
-					if (level(var(c[j])) > 0) {
-						seen[var(c[j])] = 1;
+					for (int j = 0; j < c.size(); j++) {
+
+						if (level(var(c[j])) > 0) {
+							seen[var(c[j])] = 1;
+						}
 					}
 				}
 			}
@@ -2859,7 +2874,7 @@ lbool Solver::solve_() {
 			for(Theory * t:theories){
 
 				if (!t->check_solved()) {
-					throw std::runtime_error("Error! Solution doesn't satisfy theory properties!");
+					throw std::runtime_error("Error! Theory " + std::string(t->getTheoryName())  + std::to_string(t->getTheoryIndex()) + ": Solution doesn't satisfy theory properties!");
 				}
 			}
 			stats_solution_checking_time+=rtime(1)-check_start;

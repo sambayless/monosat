@@ -80,6 +80,10 @@ private:
 	Solver * S;
 
 public:
+
+	const char * getTheoryName()const override{
+		return "FSM";
+	}
 	int id;
 
 	vec<lbool> assigns;
