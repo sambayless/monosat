@@ -458,7 +458,7 @@ public:
 	}
 	virtual ~OptionSet(){
 		while (opts_array.size()){
-			delete(opts_array.last());
+			free(opts_array.last());
 			opts_array.pop();
 		}
 	}
@@ -471,20 +471,22 @@ public:
 private:
 	void parseOptsArray(const char * opts_){
 		opts_array.clear();
-		char* opts = strdup(opts_);
-		if(opts) {
-			int i;
-			char *t;
-			for (i = 0, t = strtok(opts, " "); t != nullptr; ++i) {
-				int len = strlen(t);
-				if(len>0) {
-					opts_array.push(strdup(t));
-					//opts_array.push(new char[len + 1]);
-					//strncpy(opts_array.last(), t, len);
+		if(opts_) {
+			char *opts = strdup(opts_);
+			if (opts) {
+				int i;
+				char *t;
+				for (i = 0, t = strtok(opts, " "); t != nullptr; ++i) {
+					int len = strlen(t);
+					if (len > 0) {
+						opts_array.push(strdup(t));
+						//opts_array.push(new char[len + 1]);
+						//strncpy(opts_array.last(), t, len);
+					}
+					t = strtok(nullptr, " ");
 				}
-				t = strtok(nullptr, " ");
+				free(opts);
 			}
-			free (opts);
 		}
 	}
 };

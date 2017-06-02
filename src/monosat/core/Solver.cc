@@ -988,11 +988,16 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
 				if (isTheoryCause(reason(x))) {
 					constructReason(trail[i]);
 				}
-				Clause& c = ca[reason(x)];
-				assert(var(c[0]) == x);
-				for (int j = 1; j < c.size(); j++)
-					if (level(var(c[j])) > 0)
-						seen[var(c[j])] = 1;
+                //this can happen, if the reason was a theory reason of size 1 or 0
+				if(reason(x)==CRef_Undef){
+					//note that this is NOT an assumption; it is really a theory implication that should be at level 0
+				}else{
+                    Clause& c = ca[reason(x)];
+                    assert(var(c[0]) == x);
+                    for (int j = 1; j < c.size(); j++)
+                        if (level(var(c[j])) > 0)
+                            seen[var(c[j])] = 1;
+                }
 			}
 			seen[x] = 0;
 		}
@@ -1076,13 +1081,17 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict) {
 				if (isTheoryCause(r)) {
 					r = constructReason(trail[i]);
 				}
-				Clause& c = ca[r];
-				for (int j = 0; j < c.size(); j++) {
-					
-					if (level(var(c[j])) > 0) {
-						seen[var(c[j])] = 1;
-					}
-				}
+                if(r==CRef_Undef){
+                    //note that this is NOT an assumption; it is really a theory implication that should be at level 0
+                }else {
+                    Clause &c = ca[r];
+                    for (int j = 0; j < c.size(); j++) {
+
+                        if (level(var(c[j])) > 0) {
+                            seen[var(c[j])] = 1;
+                        }
+                    }
+                }
 			}
 			seen[x] = 0;
 		}
