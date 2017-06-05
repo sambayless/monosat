@@ -192,6 +192,7 @@ bool NeuralNetwork::solve(long limit){
 				printf("%d: %f, ",i,cur_val);
 			}
 			printf("\n");*/
+			printf("\n");
 			for(int i = 0;i<nOutputs();i++){
 					float cur_val = output_layer->cpu_data()[i] ;
 					printf(" %d: %f, ",i,cur_val);
@@ -234,6 +235,7 @@ bool NeuralNetwork::solve(long limit){
 			if(all_out_of_range){
 				printf("All input errors out of range, giving up...");
 			}
+			printf("\n");
 			for(int i = 0;i<nOutputs();i++){
 				float cur_val = output_layer->cpu_data()[i] ;
 				printf("%d: %f, ",i,cur_val);
@@ -272,9 +274,9 @@ bool NeuralNetwork::solve(long limit){
 					}else if(old_val+diff<input_lower[i]+epsilon()){
 						input_hit_lower[i]=true;
 						diff = input_lower[i]-old_val;
-						if(!floatEq(old_val+diff,input_lower[i])){
+					/*	if(!floatEq(old_val+diff,input_lower[i])){
 							bool a = floatEq(old_val+diff,input_lower[i]);
-						}
+						}*/
 						assert(floatEq(old_val+diff,input_lower[i]));
 					}
 					if(fabs(diff)>epsilon()){//or some small value..

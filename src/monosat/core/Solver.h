@@ -501,7 +501,7 @@ public:
 	virtual bool propagateAssignment(const vec<Lit>& assumps); //apply unit propagation to the supplied assumptions, and quit without solving
 	virtual lbool solveUntilRestart(const vec<Lit>& assumps);//attempt to solve the instance, but quit as soon as the solver restarts
 	bool okay() const;                  // FALSE means solver is in a conflicting state
-
+	bool forceSolve(const vec<Lit>& assumps); //assign these literals, and attempt to propagate them into theory solvers, but don't attempt to propagate clauses.
 	Lit True(){
 
 		if(const_true==lit_Undef){

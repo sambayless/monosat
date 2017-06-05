@@ -2695,6 +2695,45 @@ double Solver::progressEstimate() const {
 	return progress / nVars();
 }
 
+bool Solver::forceSolve(const vec<Lit>& assumps){
+	budgetOff();
+	assumps.copyTo(assumptions);
+
+	Lit next=lit_Undef;
+	while (decisionLevel() < assumptions.size()) {
+		// Perform user provided assumption:
+		Lit p = assumptions[decisionLevel()];
+		assert(p!=lit_Undef);
+		assert(var(p)<nVars());
+		if (value(p) == l_True) {
+			// Dummy decision level:
+			newDecisionLevel();
+		} else if (value(p) == l_False) {
+			//analyzeFinal(~p, conflict);
+			assigns[var(p)]= sign(p)?l_False:l_True;//this will leave the solver in a bad state.
+		} else {
+			newDecisionLevel();
+			enqueue(p);
+		}
+	}
+	if (opt_check_solution && theories.size() && !disable_theories && !only_propagate_assumptions) {
+		if(opt_verb>0){
+			printf("Checking witnesses...\n");
+		}
+		double check_start=rtime(1);
+		for(Theory * t:theories){
+
+			if (!t->check_solved()) {
+				bool b = t->check_solved();
+				throw std::runtime_error("Error! Theory " + std::string(t->getTheoryName())  + std::to_string(t->getTheoryIndex()) + ": Solution doesn't satisfy theory properties!");
+			}
+		}
+		stats_solution_checking_time+=rtime(1)-check_start;
+	}
+
+	return true;
+
+}
 
 bool Solver::propagateAssignment(const vec<Lit> & assumps){
 	only_propagate_assumptions=true;

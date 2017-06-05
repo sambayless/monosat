@@ -361,6 +361,9 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 				r = S->solve(last_satisfying_assign, false, false);
 
 				if (!r) {
+					S->forceSolve(last_satisfying_assign);
+					std::cerr<<"Error in optimization (instance has become unsat)";
+					return value;
 					throw std::runtime_error("Error in optimization (instance has become unsat)");
 				}
 				for (Lit l:assume) {
@@ -529,6 +532,9 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 				r = S->solve(last_satisfying_assign, false, false);
 
 				if (!r) {
+					S->forceSolve(last_satisfying_assign);
+					std::cerr<<"Error in optimization (instance has become unsat)";
+					return value;
 					throw std::runtime_error("Error in optimization (instance has become unsat)");
 				}
 				for (Lit l:assume) {
@@ -703,6 +709,9 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 			if(found_model) {
 				r = S->solve(last_satisfying_assign, false, false);
 				if (!r) {
+					S->forceSolve(last_satisfying_assign);
+					std::cerr<<"Error in optimization (instance has become unsat)";
+					return max_val;
 					throw std::runtime_error("Error in optimization (instance has become unsat)");
 				}
 			}
@@ -726,6 +735,9 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 		bool r;
 		r= S->solve(last_satisfying_assign,false,false);
 		if(!r){
+			S->forceSolve(last_satisfying_assign);
+			std::cerr<<"Error in optimization (instance has become unsat)";
+			return max_val;
 			throw std::runtime_error("Error in optimization (instance has become unsat)");
 		}
 		for(Lit l:assume){
@@ -913,7 +925,7 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 			if(leq(new_value,min_val,invert)){
 				//this can only happen if a budget was used and the solver quit early.
 				min_val=new_value;
-                assert(geq(min_val,getApprox(bvTheory,bvID,invert,true),invert)); //assert(min_val>=bvTheory->getUnderApprox(bvID,true));
+				assert(geq(min_val,getApprox(bvTheory,bvID,invert,true),invert)); //assert(min_val>=bvTheory->getUnderApprox(bvID,true));
 			}
 			if(opt_verb>=1 || opt_verb_optimize>=1){
 				printf("\rBest bv%d = %ld",bvID,max_val);
@@ -926,6 +938,9 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 			if(found_model) {
 				r = S->solve(last_satisfying_assign, false, false);
 				if (!r) {
+					S->forceSolve(last_satisfying_assign);
+					std::cerr<<"Error in optimization (instance has become unsat)";
+					return max_val;
 					throw std::runtime_error("Error in optimization (instance has become unsat)");
 				}
 			}
@@ -958,6 +973,9 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 		r = S->solve(last_satisfying_assign, false, false);
 
 		if (!r) {
+			S->forceSolve(last_satisfying_assign);
+			std::cerr<<"Error in optimization (instance has become unsat)";
+			return max_val;
 			throw std::runtime_error("Error in optimization (instance has become unsat)");
 		}
 		for (Lit l:assume) {
@@ -1188,6 +1206,9 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 			if(found_model) {
 				bool res = S->solve(last_satisfying_assign, false, false);
 				if (!res) {
+					S->forceSolve(last_satisfying_assign);
+					std::cerr<<"Error in optimization (instance has become unsat)";
+					return max_val;
 					throw std::runtime_error("Error in optimization (instance has become unsat)");
 				}
 			}
@@ -1198,6 +1219,9 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 			if(found_model) {
 				bool res = S->solve(last_satisfying_assign, false, false);
 				if (!res) {
+					S->forceSolve(last_satisfying_assign);
+					std::cerr<<"Error in optimization (instance has become unsat)";
+					return max_val;
 					throw std::runtime_error("Error in optimization (instance has become unsat)");
 				}
 			}
@@ -1236,6 +1260,9 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 		r = S->solve(last_satisfying_assign, false, false);
 
 		if (!r) {
+			S->forceSolve(last_satisfying_assign);
+			std::cerr<<"Error in optimization (instance has become unsat)";
+			return max_val;
 			throw std::runtime_error("Error in optimization (instance has become unsat)");
 		}
 		for (Lit l:assume) {
@@ -1435,7 +1462,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 						assert(val>=min_values[i]);assert(val<=max_values[i]);
 						max_values[i] = val;
 					}else{
-                        assert(val>=max_values[i]);assert(val<=min_values[i]);
+						assert(val>=max_values[i]);assert(val<=min_values[i]);
 						min_values[i] = val;
 					}
 					if (hit_cutoff) {
@@ -1475,13 +1502,13 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 						throw std::runtime_error("Unknown optimization type");
 					}
 
-                    if(objectives[i].maximize){
-                        assert(val>=min_values[i]);assert(val<=max_values[i]);
-                        max_values[i] = val;
-                    }else{
-                        assert(val>=max_values[i]);assert(val<=min_values[i]);
-                        min_values[i] = val;
-                    }
+					if(objectives[i].maximize){
+						assert(val>=min_values[i]);assert(val<=max_values[i]);
+						max_values[i] = val;
+					}else{
+						assert(val>=max_values[i]);assert(val<=min_values[i]);
+						min_values[i] = val;
+					}
 
 					if (hit_cutoff) {
 						found_optimal = false;
@@ -1501,6 +1528,9 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 					//after finding a best solution, the solver must re-solve in order to keep the model consistent
 					//(due to changing values for intermediate values in the PB constraints).
 					if(ever_solved && !S.solve(assume)){
+						std::cerr<<"Error in optimization (best values are inconsistent with model)";
+						S.forceSolve(assume);
+						return l_True;
 						throw std::runtime_error("Error in optimization (best values are inconsistent with model)");
 					}
 					if(ever_solved)
@@ -1535,6 +1565,9 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 						int64_t best_value = objectives[i].maximize ? max_values[j] : min_values[j];
 						int64_t model_val = model_vals[j];
 						if (lt(best_value, model_val,objectives[i].maximize)) {
+							std::cerr<<"Error in optimization (best values are inconsistent with model)";
+							S.forceSolve(assume);
+							return l_True;
 							throw std::runtime_error(
 									"Error in optimization (best values are inconsistent with model for bv " +
 									std::to_string(j) + " (bvid " + std::to_string(bvID) + " ): expected value <= " +
@@ -1556,6 +1589,9 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 						int64_t best_value = objectives[i].maximize ? max_values[j] : min_values[j];
 						int64_t model_val = model_vals[j];
 						if (lt(best_value , model_val,objectives[i].maximize)) {
+							std::cerr<<"Error in optimization (best values are inconsistent with model)";
+							S.forceSolve(assume);
+							return l_True;
 							throw std::runtime_error(
 									"Error in optimization (best values are inconsistent with model for pb " +
 									std::to_string(j) + " ): expected value <= " +
@@ -1598,6 +1634,9 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 			}
 			if(opt_check_solution){
 				if (!S.solve(best_model)){
+					std::cerr<<"Error in optimization (best values are inconsistent with model)";
+					S.forceSolve(assume);
+					return l_True;
 					throw std::runtime_error("Error in optimization (best values are inconsistent with model)");
 				}
 				for(int i = 0;i<objectives.size();i++){
@@ -1606,6 +1645,9 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 						int64_t best_value = objectives[i].maximize ? max_values[i] : min_values[i];
 						int64_t model_val = getApprox(bvTheory,bvID,!objectives[i].maximize);
 						if (lt(best_value , model_val,objectives[i].maximize)) {
+							std::cerr<<"Error in optimization (best values are inconsistent with model)";
+							S.forceSolve(assume);
+							return l_True;
 							throw std::runtime_error(
 									"Error in optimization (best values are inconsistent with model)");
 						}
@@ -1613,6 +1655,9 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 						int64_t best_value = objectives[i].maximize ? max_values[i] : min_values[i];
 						int64_t model_val =evalPB(S, objectives[i],!objectives[i].maximize);
 						if (lt(best_value , model_val,objectives[i].maximize)) {
+							std::cerr<<"Error in optimization (best values are inconsistent with model)";
+							S.forceSolve(assume);
+							return l_True;
 							throw std::runtime_error(
 									"Error in optimization (best values are inconsistent with model)");
 						}
