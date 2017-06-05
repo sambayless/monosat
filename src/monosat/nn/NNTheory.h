@@ -925,6 +925,9 @@ public:
 		}
 
 		for(int i = 0;i<nn->nInputs();i++){
+			if(i==216){
+				int a=1;
+			}
 			if(!nn->modelInBounds(i,true)){
 				return false;
 			}

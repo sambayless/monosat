@@ -2874,6 +2874,7 @@ lbool Solver::solve_() {
 			for(Theory * t:theories){
 
 				if (!t->check_solved()) {
+					bool b = t->check_solved();
 					throw std::runtime_error("Error! Theory " + std::string(t->getTheoryName())  + std::to_string(t->getTheoryIndex()) + ": Solution doesn't satisfy theory properties!");
 				}
 			}

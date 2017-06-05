@@ -172,17 +172,17 @@ bool NeuralNetwork::solve(long limit){
 #ifndef NDEBUG
 			for(int i = 0;i<nOutputs();i++){
 				float cur_val = output_layer->cpu_data()[i] ;
-				if(cur_val<output_lower[i]){
+				if(cur_val<output_lower[i]- epsilon()){
 					assert(false);
-				}else if(cur_val>output_upper[i]){
+				}else if(cur_val>output_upper[i]+ epsilon()){
 					assert(false);
 				}
 			}
 			for(int i = 0;i<nInputs();i++){
 				float cur_val = input_layer->cpu_data()[i] ;
-				if(cur_val<input_lower[i]){
+				if(cur_val<input_lower[i]- epsilon()){
 					assert(false);
-				}else if(cur_val>input_upper[i]){
+				}else if(cur_val>input_upper[i]+ epsilon()){
 					assert(false);
 				}
 			}
@@ -194,14 +194,14 @@ bool NeuralNetwork::solve(long limit){
 			printf("\n");*/
 			for(int i = 0;i<nOutputs();i++){
 					float cur_val = output_layer->cpu_data()[i] ;
-					printf("%d: %f, ",i,cur_val);
+					printf(" %d: %f, ",i,cur_val);
 				}
 				printf("\n");
 			int x =0;
 			int y = 0;
 			for(int i = 0;i<nInputs();i++){
-				printf("%d ",input_lower[i]>0.5 ? 1:0);
-
+				//printf("%d ",input_lower[i]>0.5 ? 1:0);
+				printf("%.2f ",input_lower[i]);
 				x++;
 				if(x>=28){
 					x=0;
@@ -223,9 +223,9 @@ bool NeuralNetwork::solve(long limit){
 #ifndef NDEBUG
 		for(int i = 0;i<nInputs();i++){
 			float cur_val = input_layer->cpu_data()[i] ;
-			if(cur_val<input_lower[i]){
+			if(cur_val<input_lower[i]-epsilon()){
 				assert(false);
-			}else if(cur_val>input_upper[i]){
+			}else if(cur_val>input_upper[i]+epsilon()){
 				assert(false);
 			}
 		}
@@ -263,18 +263,21 @@ bool NeuralNetwork::solve(long limit){
 					float diff = -input_layer->cpu_diff()[i];
 					//float new_val = old_val+ diff;
 					assert(input_upper[i]>=input_lower[i]);
-					assert(old_val>=input_lower[i]);
-					assert(old_val<=input_upper[i]);
-					if(old_val+diff>input_upper[i]){
+					assert(old_val>=input_lower[i]-epsilon());
+					assert(old_val<=input_upper[i]+epsilon());
+					if(old_val+diff>input_upper[i]-epsilon()){
 						input_hit_upper[i]=true;
 						diff = input_upper[i]-old_val;
 						assert(old_val+diff==input_upper[i]);
-					}else if(old_val+diff<input_lower[i]){
+					}else if(old_val+diff<input_lower[i]+epsilon()){
 						input_hit_lower[i]=true;
 						diff = input_lower[i]-old_val;
-						assert(old_val+diff==input_lower[i]);
+						if(!floatEq(old_val+diff,input_lower[i])){
+							bool a = floatEq(old_val+diff,input_lower[i]);
+						}
+						assert(floatEq(old_val+diff,input_lower[i]));
 					}
-					if(fabs(diff)>0){//or some small value..
+					if(fabs(diff)>epsilon()){//or some small value..
 						all_out_of_range=false;
 					}
 
@@ -300,9 +303,9 @@ bool NeuralNetwork::solve(long limit){
 #ifndef NDEBUG
 		for(int i = 0;i<nInputs();i++){
 			float cur_val = input_layer->cpu_data()[i] ;
-			if(cur_val<input_lower[i]){
+			if(cur_val<input_lower[i] - epsilon()){
 				assert(false);
-			}else if(cur_val>input_upper[i]){
+			}else if(cur_val>input_upper[i]+ epsilon()){
 				assert(false);
 			}
 		}

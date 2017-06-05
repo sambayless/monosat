@@ -151,15 +151,26 @@ public:
 	bool modelInBounds(int index,bool input){
 
 		float model = getModel(index,input);
-		if(model< getBound(index,input,true)){
+		if(model< getBound(index,input,true)-epsilon()){
 			return false;
 		}
-		if(model> getBound(index,input,false)){
+		if(model> getBound(index,input,false)+epsilon()){
 			return false;
 		}
 		return true;
 	}
 
 	bool initializeValues(bool only_out_of_bounds, InitPolicy init_policy=InitPolicy::DEFAULT);
+	float epsilon()const{
+		return 0.001;
+	}
+	bool floatEq(float a, float b){
+		float diff = a-b;
+		if(diff<0){
+			return diff>-epsilon();
+		}else{
+			return diff<epsilon();
+		}
+	}
 };
 
