@@ -57,6 +57,9 @@ The graph and finite state machine theory solvers can be found in `graph/` and `
 
 `dgl/` incldudes C++ implementations of several dynamic graph algorithms (as well as some more common graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested successfully with integers, floats, and GMP arbitrary precision rationals.
 
+MonoSAT includes an implementation of (a generalization of) the circuit routing heuristics described in [Routing Under Constraints](#nadelruc); you can activate them using the '-ruc' command line option. 
+See [`examples/python/routing/router.py`][router] for an example usage.
+
 ######Algirthms implemented in 'dgl/' include:
 * Reachability/Shortest Path
     * [Ramalingam-Reps](#ramalingam1996incremental) dynamic single-source shortest paths algorithm (with improvements described in [Buriol et al. 2008](#buriol2008speeding))
@@ -91,6 +94,7 @@ MonoSAT was made possible by the use of several open-source projects, including 
 [monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
 [FORMAT]: FORMAT.md
 [tutorial]: TUTORIAL.md
+[router]: examples/python/routing/router.py
 [MiniSat]:http://minisat.se/
 
 [MIT license]: http://opensource.org/licenses/MIT
@@ -102,6 +106,7 @@ MonoSAT was made possible by the use of several open-source projects, including 
 
 
 ###References
+* <a name="nadelruc">[Nadel, Alexander. "Routing under Constraints." Formal Methods in Computer-Aided Design FMCAD (2016)](http://dl.acm.org/citation.cfm?id=3077653)</a>
 
 * <a name="buriol2008speeding">[Buriol, Luciana S., Mauricio GC Resende, and Mikkel Thorup. "Speeding up dynamic shortest-path algorithms." INFORMS Journal on Computing 20.2 (2008): 191-204.](http://dx.doi.org/10.1287/ijoc.1070.0231)</a>
 * <a name="dijkstra1959note">[Dijkstra, Edsger W. "A note on two problems in connexion with graphs." Numerische mathematik 1.1 (1959): 269-271](http://dx.doi.org/10.1007%2FBF01386390)</a>
