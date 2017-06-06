@@ -252,6 +252,7 @@ extern BoolOption opt_only_prop_edgeset;
 extern BoolOption opt_graph_cache_propagation;
 extern IntOption opt_graph_use_cache_for_decisions;
 extern OptionSet opt_route;
+extern OptionSet opt_route2;
 enum class PointInPolygonAlg {
 	ALG_FULL, ALG_RECURSIVE_SPLIT
 };

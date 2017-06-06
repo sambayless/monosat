@@ -318,7 +318,7 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
 
 if __name__ == '__main__':
     import sys
-    monosat_args = ['-route'] #default argument for MonoSAT
+    monosat_args = ['-ruc'] #default argument for MonoSAT
     if len(sys.argv)<2:
         print("Usage: router.py [monosat arguments] filename.pcrt")
         sys.exit(1)

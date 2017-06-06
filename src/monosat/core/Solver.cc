@@ -1089,8 +1089,8 @@ void Solver::analyzeFinal(CRef confl, Lit skip_lit, vec<Lit>& out_conflict) {
 				}
 				if(r==CRef_Undef){
 					//note that this is NOT an assumption; it is really a theory implication that should be at level 0
-				}else{
-					Clause& c = ca[r];
+				}else {
+					Clause &c = ca[r];
 
 					for (int j = 0; j < c.size(); j++) {
 
@@ -2187,6 +2187,11 @@ lbool Solver::search(int nof_conflicts) {
 				multiple_involved_theories = swapping_involved_theories.size()>1;
 				if(swapping_involved_theories.size()>1 || opt_theory_order_swapping_first_on_unit) {
 					order_changed=true;
+					//things to try:
+					//1) disable normal restarts in the solver
+					//2) reverse or randomize swapping_involved_theory_order
+					//3) reset the luby series if the _entire_ conflict net set (not just the part up to max involved) doesn't include the previous conflict net
+
 					//if opt_theory_order_swapping_first_on_unit is set, then on a unit conflict, move the conflict heuristic to the begining (without changing the rest of the decision order).
 					bool unit = (swapping_involved_theories.size()==1 && opt_theory_order_swapping_first_on_unit);
 					int lowest_involved_position = decision_heuristics.size();
