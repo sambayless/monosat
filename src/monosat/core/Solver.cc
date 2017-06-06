@@ -2707,13 +2707,13 @@ bool Solver::forceSolve(const vec<Lit>& assumps){
 		assert(var(p)<nVars());
 		if (value(p) == l_True) {
 			// Dummy decision level:
-			newDecisionLevel();
+			trail_lim.push(trail.size());
 		} else if (value(p) == l_False) {
 			//analyzeFinal(~p, conflict);
 			assigns[var(p)]= sign(p)?l_False:l_True;//this will leave the solver in a bad state.
 		} else {
 			newDecisionLevel();
-			enqueue(p);
+			trail_lim.push(trail.size());
 		}
 	}
 	if (opt_check_solution && theories.size() && !disable_theories && !only_propagate_assumptions) {
