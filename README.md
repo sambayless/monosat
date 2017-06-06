@@ -50,7 +50,7 @@ $monosat -decide-theories -conflict-min-cut input_file.gnf
 
 The `-decide-theories` option will cause the solver to make heuristic decisions that try to satisfy the various SMT predicates, which will often lead to improved performance, but can be pathologically bad in some common cases, and so is disabled by default. `-conflict-min-cut` will cause the solver to use a much slower, but more aggressive, clause learning strategy for reachability predicates; it may be useful for small, dificult instances.
 
-###Source Overview
+### Source Overview
 MonoSAT is written in C++. Core SAT solver functionality is in the `core/` and `simp/` directories; in particular, note `core/Config.cpp`, which is a central listing of all the configuration options available to MonoSAT. 
 
 The graph and finite state machine theory solvers can be found in `graph/` and `fsm/`, the (not currently maintained) geometry theory is in `geom/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library'). 
