@@ -1,0 +1,13 @@
+These instances are derived from the mnist handwriting sample set.
+The original instances (in matlab .mat form) are labelled mnist<N>.mat.
+
+The mnist_bin instances are created by applying a ceil function to the source files, to convert them into two-tone images.
+
+mnist_bin<N>_noise instances are created by applying Gaussian noise to the binary instances.
+Specifically: X = X + randn(size(X))/2;
+
+mnist_bin<N>_noise2 instances have twice as much noise (eg:  X = X + randn(size(X))), and are much harder to denoise.
+
+The mnist_bin instances also come with a set of parameters ('params'), derived using the UGM framework,
+estimating constants appropriate for maxflow based denoising as described at https://www.cs.ubc.ca/~schmidtm/Software/UGM/graphCuts.html
+
