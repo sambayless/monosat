@@ -50,13 +50,12 @@ $monosat -decide-theories -conflict-min-cut input_file.gnf
 
 The `-decide-theories` option will cause the solver to make heuristic decisions that try to satisfy the various SMT predicates, which will often lead to improved performance, but can be pathologically bad in some common cases, and so is disabled by default. `-conflict-min-cut` will cause the solver to use a much slower, but more aggressive, clause learning strategy for reachability predicates; it may be useful for small, dificult instances.
 
-###Source Overview
+MonoSAT implements a generalization of the circuit routing heuristics described in [Routing Under Constraints](#nadelruc16); you can activate them using the '-ruc' command line option. Thse can greatly improve performance on instances that use multiple reachability constraints. See [`examples/python/routing/router.py`][router] for an example usage.
+
+### Source Overview
 MonoSAT is written in C++. Core SAT solver functionality is in the `core/` and `simp/` directories; in particular, note `core/Config.cpp`, which is a central listing of all the configuration options available to MonoSAT. 
 
 The graph and finite state machine theory solvers can be found in `graph/` and `fsm/`, the (not currently maintained) geometry theory is in `geom/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library'). 
-
-MonoSAT includes an implementation of (a generalization of) the circuit routing heuristics described in [Routing Under Constraints](#nadelruc); you can activate them using the '-ruc' command line option. 
-See [`examples/python/routing/router.py`][router] for an example usage.
 
 `dgl/` incldudes C++ implementations of several dynamic graph algorithms (as well as some more common graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested successfully with integers, floats, and GMP arbitrary precision rationals.
 
@@ -106,8 +105,7 @@ MonoSAT was made possible by the use of several open-source projects, including 
 
 
 ### References
-* <a name="nadelruc">[Nadel, Alexander. "Routing under Constraints." Formal Methods in Computer-Aided Design FMCAD (2016)](http://dl.acm.org/citation.cfm?id=3077653)</a>
-
+* <a name="nadelruc16">[Nadel, Alexander. "Routing under Constraints." Formal Methods in Computer-Aided Design FMCAD (2016)](http://dl.acm.org/citation.cfm?id=3077653)</a>
 * <a name="buriol2008speeding">[Buriol, Luciana S., Mauricio GC Resende, and Mikkel Thorup. "Speeding up dynamic shortest-path algorithms." INFORMS Journal on Computing 20.2 (2008): 191-204.](http://dx.doi.org/10.1287/ijoc.1070.0231)</a>
 * <a name="dijkstra1959note">[Dijkstra, Edsger W. "A note on two problems in connexion with graphs." Numerische mathematik 1.1 (1959): 269-271](http://dx.doi.org/10.1007%2FBF01386390)</a>
 * <a name="dinitz">[Dinitz, Y. "Algorithm for solution of a problem of maximum flow in a network with power estimation". Doklady Akademii nauk SSSR 11: 1277–1280  (1970)](http://www.cs.bgu.ac.il/~dinitz/D70.pdf) </a>
