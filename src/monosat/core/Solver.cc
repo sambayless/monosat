@@ -2427,7 +2427,7 @@ lbool Solver::search(int nof_conflicts) {
 
 
 			// NO CONFLICT
-			if ((nof_conflicts >= 0 && conflictC >= nof_conflicts) || !withinBudget()) {
+			if ((opt_restarts &&  (nof_conflicts >= 0 && conflictC >= nof_conflicts)) || !withinBudget()) {
 				// Reached bound on number of conflicts:
 				progress_estimate = progressEstimate();
 				cancelUntil(initial_level);

@@ -40,6 +40,7 @@ extern BoolOption opt_luby_restart;
 extern IntOption opt_restart_first;
 extern DoubleOption opt_restart_inc;
 extern DoubleOption opt_garbage_frac;
+extern BoolOption opt_restarts;
 extern BoolOption opt_rnd_restart;
 extern BoolOption opt_rnd_theory_restart;
 extern StringOption opt_record_file;

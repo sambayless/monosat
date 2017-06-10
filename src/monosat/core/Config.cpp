@@ -59,6 +59,7 @@ IntOption Monosat::opt_ccmin_mode(_cat, "ccmin-mode", "Controls conflict clause 
 IntOption Monosat::opt_phase_saving(_cat, "phase-saving",
                                     "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange(0, 2));
 BoolOption Monosat::opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
+BoolOption Monosat::opt_restarts(_cat, "restarts", "If false, then conflict-based restarts are disabled.", true);
 BoolOption Monosat::opt_luby_restart(_cat, "luby", "Use the Luby restart sequence", true);
 IntOption Monosat::opt_restart_first(_cat, "rfirst", "The base restart interval", 100, IntRange(1, INT32_MAX));
 DoubleOption Monosat::opt_restart_inc(_cat, "rinc", "Restart interval increase factor", 2,
