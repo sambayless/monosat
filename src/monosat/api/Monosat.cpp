@@ -121,7 +121,9 @@ void enableResourceLimits(){
 	if (time_limit < INT32_MAX && time_limit>=0) {
 		assert(cur_time>=0);
 		int64_t local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
-
+		if(opt_verb>1){
+			printf("Limiting cpu time to %ld\n",local_time_limit);
+		}
 		if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
 			rl.rlim_cur = local_time_limit;
 			if (setrlimit(RLIMIT_CPU, &rl) == -1)
@@ -141,7 +143,9 @@ void enableResourceLimits(){
 	// Set limit on virtual memory:
 	if (memory_limit < INT32_MAX && memory_limit>=0) {
 		rlim_t new_mem_lim = (rlim_t) memory_limit * 1024 * 1024; //Is this safe?
-
+		if(opt_verb>1){
+			printf("Limiting virtual memory to %ld\n",new_mem_lim);
+		}
 		if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
 			rl.rlim_cur = new_mem_lim;
 			if (setrlimit(RLIMIT_AS, &rl) == -1)
