@@ -619,7 +619,7 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 	}
 }
 void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics, int minimimum_involved_decision_priority){
-	if(conflicting_heuristics.size()>=max_involved_heuristics)
+	if(max_involved_heuristics>-1 && conflicting_heuristics.size()>=max_involved_heuristics)
 		return;
 
 	int pathC = 0;
@@ -642,7 +642,6 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
 				Lit q = c[j];
 				if (!seen[var(q)] && level(var(q)) > 0) {
 					seen[var(q)] = 1;
-
 					pathC++;
 				}
 			}
@@ -664,7 +663,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
 			Heuristic * h = getHeuristic(confl);
 			if(!conflicting_heuristics.has(h->getHeuristicIndex()) && h->getPriority()>=minimimum_involved_decision_priority) {
 				conflicting_heuristics.insert(h->getHeuristicIndex());
-				if(conflicting_heuristics.size()>=max_involved_heuristics){
+				if(max_involved_heuristics>-1 && conflicting_heuristics.size()>=max_involved_heuristics){
 					for(int i = 0;i<=index+1;i++){
 						seen[var(trail[i])]=false;
 					}
@@ -682,7 +681,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
 			if(t->getHeuristicIndex()>=0){
 				if(!conflicting_heuristics.has(t->getHeuristicIndex()) && t->getPriority()>=minimimum_involved_decision_priority) {
 					conflicting_heuristics.insert(t->getHeuristicIndex());
-					if(conflicting_heuristics.size()>=max_involved_heuristics){
+					if(max_involved_heuristics>-1 && conflicting_heuristics.size()>=max_involved_heuristics){
 						for(int i = 0;i<=index+1;i++){
 							seen[var(trail[i])]=false;
 						}
@@ -699,7 +698,7 @@ void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heu
 		seen[var(p)] = 0;
 		pathC--;
 	} while (pathC > 0);
-	assert(conflicting_heuristics.size()<max_involved_heuristics);
+	assert(max_involved_heuristics<0 || conflicting_heuristics.size()<max_involved_heuristics);
 	if(p!=lit_Undef){
 		confl = reasonOrDecision(var(p));
 		if(confl==CRef_Undef) {
@@ -2040,7 +2039,8 @@ lbool Solver::search(int nof_conflicts) {
 	int backtrack_level;
 	int conflictC = 0;
 	vec<Lit> learnt_clause;
-	long heuristic_swapping_restarts = 0;
+	Heuristic* previous_conflict_heuristic=nullptr;
+	uint64_t heuristic_swapping_restarts = 0;
 	Heuristic * last_decision_heuristic=nullptr;
 	bool decision_heuristic_changed = false;
 	starts++;
@@ -2172,13 +2172,38 @@ lbool Solver::search(int nof_conflicts) {
 
 				int max_involved = opt_theory_order_swapping_max_invovled;
 				assert(max_involved>=2);
+				if(opt_theory_order_swapping_reset_counts_new_conflict){
+					//find all the involved theories
+					analyzeHeuristicDecisions(confl, swapping_involved_theories, -1,
+											  conflicting_heuristic->getPriority());
+					//check to see if the previous conflict theory is involved in the current conflict
+					if(previous_conflict_heuristic!=nullptr && !swapping_involved_theories.contains(previous_conflict_heuristic->getHeuristicIndex())){
+						//this is a new conflict net, that was not previously involved
+						if(heuristic_swapping_restarts>stats_max_swap_count)
+							stats_max_swap_count=heuristic_swapping_restarts;
+
+						heuristic_swapping_restarts=0;//reset the luby series to 0
+						stats_swapping_resets++;
+
+					}
+				}
+				stats_swapping_conflict_count++;
 				if(opt_theory_order_swapping_luby){
 					max_involved *= luby(restart_inc, heuristic_swapping_restarts++);
 				}
 				assert(max_involved>=2);
-				analyzeHeuristicDecisions(confl,swapping_involved_theories, max_involved,conflicting_heuristic->getPriority());
+				if(!opt_theory_order_swapping_reset_counts_new_conflict) {
+					analyzeHeuristicDecisions(confl, swapping_involved_theories, max_involved,
+											  conflicting_heuristic->getPriority());
+				}else{
+					while(swapping_involved_theories.size()>max_involved){
+						swapping_involved_theories.pop();
+					}
+				}
+				previous_conflict_heuristic = conflicting_heuristic;
 				assert(swapping_involved_theories.has(conflicting_heuristic->getHeuristicIndex()));
 				assert(swapping_involved_theories.size()>=1);
+				assert(swapping_involved_theories.size()<=max_involved);
 				multiple_involved_theories = swapping_involved_theories.size()>1;
 				if(swapping_involved_theories.size()>1 || opt_theory_order_swapping_first_on_unit) {
 					order_changed=true;
@@ -2190,6 +2215,22 @@ lbool Solver::search(int nof_conflicts) {
 					//if opt_theory_order_swapping_first_on_unit is set, then on a unit conflict, move the conflict heuristic to the begining (without changing the rest of the decision order).
 					bool unit = (swapping_involved_theories.size()==1 && opt_theory_order_swapping_first_on_unit);
 					int lowest_involved_position = decision_heuristics.size();
+
+					if(opt_theory_order_conflict_skip_middle && swapping_involved_theories.size()>2){
+						//place the conflicting heuristic before the earliest involved heuristic, but leave all the
+						//remaining heuristics in the current order.
+						for (int i = 0; i < decision_heuristics.size(); i++) {
+							Heuristic *t = decision_heuristics[i];
+							if (t!=conflicting_heuristic && swapping_involved_theories.has(t->getHeuristicIndex())) {
+								swapping_involved_theories.clear();
+								swapping_involved_theories.insert(t->getHeuristicIndex());
+								swapping_involved_theories.insert(conflicting_heuristic->getHeuristicIndex());
+								break;
+							}
+						}
+						assert(swapping_involved_theories.size()==2);
+					}
+
 					for (int i = 0; i < decision_heuristics.size(); i++) {
 						Heuristic *t = decision_heuristics[i];
 						if (t == conflicting_heuristic) {
@@ -2253,6 +2294,29 @@ lbool Solver::search(int nof_conflicts) {
 				assert(decision_heuristics.size()==start_size);
 
 			}
+			int conflict_counter_exceeding_count = -1;
+			if(conflicting_heuristic && (opt_theory_order_conflict_on_unit || multiple_involved_theories)) {
+				assert(theory_conflict_counters.size() > conflicting_heuristic->getHeuristicIndex());
+				if (++theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()] >= opt_theory_order_conflict_restart){
+					conflict_counter_exceeding_count=conflicting_heuristic->getHeuristicIndex();
+				}
+				if (opt_theory_order_conflict_count_analysis > 0){
+					counter_involved_theories.clear();
+					analyzeHeuristicDecisions(confl, counter_involved_theories, -1,
+											  conflicting_heuristic->getPriority());
+					assert(swapping_involved_theories.has(conflicting_heuristic->getHeuristicIndex()));
+					assert(swapping_involved_theories.size() >= 1);
+					for (int i:swapping_involved_theories) {
+						if(i!=conflicting_heuristic->getHeuristicIndex()) {
+							auto count = ++theory_conflict_counters[i];
+							if(opt_theory_order_conflict_count_analysis == 2 &&  count >= opt_theory_order_conflict_restart && conflict_counter_exceeding_count<0){
+								conflict_counter_exceeding_count=i;
+							}
+						}
+					}
+
+				}
+			}
 
 			cancelUntil(backtrack_level);
 
@@ -2312,8 +2376,9 @@ lbool Solver::search(int nof_conflicts) {
 
 			if(conflicting_heuristic && (opt_theory_order_conflict_on_unit || multiple_involved_theories)){
 				assert(theory_conflict_counters.size()>conflicting_heuristic->getHeuristicIndex());
-				theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]++;
-				if(opt_theory_order_conflict_restart>0  && (!opt_theory_order_conflict_conservative || decision_heuristics[0]!=conflicting_heuristic) &&  theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()]>=opt_theory_order_conflict_restart){
+
+
+				if(opt_theory_order_conflict_restart>0  && (!opt_theory_order_conflict_conservative || decision_heuristics[0]!=conflicting_heuristic) && conflict_counter_exceeding_count>-1){
 					//restart the solver
 					cancelUntil(0);
 					stats_theory_conflict_counter_restarts++;
@@ -2353,8 +2418,32 @@ lbool Solver::search(int nof_conflicts) {
 						}
 						assert(decision_heuristics[0]==conflicting_heuristic);
 					}
-					for(int i = 0;i<theory_conflict_counters.size();i++){
-						theory_conflict_counters[i]=0;
+					assert(conflict_counter_exceeding_count>=0);
+					if(opt_theory_order_conflict_count_preserve==0) {
+						//erase all conflict counts when on exceeds the max found
+						for (int i = 0; i < theory_conflict_counters.size(); i++) {
+							theory_conflict_counters[i] = 0;
+						}
+					}else if (opt_theory_order_conflict_count_preserve==1){
+						//only reset the counter of the conflict that triggered the reset
+						theory_conflict_counters[conflict_counter_exceeding_count] = 0;
+					}else if (opt_theory_order_conflict_count_preserve==2){
+						//only reset the counters involved in the conflict
+						theory_conflict_counters[conflict_counter_exceeding_count] = 0;
+						for(int i:counter_involved_theories){
+							theory_conflict_counters[i] = 0;
+						}
+					}else if (opt_theory_order_conflict_count_preserve==3){
+						//divide all conflict counter values by 2 on reset
+						for (int i = 0; i < theory_conflict_counters.size(); i++) {
+							theory_conflict_counters[i] >>= 1;
+						}
+					}else if (opt_theory_order_conflict_count_preserve==4){
+						//divide the involved conflict counter values by 2 on reset
+						theory_conflict_counters[conflict_counter_exceeding_count] >>= 1;
+						for(int i:counter_involved_theories){
+							theory_conflict_counters[i] >>= 1;
+						}
 					}
 					for(int i = 0;i<decision_heuristics.size();i++){
 						decision_heuristics[i]->setHeuristicOrder(i);
@@ -2769,6 +2858,9 @@ lbool Solver::solve_() {
 	if(quit_at_restart && override_restart_count>=0){
 		curr_restarts=override_restart_count;
 	}
+
+
+
 	while (status == l_Undef) {
 		double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
 

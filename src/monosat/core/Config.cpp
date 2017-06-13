@@ -216,7 +216,12 @@ BoolOption Monosat::opt_theory_order_swapping_first_on_unit(_cat_theory, "theory
 BoolOption Monosat::opt_theory_order_conflict_clear_on_restart(_cat_theory, "theory-order-conflict-restart-clear","",false);
 BoolOption Monosat::opt_theory_order_conflict_conservative(_cat_theory, "theory-order-conflict-restart-conservative","",true);
 BoolOption Monosat::opt_theory_order_conflict_on_unit(_cat_theory, "theory-order-conflict-on-unit","",true);
+BoolOption Monosat::opt_theory_order_swapping_reset_counts_new_conflict(_cat_theory, "theory-order-swapping-reset-counts-new-conflict","",false);
+BoolOption Monosat::opt_theory_order_conflict_skip_middle(_cat_theory, "theory-order-conflict-skip-middle","",false);
 
+IntOption Monosat::opt_theory_order_conflict_count_preserve(_cat_theory, "theory-order-conflict-count-preserve","", 0, IntRange(0, 4));
+
+IntOption Monosat::opt_theory_order_conflict_count_analysis(_cat_theory, "theory-order-conflict-count-analysis","", 0, IntRange(0, 2));
 BoolOption Monosat::opt_monolothic_theory_decisions(_cat_theory,"theory-combined-decisions","Make heuristic decisions within theories all at once, rather than individually per predicate.",false);
 BoolOption Monosat::opt_theory_order_swapping_prioritize_last_decision(_cat_theory,"theory-order-swapping-last-decision","Prioritize the last decision heuristic when analyzing conflicts", false);
 IntOption Monosat::opt_theory_order_swapping_max_invovled(_cat_theory,"theory-order-swapping-max","Maximum number of heuristics to treat as involved in a heuristic conflict.", 2, IntRange(2, INT32_MAX));

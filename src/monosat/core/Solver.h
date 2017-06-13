@@ -257,6 +257,9 @@ public:
 		if(opt_theory_order_conflict_restart && stats_theory_conflict_counter_restarts>0){
 			printf("conflict counter restarts:     %" PRIu64 "\n",stats_theory_conflict_counter_restarts);
 		}
+		if(opt_theory_order_swapping_reset_counts_new_conflict){
+			printf("swapping counter clears/total, max swapping counter value:     %ld/%ld, %ld\n",stats_max_swap_count,stats_swapping_conflict_count,stats_swapping_resets);
+		}
 		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%ld theory learnts), %" PRId64 " removed)\n", conflicts,
 			   conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
@@ -682,6 +685,9 @@ public:
 	uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 	uint64_t stats_skipped_theory_prop_rounds=0;
 	uint64_t stats_theory_conflict_counter_restarts=0;
+	uint64_t stats_max_swap_count = 0;
+	uint64_t stats_swapping_resets = 0;
+	uint64_t stats_swapping_conflict_count =0;
 	uint64_t stats_theory_conflicts =0;
 	double stats_theory_prop_time =0;
 	double stats_theory_conflict_time=0;
@@ -1047,6 +1053,7 @@ public:
 
 private:
 	IntSet<int> swapping_involved_theories;
+	IntSet<int> counter_involved_theories;
 	vec<Heuristic*> swapping_uninvolved_pre_theories;
 	vec<Heuristic*> swapping_uninvolved_post_theories;
 	vec<Heuristic*> swapping_involved_theory_order;

@@ -119,9 +119,13 @@ extern BoolOption opt_theory_order_conflict_on_unit;
 extern IntOption opt_theory_order_conflict_restart;
 extern BoolOption opt_theory_order_conflict_sort_counter;
 extern IntOption opt_theory_order_swapping_max_invovled;
+extern BoolOption opt_theory_order_swapping_reset_counts_new_conflict;
 extern BoolOption opt_theory_order_swapping_luby;
+extern IntOption opt_theory_order_conflict_count_preserve;
+extern IntOption opt_theory_order_conflict_count_analysis;
 extern BoolOption opt_theory_order_swapping_prioritize_last_decision;
 extern BoolOption opt_decide_theories_only_prop_decision;
+extern BoolOption opt_theory_order_conflict_skip_middle;
 
 extern BoolOption opt_monolothic_theory_decisions;
 extern BoolOption opt_vsids_both;
