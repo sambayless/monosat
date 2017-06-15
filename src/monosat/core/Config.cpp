@@ -230,6 +230,8 @@ BoolOption Monosat::opt_theory_internal_vsids(_cat_graph, "theory-internal-vsids
 BoolOption Monosat::opt_theory_internal_vsids_fsm(_cat_fsm, "theory-internal-vsids-fsm", "Use vsids decision heuristic within fsm theory solvers",true);
 BoolOption Monosat::opt_theory_prioritize_conflicts(_cat_graph, "theory-prioritize-conflicts", "",false);
 BoolOption Monosat::opt_theory_priority_clear(_cat_graph, "theory-prioritize-clear", "",false);
+BoolOption Monosat::opt_theory_order_conflict_luby(_cat_theory,"theory-order-conflict-luby","Use Luby series to set the maximum number of conflicts in any one heuristic before performing a restart.", false);
+
 
 BoolOption Monosat::opt_check_solution(_cat_graph, "check-solution", "Double check solution", true);
 BoolOption Monosat::opt_print_reach(_cat_graph, "print-reach", "Print reachability graphs", false);

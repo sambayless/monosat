@@ -2040,7 +2040,7 @@ lbool Solver::search(int nof_conflicts) {
 	int conflictC = 0;
 	vec<Lit> learnt_clause;
 	Heuristic* previous_conflict_heuristic=nullptr;
-	uint64_t heuristic_swapping_restarts = 0;
+
 	Heuristic * last_decision_heuristic=nullptr;
 	bool decision_heuristic_changed = false;
 	starts++;
@@ -2296,10 +2296,16 @@ lbool Solver::search(int nof_conflicts) {
 			}
 			int conflict_counter_exceeding_count = -1;
 			if(conflicting_heuristic && (opt_theory_order_conflict_on_unit || multiple_involved_theories)) {
+				int64_t conflict_restart_limit = opt_theory_order_conflict_restart;
+				if(opt_theory_order_conflict_luby){
+					conflict_restart_limit *= luby(restart_inc, heuristic_conflict_restarts);
+				}
+				//if multiple theories exceed the conflict count limit, favor the conflicting heuristic
 				assert(theory_conflict_counters.size() > conflicting_heuristic->getHeuristicIndex());
-				if (++theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()] >= opt_theory_order_conflict_restart){
+				if (++theory_conflict_counters[conflicting_heuristic->getHeuristicIndex()] >= conflict_restart_limit){
 					conflict_counter_exceeding_count=conflicting_heuristic->getHeuristicIndex();
 				}
+
 				if (opt_theory_order_conflict_count_analysis > 0){
 					counter_involved_theories.clear();
 					analyzeHeuristicDecisions(confl, counter_involved_theories, -1,
@@ -2309,7 +2315,7 @@ lbool Solver::search(int nof_conflicts) {
 					for (int i:swapping_involved_theories) {
 						if(i!=conflicting_heuristic->getHeuristicIndex()) {
 							auto count = ++theory_conflict_counters[i];
-							if(opt_theory_order_conflict_count_analysis == 2 &&  count >= opt_theory_order_conflict_restart && conflict_counter_exceeding_count<0){
+							if(opt_theory_order_conflict_count_analysis == 2 &&  count >= conflict_restart_limit && conflict_counter_exceeding_count<0){
 								conflict_counter_exceeding_count=i;
 							}
 						}
@@ -2380,6 +2386,7 @@ lbool Solver::search(int nof_conflicts) {
 
 				if(opt_theory_order_conflict_restart>0  && (!opt_theory_order_conflict_conservative || decision_heuristics[0]!=conflicting_heuristic) && conflict_counter_exceeding_count>-1){
 					//restart the solver
+					heuristic_conflict_restarts++;
 					cancelUntil(0);
 					stats_theory_conflict_counter_restarts++;
 					if(opt_theory_order_conflict_sort_counter){

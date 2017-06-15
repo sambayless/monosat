@@ -121,6 +121,7 @@ extern BoolOption opt_theory_order_conflict_sort_counter;
 extern IntOption opt_theory_order_swapping_max_invovled;
 extern BoolOption opt_theory_order_swapping_reset_counts_new_conflict;
 extern BoolOption opt_theory_order_swapping_luby;
+extern BoolOption opt_theory_order_conflict_luby;
 extern IntOption opt_theory_order_conflict_count_preserve;
 extern IntOption opt_theory_order_conflict_count_analysis;
 extern BoolOption opt_theory_order_swapping_prioritize_last_decision;

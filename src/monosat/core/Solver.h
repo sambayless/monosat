@@ -1054,6 +1054,8 @@ public:
 private:
 	IntSet<int> swapping_involved_theories;
 	IntSet<int> counter_involved_theories;
+	uint64_t heuristic_swapping_restarts = 0;
+	uint64_t heuristic_conflict_restarts = 0;
 	vec<Heuristic*> swapping_uninvolved_pre_theories;
 	vec<Heuristic*> swapping_uninvolved_post_theories;
 	vec<Heuristic*> swapping_involved_theory_order;
