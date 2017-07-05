@@ -1782,6 +1782,28 @@ bool ReachDetector<Weight>::checkSatisfied() {
 
 	return true;
 }
+
+template<typename Weight>
+bool ReachDetector<Weight>::isConnected(int node, bool overapprox){
+	if(overapprox){
+		assert(overapprox_reach_detector);
+		return overapprox_reach_detector->connected(node);
+	}else{
+		assert(underapprox_fast_detector);
+		return underapprox_fast_detector->connected(node);
+	}
+}
+
+template<typename Weight>
+bool ReachDetector<Weight>::isConnected(Lit reachLit, bool overapprox){
+	if(var(reachLit)>=first_reach_var && var(reachLit)<reach_lit_map.size()) {
+		int node = reach_lit_map[var(reachLit) - first_reach_var];
+		return isConnected(node,overapprox);
+	}else{
+		return false;
+	}
+}
+
 template<typename Weight>
 void ReachDetector<Weight>::dbg_sync_reachability() {
 #ifdef DEBUG_GRAPH

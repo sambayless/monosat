@@ -1112,7 +1112,15 @@ class Monosat(metaclass=Singleton):
             self._echoOutput(edgestr + " ".join((str(dimacs(c)) for c in edges))+"\n")
         lp = self.getIntArray(edges)
         self.monosat_c.newEdgeSet(self.solver._ptr,graph,lp,len(edges), c_bool(enforceEdgeAssignments))
-    
+
+    def enforceRouting(self,graph,source,destination,nets,maxflowlit):
+        r_ptr = self.monosat_c.createFlowRouting(self.solver._ptr,graph,c_int(source),c_int(destination),maxflowlit)
+        for dest_edge_lits,net_reach_lits,disabled_edge_lit in nets:
+            lp = self.getIntArray(dest_edge_lits)
+            lp2 = self.getIntArray2(net_reach_litsZ)
+            self.monosat_c.addRoutingNet(self.solver._ptr,graph,r_ptr,disabled_edge_lit, len(dest_edge_lits),lp,lp2)
+
+
     def reaches(self, graph, u,v):
         self.backtrack()
         l= self.monosat_c.reaches(self.solver._ptr,graph,c_int(u),c_int(v))

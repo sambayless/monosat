@@ -35,6 +35,7 @@
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
+#include "monosat/routing/FlowRouter.h"
 #include "monosat/Version.h"
 #include <csignal>
 #include <set>
@@ -1460,6 +1461,27 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 		}
 	}
 }
+
+//flow routing interface
+
+Monosat::FlowRouter<int64_t> * createFlowRouting(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int sourceNode,int destNode,int maxflowLit){
+    FlowRouter<int64_t>  * r = new FlowRouter<int64_t>(S,G,sourceNode,destNode,toLit(maxflowLit));
+
+    return r;
+}
+
+void addRoutingNet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, Monosat::FlowRouter<int64_t> * router, int disabledEdge, int n_members, int * edge_lits, int * reach_lits){
+    vec<Lit> dest_edge_lits;
+	vec<Lit> net_reach_lits;
+    for(int i = 0;i<n_members;i++){
+		dest_edge_lits.push(toLit(edge_lits[i]));
+		net_reach_lits.push(toLit(reach_lits[i]));
+    }
+    router->addNet(toLit(disabledEdge),dest_edge_lits,net_reach_lits);
+}
+
+
+
 //FSM Interface
 
 Monosat::FSMTheorySolver * initFSMTheory(Monosat::SimpSolver * S){

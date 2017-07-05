@@ -86,7 +86,14 @@ class Graph():
         
         self.edgemap=dict()
         self.acyclic_querries=[]
-        
+
+
+    def enforceRouting(self,source,destination,nets,maxflowlit):
+        netlits = []
+        for edge_lits, disabled_edge in nets:
+            netlits.append(([x.getLit() for x in edge_lits],disabled_edge.getLit()))
+        self._monosat.enforceRouting(self.graph,source,destination,netlits,maxflowlit.getLit())
+
     def writeDot(self,out=sys.stdout, writeModel=True):
         print("digraph{",file=out)
         for n in range(self.nodes):

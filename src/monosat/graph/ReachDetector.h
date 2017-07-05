@@ -398,7 +398,8 @@ public:
 		return true;
 	}
 
-
+	bool isConnected(int node, bool overapprox);
+	bool isConnected(Lit reachLit, bool overapprox);
 	//Return the path (in terms of nodes)
 	bool getModel_Path(int node, std::vector<int> & store_path);
 	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);

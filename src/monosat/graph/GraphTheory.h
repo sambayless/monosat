@@ -1327,6 +1327,7 @@ public:
 
 #endif
 	}
+
 	void backtrackAssign(Lit l){
 		stats_backtrack_assigns++;
 		assert(l!=lit_Undef);
