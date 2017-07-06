@@ -248,7 +248,7 @@ set(SOURCE_FILES
         src/monosat/graph/GraphHeuristic.h
         src/monosat/dgl/CachedReach.h
         src/monosat/routing/FlowRouter.h
-        src/monosat/routing/FlowRouter.cpp
+        src/monosat/routing/FlowRouterParser.h
         )
 
 set(SOURCE_FILES_PB

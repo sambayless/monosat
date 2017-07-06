@@ -90,8 +90,9 @@ class Graph():
 
     def enforceRouting(self,source,destination,nets,maxflowlit):
         netlits = []
-        for edge_lits, disabled_edge in nets:
-            netlits.append(([x.getLit() for x in edge_lits],disabled_edge.getLit()))
+
+        for edge_lits,reach_lits, disabled_edge in nets:
+            netlits.append(([x.getLit() for x in edge_lits],[x.getLit() for x in reach_lits],disabled_edge.getLit()))
         self._monosat.enforceRouting(self.graph,source,destination,netlits,maxflowlit.getLit())
 
     def writeDot(self,out=sys.stdout, writeModel=True):

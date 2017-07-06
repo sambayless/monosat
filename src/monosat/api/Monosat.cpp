@@ -1466,17 +1466,20 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 
 Monosat::FlowRouter<int64_t> * createFlowRouting(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int sourceNode,int destNode,int maxflowLit){
     FlowRouter<int64_t>  * r = new FlowRouter<int64_t>(S,G,sourceNode,destNode,toLit(maxflowLit));
-
+    write_out(S,"f_router %d %d %d %d %d\n", G->getGraphID(),  r->getRouterID(), sourceNode, destNode, dimacs(toLit(maxflowLit)));
     return r;
 }
 
 void addRoutingNet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, Monosat::FlowRouter<int64_t> * router, int disabledEdge, int n_members, int * edge_lits, int * reach_lits){
     vec<Lit> dest_edge_lits;
 	vec<Lit> net_reach_lits;
+    write_out(S,"f_router_net %d %d %d %d", G->getGraphID(), router->getRouterID(), dimacs(toLit(disabledEdge)), n_members);
     for(int i = 0;i<n_members;i++){
 		dest_edge_lits.push(toLit(edge_lits[i]));
 		net_reach_lits.push(toLit(reach_lits[i]));
+        write_out(S," %d %d",dimacs(toLit(edge_lits[i])),dimacs(toLit(reach_lits[i])));
     }
+    write_out(S,"\n");
     router->addNet(toLit(disabledEdge),dest_edge_lits,net_reach_lits);
 }
 

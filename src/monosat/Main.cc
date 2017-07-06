@@ -34,6 +34,7 @@
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/utils/Options.h"
 #include "monosat/graph/GraphParser.h"
+#include "monosat/routing/FlowRouterParser.h"
 #include "monosat/fsm/FSMParser.h"
 #include "monosat/core/Dimacs.h"
 #include "monosat/core/AssumptionParser.h"
@@ -614,6 +615,9 @@ int main(int argc, char** argv) {
 
 		GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
 		parser.addParser(&graphParser);
+
+		FlowRouterParser<char *, SimpSolver> flowRouterParser(&graphParser);
+		parser.addParser(&flowRouterParser);
 
 		PBParser<char *, SimpSolver> pbParser(S);
 		parser.addParser(&pbParser);

@@ -1117,7 +1117,7 @@ class Monosat(metaclass=Singleton):
         r_ptr = self.monosat_c.createFlowRouting(self.solver._ptr,graph,c_int(source),c_int(destination),maxflowlit)
         for dest_edge_lits,net_reach_lits,disabled_edge_lit in nets:
             lp = self.getIntArray(dest_edge_lits)
-            lp2 = self.getIntArray2(net_reach_litsZ)
+            lp2 = self.getIntArray2(net_reach_lits)
             self.monosat_c.addRoutingNet(self.solver._ptr,graph,r_ptr,disabled_edge_lit, len(dest_edge_lits),lp,lp2)
 
 
