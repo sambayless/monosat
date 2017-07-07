@@ -359,7 +359,9 @@ public:
 		assert(hasTheory(v));
 		return (Var) theory_vars[v].theory_var;
 	}
-
+    vec<Theory*> & getTheories(){
+        return theories;
+    }
 	//Translate a literal into its corresponding theory literal (if it has a theory literal)
 	Lit getTheoryLit(Lit l) {
 		assert(hasTheory(l));
@@ -938,6 +940,7 @@ public:
 	bool theoriesEnabled()const{
 		return !disable_theories;
 	}
+   // void unsafeUnassign(Lit p);
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
 	inline void needsPropagation(int theoryID){
 		if(theories[theoryID]->unskipable()){

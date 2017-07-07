@@ -1796,10 +1796,11 @@ bool ReachDetector<Weight>::isConnected(int node, bool overapprox){
 
 template<typename Weight>
 bool ReachDetector<Weight>::isConnected(Lit reachLit, bool overapprox){
-	if(var(reachLit)>=first_reach_var && var(reachLit)<reach_lit_map.size()) {
+	if(var(reachLit)>=first_reach_var && var(reachLit) - first_reach_var<reach_lit_map.size()) {
 		int node = reach_lit_map[var(reachLit) - first_reach_var];
 		return isConnected(node,overapprox);
 	}else{
+        assert(false);
 		return false;
 	}
 }
