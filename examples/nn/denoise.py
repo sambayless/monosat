@@ -155,7 +155,7 @@ dflow=disc(flow)
 
 print("Flow: " + str(flow))
 print("Relax: " + str(relax))
-print("RelaxPercent: " + str(relax/flow))
+print("RelaxProportion: " + str(relax/flow))
 print("Relax: " + str(relax) + ", precision: " + str(precision) + ", params " + str(params))
 
 assigns = dict()

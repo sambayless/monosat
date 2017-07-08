@@ -88,8 +88,8 @@ def minimize(bitvector_or_literals,weights=None):
     if isinstance(weights,int):
         weights = [weights]
 
-    if isinstance(bitvector_or_literals,int):
-        Monosat().minimizeBV(bitvector_or_literals)
+    if isinstance(bitvector_or_literals,BitVector):
+        Monosat().minimizeBV(bitvector_or_literals.getID())
     else:
         lit_ints = [l.getLit() for l in bitvector_or_literals]
         if weights is None:
