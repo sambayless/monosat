@@ -1447,26 +1447,6 @@ CRef Solver::propagate(bool propagate_theories) {
 
         while(qhead == trail.size() && confl==CRef_Undef && ((propagate_theories && theory_queue.size()) || unskippable_theory_q.size() )) {
 
-            while (propagate_theories && theory_queue.size() && (qhead == trail.size())
-			   && confl == CRef_Undef) {
-			int theoryID = theory_queue.last();
-                if (!propagateTheorySolver(theoryID, confl, theory_conflict)) {
-					return confl;
-			}else{
-				//only remove theory from propagation queue if it does not conflict
-				//there is a complication here, which is that in certain cases a new theory id may have been pushed into the queue
-				//during theory propagation.
-				assert(in_theory_queue[theoryID]);
-
-				if (theory_queue.last() == theoryID) {
-					theory_queue.pop();
-				} else {
-					theory_queue.remove(theoryID);
-				}
-				assert(!theory_queue.contains(theoryID));
-				in_theory_queue[theoryID] = false;
-			}
-            }
             while (unskippable_theory_q.size() && (qhead == trail.size()) && confl == CRef_Undef) {
                 int theoryID = unskippable_theory_q.last();
                 if (!propagateTheorySolver(theoryID, confl, theory_conflict)) {
@@ -1485,6 +1465,26 @@ CRef Solver::propagate(bool propagate_theories) {
                     assert(!unskippable_theory_q.contains(theoryID));
                 }
             }
+			while (propagate_theories && theory_queue.size() && (qhead == trail.size())
+				   && confl == CRef_Undef) {
+				int theoryID = theory_queue.last();
+				if (!propagateTheorySolver(theoryID, confl, theory_conflict)) {
+					return confl;
+				}else{
+					//only remove theory from propagation queue if it does not conflict
+					//there is a complication here, which is that in certain cases a new theory id may have been pushed into the queue
+					//during theory propagation.
+					assert(in_theory_queue[theoryID]);
+
+					if (theory_queue.last() == theoryID) {
+						theory_queue.pop();
+					} else {
+						theory_queue.remove(theoryID);
+					}
+					assert(!theory_queue.contains(theoryID));
+					in_theory_queue[theoryID] = false;
+				}
+			}
 		}
 
 		//solve theories if this solver is completely assigned
@@ -2124,7 +2124,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  16662) {//3150 //3144
+		if (++iter ==  21) {//3150 //3144
 			int a = 1;
 		}
 		propagate:

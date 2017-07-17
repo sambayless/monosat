@@ -295,7 +295,7 @@ public:
 	 return reach_lits[node];
 
 	 }*/
-
+	void attachSubHeuristic(Heuristic * h, int to);
 	void buildSATConstraints(bool onlyUnderApprox = false, int within_steps = -1);
 	bool propagate(vec<Lit> & conflict);
 	void buildReachReason(int node, vec<Lit> & conflict);
@@ -397,7 +397,7 @@ public:
 #endif
 		return true;
 	}
-
+	int getReachNode(Lit reachLit);
 	bool isConnected(int node, bool overapprox);
 	bool isConnected(Lit reachLit, bool overapprox);
 	//Return the path (in terms of nodes)

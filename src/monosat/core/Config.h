@@ -178,7 +178,7 @@ extern IntOption opt_temporary_theory_reasons;
 extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
-
+extern IntOption opt_flow_router_heuristic;
 
 extern BoolOption opt_decide_fsm_neg;
 extern BoolOption opt_decide_fsm_pos;

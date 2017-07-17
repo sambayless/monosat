@@ -159,6 +159,9 @@ public:
 	vec<bool> seen;
 	vec<bool> seen_path;
 
+    struct FlowListener{
+        virtual void edgeFlowChange(int edgeID, const Weight & flow)=0;
+    } * flowListener=nullptr;
 
 	void backtrack(int level) {
 		to_decide.clear();
@@ -204,6 +207,10 @@ public:
 	bool supportsEdgeDecisions(){
 		return true;
 	}
+    void attachFlowListener(FlowListener * l){
+        assert(!flowListener);
+        flowListener = l;
+    }
 	void suggestDecision(Lit l);
 	void printStats() {
 		Detector::printStats();

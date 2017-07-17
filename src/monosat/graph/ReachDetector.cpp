@@ -1793,6 +1793,16 @@ bool ReachDetector<Weight>::isConnected(int node, bool overapprox){
 		return underapprox_fast_detector->connected(node);
 	}
 }
+template<typename Weight>
+int ReachDetector<Weight>::getReachNode(Lit reachLit) {
+	if(var(reachLit)>=first_reach_var && var(reachLit) - first_reach_var<reach_lit_map.size()) {
+		int node = reach_lit_map[var(reachLit) - first_reach_var];
+		return node;
+	}else{
+		assert(false);
+		return false;
+	}
+}
 
 template<typename Weight>
 bool ReachDetector<Weight>::isConnected(Lit reachLit, bool overapprox){
@@ -1895,6 +1905,11 @@ bool ReachDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & 
 	assert(u==this->source);
 	std::reverse(store_path.begin(),store_path.end());
 	return true;
+}
+template<typename Weight>
+void ReachDetector<Weight>::attachSubHeuristic(Heuristic * h, int to){
+	assert( reach_heuristics[to]);
+	((ReachHeuristic<Weight>*) reach_heuristics[to])->setSubHeuristic(h);
 }
 
 template class Monosat::ReachDetector<int> ;

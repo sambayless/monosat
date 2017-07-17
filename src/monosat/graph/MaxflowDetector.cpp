@@ -1382,6 +1382,9 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
         if(opt_theory_internal_vsids){
             insertEdgeOrder(edgeid);
         }
+        if(flowListener){
+            flowListener->edgeFlowChange(edgeid, overapprox_conflict_detector->getEdgeFlow(edgeid));
+        }
         if(opt_decide_theories){
             //if (!is_potential_decision[edgeid]) {
             Lit l = mkLit(outer->getEdgeVar(edgeid), false);
