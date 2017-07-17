@@ -405,8 +405,12 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.getModel_Path_EdgeLits_Length.restype=c_int    
 
         self.monosat_c.getModel_Path_EdgeLits.argtypes=[c_solver_p,c_graph_p, c_literal, c_int, c_int_p]
-        self.monosat_c.getModel_Path_EdgeLits.restype=c_int 
+        self.monosat_c.getModel_Path_EdgeLits.restype=c_int
 
+        self.monosat_c.createFlowRouting.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_literal]
+        self.monosat_c.createFlowRouting.restype=c_void_p
+
+        self.monosat_c.addRoutingNet.argtypes=[c_solver_p,c_graph_p,c_void_p, c_literal,c_int, c_literal_p, c_literal_p]
 
         self.newSolver()
         #For many (but not all) instances, the following settings may give good performance: 
