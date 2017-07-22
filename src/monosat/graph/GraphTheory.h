@@ -609,7 +609,7 @@ public:
 
 	int theory_index = 0;
 public:
-	
+	bool assign_edges_to_zero = false;
 	double mctime = 0;
 	double reachtime = 0;
 	double unreachtime = 0;
@@ -740,6 +740,16 @@ public:
 		}
 		return const_true;
 	}
+
+    void setAssignEdgesToZeroWeight(bool assign_zero){
+        if (!opt_ignore_zero_edge_weights) {
+            assign_edges_to_zero = assign_zero;
+        }
+    }
+
+    bool assignEdgesToZeroWeight(){
+        return assign_edges_to_zero;
+    }
 
 	void printStats(int detailLevel) {
 
@@ -1343,7 +1353,9 @@ public:
 
 				if (assign==l_True) {
 					g_under.disableEdge(edge_num);
-
+                    if(assignEdgesToZeroWeight()){
+                        g_over.setEdgeWeight(edge_num, g_under.getEdgeWeight(edge_num));
+                    }
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
 				} else {
 					g_over.enableEdge(edge_num);
@@ -2154,6 +2166,9 @@ public:
 			int to = edge_list[edge_num].to;
 			if (!sign(l)) {
 				g_under.enableEdge(edge_num);
+                if (assignEdgesToZeroWeight()){
+                    g_over.setEdgeWeight(edge_num,0);
+                }
 			} else {
 				g_over.disableEdge( edge_num);
 				if (opt_conflict_min_cut) {//can optimize this by also checking if any installed detectors are actually using the cutgraph!

@@ -152,6 +152,8 @@ class GraphParser: public Parser<B, Solver> {
 	};
 	vec<ParseEdgeSet> edge_sets;
 
+
+
 public:
 	GraphTheorySolver<int64_t>* getGraphTheory(int graphID){
 		assert(graphID>=0);
@@ -1045,8 +1047,22 @@ public:
 		if (*in == EOF)
 			return false;
 		else if (*in == 'c') {
-			//just a comment
-			return false;
+            //just a comment
+            return false;
+        }else if (match(in,"graph_assign_edges_to_zero")){
+            skipWhitespace(in);
+            int graphID = parseInt(in);
+            skipWhitespace(in);
+            if(graphID<graphs.size() && graphs[graphID]){
+                graphs[graphID]->setAssignEdgesToZeroWeight(true);
+            }else if(graphID<graphs_float.size() && graphs_float[graphID]){
+                graphs_float[graphID]->setAssignEdgesToZeroWeight(true);
+            }else if(graphID<graphs_rational.size() && graphs_rational[graphID]){
+                graphs_rational[graphID]->setAssignEdgesToZeroWeight(true);
+            }else {
+                parse_errorf("Unknown graph ID for edge zero heuristic: %d",graphID);
+            }
+            return true;
 		} else if (match(in, "digraph")) {
 			skipWhitespace(in);
 			if (match(in, "int")) {

@@ -138,9 +138,18 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		overapprox_reach_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
-																									   *(negativeReachStatus), -1, false);
-
+		if (outer->assignEdgesToZeroWeight()){
+			//need to use weighted over approx detector to take advantage of the assignEdgesToZeroWeight heuristic
+			overapprox_reach_detector = new  RamalReps<Weight, ReachDetector<Weight>::ReachStatus>(from,
+																											_antig,
+																											*(negativeReachStatus),
+																											-1, false);
+		}else {
+			overapprox_reach_detector = new UnweightedRamalReps<Weight, ReachDetector<Weight>::ReachStatus>(from,
+																											_antig,
+																											*(negativeReachStatus),
+																											-1, false);
+		}
 		overapprox_path_detector=overapprox_reach_detector;
 		//RamalReps now supports finding paths
 		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
@@ -165,8 +174,13 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 																										  *positiveReachStatus, 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
-		overapprox_reach_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
+		if (outer->assignEdgesToZeroWeight()){
+			overapprox_reach_detector = new Dijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 																									  *negativeReachStatus, -1);
+		}else{
+			overapprox_reach_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
+																										  *negativeReachStatus, -1);
+		}
 		underapprox_path_detector = underapprox_detector;
 		overapprox_path_detector = overapprox_reach_detector;
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;

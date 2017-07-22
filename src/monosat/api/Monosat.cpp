@@ -1462,6 +1462,11 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 	}
 }
 
+void graph_setAssignEdgesToZeroWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
+    write_out(S,"graph_assign_edges_to_zero %d\n", G->getGraphID());
+    G->setAssignEdgesToZeroWeight(true);
+}
+
 //flow routing interface
 
 Monosat::FlowRouter<int64_t> * createFlowRouting(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int sourceNode,int destNode,int maxflowLit){

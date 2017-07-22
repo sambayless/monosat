@@ -412,6 +412,10 @@ class Monosat(metaclass=Singleton):
 
         self.monosat_c.addRoutingNet.argtypes=[c_solver_p,c_graph_p,c_void_p, c_literal,c_int, c_literal_p, c_literal_p]
 
+        self.monosat_c.graph_setAssignEdgesToZeroWeight.argtypes=[c_solver_p,c_graph_p]
+
+
+
         self.newSolver()
         #For many (but not all) instances, the following settings may give good performance: 
         #self.init("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
@@ -1116,6 +1120,11 @@ class Monosat(metaclass=Singleton):
             self._echoOutput(edgestr + " ".join((str(dimacs(c)) for c in edges))+"\n")
         lp = self.getIntArray(edges)
         self.monosat_c.newEdgeSet(self.solver._ptr,graph,lp,len(edges), c_bool(enforceEdgeAssignments))
+
+
+    def assignWeightsToZero(self,graph):
+        self.monosat_c.graph_setAssignEdgesToZeroWeight(self.solver._ptr,graph)
+
 
     def enforceRouting(self,graph,source,destination,nets,maxflowlit):
         r_ptr = self.monosat_c.createFlowRouting(self.solver._ptr,graph,c_int(source),c_int(destination),maxflowlit)
