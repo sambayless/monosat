@@ -488,6 +488,7 @@ public:
 	}
 
 	void setSubHeuristic(Heuristic* h){
+		assert(!sub_heuristic);
 		sub_heuristic=h;
 	}
 
@@ -931,7 +932,8 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 			Lit r = cnf_reach_lits[to];
 			//force equality between the new lit and the old reach lit, in the SAT solver
 			outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
-			return;
+			if(!overapprox_reach_detector)
+				return;
 		}
 
 	}
@@ -1908,7 +1910,7 @@ bool ReachDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & 
 }
 template<typename Weight>
 void ReachDetector<Weight>::attachSubHeuristic(Heuristic * h, int to){
-	assert( reach_heuristics[to]);
+	assert(to<reach_heuristics.size() && to>=0 && reach_heuristics[to]);
 	((ReachHeuristic<Weight>*) reach_heuristics[to])->setSubHeuristic(h);
 }
 

@@ -619,11 +619,11 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
             Lit l = net.reach_lits[i];
             if(S->value(l)==l_True) {
                 Lit edge_lit = net.dest_edgelits[i];
-                //find an endpoint that is not yet connected in the under approx graph
-                if (!r->isConnected(S->getTheoryLit(l),false) && unrouted==lit_Undef){
+                //find an endpoint that is not yet connected in the under approx graph, or arbitrarily use the last one if all of them are connected
+                if ((i==net.dest_edgelits.size()-1)  || ( !r->isConnected(S->getTheoryLit(l),false) && unrouted==lit_Undef)){
                 	unrouted = edge_lit;
 					unrouted_n = i;
-
+                    //assert(S->value(net.disconnectedEdgeLit)!=l_True);
                     if(S->value(edge_lit)==l_Undef){
 						enabled_routing_lits.push(edge_lit);
                         if(!has_level_decision){
@@ -646,6 +646,8 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
                 }
             }
         }
+        assert(unrouted!=lit_Undef);
+        /*
         if(unrouted==lit_Undef){
             //connect source to dest directly
             //g.enableEdge(net.disconnectedEdge);
@@ -656,9 +658,11 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
                 }
         		S->enqueue((net.disconnectedEdgeLit),CRef_Undef);
         		enabled_routing_lits.push(net.disconnectedEdgeLit);
-        	}
+        	}else{
+                assert(S->value(net.disconnectedEdgeLit)==l_True);
+            }
             //routing_edges.push(net.disconnectedEdgeLit);
-        }else{
+        }*//*else{
             //connect unrouted to dest
             //int edge_ID = net.dest_edges[unrouted_n];
             //g.enableEdge(edgeID);
@@ -671,8 +675,10 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
                 }
         		S->enqueue(~(net.disconnectedEdgeLit),CRef_Undef);
         		disabled_routing_lits.push(~net.disconnectedEdgeLit);
-        	}
-        }
+        	}else{
+                assert(S->value(net.disconnectedEdgeLit)==l_True);
+            }
+        }*/
     }
     inner_conflict.clear();
     conflict.clear();
@@ -731,6 +737,8 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
             //g_theory->backtrackAssign(S->getTheoryLit(l));
             assert(S->value(l) == l_Undef);
         }
+    }else{
+        int a =1;
     }
     return true;
 
