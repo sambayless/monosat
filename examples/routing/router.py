@@ -24,11 +24,17 @@ import pcrt
 import itertools
 
 #There are many ways to perform circuit routing using MonoSAT.
-#The approach uses just one graph, and uses a combination of MonoSAT's built-in reachability constraints to ensure
+#This approach uses just one graph, and uses a conjunction of MonoSAT's built-in reachability constraints to ensure
 #nets are routed, while using propositional constraints over the edges in the graph to prevent nets from intersecting.
 #This function also supports a slightly more complex router, which combines reachability and maximum flow constraints.
 #The maximum flow constraint is not powerful enough to ensure correct routing, but is a (safe) overapproximative
 #constraint, that allows the solver to prune large parts of the search space early.
+#
+#The variation described here supports only 2-terminal routing; use router_multi.py for multi-terminal routing.
+#Finally, for the special case of Escape Routing (in which the destinations are interchangeable), see
+#
+#Bayless, Sam, Holger H. Hoos, and Alan J. Hu. "Scalable, high-quality, SAT-based multi-layer escape routing."
+#Computer-Aided Design (ICCAD), 2016 IEEE/ACM International Conference on. IEEE, 2016.
 def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
     (width, height),diagonals,nets,constraints,disabled = pcrt.read(filename)
     print(filename)
@@ -40,8 +46,8 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
 
     for net in nets:
         if(len(net)!=2):
-            raise Exception("Router currently only supports routing nets with exactly 2 vertices; found " + str(net))
-        #monosat can support nets with arbitrary numbers of vertices per net, but this encoding does not.
+            raise Exception("router.py  only supports routing nets with exactly 2 vertices. Use router_multi.py for routing nets with 2+ vertices.")
+
 
     if(len(monosat_args)>0):
         args = " ".join(monosat_args)
@@ -63,7 +69,7 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
 
     disabled_nodes = set(disabled)
     undirected_edges = dict()
-    #create undirected edges between neighbouring nodes
+
     if draw_solution:
         #the dicts here are only used to print the solution at the end. Disable for benchmarking.
         lefts = dict()
@@ -88,6 +94,8 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
         for (x,y) in net:
             net_nodes.add((x,y))
 
+
+    #create undirected edges between neighbouring nodes
     def makeEdge(n,r):
         e = None
         if n not in disabled_nodes and r not in disabled_nodes:
@@ -310,15 +318,16 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
                     if not drew_diag:
                         print(" ", end="")
                 print()
+        print("s SATISFIABLE")
         sys.exit(10)
     else:
-        print("UNSAT")
+        print("s UNSATISFIABLE")
         sys.exit(20)
 
 
 if __name__ == '__main__':
     import sys
-    monosat_args = ['-ruc'] #default argument for MonoSAT
+    monosat_args = ['-ruc'] #default argument for MonoSAT; enables the heuristics described in "Routing Under Constraints", FMCAD 2016, A. Nadel
     if len(sys.argv)<2:
         print("Usage: router.py [monosat arguments] filename.pcrt")
         sys.exit(1)
