@@ -315,9 +315,10 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
                     if not drew_diag:
                         print(" ", end="")
                 print()
+        print("s SATISFIABLE")
         sys.exit(10)
     else:
-        print("UNSAT")
+        print("s UNSATISFIABLE")
         sys.exit(20)
 
 

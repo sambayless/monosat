@@ -1,20 +1,35 @@
 from monosat import *
+import argparse
 from time import time
 from collections import defaultdict
 import pcrt
 import itertools
 
-def route_multi(filename, monosat_args, maxflow_enforcement_level, routing_separation_enforcement_style=0,graph_separation_enforcement_style=1,zeroEdgeWeights=False):
-    (width, height), nets, constraints = pcrt.read(filename)
+def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_separation_enforcement_style=0,graph_separation_enforcement_style=1,zeroEdgeWeights=False,draw_solution=True):
+    (width, height),diagonals,nets,constraints,disabled = pcrt.read(filename)
     print(filename)
     print("Width = %d, Height = %d, %d nets, %d constraints" % (width, height, len(nets), len(constraints)))
+    if diagonals:
+        print("45-degree routing")
+    else:
+        print("90-degree routing")
 
     if (len(monosat_args) > 0):
         args = " ".join(monosat_args)
         print("Monosat args: " + args)
         Monosat().init(args)
 
+    if draw_solution:
+        #the dicts here are only used to print the solution at the end. Disable for benchmarking.
+        lefts = dict()
+        rights = dict()
+        ups = dict()
+        downs = dict()
 
+        down_lefts = dict()
+        up_rights = dict()
+        down_rights = dict()
+        up_lefts = dict()
 
     graphs = []
     all_graphs=[]
@@ -47,19 +62,19 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, routing_separ
             for g in all_graphs:
                 n = g.addNode("%d_%d" % (x, y))
                 out_grid[g][(x, y)] = n
-                #if maxflow_enforcement_level >= 2 and g==flow_graph:
+
                 in_grid[g][(x, y)] = g.addNode("in_%d_%d" % (x, y))
                 fromGrid[out_grid[g][(x, y)]] = (x, y)
                 fromGrid[in_grid[g][(x, y)]] = (x, y)
                 e = g.addEdge(in_grid[g][(x, y)], out_grid[g][(x, y)], 1)  # add an edge with constant capacity of 1
                 vertex_grid[g][(x,y)]=e
-                #else:
-                #    in_grid[g][(x, y)] = n
+
                 if(g !=flow_graph):
                     vertices[(x,y)].append(e)
 
     print("Adding edges")
-
+    disabled_nodes = set(disabled)
+    undirected_edges = dict()
     start_nodes = set()
     end_nodes = set()
     net_nodes = set()
@@ -73,83 +88,133 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, routing_separ
 
     def addEdge(n,r):
         e = None
-        if n in net_nodes or r in net_nodes:
-            allow_out = True
-            allow_in = True
-            if n in start_nodes or r in end_nodes:
-                allow_in = False
-            if n in end_nodes or r in start_nodes:
-                allow_out = False
-            assert (not (allow_in and allow_out))
-            if allow_out:
+        if n not in disabled_nodes and r not in disabled_nodes:
+            if n in net_nodes or r in net_nodes:
+                allow_out = True
+                allow_in = True
+                if n in start_nodes or r in end_nodes:
+                    allow_in = False
+                if n in end_nodes or r in start_nodes:
+                    allow_out = False
+                assert (not (allow_in and allow_out))
+                if allow_out:
 
-                for g in graphs:
-                    Assert(g.addEdge(out_grid[g][n], in_grid[g][r]))  # add a _directed_ edge from n to r
-                if flow_graph is not None:
-                    e1 = (flow_graph.addEdge(out_grid[flow_graph][n],
-                                           in_grid[flow_graph][r])) # add a _directed_ edge from n to r
-                    if routing_separation_enforcement_style  > 0:
-                        flow_graph_edges[(n, r)] = e1
-                        flow_graph_edges[(r, n)] = e1
-                        flow_grap_edge_list[n].append(e1)
-                        flow_grap_edge_list[r].append(e1)
-                    else:
-                        Assert(e1)
-            elif allow_in:
-                # e = g.addEdge(out_grid[r], in_grid[n])  # add a _directed_ edge from r to n
+                    for g in graphs:
+                        eg = (g.addEdge(out_grid[g][n], in_grid[g][r]))  # add a _directed_ edge from n to r
+                        if e is None:
+                            e = eg
+                        undirected_edges[eg]=e
+                        Assert(eg)
+                    if flow_graph is not None:
+                        ef = (flow_graph.addEdge(out_grid[flow_graph][n],
+                                               in_grid[flow_graph][r])) # add a _directed_ edge from n to r
 
-                for g in graphs:
-                    Assert(g.addEdge(out_grid[g][r], in_grid[g][n]))  # add a _directed_ edge from n to r
+                        if flowgraph_separation_enforcement_style  > 0:
+                            flow_graph_edges[(n, r)] = ef
+                            flow_graph_edges[(r, n)] = ef
+                            flow_grap_edge_list[n].append(ef)
+                            flow_grap_edge_list[r].append(ef)
+                        else:
+                            Assert(ef)
+                elif allow_in:
+                    # e = g.addEdge(out_grid[r], in_grid[n])  # add a _directed_ edge from r to n
 
-                if flow_graph is not None:
-                    e1 = (flow_graph.addEdge(out_grid[flow_graph][r],
-                                           in_grid[flow_graph][n])) # add a _directed_ edge from n to r
-                    #AssertEq(Or(edge_set), e)  # there is an edge in the flow graph iff one of the other graphs has an edge
+                    for g in graphs:
 
-                    if routing_separation_enforcement_style  > 0:
-                        flow_graph_edges[(n, r)] = e1
-                        flow_graph_edges[(r, n)] = e1
-                        flow_grap_edge_list[n].append(e1)
-                        flow_grap_edge_list[r].append(e1)
-                    else:
-                        Assert(e1)
+                        eg = (g.addEdge(out_grid[g][r], in_grid[g][n]))  # add a _directed_ edge from n to r
+                        if e is None:
+                            e = eg
+                        undirected_edges[eg]=e
+                        Assert(eg)
+
+                    if flow_graph is not None:
+                        ef = (flow_graph.addEdge(out_grid[flow_graph][r],
+                                               in_grid[flow_graph][n])) # add a _directed_ edge from n to r
+
+                        if flowgraph_separation_enforcement_style  > 0:
+                            flow_graph_edges[(n, r)] = ef
+                            flow_graph_edges[(r, n)] = ef
+                            flow_grap_edge_list[n].append(ef)
+                            flow_grap_edge_list[r].append(ef)
+                        else:
+                            Assert(ef)
 
 
 
-            else:
-                e = None
-        else:
-
-            for g in graphs:
-                Assert(g.addEdge(out_grid[g][n], in_grid[g][r]))  # add a _directed_ edge from n to r
-                Assert(g.addEdge(out_grid[g][r], in_grid[g][n]))
-            if flow_graph is not None:
-                e1 = (flow_graph.addEdge(out_grid[flow_graph][r],
-                                          in_grid[flow_graph][n]))  # add a _directed_ edge from n to r
-                e2 = (flow_graph.addEdge(out_grid[flow_graph][n],
-                                          in_grid[flow_graph][r]))  # add a _directed_ edge from r to n
-                if routing_separation_enforcement_style > 0:
-                    AssertEq(e1,e2)
-                    flow_grap_edge_list[n].append(e1)
-                    flow_grap_edge_list[r].append(e1)
-                    flow_graph_edges[(n,r)] = e1
-                    flow_graph_edges[(r, n)] = e1
                 else:
-                    Assert(e1)
-                    Assert(e2)
+                    e = None
+            else:
 
+                for g in graphs:
+                    eg = (g.addEdge(out_grid[g][n], in_grid[g][r]))  # add a _directed_ edge from n to r
+                    if e is None:
+                        e = eg
+                    undirected_edges[eg]=e
+                    Assert(eg)
+                    eg2 = (g.addEdge(out_grid[g][r], in_grid[g][n]))
+                    Assert(eg2)
+                    undirected_edges[eg2]=e #map e2 to e
+
+                if flow_graph is not None:
+                    ef = (flow_graph.addEdge(out_grid[flow_graph][r],
+                                              in_grid[flow_graph][n]))  # add a _directed_ edge from n to r
+                    ef2 = (flow_graph.addEdge(out_grid[flow_graph][n],
+                                              in_grid[flow_graph][r]))  # add a _directed_ edge from r to n
+
+                    if flowgraph_separation_enforcement_style > 0:
+                        AssertEq(ef,ef2)
+                        flow_grap_edge_list[n].append(ef)
+                        flow_grap_edge_list[r].append(ef)
+                        flow_graph_edges[(n,r)] = ef
+                        flow_graph_edges[(r, n)] = ef
+                    else:
+                        Assert(ef)
+                        Assert(ef2)
+
+        return e
 
 
     for x in range(width):
         for y in range(height):
             n = (x, y)
+            if n in disabled_nodes:
+                continue
             if x < width - 1:
                 r = (x + 1, y)
-                addEdge(n,r)
+                e=addEdge(n,r)
+                if e is not None and draw_solution:
+                    rights[n] = e
+                    lefts[r] = e
 
             if y < height - 1:
                 r = (x, y + 1)
-                addEdge(n, r)
+                e=addEdge(n, r)
+                if e is not None and draw_solution:
+                    downs[n] = e
+                    ups[r] = e
+
+
+            if diagonals:
+                #if 45 degree routing is enabled
+                diag_up=None
+                diag_down=None
+                if x<width-1 and y<height-1:
+                    r = (x+1,y+1)
+                    e = addEdge(n,r)
+                    diag_down = e
+                    if e is not None and draw_solution:
+                        down_rights[n] = e
+                        up_lefts[r] = e
+
+                if x>0 and y<height-1 and False:
+                    r = (x-1,y+1)
+                    e = addEdge(n,r)
+                    diag_up = e
+                    if e is not None and draw_solution:
+                        down_lefts[n] = e
+                        up_rights[r] = e
+                if diag_up and diag_down:
+                    AssertNand(diag_up, diag_down) #cannot route both diagonals
 
     vertex_used=None
 
@@ -171,7 +236,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, routing_separ
             else:
                 AssertAtMostOne(vertex_used_list)  # use more expensive, but more scalable, built-in AMO theory
 
-    uses_bv = (flow_graph and routing_separation_enforcement_style >= 2) or (graph_separation_enforcement_style>=2)
+    uses_bv = (flow_graph and flowgraph_separation_enforcement_style >= 2) or (graph_separation_enforcement_style>=2)
 
     print("Enforcing separation")
     #force each vertex to be in at most one graph
@@ -248,7 +313,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, routing_separ
 
 
 
-    if flow_graph and routing_separation_enforcement_style==1:
+    if flow_graph and flowgraph_separation_enforcement_style==1:
         print("Enforcing (redundant) flow separation")
         #if two neighbouring nodes belong to different graphs, then
         #disable the edge between them.
@@ -293,7 +358,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, routing_separ
                                 # if the end points of this edge belong to different graphs, disable them.
                                 AssertImplies(And(vertices[n][i], vertices[r][j]), Not(flow_graph_edges[(n, r)]))
                         AssertEq(flow_graph_edges[(n, r)], any_same)
-    elif flow_graph and routing_separation_enforcement_style == 2:
+    elif flow_graph and flowgraph_separation_enforcement_style == 2:
         print("Enforcing (redundant) BV flow separation")
         for x in range(width):
             for y in range(height):
@@ -360,94 +425,110 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, routing_separ
     print("Solving...")
 
     if Solve():
+
         print("Solved!")
+        if draw_solution:
+            paths = set() #collect all the edges that make up the routing
+            on_path = dict()
+            drawn = set()
+            for y in range(height):
+                for x in range(width):
+                    on_path[(x, y)] = -1
 
-        on_path = dict()
-        for y in range(height):
-            for x in range(width):
-                on_path[(x, y)] = -1
+            for i, net in enumerate(nets):
+                for n2 in net[1:]:
+                    r = reachset[i][n2]
+                    g = graphs[i]
+                    path = g.getPath(r,True)
+                    for e in path:
+                        assert(e.value())
+                        if e in undirected_edges.keys():
+                            e = undirected_edges[e] #normalize the edge var
+                            assert(e in up_rights.values() or e in  down_rights.values() or e in  downs.values() or e in rights.values())
+                            paths.add(e)
 
-        for i, net in enumerate(nets):
-            for n2 in net[1:]:
-                r = reachset[i][n2]
-                g = graphs[i]
-                path = g.getPath(r,False)
-                for n in path:
-                    x,y = fromGrid[n]
-                    on_path[(x,y)]=i
+            #print the solution to the console
+            for y in range(height):
+                for x in range(width):
+                    n = (x,y)
 
-        for y in range(height):
-            for x in range(width):
-                n = (x, y)
-                if (x, y) in net_nodes:
-                    print("*", end="")
-                else:
-                    print(" ", end="")
-                if x < width - 1:
-                    r = (x + 1, y)
-
-                    if on_path[n] >=0 and on_path[n]==on_path[r]:
-
-                        print("-", end="")
-
+                    if (x,y) in net_nodes:
+                        print("*",end="")
                     else:
+                        print(" ",end="")
+                    if x<width-1:
+                        r = (x+1,y)
+                        if n in rights:
+                            e = rights[n];assert(e in undirected_edges.keys())
+                            if e in paths:
+                                print("-",end=""); drawn.add(e)
+                            else:
+                                print(" ",end="")
+                        else:
+                            print(" ", end="")
+                print()
+                for x in range(width):
+                    n = (x, y)
+                    if y<height-1:
+                        r = (x,y+1)
+                        if n in downs:
+                            e = downs[n];assert(e in undirected_edges.keys())
+                            if e in paths:
+                                print("|",end=""); drawn.add(e)
+                            else:
+                                print(" ",end="")
+                        else:
+                            print(" ", end="")
+                    drew_diag=False
+                    if diagonals:
+                        if y<height-1 and x<width-1:
+                            r = (x+1,y+1)
+                            if n in down_rights:
+                                e = down_rights[n];assert(e in undirected_edges.keys())
+                                if e in paths:
+                                    print("\\",end=""); drawn.add(e)
+                                    drew_diag=True
+                        if y>0 and x<width-1:
+                            n = (x, y+1)
+                            r = (x+1,y)
+                            if n in up_rights:
+                                e = up_rights[n];assert(e in undirected_edges.keys())
+                                if e in paths:
+                                    print("/",end=""); drawn.add(e)
+                                    assert(not drew_diag)
+                                    drew_diag=True
+
+                    if not drew_diag:
                         print(" ", end="")
-            print()
-            for x in range(width):
-                n = (x, y)
-                if y < height - 1:
-                    d = (x, y + 1)
-                    if  on_path[n] >=0 and on_path[n] == on_path[d]:
+                print()
 
-                        print("| ", end="")
-
-                    else:
-                        print("  ", end="")
-            print()
+            for e in paths:
+                assert(e in drawn)
         print("s SATISFIABLE")
         sys.exit(10)
     else:
         print("s UNSATISFIABLE")
-        print("UNSAT")
         sys.exit(20)
 
 if __name__ == '__main__':
     import sys
-    print("Command: " + str(sys.argv))
-    print("Command: " + str(sys.argv), file=sys.stderr)
-    maxflow_enforcement_level = 0
-    graph_separation_enforcement_style=0
-    routing_separation_enforcement_style=0
-    zeroEdgeWeights=True
+
     monosat_args = ['-ruc'] #default argument for MonoSAT; enables the heuristics described in "Routing Under Constraints", FMCAD 2016, A. Nadel
-    found=True
-    while(found):
 
-        found=False
-        if len(sys.argv[1])==0:
-            found=True
-            sys.argv = sys.argv[0:1] + sys.argv[2:]
+    parser = argparse.ArgumentParser(description='SAT-based, constrained multi-terminal routing')
 
-        elif sys.argv[1].startswith("--use-maxflow="):
-            found=True
+    parser.add_argument('--use-maxflow', default = 0, type=int,  help='Set to >= 1 to enable redundant, over-approximative maximum flow constraints, which can help the solver prune bad solutions early. Options 2,3,4 control heuristic interactions between the flow constraints and the routing constraints in the solver.',choices=range(0,5))
+    parser.add_argument('--separate-graphs',default=2, type=int, help='This controls the type of constraint that prevents nets from intersecting. All three are reasonable choices.',choices=range(1,4))
+    parser.add_argument('--enforce-separate',default=0, type=int,  help='This controls the type of constraint used to prevent nets from intersecting with each other in the maximum flow constraint, IF maxflow constraints are used.',choices=range(0,4))
+    parser.add_argument('--zero-edges',default=0, type=int,
+                        help='This enables a heuristic which sets assigned edges to zero weight, to encourage edge-reuse in solutions in the solver.',choices=range(0,2))
 
-            maxflow_enforcement_level = int(sys.argv[1][len("--use-maxflow="):])
-            sys.argv = sys.argv[0:1] +  sys.argv[2:]
-        elif sys.argv[1].startswith( "--separate-graphs="):
-            found = True
-            graph_separation_enforcement_style = int(sys.argv[1][len("--separate-graphs="):])
+    parser.add_argument('filename', type=str)
 
-            sys.argv = sys.argv[0:1] + sys.argv[2:]
-        elif sys.argv[1].startswith( "--enforce-separate="):
-            found = True
-            routing_separation_enforcement_style = int(sys.argv[1][len("--enforce-separate="):])
+    args, unknown = parser.parse_known_args()
 
-            sys.argv = sys.argv[0:1] + sys.argv[2:]
-        elif sys.argv[1].startswith( "--zero-edges="):
-            found = True
-            zeroEdgeWeights = int(sys.argv[1][len("--zero-edges="):])>0
-            sys.argv = sys.argv[0:1] + sys.argv[2:]
 
-    if len(sys.argv) > 2:
-        monosat_args = sys.argv[1:-1]
-    route_multi(sys.argv[-1], monosat_args, maxflow_enforcement_level,routing_separation_enforcement_style,graph_separation_enforcement_style,zeroEdgeWeights)
+    if len(unknown)>0:
+        print("Passing unrecognized arguments to monosat: " + str(unknown))
+        monosat_args = unknown
+    route_multi(args.filename, monosat_args, args.use_maxflow,args.enforce_separate,args.separate_graphs,args.zero_edges,True)
