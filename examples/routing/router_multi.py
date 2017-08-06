@@ -300,7 +300,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
         for y in range(height):
             n = (x, y)
             if n not in net_nodes:
-                if graph_separation_enforcement_style==1:
+                if graph_separation_enforcement_style<=1:
                     AMO(vertices[n])
                 else:
                     #rely on the uniqueness bv encoding below to force at most one graph assign per vertex
