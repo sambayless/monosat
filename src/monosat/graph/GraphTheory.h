@@ -609,7 +609,8 @@ public:
 
 	int theory_index = 0;
 public:
-	bool assign_edges_to_zero = false;
+	bool assign_edges_to_weight = false;
+	Weight assign_edges_to;
 	double mctime = 0;
 	double reachtime = 0;
 	double unreachtime = 0;
@@ -741,15 +742,18 @@ public:
 		return const_true;
 	}
 
-    void setAssignEdgesToZeroWeight(bool assign_zero){
-        if (!opt_ignore_zero_edge_weights) {
-            assign_edges_to_zero = assign_zero;
-        }
+
+	void setAssignEdgesToWeight(Weight w){
+		if (!opt_ignore_assign_edge_weights) {
+			assign_edges_to = w;
+			assign_edges_to_weight = true;
+		}
+	}
+
+    bool assignEdgesToWeight(){
+        return assign_edges_to_weight;
     }
 
-    bool assignEdgesToZeroWeight(){
-        return assign_edges_to_zero;
-    }
 
 	void printStats(int detailLevel) {
 
@@ -1353,7 +1357,7 @@ public:
 
 				if (assign==l_True) {
 					g_under.disableEdge(edge_num);
-                    if(assignEdgesToZeroWeight()){
+                    if(assignEdgesToWeight()){
                         g_over.setEdgeWeight(edge_num, g_under.getEdgeWeight(edge_num));
                     }
 					assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -2166,8 +2170,8 @@ public:
 			int to = edge_list[edge_num].to;
 			if (!sign(l)) {
 				g_under.enableEdge(edge_num);
-                if (assignEdgesToZeroWeight()){
-                    g_over.setEdgeWeight(edge_num,0);
+                if (assignEdgesToWeight()){
+                    g_over.setEdgeWeight(edge_num,assign_edges_to);
                 }
 			} else {
 				g_over.disableEdge( edge_num);

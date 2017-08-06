@@ -1041,6 +1041,7 @@ public:
 			precise(precise),bvTheory(bvTheory) {
 		
 	}
+	vec<char> tmp2;
 	bool parseLine(B& in, Solver& S) {
 		
 		skipWhitespace(in);
@@ -1049,18 +1050,23 @@ public:
 		else if (*in == 'c') {
             //just a comment
             return false;
-        }else if (match(in,"graph_assign_edges_to_zero")){
+        }else if (match(in,"graph_assign_edges_to_weight")){
             skipWhitespace(in);
             int graphID = parseInt(in);
             skipWhitespace(in);
             if(graphID<graphs.size() && graphs[graphID]){
-                graphs[graphID]->setAssignEdgesToZeroWeight(true);
+				uint64_t w = parseLong(in);
+                graphs[graphID]->setAssignEdgesToWeight(w);
             }else if(graphID<graphs_float.size() && graphs_float[graphID]){
-                graphs_float[graphID]->setAssignEdgesToZeroWeight(true);
+				double w = parseDouble(in,tmp2);
+                graphs_float[graphID]->setAssignEdgesToWeight(w);
             }else if(graphID<graphs_rational.size() && graphs_rational[graphID]){
-                graphs_rational[graphID]->setAssignEdgesToZeroWeight(true);
+				assert(false);
+				//double w = parseDouble(in);
+                //graphs_rational[graphID]->setAssignEdgesToWeight(w);
+				parse_errorf("Edge weight heuristic not supported for rational weight graphs: %d",graphID);
             }else {
-                parse_errorf("Unknown graph ID for edge zero heuristic: %d",graphID);
+                parse_errorf("Unknown graph ID for edge weight heuristic: %d",graphID);
             }
             return true;
 		} else if (match(in, "digraph")) {

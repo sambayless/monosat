@@ -316,8 +316,8 @@ IntOption Monosat::opt_detect_satisfied_predicates(_cat, "detect-sat-predicates"
 
 IntOption Monosat::opt_flow_router_heuristic(_cat, "flow-router-heuristic", "Enabled if >0. If opt_flow_router_heuristic=2, then suppress flow decisions when only 1 path is left in the flow.", 0, IntRange(0,2));
 
-BoolOption Monosat::opt_ignore_zero_edge_weights(_cat_graph, "ignore-zero-edge-weight-heuristic",
-												"Ignore any zero edge weight heuristic directives", false);
+BoolOption Monosat::opt_ignore_assign_edge_weights(_cat_graph, "ignore-edge-weight-heuristic",
+												"Ignore any edge weight heuristic directives", false);
 
 
 BoolOption Monosat::opt_detect_pure_theory_lits(_cat, "detect-pure-theory-lits",

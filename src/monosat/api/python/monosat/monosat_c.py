@@ -412,7 +412,7 @@ class Monosat(metaclass=Singleton):
 
         self.monosat_c.addRoutingNet.argtypes=[c_solver_p,c_graph_p,c_void_p, c_literal,c_int, c_literal_p, c_literal_p]
 
-        self.monosat_c.graph_setAssignEdgesToZeroWeight.argtypes=[c_solver_p,c_graph_p]
+        self.monosat_c.graph_setAssignEdgesToWeight.argtypes=[c_solver_p,c_graph_p,c_long]
 
 
 
@@ -1122,8 +1122,8 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.newEdgeSet(self.solver._ptr,graph,lp,len(edges), c_bool(enforceEdgeAssignments))
 
 
-    def assignWeightsToZero(self,graph):
-        self.monosat_c.graph_setAssignEdgesToZeroWeight(self.solver._ptr,graph)
+    def assignWeightsTo(self,graph,weight):
+        self.monosat_c.graph_setAssignEdgesToWeight(self.solver._ptr,graph,c_long(weight))
 
 
     def enforceRouting(self,graph,source,destination,nets,maxflowlit):

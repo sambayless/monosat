@@ -87,8 +87,8 @@ class Graph():
         self.edgemap=dict()
         self.acyclic_querries=[]
 
-    def assignWeightsToZero(self):
-        self._monosat.assignWeightsToZero(self.graph)
+    def assignWeightsTo(self,w):
+        self._monosat.assignWeightsTo(self.graph,w)
 
     def enforceRouting(self,source,destination,nets,maxflowlit):
         netlits = []

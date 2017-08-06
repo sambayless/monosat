@@ -228,7 +228,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges, bool enforceEdgeAssignment);
 
   //this enables a heuristic on this graph, from the RUC paper, which sets assigned edges to zero weight, to encourage edge-reuse in solutions
-  void graph_setAssignEdgesToZeroWeight(SolverPtr S,GraphTheorySolver_long G);
+  void graph_setAssignEdgesToWeight(SolverPtr S,GraphTheorySolver_long G, int64_t weight);
   //flow routing interface
 
   FlowRouterPtr createFlowRouting(SolverPtr S,GraphTheorySolver_long G, int sourceNode,int destNode,int maxflowLit);

@@ -138,7 +138,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		if (outer->assignEdgesToZeroWeight()){
+		if (outer->assignEdgesToWeight()){
 			//need to use weighted over approx detector to take advantage of the assignEdgesToZeroWeight heuristic
 			overapprox_reach_detector = new  RamalReps<Weight, ReachDetector<Weight>::ReachStatus>(from,
 																											_antig,
@@ -174,7 +174,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 																										  *positiveReachStatus, 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
-		if (outer->assignEdgesToZeroWeight()){
+		if (outer->assignEdgesToWeight()){
 			overapprox_reach_detector = new Dijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 																									  *negativeReachStatus, -1);
 		}else{
