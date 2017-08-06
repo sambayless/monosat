@@ -136,6 +136,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
         for (x, y) in net:
             net_nodes.add((x, y))
 
+
     #create undirected edges between neighbouring nodes
     def addEdge(n,r,diagonal_edge=False):
         e = None
@@ -150,13 +151,17 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                 assert (not (allow_in and allow_out))
                 if allow_out:
                     #for each net's symbolic graph (g), create an edge
+                    edges = []
                     for g in graphs:
                         eg = (g.addEdge(out_grid[g][n], in_grid[g][r]))  # add a _directed_ edge from n to r
                         if e is None:
                             e = eg
                         undirected_edges[eg]=e
+                        edges.append(eg)
                         if not diagonal_edge:
                             Assert(eg)
+
+
                     if flow_graph is not None:
                         #create the same edge in the flow graph
                         ef = (flow_graph.addEdge(out_grid[flow_graph][n],
@@ -170,13 +175,18 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                         else:
                             if not diagonal_edge:
                                 Assert(ef)
+                        edges.append(ef)
+                    if (diagonal_edge):
+                        AssertEq(*edges)
                 elif allow_in:
                     #for each net's symbolic graph (g), create an edge
+                    edges = []
                     for g in graphs:
                         eg = (g.addEdge(out_grid[g][r], in_grid[g][n]))  # add a _directed_ edge from n to r
                         if e is None:
                             e = eg
                         undirected_edges[eg]=e
+                        edges.append(eg)
                         if not diagonal_edge:
                             Assert(eg)
 
@@ -193,12 +203,14 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                         else:
                             if not diagonal_edge:
                                 Assert(ef)
-
-
+                        edges.append(ef)
+                    if (diagonal_edge):
+                        AssertEq(*edges)
 
                 else:
                     e = None
             else:
+                edges = []
                 #for each net's symbolic graph (g), create an edge in both directions
                 for g in graphs:
                     eg = (g.addEdge(out_grid[g][n], in_grid[g][r]))  # add a _directed_ edge from n to r
@@ -213,13 +225,13 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                     else:
                         AssertEq(eg,eg2)
                     undirected_edges[eg2]=e #map e2 to e
-
+                    edges.append(eg)
                 if flow_graph is not None:
                     ef = (flow_graph.addEdge(out_grid[flow_graph][r],
                                              in_grid[flow_graph][n]))  # add a _directed_ edge from n to r
                     ef2 = (flow_graph.addEdge(out_grid[flow_graph][n],
                                               in_grid[flow_graph][r]))  # add a _directed_ edge from r to n
-
+                    edges.append(ef)
                     if flowgraph_separation_enforcement_style > 0:
                         AssertEq(ef,ef2)
                         flow_grap_edge_list[n].append(ef)
@@ -230,6 +242,8 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                         if not diagonal_edge:
                             Assert(ef)
                             Assert(ef2)
+                    if (diagonal_edge):
+                        AssertEq(*edges)
 
         return e
 
