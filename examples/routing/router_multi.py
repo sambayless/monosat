@@ -278,6 +278,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
 
     vertex_used=None
 
+    #enforce constraints from the .pcrt file
     if len(constraints) > 0:
         print("Enforcing constraints")
         vertex_used = dict()
@@ -301,7 +302,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
             n = (x, y)
             if n not in net_nodes:
                 if graph_separation_enforcement_style<=1:
-                    AMO(vertices[n])
+                    AMO(vertices[n]) #use at-most-one constraint to force each edge to be assigned to at most on net
                 else:
                     #rely on the uniqueness bv encoding below to force at most one graph assign per vertex
                     assert(uses_bv)
@@ -319,7 +320,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                         AssertEq(vertex_used[(x, y)],vertex_grid[flow_graph][n])
 
     if uses_bv:
-
+        #Optionally, use a bitvector encoding to determine which graph each edge belongs to (following the RUC paper).
         vertices_bv = dict()
         bvwidth = math.ceil(math.log(len(nets)+1,2))
         print("Building BV (width = %d)" % (bvwidth))
@@ -368,7 +369,9 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                 vertices_bv[(x, y)] = netbv
 
 
-
+    #the following constraints are only relevant if maximum flow constraints are being used.
+    #these constraints ensure that in the maximum flow graph, edges are not connected between
+    #different nets.
     if flow_graph and flowgraph_separation_enforcement_style==1:
         print("Enforcing (redundant) flow separation")
         #if two neighbouring nodes belong to different graphs, then
@@ -414,6 +417,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                                 # if the end points of this edge belong to different graphs, disable them.
                                 AssertImplies(And(vertices[n][i], vertices[r][j]), Not(flow_graph_edges[(n, r)]))
                         AssertEq(flow_graph_edges[(n, r)], any_same)
+
     elif flow_graph and flowgraph_separation_enforcement_style == 2:
         print("Enforcing (redundant) BV flow separation")
         for x in range(width):
@@ -443,25 +447,37 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
         for n in net:
             Assert(vertices[n][i]) #terminal nodes must be assigned to this graph
             if(flow_graph):
-                Assert(vertex_grid[flow_graph][n])
+                Assert(vertex_grid[flow_graph][n]) #force the terminal nodes to be enabled in the flow graph
 
 
     print("Enforcing reachability")
     reachset = dict()
-    # enforce reachability
+    #In each net's corresponding symbolic graph,
+    #enforce that the first terminal of the net
+    #reaches each other terminal of the net.
     for i,net in enumerate(nets):
         reachset[i] = dict()
-        n1 = net[0]
+        n1 = net[0] #It is a good idea for all reachability constraints to have a common source
+        #as that allows monosat to compute their paths simultaneously, cheaply.
+        #Any of the terminals could be chosen to be that source; we use net[0], arbitrarily.
         for n2 in net[1:]:
             g = graphs[i]
             r = g.reaches(in_grid[g][n1], out_grid[g][n2])
-            Assert(r)
-            r.setDecisionPriority(1);  # decide reachability before considering regular variable decisions
             reachset[i][n2]=r
+            Assert(r)
+
+            r.setDecisionPriority(1);  # decide reachability before considering regular variable decisions.
+            #That prioritization is required for the RUC heuristics to take effect.
+
 
 
     if maxflow_enforcement_level >= 1:
-        print("Enforcing flow")
+        print("Enforcing flow constraints")
+
+        #This adds an (optional) redundant maximum flow constraint. While the flow constraint is not by itself powerful
+        #enough to enforce a correct routing (and so must be used in conjunction with the routing constraints above),
+        #it can allow the solver to prune parts of the search space earlier than the routing constraints alone.
+
         # add a source and dest node, with 1 capacity from source to each net start vertex, and 1 capacity from each net end vertex to dest
         g = flow_graph
         source = g.addNode()
@@ -469,8 +485,11 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
         for net in nets:
             Assert(g.addEdge(source, in_grid[g][net[0]], 1))  # directed edges!
             Assert(g.addEdge(out_grid[g][net[1]], dest, 1))  # directed edges!
-        m = g.maxFlowGreaterOrEqualTo(source, dest, len(nets))
-        Assert(m)
+        m = g.maxFlowGreaterOrEqualTo(source, dest, len(nets)) #create a maximum flow constraint
+        Assert(m) #asser the maximum flow constraint
+
+        #These settings control how the maximum flow constraints interact heuristically
+        #with the routing constraints.
         if maxflow_enforcement_level == 3:
             m.setDecisionPriority(1);  # sometimes make decisions on the maxflow predicate.
         elif maxflow_enforcement_level == 4:
