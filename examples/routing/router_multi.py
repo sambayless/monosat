@@ -53,7 +53,7 @@ def BVEQ(bva,bvb):
 #
 #The variation described here supports multi-terminal routing; if your instance only has 2-terminal nets, router.py is recommended,
 #As it's encoding is more efficient .
-def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_separation_enforcement_style=0,graph_separation_enforcement_style=1,draw_solution=True):
+def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_separation_enforcement_style=0,graph_separation_enforcement_style=1,zeroEdgeWeights=False,draw_solution=True):
     (width, height),diagonals,nets,constraints,disabled = pcrt.read(filename)
     print(filename)
     print("Width = %d, Height = %d, %d nets, %d constraints" % (width, height, len(nets), len(constraints)))
@@ -85,6 +85,8 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
         #for each net to be routed, created a separate symbolic graph.
         #later we will add constraints to force each edge to be enabled in at most one of these graphs
         graphs.append(Graph())
+        if zeroEdgeWeights:
+            graphs[-1].assignWeightsToZero() # this enables a heuristic on these graphs, from the RUC paper, which sets assigned edges to zero weight, to encourage edge-reuse in solutions
         all_graphs.append(graphs[-1])
     flow_graph=None
     flow_graph_edges = dict()
@@ -522,85 +524,85 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                             assert(e in up_rights.values() or e in  down_rights.values() or e in  downs.values() or e in rights.values())
                             paths.add(e)
 
-                            #print the solution to the console
+            #print the solution to the console
             for y in range(height):
                 for x in range(width):
                     n = (x,y)
 
                     if (x,y) in net_nodes:
                         print("*",end="")
-                        else:
+                    else:
                         print(" ",end="")
-                        if x<width-1:
-                            r = (x+1,y)
-                            if n in rights:
-                                e = rights[n]
+                    if x<width-1:
+                        r = (x+1,y)
+                        if n in rights:
+                            e = rights[n]
+                            if e in paths:
+                                print("-",end="")
+                            else:
+                                print(" ",end="")
+                        else:
+                            print(" ", end="")
+                print()
+                for x in range(width):
+                    n = (x, y)
+                    if y<height-1:
+                        r = (x,y+1)
+                        if n in downs:
+                            e = downs[n]
+                            if e in paths:
+                                print("|",end="")
+                            else:
+                                print(" ",end="")
+                        else:
+                            print(" ", end="")
+                    drew_diag=False
+                    if diagonals:
+                        if y<height-1 and x<width-1:
+                            r = (x+1,y+1)
+                            if n in down_rights:
+                                e = down_rights[n]
                                 if e in paths:
-                                    print("-",end="")
-                                    else:
-                                    print(" ",end="")
-                                else:
-                                    print(" ", end="")
-                            print()
-                            for x in range(width):
-                                n = (x, y)
-                                if y<height-1:
-                                    r = (x,y+1)
-                                    if n in downs:
-                                        e = downs[n]
-                                        if e in paths:
-                                            print("|",end="")
-                                            else:
-                                            print(" ",end="")
-                                        else:
-                                            print(" ", end="")
-                                        drew_diag=False
-                                        if diagonals:
-                                            if y<height-1 and x<width-1:
-                                                r = (x+1,y+1)
-                                                if n in down_rights:
-                                                    e = down_rights[n]
-                                                    if e in paths:
-                                                        print("\\",end="")
-                                                        drew_diag=True
-                                            if y>0 and x<width-1:
-                                                n = (x, y+1)
-                                                r = (x+1,y)
-                                                if n in up_rights:
-                                                    e = up_rights[n]
-                                                    if e in paths:
-                                                        print("/",end="")
-                                                        assert(not drew_diag)
-                                                        drew_diag=True
+                                    print("\\",end="")
+                                    drew_diag=True
+                        if y>0 and x<width-1:
+                            n = (x, y+1)
+                            r = (x+1,y)
+                            if n in up_rights:
+                                e = up_rights[n]
+                                if e in paths:
+                                    print("/",end="")
+                                    assert(not drew_diag)
+                                    drew_diag=True
 
-                                        if not drew_diag:
-                                            print(" ", end="")
-                                        print()
-                                    print("s SATISFIABLE")
-                                    sys.exit(10)
-                                else:
-                                    print("s UNSATISFIABLE")
-                                    sys.exit(20)
+                    if not drew_diag:
+                        print(" ", end="")
+                print()
+            print("s SATISFIABLE")
+            sys.exit(10)
+        else:
+            print("s UNSATISFIABLE")
+            sys.exit(20)
 
-                        if __name__ == '__main__':
-                            import sys
+if __name__ == '__main__':
+    import sys
 
-                            monosat_args = ['-ruc'] #default argument for MonoSAT; enables the heuristics described in "Routing Under Constraints", FMCAD 2016, A. Nadel
+    monosat_args = ['-ruc'] #default argument for MonoSAT; enables the heuristics described in "Routing Under Constraints", FMCAD 2016, A. Nadel
 
-                            parser = argparse.ArgumentParser(description='SAT-based, constrained multi-terminal routing')
+    parser = argparse.ArgumentParser(description='SAT-based, constrained multi-terminal routing')
 
-                            parser.add_argument('--use-maxflow', default = 0, type=int,  help='Set to >= 1 to enable redundant, over-approximative maximum flow constraints, which can help the solver prune bad solutions early. Options 2,3,4 control heuristic interactions between the flow constraints and the routing constraints in the solver.',choices=range(0,5))
-                            parser.add_argument('--separate-graphs',default=2, type=int, help='This controls the type of constraint that prevents nets from intersecting. All three are reasonable choices.',choices=range(1,4))
-                            parser.add_argument('--enforce-separate',default=0, type=int,  help='This controls the type of constraint used to prevent nets from intersecting with each other in the maximum flow constraint, IF maxflow constraints are used.',choices=range(0,4))
-                            parser.add_argument('--amo-builtin-size',default=20, type=int,  help='The largest at-most-one constraint size to manually build instead of using builtin AMO solver')
+    parser.add_argument('--use-maxflow', default = 0, type=int,  help='Set to >= 1 to enable redundant, over-approximative maximum flow constraints, which can help the solver prune bad solutions early. Options 2,3,4 control heuristic interactions between the flow constraints and the routing constraints in the solver.',choices=range(0,5))
+    parser.add_argument('--separate-graphs',default=2, type=int, help='This controls the type of constraint that prevents nets from intersecting. All three are reasonable choices.',choices=range(1,4))
+    parser.add_argument('--enforce-separate',default=0, type=int,  help='This controls the type of constraint used to prevent nets from intersecting with each other in the maximum flow constraint, IF maxflow constraints are used.',choices=range(0,4))
+    parser.add_argument('--amo-builtin-size',default=20, type=int,  help='The largest at-most-one constraint size to manually build instead of using builtin AMO solver')
+    parser.add_argument('--zero-edges',default=0, type=int, help='This enables a heuristic which sets assigned edges to zero weight, to encourage edge-reuse in solutions in the solver.',choices=range(0,2))
+    parser.add_argument('filename', type=str)
 
-                            parser.add_argument('filename', type=str)
+    args, unknown = parser.parse_known_args()
 
-                            args, unknown = parser.parse_known_args()
+    at_most_one_builtin_size=args.amo_builtin_size
 
-                            at_most_one_builtin_size=args.amo_builtin_size
-
-                            if len(unknown)>0:
-                                print("Passing unrecognized arguments to monosat: " + str(unknown))
-                                monosat_args = unknown
-                            route_multi(args.filename, monosat_args, args.use_maxflow,args.enforce_separate,args.separate_graphs,True)
+    if len(unknown)>0:
+        print("Passing unrecognized arguments to monosat: " + str(unknown))
+        monosat_args = unknown
+    route_multi(args.filename, monosat_args, args.use_maxflow,args.enforce_separate,args.separate_graphs,True)
