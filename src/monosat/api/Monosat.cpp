@@ -1463,7 +1463,7 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 }
 
 void graph_setAssignEdgesToWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
-    write_out(S,"graph_assign_edges_to_zero %d\n", G->getGraphID());
+    write_out(S,"graph_assign_edges_to_weight %d %ld\n", G->getGraphID(),weight);
     G->setAssignEdgesToWeight(weight);
 }
 
