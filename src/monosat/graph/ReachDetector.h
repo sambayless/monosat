@@ -136,6 +136,23 @@ public:
 		if(opt_decide_theories){
 			printf("\t%ld heuristic path recomputations\n",stats_heuristic_recomputes);
 		}
+		if(overapprox_reach_detector){
+			printf("\t\tOverapproxReach: ");
+			overapprox_reach_detector->printStats();
+		}
+		if(overapprox_path_detector){
+			printf("\t\tOverapproxPath: ");
+			overapprox_path_detector->printStats();
+		}
+		if(underapprox_path_detector){
+			printf("\t\tUnderapproxReach: ");
+			underapprox_path_detector->printStats();
+		}
+
+		if(underapprox_fast_detector){
+			printf("\t\tUnderapproxFast: ");
+			underapprox_fast_detector->printStats();
+		}
 	}
 
 	struct ReachStatus {

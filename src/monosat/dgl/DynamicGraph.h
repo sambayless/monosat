@@ -233,7 +233,7 @@ public:
 			all_edges.resize(id + 1);
 		all_edges[id]= {from,to,id}; //,weight};
 		if(weights.size()<=id)
-			weights.resize(id+1,0);
+			weights.resize(id+1,1);//default uninitialized edges to unit weight.
 		weights[id]=weight;
 
 		modifications++;

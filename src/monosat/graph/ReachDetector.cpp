@@ -169,9 +169,11 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		if (!opt_encode_reach_underapprox_as_sat) {
 			underapprox_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 																									 *positiveReachStatus, 1);
+			underapprox_path_detector=underapprox_detector;
 		} else {
 			underapprox_fast_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 																										  *positiveReachStatus, 1);
+			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		if (outer->assignEdgesToWeight()){
@@ -181,7 +183,7 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 			overapprox_reach_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 																										  *negativeReachStatus, -1);
 		}
-		underapprox_path_detector = underapprox_detector;
+
 		overapprox_path_detector = overapprox_reach_detector;
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
@@ -516,8 +518,15 @@ public:
 		}
 
 		static int iter = 0;
-		if(++iter==109){
+		if(++iter==16){
 			int a=1;
+			/*for(int edgeID = 0;edgeID<g_over.nEdgeIDs();edgeID++){
+				Weight w = g_over.getEdgeWeight(edgeID);
+				bool enabled = g_over.edgeEnabled(edgeID);
+				std::cout<<edgeID<<":" << enabled <<"-"<<w<<"\n";
+
+			}*/
+
 		};
 
 		auto * over_path = r->overapprox_path_detector;
@@ -575,11 +584,13 @@ public:
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
 							over_path->update();
-
+							over_path->dbg_manual_uptodate();
+							printf("ReachPath %d: ",iter);
 							p = j;
 							last = j;
 							//while (!under_reach->connected(p)) {
 							while(p!=r->source){
+								printf("%d, ",p);
 								last = p;
 								assert(p != r->source);
 								last_edge = over_path->incomingEdge(p);
@@ -593,6 +604,7 @@ public:
 								p = prev;
 
 							}
+							printf("\n");
 						}
 					} else {
 						//Randomly re-weight the graph sometimes

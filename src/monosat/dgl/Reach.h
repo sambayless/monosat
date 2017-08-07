@@ -21,7 +21,7 @@
 
 #ifndef REACH_H_
 #define REACH_H_
-
+#include <cstdio>
 #include <vector>
 namespace dgl {
 
@@ -73,6 +73,12 @@ public:
 	}
 	virtual void clearCache(){
 
+	}
+	virtual bool dbg_manual_uptodate(){
+		return true;
+	}
+	virtual void printStats(){
+		std::printf("\n");
 	}
 };
 }

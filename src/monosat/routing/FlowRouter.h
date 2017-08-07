@@ -98,8 +98,8 @@ public:
 
     void printStats(int detailLevel = 0) override{
         printf("Flow Router:\n");
-        printf("\tFlow conflicts: %d\n",stats_flow_conflicts);
-        printf("\tFlow decisions: %d\n",stats_flow_decisions);
+        printf("\tFlow conflicts: %ld\n",stats_flow_conflicts);
+        printf("\tFlow decisions: %ld\n",stats_flow_decisions);
     }
     bool propagateTheory(vec<Lit> & conflict) override{
         return propagateTheory(conflict,false);
