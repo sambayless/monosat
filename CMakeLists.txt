@@ -118,6 +118,7 @@ set(SOURCE_FILES
         src/monosat/dgl/PKTopologicalSort.h
         src/monosat/dgl/Prim.h
         src/monosat/dgl/RamalReps.h
+        src/monosat/dgl/RamalRepsBatched.h
         src/monosat/dgl/Reach.cpp
         src/monosat/dgl/Reach.h
         src/monosat/dgl/SpiraPan.h
@@ -243,7 +244,7 @@ set(SOURCE_FILES
         src/monosat/utils/System.cc
         src/monosat/utils/System.h
         src/monosat/Main.cc
-        #tests/dgl/test_ramal_reps2.cpp
+        #tests/dgl/test_ramal_reps3.cpp
         src/monosat/core/Heuristic.h
         src/monosat/api/Logic.h
         src/monosat/graph/GraphHeuristic.h

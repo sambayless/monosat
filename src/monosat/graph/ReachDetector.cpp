@@ -21,6 +21,7 @@
 #include "monosat/mtl/Vec.h"
 #include "monosat/graph/ReachDetector.h"
 #include "monosat/dgl/RamalReps.h"
+#include "monosat/dgl/RamalRepsBatched.h"
 #include "monosat/dgl/BFS.h"
 #include "monosat/graph/GraphTheory.h"
 #include "monosat/core/Config.h"
@@ -128,11 +129,11 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	} else if (reachalg == ReachAlg::ALG_RAMAL_REPS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedRamalRepsBatched<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 																									  *(positiveReachStatus), 1, false);
 			underapprox_path_detector=underapprox_detector;
 		} else {
-			underapprox_fast_detector = new UnweightedRamalReps<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedRamalRepsBatched<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 																										   *(positiveReachStatus), 1, false);
 			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
@@ -140,12 +141,12 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 		if (outer->assignEdgesToWeight()){
 			//need to use weighted over approx detector to take advantage of the assignEdgesToZeroWeight heuristic
-			overapprox_reach_detector = new  RamalReps<Weight, ReachDetector<Weight>::ReachStatus>(from,
+			overapprox_reach_detector = new  RamalRepsBatched<Weight, ReachDetector<Weight>::ReachStatus>(from,
 																											_antig,
 																											*(negativeReachStatus),
 																											-1, false);
 		}else {
-			overapprox_reach_detector = new UnweightedRamalReps<Weight, ReachDetector<Weight>::ReachStatus>(from,
+			overapprox_reach_detector = new UnweightedRamalRepsBatched<Weight, ReachDetector<Weight>::ReachStatus>(from,
 																											_antig,
 																											*(negativeReachStatus),
 																											-1, false);
@@ -584,13 +585,13 @@ public:
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
 							over_path->update();
-							over_path->dbg_manual_uptodate();
-							printf("ReachPath %d: ",iter);
+							//over_path->dbg_manual_uptodate();
+							//printf("ReachPath %d: ",iter);
 							p = j;
 							last = j;
 							//while (!under_reach->connected(p)) {
 							while(p!=r->source){
-								printf("%d, ",p);
+								//printf("%d, ",p);
 								last = p;
 								assert(p != r->source);
 								last_edge = over_path->incomingEdge(p);
@@ -604,7 +605,7 @@ public:
 								p = prev;
 
 							}
-							printf("\n");
+							//printf("\n");
 						}
 					} else {
 						//Randomly re-weight the graph sometimes
