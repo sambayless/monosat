@@ -1331,13 +1331,14 @@ public:
 		}
 		assert(altw < INF);
 		edgeInShortestPathGraph[edgeID] = true;
+        assert(delta[rv]>=0);
 		delta[rv]++;
 		dist[rv] = altw;
 
-
-		q_inc.push_back(rv);
-		in_queue_inc[rv] = true;
-
+        if(!in_queue_inc[rv]) {
+            q_inc.push_back(rv);
+            in_queue_inc[rv] = true;
+        }
 
 
 	}
@@ -1465,7 +1466,7 @@ public:
 
 		for (int i = 0; i < changeset.size(); i++) {
 			int u = changeset[i];
-
+            int shortest_edge = -1;
 			assert(dist[u] == INF);
 			//for(auto & e:g.inverted_adjacency[u]){
 			for (int i = 0; i < g.nIncoming(u); i++) {
@@ -1481,18 +1482,27 @@ public:
 						alt = INF;
 					assert(!edgeInShortestPathGraph[adjID]);
 					if (dist[u] > alt) {
-						dist[u] = alt;
+                        assert(alt<INF);
+                        dist[u] = alt;
+                        shortest_edge = adjID;
 					}
 				}
 
 			}
 
 			if (dist[u] < INF) {
+                assert (shortest_edge>=0);
+
+                assert(!edgeInShortestPathGraph[shortest_edge]);
+                edgeInShortestPathGraph[shortest_edge]=true;
+                assert(delta[u]==0);
+                delta[u]++;
 				//q.insert(u);
 				//dbg_Q_add(q,u);
-				q_dec.push_back(u);
-				in_queue_dec[u] = true;
-
+                if(!in_queue_dec[u]) {
+                    q_dec.push_back(u);
+                    in_queue_dec[u] = true;
+                }
 				if (reportPolarity >= 0) {
 					if (!node_changed[u]) {
 						node_changed[u] = true;
@@ -1533,6 +1543,9 @@ public:
             stats_full_updates++;
 			int oldInf = INF;
 			INF = g.nodes() + 1;
+            if(INF<oldInf){
+                INF=oldInf;
+            }
 			if(INF!=oldInf){
 				for(int i = 0;i<dist.size();i++){
 					if(dist[i]==oldInf){
@@ -1540,6 +1553,9 @@ public:
 					}
 				}
 			}
+            if(maxDistance<0 || maxDistance>=oldInf){
+                maxDistance = INF;
+            }
 			last_history_clear=-1;
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
@@ -1552,8 +1568,7 @@ public:
             in_queue_dec.resize(g.nodes());
             in_queue2.resize(g.nodes());
 
-			if (maxDistance < 0)
-				maxDistance = INF;
+
 			for (int i = 0; i < g.nodes(); i++) {
 				if ((dist[i] >= INF && reportPolarity <= 0) || (dist[i] < INF && reportPolarity >= 0)) {
 					node_changed[i] = true;
@@ -1630,12 +1645,16 @@ public:
         for (int i = 0; i < q_inc.size(); i++) {
             int u = q_inc[i];
             dbg_Q_order(q_inc);
-            assert(dist[u] < INF);
+
             if (!node_changed[u]) {
                 node_changed[u] = true;
                 changed.push_back(u);
             }
+            if(dist[u]>=INF){
+                int a=1;
+            }
             delta[u] = 0;
+            assert(dist[u] < INF);
             //for(auto & e:g.inverted_adjacency[u]){
             for (int j = 0; j < g.nIncoming(u); j++) {
                 auto & e = g.incoming(u, j);
@@ -1750,6 +1769,9 @@ public:
                 assert(dist[q2[j]] <= dist[q_dec[i]]);
                 u = q2[j++];
             }
+            if(dist[u]>=INF){
+                int a=1;
+            }
             assert(dist[u] < INF);
             if (reportDistance) {
                 if (reportPolarity >= 0) {
@@ -1759,6 +1781,7 @@ public:
                     }
                 }
             }
+
             dbg_Q_order(q_dec);
             dbg_Q_order(q2);
 
@@ -1873,7 +1896,33 @@ public:
 #endif
 		return true;
 	}
-	bool dbg_uptodate() {
+    bool dbg_manual_uptodate() override{
+
+        if(last_modification<0)
+            return true;
+        update();
+        dbg_delta();
+        UnweightedDijkstra<Weight> d(source,g);
+
+        for(int i = 0;i<g.nodes();i++){
+            Weight dis = dist[i];
+            bool c = i<dist.size() && dist[i]<INF;
+            if(!c)
+                dis = this->unreachable();
+
+            Weight dbgdist = d.distance(i);
+
+            if(dis!=dbgdist){
+                assert(false);
+                throw std::logic_error("Internal error in Ramal Reps");
+            }
+        }
+//#endif
+
+        return true;
+    }
+
+    bool dbg_uptodate() {
 //#ifdef DEBUG_GRAPH
 #ifdef DEBUG_RAMAL2
 		if(last_modification<0)
