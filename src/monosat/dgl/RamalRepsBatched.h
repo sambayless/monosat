@@ -1110,7 +1110,9 @@ public:
 	std::vector<bool> in_queue_inc;
     std::vector<bool> in_queue_dec;
 	std::vector<bool> in_queue2;
+    std::vector<bool> in_queue_inc2;
 	std::vector<int> q_inc;
+    std::vector<int> q_inc_2;
     std::vector<int> q_dec;
 	std::vector<int> q2;
 	std::vector<int> edgeInShortestPathGraph;
@@ -1375,7 +1377,7 @@ public:
 			if (&_q == &q_inc) {
 				assert(in_queue_inc[v]);
 				assert(in_queue_inc[u]);
-				if (!(in_queue2[u] || in_queue2[v])) {
+				if (!(in_queue_inc2[u] || in_queue_inc2[v])) {
 
 					assert(dist[u] <= dist[v]);
 				}
@@ -1385,7 +1387,11 @@ public:
                 if (!(in_queue2[u] || in_queue2[v])) {
                     assert(dist[u] <= dist[v]);
                 }
-            }  else {
+            } else if (&_q == &q_inc_2) {
+                assert(in_queue_inc2[v]);
+                assert(in_queue_inc2[u]);
+                assert(dist[u] <= dist[v]);
+            } else {
 				assert(in_queue2[u]);
 				assert(in_queue2[v]);
 				assert(dist[u] <= dist[v]);
@@ -1567,7 +1573,7 @@ public:
             in_queue_inc.resize(g.nodes());
             in_queue_dec.resize(g.nodes());
             in_queue2.resize(g.nodes());
-
+            in_queue_inc2.resize(g.nodes());
 
 			for (int i = 0; i < g.nodes(); i++) {
 				if ((dist[i] >= INF && reportPolarity <= 0) || (dist[i] < INF && reportPolarity >= 0)) {
@@ -1636,16 +1642,40 @@ public:
 	}
 
     void processDistanceShorter(){
+        assert(!q_inc_2.size());
 #ifdef DEBUG_RAMAL
         for(int n:q_inc){
             assert(in_queue_inc[n]);
         }
+        for(int i = 0;i<in_queue2.size();i++){
+            assert(!in_queue2[i]);
+        }
 #endif
+        std::sort(q_inc.begin(), q_inc.end(), DistCmp(dist));
+        int i = 0, j = 0;
+        while (i < q_inc.size() || j < q_inc_2.size()) {
+            int u;
+            if (i == q_inc.size()) {
+                assert(j < q_inc_2.size());
+                u = q_inc_2[j++];
+            } else if (j == q_inc_2.size()) {
+                assert(i < q_inc.size());
+                u =q_inc[i++];
+                if (in_queue_inc2[u]) {
+                    continue;
+                }
+            } else if (dist[q_inc[i]] < dist[q_inc_2[j]]) {
+                u = q_inc[i++];
+                if (in_queue_inc2[u]) {
+                    continue;
+                }
+            } else {
+                assert(dist[q_inc_2[j]] <= dist[q_inc[i]]);
+                u = q_inc_2[j++];
+            }
 
-        for (int i = 0; i < q_inc.size(); i++) {
-            int u = q_inc[i];
             dbg_Q_order(q_inc);
-
+            dbg_Q_order(q_inc_2);
             if (!node_changed[u]) {
                 node_changed[u] = true;
                 changed.push_back(u);
@@ -1656,8 +1686,8 @@ public:
             delta[u] = 0;
             assert(dist[u] < INF);
             //for(auto & e:g.inverted_adjacency[u]){
-            for (int j = 0; j < g.nIncoming(u); j++) {
-                auto & e = g.incoming(u, j);
+            for (int k= 0; k < g.nIncoming(u); k++) {
+                auto & e = g.incoming(u, k);
                 int adjID = e.id;
                 if (g.edgeEnabled(adjID)) {
 
@@ -1688,8 +1718,8 @@ public:
                 }
             }
 
-            for (int j = 0; j < g.nIncident(u); j++) {
-                auto & e = g.incident(u, j);
+            for (int k = 0; k< g.nIncident(u);k++) {
+                auto & e = g.incident(u,k);
                 int adjID = e.id;
                 if (g.edgeEnabled(adjID)) {
                     assert(g.getEdge(adjID).from == u);
@@ -1702,13 +1732,13 @@ public:
                         alt = INF;
                     if (dist[s] > alt) {
                         dist[s] = alt;
-                        if (!in_queue_inc[s]) {
+                        if (!in_queue_inc2[s]) {
                             //q.update(s);
-                            dbg_Q_add(q_inc, s);
-                            q_inc.push_back(s);
-                            in_queue_inc[s] = true;
+                            dbg_Q_add(q_inc_2, s);
+                            q_inc_2.push_back(s);
+                            in_queue_inc2[s] = true;
                         }
-                        dbg_not_seen_q(q_inc, s, i);
+                        //dbg_not_seen_q(q_inc_2, s, i);
                     } else if (dist[s] == alt && !edgeInShortestPathGraph[adjID] && alt < INF) {
                         assert(alt < INF);
                         edgeInShortestPathGraph[adjID] = true;
@@ -1722,8 +1752,17 @@ public:
             in_queue_inc[j]=false;
         }
         q_inc.clear();
-
+        for(int j:q_inc_2){
+            assert(in_queue_inc2[j]);
+            in_queue_inc2[j]=false;
+        }
+        q_inc_2.clear();
 #ifdef DEBUG_RAMAL
+
+        for(int i = 0;i<in_queue_inc2.size();i++){
+            assert(!in_queue_inc2[i]);
+        }
+
         for(int i = 0;i<in_queue_inc.size();i++){
             assert(!in_queue_inc[i]);
         }
@@ -1771,6 +1810,10 @@ public:
             }
             if(dist[u]>=INF){
                 int a=1;
+            }
+            if(dist[u]>=INF) {
+                assert(delta[u]==0);
+                continue;
             }
             assert(dist[u] < INF);
             if (reportDistance) {

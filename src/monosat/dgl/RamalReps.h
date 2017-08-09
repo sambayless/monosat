@@ -1812,8 +1812,9 @@ public:
 			edgeInShortestPathGraph.resize(g.nEdgeIDs());
 			node_changed.resize(g.nodes());
 			changed.clear();
-			if (maxDistance < 0)
-				maxDistance = INF;
+			if(maxDistance<0 || maxDistance>=oldInf){
+                maxDistance = INF;
+            }
 			for (int i = 0; i < g.nodes(); i++) {
 				if ((dist[i] >= INF && reportPolarity <= 0) || (dist[i] < INF && reportPolarity >= 0)) {
 					node_changed[i] = true;
