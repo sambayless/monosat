@@ -1107,9 +1107,11 @@ public:
 		;
 	};
 	//Heap<DistCmp> q;
-	std::vector<bool> in_queue;
+	std::vector<bool> in_queue_inc;
+    std::vector<bool> in_queue_dec;
 	std::vector<bool> in_queue2;
-	std::vector<int> q;
+	std::vector<int> q_inc;
+    std::vector<int> q_dec;
 	std::vector<int> q2;
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
@@ -1332,85 +1334,12 @@ public:
 		delta[rv]++;
 		dist[rv] = altw;
 
-		q.clear();
-		in_queue.clear();
-		in_queue.resize(g.nodes());
-		in_queue2.resize(g.nodes());
-		q.push_back(rv);
-		in_queue[rv] = true;
 
-		for (int i = 0; i < q.size(); i++) {
-			int u = q[i];
-			dbg_Q_order(q);
-			assert(dist[u] < INF);
-			if (!node_changed[u]) {
-				node_changed[u] = true;
-				changed.push_back(u);
-			}
-			delta[u] = 0;
-			//for(auto & e:g.inverted_adjacency[u]){
-			for (int j = 0; j < g.nIncoming(u); j++) {
-				auto & e = g.incoming(u, j);
-				int adjID = e.id;
-				if (g.edgeEnabled(adjID)) {
+		q_inc.push_back(rv);
+		in_queue_inc[rv] = true;
 
-					assert(g.getEdge(adjID).to == u);
-					int v = g.getEdge(adjID).from;
-					int w = 1;		//assume a weight of one for now
-					int du = dist[u];
-					int dv = dist[v];
-					int alt = dist[v] + w;
-					if (alt > maxDistance)
-						alt = INF;
-					if (dist[u] == alt) {
-						assert(alt < INF);
-						edgeInShortestPathGraph[adjID] = true;
-						delta[u]++;
-					} else if (dist[u] < alt) {
-						//This doesn't hold for us, because we are allowing multiple edges to be added at once.
-						//assert(dist[u]<(dist[v]+w));
 
-						edgeInShortestPathGraph[adjID] = false;
-					} else {
-						//don't do anything. This will get corrected in a future call to GRRInc.
-						//assert(false);
 
-					}
-				} else {
-					edgeInShortestPathGraph[adjID] = false;	//need to add this, because we may have disabled multiple edges at once.
-				}
-			}
-
-			for (int j = 0; j < g.nIncident(u); j++) {
-				auto & e = g.incident(u, j);
-				int adjID = e.id;
-				if (g.edgeEnabled(adjID)) {
-					assert(g.getEdge(adjID).from == u);
-					int s = g.getEdge(adjID).to;
-					int w = 1;							//assume a weight of one for now
-					int du = dist[u];
-					int ds = dist[s];
-					int alt = dist[u] + w;
-					if (alt > maxDistance)
-						alt = INF;
-					if (dist[s] > alt) {
-						dist[s] = alt;
-						if (!in_queue[s]) {
-							//q.update(s);
-							dbg_Q_add(q, s);
-							q.push_back(s);
-							in_queue[s] = true;
-						}
-						dbg_not_seen_q(q, s, i);
-					} else if (dist[s] == alt && !edgeInShortestPathGraph[adjID] && alt < INF) {
-						assert(alt < INF);
-						edgeInShortestPathGraph[adjID] = true;
-						delta[s]++;
-					}
-				}
-			}
-		}
-		dbg_delta_lite();
 	}
 	void dbg_not_seen_q(std::vector<int> & q, int u, int from) {
 #ifdef DEBUG_RAMAL
@@ -1442,14 +1371,20 @@ public:
 			int v = _q[i];
 			int u = _q[i - 1];
 
-			if (&_q == &q) {
-				assert(in_queue[v]);
-				assert(in_queue[u]);
+			if (&_q == &q_inc) {
+				assert(in_queue_inc[v]);
+				assert(in_queue_inc[u]);
 				if (!(in_queue2[u] || in_queue2[v])) {
 
 					assert(dist[u] <= dist[v]);
 				}
-			} else {
+			}else if (&_q == &q_dec) {
+                assert(in_queue_dec[v]);
+                assert(in_queue_dec[u]);
+                if (!(in_queue2[u] || in_queue2[v])) {
+                    assert(dist[u] <= dist[v]);
+                }
+            }  else {
 				assert(in_queue2[u]);
 				assert(in_queue2[v]);
 				assert(dist[u] <= dist[v]);
@@ -1499,12 +1434,7 @@ public:
 		if (delta[rv] > 0)
 			return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
 
-		in_queue.clear();
-		in_queue.resize(g.nodes());
-		in_queue2.clear();
-		in_queue2.resize(g.nodes());
-		q.clear();
-		q2.clear();
+
 
 		changeset.clear();
 		changeset.push_back(rv);
@@ -1560,8 +1490,8 @@ public:
 			if (dist[u] < INF) {
 				//q.insert(u);
 				//dbg_Q_add(q,u);
-				q.push_back(u);
-				in_queue[u] = true;
+				q_dec.push_back(u);
+				in_queue_dec[u] = true;
 
 				if (reportPolarity >= 0) {
 					if (!node_changed[u]) {
@@ -1578,108 +1508,9 @@ public:
 			}
 
 		}
-		std::sort(q.begin(), q.end(), DistCmp(dist));
-		int i = 0, j = 0;
-		while (i < q.size() || j < q2.size()) {
-			int u;
-			if (i == q.size()) {
-				assert(j < q2.size());
-				u = q2[j++];
-			} else if (j == q2.size()) {
-				assert(i < q.size());
-				u = q[i++];
-				if (in_queue2[u]) {
-					continue;
-				}
-			} else if (dist[q[i]] < dist[q2[j]]) {
-				u = q[i++];
-				if (in_queue2[u]) {
-					continue;
-				}
-			} else {
-				assert(dist[q2[j]] <= dist[q[i]]);
-				u = q2[j++];
-			}
-			assert(dist[u] < INF);
-			if (reportDistance) {
-				if (reportPolarity >= 0) {
-					if (!node_changed[u]) {
-						node_changed[u] = true;
-						changed.push_back(u);
-					}
-				}
-			}
-			dbg_Q_order(q);
-			dbg_Q_order(q2);
 
-			for (int i = 0; i < g.nIncident(u); i++) {
-				auto & e = g.incident(u, i);
-				int adjID = e.id;
-				if (g.edgeEnabled(adjID)) {
-					assert(g.getEdge(adjID).from == u);
-					int s = g.getEdge(adjID).to;
-					int w = 1;				//assume a weight of one for now
-					int alt = dist[u] + w;
-					if (alt > maxDistance)
-						alt = INF;
-					if (dist[s] > alt) {
-						assert(alt < INF);
-						if (reportPolarity >= 0 && dist[s] >= 0) {
-							//This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
-							//to become reachable here. This is ONLY possible because we are batching multiple edge incs/decs at once (otherwise it would be impossible for removing an edge to decrease the distance to a node).
-							if (!node_changed[s]) {
-								node_changed[s] = true;
-								changed.push_back(s);
-							}
-						}
-						dist[s] = alt;
-						if (!in_queue2[s]) {
-							dbg_Q_add(q2, s);
-							q2.push_back(s);
-							in_queue2[s] = true;
-						}
 
-						dbg_Q_order(q2);
-						//dbg_not_seen_q(q2,s,j);
-					} else if (dist[s] == alt && !edgeInShortestPathGraph[adjID] && dist[s] < INF) {
-						assert(dist[s] < INF);
-						edgeInShortestPathGraph[adjID] = true;
-						delta[s]++;								//added by sam... not sure if this is correct or not.
-					}
-				}
-			}
 
-			for (int i = 0; i < g.nIncoming(u); i++) {
-				auto & e = g.incoming(u, i);
-				int adjID = e.id;
-				if (g.edgeEnabled(adjID)) {
-
-					assert(g.getEdge(adjID).to == u);
-					int v = g.getEdge(adjID).from;
-					int dv = dist[v];
-					int du = dist[u];
-					bool edgeIn = edgeInShortestPathGraph[adjID];
-					int w = 1;								//assume a weight of one for now
-					int alt = dist[v] + w;
-					if (alt > maxDistance)
-						alt = INF;
-					if (dist[u] == alt && !edgeInShortestPathGraph[adjID]) {
-						assert(!edgeInShortestPathGraph[adjID]);
-						assert(alt < INF);
-						edgeInShortestPathGraph[adjID] = true;
-						delta[u]++;
-					} else if (dist[u] < alt && edgeInShortestPathGraph[adjID]) {
-						edgeInShortestPathGraph[adjID] = false;
-						delta[u]--;
-						assert(!edgeInShortestPathGraph[adjID]);
-					} else if (dist[u] > alt) {
-						//assert(false);
-					}
-				}
-			}
-
-		}
-		dbg_delta_lite();
 	}
 
 	long num_updates = 0;
@@ -1716,6 +1547,11 @@ public:
 			edgeInShortestPathGraph.resize(g.nEdgeIDs());
 			node_changed.resize(g.nodes());
 			changed.clear();
+
+            in_queue_inc.resize(g.nodes());
+            in_queue_dec.resize(g.nodes());
+            in_queue2.resize(g.nodes());
+
 			if (maxDistance < 0)
 				maxDistance = INF;
 			for (int i = 0; i < g.nodes(); i++) {
@@ -1752,7 +1588,9 @@ public:
 				GRRDec(edgeid);
 			}
 		}
-
+        processDistanceLonger();
+        processDistanceShorter();
+        dbg_delta_lite();
 		//for(int i = 0;i<g.nodes();i++){
 		for (int u : changed) {
 			//int u=i;
@@ -1781,6 +1619,236 @@ public:
 		assert(dbg_uptodate());
 
 	}
+
+    void processDistanceShorter(){
+#ifdef DEBUG_RAMAL
+        for(int n:q_inc){
+            assert(in_queue_inc[n]);
+        }
+#endif
+
+        for (int i = 0; i < q_inc.size(); i++) {
+            int u = q_inc[i];
+            dbg_Q_order(q_inc);
+            assert(dist[u] < INF);
+            if (!node_changed[u]) {
+                node_changed[u] = true;
+                changed.push_back(u);
+            }
+            delta[u] = 0;
+            //for(auto & e:g.inverted_adjacency[u]){
+            for (int j = 0; j < g.nIncoming(u); j++) {
+                auto & e = g.incoming(u, j);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+
+                    assert(g.getEdge(adjID).to == u);
+                    int v = g.getEdge(adjID).from;
+                    int w = 1;		//assume a weight of one for now
+                    int du = dist[u];
+                    int dv = dist[v];
+                    int alt = dist[v] + w;
+                    if (alt > maxDistance)
+                        alt = INF;
+                    if (dist[u] == alt) {
+                        assert(alt < INF);
+                        edgeInShortestPathGraph[adjID] = true;
+                        delta[u]++;
+                    } else if (dist[u] < alt) {
+                        //This doesn't hold for us, because we are allowing multiple edges to be added at once.
+                        //assert(dist[u]<(dist[v]+w));
+
+                        edgeInShortestPathGraph[adjID] = false;
+                    } else {
+                        //don't do anything. This will get corrected in a future call to GRRInc.
+                        //assert(false);
+
+                    }
+                } else {
+                    edgeInShortestPathGraph[adjID] = false;	//need to add this, because we may have disabled multiple edges at once.
+                }
+            }
+
+            for (int j = 0; j < g.nIncident(u); j++) {
+                auto & e = g.incident(u, j);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+                    assert(g.getEdge(adjID).from == u);
+                    int s = g.getEdge(adjID).to;
+                    int w = 1;							//assume a weight of one for now
+                    int du = dist[u];
+                    int ds = dist[s];
+                    int alt = dist[u] + w;
+                    if (alt > maxDistance)
+                        alt = INF;
+                    if (dist[s] > alt) {
+                        dist[s] = alt;
+                        if (!in_queue_inc[s]) {
+                            //q.update(s);
+                            dbg_Q_add(q_inc, s);
+                            q_inc.push_back(s);
+                            in_queue_inc[s] = true;
+                        }
+                        dbg_not_seen_q(q_inc, s, i);
+                    } else if (dist[s] == alt && !edgeInShortestPathGraph[adjID] && alt < INF) {
+                        assert(alt < INF);
+                        edgeInShortestPathGraph[adjID] = true;
+                        delta[s]++;
+                    }
+                }
+            }
+        }
+        for(int j:q_inc){
+            assert(in_queue_inc[j]);
+            in_queue_inc[j]=false;
+        }
+        q_inc.clear();
+
+#ifdef DEBUG_RAMAL
+        for(int i = 0;i<in_queue_inc.size();i++){
+            assert(!in_queue_inc[i]);
+        }
+
+#endif
+    }
+    void processDistanceLonger(){
+        //breaking this up into a 'q' that is really a vector, and a second q2, also just a vector that will store the elements
+        //added to it afterward
+        //the idea here is to use vectors instead of heaps.
+        //the values in the original q might actually have differing values, and so do require sorting.
+        //this is why the line " else if (dist[q[i]] < dist[q2[j]]) " checks whether the next smallest element is in q or q2.
+        //however, because the graph is unweighted, it is safe to visit the elements of q2 in the order they are seen as well, storing them in a simple vector.
+        assert(!q2.size());
+#ifdef DEBUG_RAMAL
+        for(int n:q_dec){
+            assert(in_queue_dec[n]);
+        }
+        for(int i = 0;i<in_queue2.size();i++){
+            assert(!in_queue2[i]);
+        }
+#endif
+
+        std::sort(q_dec.begin(), q_dec.end(), DistCmp(dist));
+        int i = 0, j = 0;
+        while (i < q_dec.size() || j < q2.size()) {
+            int u;
+            if (i == q_dec.size()) {
+                assert(j < q2.size());
+                u = q2[j++];
+            } else if (j == q2.size()) {
+                assert(i < q_dec.size());
+                u =q_dec[i++];
+                if (in_queue2[u]) {
+                    continue;
+                }
+            } else if (dist[q_dec[i]] < dist[q2[j]]) {
+                u = q_dec[i++];
+                if (in_queue2[u]) {
+                    continue;
+                }
+            } else {
+                assert(dist[q2[j]] <= dist[q_dec[i]]);
+                u = q2[j++];
+            }
+            assert(dist[u] < INF);
+            if (reportDistance) {
+                if (reportPolarity >= 0) {
+                    if (!node_changed[u]) {
+                        node_changed[u] = true;
+                        changed.push_back(u);
+                    }
+                }
+            }
+            dbg_Q_order(q_dec);
+            dbg_Q_order(q2);
+
+            for (int i = 0; i < g.nIncident(u); i++) {
+                auto & e = g.incident(u, i);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+                    assert(g.getEdge(adjID).from == u);
+                    int s = g.getEdge(adjID).to;
+                    int w = 1;				//assume a weight of one for now
+                    int alt = dist[u] + w;
+                    if (alt > maxDistance)
+                        alt = INF;
+                    if (dist[s] > alt) {
+                        assert(alt < INF);
+                        if (reportPolarity >= 0 && dist[s] >= 0) {
+                            //This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
+                            //to become reachable here. This is ONLY possible because we are batching multiple edge incs/decs at once (otherwise it would be impossible for removing an edge to decrease the distance to a node).
+                            if (!node_changed[s]) {
+                                node_changed[s] = true;
+                                changed.push_back(s);
+                            }
+                        }
+                        dist[s] = alt;
+                        if (!in_queue2[s]) {
+                            dbg_Q_add(q2, s);
+                            q2.push_back(s);
+                            in_queue2[s] = true;
+                        }
+
+                        dbg_Q_order(q2);
+                        //dbg_not_seen_q(q2,s,j);
+                    } else if (dist[s] == alt && !edgeInShortestPathGraph[adjID] && dist[s] < INF) {
+                        assert(dist[s] < INF);
+                        edgeInShortestPathGraph[adjID] = true;
+                        delta[s]++;								//added by sam... not sure if this is correct or not.
+                    }
+                }
+            }
+
+            for (int i = 0; i < g.nIncoming(u); i++) {
+                auto & e = g.incoming(u, i);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+
+                    assert(g.getEdge(adjID).to == u);
+                    int v = g.getEdge(adjID).from;
+                    int dv = dist[v];
+                    int du = dist[u];
+                    bool edgeIn = edgeInShortestPathGraph[adjID];
+                    int w = 1;								//assume a weight of one for now
+                    int alt = dist[v] + w;
+                    if (alt > maxDistance)
+                        alt = INF;
+                    if (dist[u] == alt && !edgeInShortestPathGraph[adjID]) {
+                        assert(!edgeInShortestPathGraph[adjID]);
+                        assert(alt < INF);
+                        edgeInShortestPathGraph[adjID] = true;
+                        delta[u]++;
+                    } else if (dist[u] < alt && edgeInShortestPathGraph[adjID]) {
+                        edgeInShortestPathGraph[adjID] = false;
+                        delta[u]--;
+                        assert(!edgeInShortestPathGraph[adjID]);
+                    } else if (dist[u] > alt) {
+                        //assert(false);
+                    }
+                }
+            }
+
+        }
+
+        for(int j:q_dec){
+            assert(in_queue_dec[j]);
+            in_queue_dec[j]=false;
+        }
+        q_dec.clear();
+        for(int j:q2){
+            assert(in_queue2[j]);
+            in_queue2[j]=false;
+        }
+        q2.clear();
+#ifdef DEBUG_RAMAL
+        for(int i = 0;i<in_queue_dec.size();i++){
+            assert(!in_queue_dec[i]);
+        }
+        for(int i = 0;i<in_queue2.size();i++){
+            assert(!in_queue2[i]);
+        }
+#endif
+    }
 	void updateHistory(){
 		update();
 	}

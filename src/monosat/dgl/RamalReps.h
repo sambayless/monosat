@@ -1665,6 +1665,15 @@ public:
 			}
 
 		}
+
+		//breaking this up into a 'q' that is really a vector, and a second q2, also just a vector that will store the elements
+		//added to it afterward
+		//the idea here is to use vectors instead of heaps.
+		//the values in the original q might actually have differing values, and so do require sorting.
+		//this is why the line " else if (dist[q[i]] < dist[q2[j]]) " checks whether the next smallest element is in q or q2.
+		//however, because the graph is unweighted, it is safe to visit the elements of q2 in the order they are seen as well, storing them in a simple vector.
+
+
 		std::sort(q.begin(), q.end(), DistCmp(dist));
 		int i = 0, j = 0;
 		while (i < q.size() || j < q2.size()) {
