@@ -535,8 +535,8 @@ public:
 			int u = changeset[i];
 			assert(dist[u] == INF);
             int shortest_edge = -1;
-			for (int i = 0; i < g.nIncoming(u); i++) {
-				auto & e = g.incoming(u, i);
+			for (int j = 0; j < g.nIncoming(u);j++) {
+				auto & e = g.incoming(u, j);
 				int adjID = e.id;
 
 				if (g.edgeEnabled(adjID)) {
