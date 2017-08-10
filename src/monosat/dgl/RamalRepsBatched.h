@@ -318,8 +318,28 @@ public:
         assert(delta[rv]>=0);
         delta[rv]++;
 		q_inc.update(rv);
+        //maintain delta invariant
+        for (int j = 0; j < g.nIncoming(rv);j++) {
+            auto & e = g.incoming(rv, j);
+            int adjID = e.id;
 
+            if (g.edgeEnabled(adjID)) {
+                if(edgeInShortestPathGraph[adjID]) {
+                    assert(g.getEdge(adjID).to == rv);
+                    int v = g.getEdge(adjID).from;
+                    Weight &w = weights[adjID]; //assume a weight of one for now
+                    Weight alt = dist[v] + w;
 
+                    if (dist[rv] < alt || alt>=INF) {
+                        edgeInShortestPathGraph[adjID]=false;
+                        delta[rv]--;
+                    }
+                }
+            }
+
+        }
+        assert(delta[rv]>=1);
+        assert(edgeInShortestPathGraph[edgeID]);
 	}
 	void dbg_delta_lite() {
 #ifdef DEBUG_RAMAL
@@ -385,6 +405,29 @@ public:
             assert(delta[rv]>0);
         }
         q_inc.update(rv);
+
+        //maintain delta invariant
+        for (int j = 0; j < g.nIncoming(rv);j++) {
+            auto & e = g.incoming(rv, j);
+            int adjID = e.id;
+
+            if (g.edgeEnabled(adjID)) {
+                if(edgeInShortestPathGraph[adjID]) {
+                    assert(g.getEdge(adjID).to == rv);
+                    int v = g.getEdge(adjID).from;
+                    Weight &w = weights[adjID]; //assume a weight of one for now
+                    Weight alt = dist[v] + w;
+
+                    if (dist[rv] < alt || alt>=INF) {
+                        edgeInShortestPathGraph[adjID]=false;
+                        delta[rv]--;
+                    }
+                }
+            }
+
+        }
+        assert(delta[rv]>=1);
+        assert(edgeInShortestPathGraph[edgeID]);
     }
     //Called if the weight of an edge is increased
     void GRRIncreaseWeight(int edgeID) {
@@ -1342,7 +1385,26 @@ public:
             in_queue_inc[rv] = true;
         }
 
+        //maintain delta invariant
+        for (int j = 0; j < g.nIncoming(rv);j++) {
+            auto & e = g.incoming(rv, j);
+            int adjID = e.id;
+            if (g.edgeEnabled(adjID)) {
+                if(edgeInShortestPathGraph[adjID]) {
+                    assert(g.getEdge(adjID).to == rv);
+                    int v = g.getEdge(adjID).from;
+                    Weight w =1;
+                    Weight alt = dist[v] + w;
+                    if (dist[rv] < alt || alt>=INF) {
+                        edgeInShortestPathGraph[adjID]=false;
+                        delta[rv]--;
+                    }
+                }
+            }
 
+        }
+        assert(delta[rv]>=1);
+        assert(edgeInShortestPathGraph[edgeID]);
 	}
 	void dbg_not_seen_q(std::vector<int> & q, int u, int from) {
 #ifdef DEBUG_RAMAL
@@ -1684,7 +1746,7 @@ public:
                 int a=1;
             }
             delta[u] = 0;
-            assert(dist[u] < INF);
+            //assert(dist[u] < INF);
             //for(auto & e:g.inverted_adjacency[u]){
             for (int k= 0; k < g.nIncoming(u); k++) {
                 auto & e = g.incoming(u, k);
@@ -1699,7 +1761,9 @@ public:
                     int alt = dist[v] + w;
                     if (alt > maxDistance)
                         alt = INF;
-                    if (dist[u] == alt) {
+                    if(alt>=INF){
+                        edgeInShortestPathGraph[adjID] = false;
+                    }else if (dist[u] == alt) {
                         assert(alt < INF);
                         edgeInShortestPathGraph[adjID] = true;
                         delta[u]++;
@@ -1731,7 +1795,7 @@ public:
                     if (alt > maxDistance)
                         alt = INF;
                     if (dist[s] > alt) {
-                        dist[s] = alt;
+                        dist[s] = alt;assert(alt < INF);
                         if (!in_queue_inc2[s]) {
                             //q.update(s);
                             dbg_Q_add(q_inc_2, s);
