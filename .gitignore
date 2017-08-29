@@ -9,6 +9,9 @@
 /src/monosat/api/python/build
 Release/*
 Release2/*
+MinSizeRel/*
+RelWithDebInfo/*
+SharedLibraryDbg/*
 Debug/*
 Klee/*
 coverage/*
