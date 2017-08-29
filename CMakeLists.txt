@@ -119,6 +119,7 @@ set(SOURCE_FILES
         src/monosat/dgl/Prim.h
         src/monosat/dgl/RamalReps.h
         src/monosat/dgl/RamalRepsBatched.h
+        src/monosat/dgl/RamalRepsBatchedUnified.h
         src/monosat/dgl/Reach.cpp
         src/monosat/dgl/Reach.h
         src/monosat/dgl/SpiraPan.h

@@ -426,7 +426,7 @@ public:
         //decreasing this edge weight has decreased the shortest path length to rv
         edgeInShortestPathGraph[edgeID] = true;
         delta[rv]++;//probably not required
-        assert(dist[ru] + (weight< dist[rv]));
+        assert((dist[ru] + weight) < dist[rv]);
         dist[rv] = dist[ru] + weight;
         q.clear();
         q.insert(rv);
