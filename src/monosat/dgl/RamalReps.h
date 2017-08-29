@@ -286,7 +286,7 @@ public:
 #endif
 	}
 
-	void GRRInc(int edgeID) {
+	void AddEdge(int edgeID) {
 		static int iter = 0;
 		++iter;
 		dbg_delta_lite();
@@ -344,7 +344,7 @@ public:
 
 						edgeInShortestPathGraph[adjID] = false;
 					} else {
-						//don't do anything. This will get corrected in a future call to GRRInc.
+						//don't do anything. This will get corrected in a future call to AddEdge.
 						//assert(false);
 
 					}
@@ -396,7 +396,7 @@ public:
 	}
 
     //Called if an edge weight is decreased
-    void GRRDecreaseWeight(int edgeID) {
+    void DecreaseWeight(int edgeID) {
         static int iter = 0;
         ++iter;
         dbg_delta_lite();
@@ -459,7 +459,7 @@ public:
 
                         edgeInShortestPathGraph[adjID] = false;
                     } else {
-                        //don't do anything. This will get corrected in a future call to GRRInc.
+                        //don't do anything. This will get corrected in a future call to AddEdge.
                         //assert(false);
 
                     }
@@ -490,7 +490,7 @@ public:
         dbg_delta_lite();
     }
     //Called if the weight of an edge is increased
-    void GRRIncreaseWeight(int edgeID) {
+    void IncreaseWeight(int edgeID) {
         dbg_delta_lite();
         assert(g.edgeEnabled(edgeID)); //the edge must be enabled, in order to have its weight decreased
         //First, check if this edge is actually in the shortest path graph. If it isn't, then increasing its weight has no effect
@@ -654,7 +654,7 @@ public:
     }
 
     //Called if an edge is removed
-	void GRRDec(int edgeID) {
+	void RemoveEdge(int edgeID) {
 		dbg_delta_lite();
         assert(!g.edgeEnabled(edgeID));
 		//First, check if this edge is actually in the shortest path graph
@@ -893,16 +893,16 @@ public:
 						if (g.edgeEnabled(edgeid)) {
                             if(weights[edgeid]<local_weights[edgeid]){
                                 local_weights[edgeid] = weights[edgeid];
-                                GRRDecreaseWeight(edgeid);
+                                DecreaseWeight(edgeid);
                             }else if(weights[edgeid]>local_weights[edgeid]){
                                 local_weights[edgeid] = weights[edgeid];
-                                GRRIncreaseWeight(edgeid);
+                                IncreaseWeight(edgeid);
                             }else{
-                                GRRInc(edgeid);
+                                AddEdge(edgeid);
                             }
 						} else {
                             local_weights[edgeid] = weights[edgeid];
-							GRRDec(edgeid);
+							RemoveEdge(edgeid);
 						}
 					}
 				}
@@ -913,21 +913,21 @@ public:
                 if(g.getChange(i).weight_increase || g.getChange(i).weight_decrease) {
                     if (g.getChange(i).weight_decrease && g.edgeEnabled(edgeid)) {
                         local_weights[edgeid] = weights[edgeid];
-                        GRRDecreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the grrdecreaseweight
+                        DecreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
                         //code runs on weights, not local weights, and so it might be out of sync with local weights
                     }else if (g.getChange(i).weight_increase && g.edgeEnabled(edgeid)){
                         local_weights[edgeid] = weights[edgeid];
-                        GRRIncreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the grrdecreaseweight
+                        IncreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
                         //code runs on weights, not local weights, and so it might be out of sync with local weights
                     }
                 }else if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
                     assert(!g.getChange(i).weight_increase);assert(!g.getChange(i).weight_decrease);
                     local_weights[edgeid] = weights[edgeid];
-					GRRInc(edgeid);
+					AddEdge(edgeid);
 				} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
                     assert(!g.getChange(i).weight_increase);assert(!g.getChange(i).weight_decrease);
                     local_weights[edgeid] = weights[edgeid];
-					GRRDec(edgeid);
+					RemoveEdge(edgeid);
 				}
 			}
 		}
@@ -1387,7 +1387,7 @@ public:
 #endif
 	}
 
-	void GRRInc(int edgeID) {
+	void AddEdge(int edgeID) {
 		static int iter = 0;
 		++iter;
 		dbg_delta_lite();
@@ -1459,7 +1459,7 @@ public:
 
 						edgeInShortestPathGraph[adjID] = false;
 					} else {
-						//don't do anything. This will get corrected in a future call to GRRInc.
+						//don't do anything. This will get corrected in a future call to AddEdge.
 						//assert(false);
 
 					}
@@ -1570,7 +1570,7 @@ public:
 
 	}
 
-	void GRRDec(int edgeID) {
+	void RemoveEdge(int edgeID) {
 		dbg_delta_lite();
 		assert(!g.edgeEnabled(edgeID));
 		//First, check if this edge is actually in the shortest path graph
@@ -1833,9 +1833,9 @@ public:
 				last_history_clear = g.historyclears;
 				for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 					if (g.edgeEnabled(edgeid)) {
-						GRRInc(edgeid);
+						AddEdge(edgeid);
 					} else {
-						GRRDec(edgeid);
+						RemoveEdge(edgeid);
 					}
 				}
 			}
@@ -1844,9 +1844,9 @@ public:
 		for (int i = history_qhead; i < g.historySize(); i++) {
 			int edgeid = g.getChange(i).id;
 			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-				GRRInc(edgeid);
+				AddEdge(edgeid);
 			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
-				GRRDec(edgeid);
+				RemoveEdge(edgeid);
 			}
 		}
 
