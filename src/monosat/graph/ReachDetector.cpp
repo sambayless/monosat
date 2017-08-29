@@ -22,6 +22,7 @@
 #include "monosat/graph/ReachDetector.h"
 #include "monosat/dgl/RamalReps.h"
 #include "monosat/dgl/RamalRepsBatched.h"
+#include "monosat/dgl/RamalRepsBatchedUnified.h"
 #include "monosat/dgl/BFS.h"
 #include "monosat/graph/GraphTheory.h"
 #include "monosat/core/Config.h"
@@ -176,6 +177,35 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
                                                                                                           -1, false);
         }else {
             overapprox_reach_detector = new UnweightedRamalRepsBatched<Weight, ReachDetector<Weight>::ReachStatus>(from,
+                                                                                                                   _antig,
+                                                                                                                   *(negativeReachStatus),
+                                                                                                                   -1, false);
+        }
+        overapprox_path_detector=overapprox_reach_detector;
+        //RamalReps now supports finding paths
+        //underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
+        //overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+        negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+    }else if (reachalg == ReachAlg::ALG_RAMAL_REPS_BATCHED2) {
+        if (!opt_encode_reach_underapprox_as_sat) {
+            underapprox_detector = new UnweightedRamalRepsBatchedUnified<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
+                                                                                                             *(positiveReachStatus), 1, false);
+            underapprox_path_detector=underapprox_detector;
+        } else {
+            underapprox_fast_detector = new UnweightedRamalRepsBatchedUnified<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
+                                                                                                                  *(positiveReachStatus), 1, false);
+            underapprox_path_detector=underapprox_fast_detector;
+            //positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
+        }
+
+        if (outer->assignEdgesToWeight()){
+            //need to use weighted over approx detector to take advantage of the assignEdgesToZeroWeight heuristic
+            overapprox_reach_detector = new  RamalRepsBatchedUnified<Weight, ReachDetector<Weight>::ReachStatus>(from,
+                                                                                                          _antig,
+                                                                                                          *(negativeReachStatus),
+                                                                                                          -1, false);
+        }else {
+            overapprox_reach_detector = new UnweightedRamalRepsBatchedUnified<Weight, ReachDetector<Weight>::ReachStatus>(from,
                                                                                                                    _antig,
                                                                                                                    *(negativeReachStatus),
                                                                                                                    -1, false);

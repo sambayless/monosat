@@ -304,9 +304,9 @@ public:
 		Weight & rdu = dist[ru];
 
 		Weight& weight = weights[edgeID];
-		if (dist[rv] < dist[ru] + weight)
+		if (dist[rv] < (dist[ru] + weight))
 			return;
-		else if (dist[rv] == dist[ru] + weight) {
+		else if (dist[rv] == (dist[ru] + weight)) {
 			assert(!edgeInShortestPathGraph[edgeID]);
 			edgeInShortestPathGraph[edgeID] = true;
 			delta[rv]++; //we have found an alternative shortest path to v
@@ -379,11 +379,11 @@ public:
         Weight & rdu = dist[ru];
 
         Weight& weight = weights[edgeID];
-        if (dist[rv] < dist[ru] + weight) {
+        if (dist[rv] < (dist[ru] + weight)) {
             assert(!edgeInShortestPathGraph[edgeID]);
             return;
         }
-        else if (dist[rv] == dist[ru] + weight) {
+        else if (dist[rv] == (dist[ru] + weight)) {
             if(!edgeInShortestPathGraph[edgeID]) {
                 edgeInShortestPathGraph[edgeID] = true;
                 delta[rv]++; //we have found an alternative shortest path to v
@@ -845,15 +845,15 @@ public:
                     Weight & du = dist[u];
                     bool edgeIn = edgeInShortestPathGraph[adjID];
                     Weight & w = weights[adjID];							//assume a weight of one for now
-                    if (dist[u] == dist[v] + w && !edgeInShortestPathGraph[adjID]) {
+                    if (dist[u] == (dist[v] + w) && !edgeInShortestPathGraph[adjID]) {
                         assert(!edgeInShortestPathGraph[adjID]);
                         edgeInShortestPathGraph[adjID] = true;
                         delta[u]++;
-                    } else if (dist[u] < dist[v] + w && edgeInShortestPathGraph[adjID]) {
+                    } else if (dist[u] < (dist[v] + w) && edgeInShortestPathGraph[adjID]) {
                         edgeInShortestPathGraph[adjID] = false;
                         delta[u]--;
                         assert(!edgeInShortestPathGraph[adjID]);
-                    } else if (dist[u] > dist[v] + w) {
+                    } else if (dist[u] > (dist[v] + w)) {
                         //assert(false);
                     }
                 }
@@ -880,7 +880,7 @@ public:
                     Weight & w = weights[adjID]; //assume a weight of one for now
                     Weight & du = dist[u];
                     Weight & dv = dist[v];
-                    if (dist[u] == dist[v] + w) {
+                    if (dist[u] == (dist[v] + w)) {
                         edgeInShortestPathGraph[adjID] = true;
                         delta[u]++;
                     } else if (dist[u] < (dist[v] + w)) {
@@ -907,10 +907,10 @@ public:
                     Weight & w = weights[adjID];							//assume a weight of one for now
                     Weight & du = dist[u];
                     Weight & ds = dist[s];
-                    if (dist[s] > dist[u] + w) {
+                    if (dist[s] > (dist[u] + w)) {
                         dist[s] = dist[u] + w;
                         q_inc.update(s);
-                    } else if (dist[s] == dist[u] + w && !edgeInShortestPathGraph[adjID]) {
+                    } else if (dist[s] == (dist[u] + w) && !edgeInShortestPathGraph[adjID]) {
                         edgeInShortestPathGraph[adjID] = true;
                         delta[s]++;
                     }
