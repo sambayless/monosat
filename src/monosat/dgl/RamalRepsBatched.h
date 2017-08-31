@@ -297,9 +297,7 @@ public:
 			return;
 		int ru = g.getEdge(edgeID).from;
 		int rv = g.getEdge(edgeID).to;
-        if(rv==5748){
-            int a =1;
-        }
+
 		Weight & rdv = dist[rv];
 		Weight & rdu = dist[ru];
 
@@ -313,7 +311,7 @@ public:
 			return;
 		}
 		edgeInShortestPathGraph[edgeID] = true;
-		//delta[rv]++;
+		assert(dist[ru] + weight<INF);
 		dist[rv] = dist[ru] + weight;
         assert(delta[rv]>=0);
         delta[rv]++;
@@ -541,9 +539,7 @@ public:
 
 		int ru = g.getEdge(edgeID).from;
 		int rv = g.getEdge(edgeID).to;
-        if(rv==5748){
-            int a =1;
-        }
+
 		assert(delta[rv] > 0);
 		delta[rv]--;
 		if (delta[rv] > 0)
@@ -587,6 +583,9 @@ public:
 					int v = g.getEdge(adjID).from;
 					Weight & w = weights[adjID]; //assume a weight of one for now
 					Weight alt = dist[v] + w;
+                    if(alt>INF){
+                        alt=INF;
+                    }
 					assert(!edgeInShortestPathGraph[adjID]);
 					if (dist[u] > alt) {
                         assert(alt<INF);
@@ -789,6 +788,27 @@ public:
       }
 #endif
 	}
+    bool ancestorInQInc(int v){
+#ifdef DEBUG_RAMAL
+        Weight & d = dist[v];
+        if(q_inc.inHeap(v)){
+            return true;
+        }else{
+            for(int i = 0;i<g.nIncoming(v);i++){
+                int from = g.incoming(v,i).node;
+                int id = g.incoming(v,i).id;
+                if(g.edgeEnabled(id) && dist[from]<d && ancestorInQInc(from)){
+                    return true;
+                }
+            }
+        }
+        return false;
+#endif
+        return true;
+    }
+
+
+
     void processDistanceLonger(){
         while (q_dec.size() > 0) {
             int u = q_dec.removeMin();
@@ -815,6 +835,9 @@ public:
                     int s = g.getEdge(adjID).to;
                     Weight w = weights[adjID];				//assume a weight of one for now
                     Weight alt = dist[u] + w;
+                    if(alt>INF){
+                        alt=INF;
+                    };
                     if (dist[s] > alt) {
                         if (reportPolarity >= 0 && dist[s] >= 0) {
                             //This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
@@ -827,9 +850,12 @@ public:
 
                         dist[s] = alt;
                         q_dec.update(s);
-                    } else if (dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
+                    } else if (alt<INF && dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
                         edgeInShortestPathGraph[adjID] = true;
                         delta[s]++;							//added by sam... not sure if this is correct or not.
+                    }else if(alt==INF && edgeInShortestPathGraph[adjID]){
+                        edgeInShortestPathGraph[adjID]=false;
+                        delta[s]--;
                     }
                 }
             }
@@ -844,17 +870,21 @@ public:
                     Weight & dv = dist[v];
                     Weight & du = dist[u];
                     bool edgeIn = edgeInShortestPathGraph[adjID];
-                    Weight & w = weights[adjID];							//assume a weight of one for now
-                    if (dist[u] == (dist[v] + w) && !edgeInShortestPathGraph[adjID]) {
+                    Weight alt = (dist[v] + weights[adjID]);
+                    if(alt>INF){
+                        alt = INF;
+                    }
+                    if (alt<INF &&  dist[u] == alt && !edgeInShortestPathGraph[adjID]) {
                         assert(!edgeInShortestPathGraph[adjID]);
                         edgeInShortestPathGraph[adjID] = true;
                         delta[u]++;
-                    } else if (dist[u] < (dist[v] + w) && edgeInShortestPathGraph[adjID]) {
+                    } else if ((dist[u] < alt || alt==INF) && edgeInShortestPathGraph[adjID]) {
                         edgeInShortestPathGraph[adjID] = false;
                         delta[u]--;
                         assert(!edgeInShortestPathGraph[adjID]);
-                    } else if (dist[u] > (dist[v] + w)) {
-                        //assert(false);
+                    } else if (dist[u] > alt) {
+                        //assert(q_inc.inHeap(u) || ancestorInQInc(v)); //this condition doesn't need to hold, as it is enough for some ancestor of v to be in the q
+
                     }
                 }
             }
@@ -877,13 +907,16 @@ public:
 
                     assert(g.getEdge(adjID).to == u);
                     int v = g.getEdge(adjID).from;
-                    Weight & w = weights[adjID]; //assume a weight of one for now
                     Weight & du = dist[u];
                     Weight & dv = dist[v];
-                    if (dist[u] == (dist[v] + w)) {
+                    Weight alt = dist[v] +weights[adjID];
+                    if(alt>INF){
+                        alt= INF;
+                    }
+                    if (dist[u] == alt && alt<INF) {
                         edgeInShortestPathGraph[adjID] = true;
                         delta[u]++;
-                    } else if (dist[u] < (dist[v] + w)) {
+                    } else if (dist[u] < alt || (alt==INF)) {
                         //This doesn't hold for us, because we are allowing multiple edges to be added at once.
                         //assert(dist[u]<(dist[v]+w));
 
@@ -904,16 +937,25 @@ public:
                 if (g.edgeEnabled(adjID)) {
                     assert(g.getEdge(adjID).from == u);
                     int s = g.getEdge(adjID).to;
-                    Weight & w = weights[adjID];							//assume a weight of one for now
                     Weight & du = dist[u];
                     Weight & ds = dist[s];
-                    if (dist[s] > (dist[u] + w)) {
-                        dist[s] = dist[u] + w;
-                        q_inc.update(s);
-                    } else if (dist[s] == (dist[u] + w) && !edgeInShortestPathGraph[adjID]) {
-                        edgeInShortestPathGraph[adjID] = true;
-                        delta[s]++;
+                    Weight alt = dist[u] + weights[adjID];
+                    if(alt>INF){
+                        alt= INF;
                     }
+                    if (alt<INF && dist[s] > alt) {
+                        dist[s] = alt;
+                        q_inc.update(s);
+                    } else if (alt<INF && dist[s] == alt) {
+                        if(!edgeInShortestPathGraph[adjID]) {
+                            edgeInShortestPathGraph[adjID] = true;
+                            delta[s]++;
+                        }
+                    }else{
+                        //assert(!edgeInShortestPathGraph[adjID] || ( dist[s] >=dist[u] && q_inc.inHeap(s)));
+                    }
+                }else{
+                    assert(!edgeInShortestPathGraph[adjID]);
                 }
             }
         }
@@ -1807,6 +1849,9 @@ public:
                         assert(alt < INF);
                         edgeInShortestPathGraph[adjID] = true;
                         delta[s]++;
+                    }else if (alt==INF && edgeInShortestPathGraph[adjID] ){
+                        edgeInShortestPathGraph[adjID]=false;
+                        delta[s]--;
                     }
                 }
             }
@@ -1925,6 +1970,9 @@ public:
                         assert(dist[s] < INF);
                         edgeInShortestPathGraph[adjID] = true;
                         delta[s]++;								//added by sam... not sure if this is correct or not.
+                    }else if (alt==INF && edgeInShortestPathGraph[adjID]){
+                        edgeInShortestPathGraph[adjID]=false;
+                        delta[s]--;
                     }
                 }
             }
@@ -1948,7 +1996,7 @@ public:
                         assert(alt < INF);
                         edgeInShortestPathGraph[adjID] = true;
                         delta[u]++;
-                    } else if (dist[u] < alt && edgeInShortestPathGraph[adjID]) {
+                    } else if ((dist[u] < alt || alt==INF ) && edgeInShortestPathGraph[adjID]) {
                         edgeInShortestPathGraph[adjID] = false;
                         delta[u]--;
                         assert(!edgeInShortestPathGraph[adjID]);

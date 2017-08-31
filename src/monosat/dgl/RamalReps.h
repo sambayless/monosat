@@ -447,13 +447,17 @@ public:
 
                     assert(g.getEdge(adjID).to == u);
                     int v = g.getEdge(adjID).from;
-                    Weight & w = weights[adjID]; //assume a weight of one for now
+                    //Weight & w = weights[adjID]; //assume a weight of one for now
                     Weight & du = dist[u];
                     Weight & dv = dist[v];
-                    if (dist[u] == (dist[v] + w)) {
+                    Weight alt = (dist[v] + weights[adjID]);
+                    if(alt>INF){
+                        alt = INF;
+                    }
+                    if (alt<INF && dist[u] == alt) {
                         edgeInShortestPathGraph[adjID] = true;
                         delta[u]++;
-                    } else if (dist[u] < (dist[v] + w)) {
+                    } else if (dist[u] < alt || alt==INF) {
                         //This doesn't hold for us, because we are allowing multiple edges to be added at once.
                         //assert(dist[u]<(dist[v]+w));
 
@@ -477,12 +481,18 @@ public:
                     Weight & w = weights[adjID];							//assume a weight of one for now
                     Weight & du = dist[u];
                     Weight & ds = dist[s];
-                    if (dist[s] > (dist[u] + w)) {
-                        dist[s] = dist[u] + w;
+                    Weight alt = (dist[u] + weights[adjID]);
+                    if(alt>INF){
+                        alt = INF;
+                    }
+                    if (alt<INF && dist[s] > alt) {
+                        dist[s] = alt;
                         q.update(s);
-                    } else if (dist[s] == (dist[u] + w) && !edgeInShortestPathGraph[adjID]) {
+                    } else if (alt<INF && dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
                         edgeInShortestPathGraph[adjID] = true;
                         delta[s]++;
+                    }else{
+                        assert(!edgeInShortestPathGraph[adjID]);
                     }
                 }
             }
