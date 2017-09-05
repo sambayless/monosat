@@ -24,13 +24,13 @@ import pcrt
 import itertools
 
 #There are many ways to perform circuit routing using MonoSAT.
-#This approach uses just one graph, and uses a conjunction of MonoSAT's built-in reachability constraints to ensure
+#The approach uses just one graph, and uses a combination of MonoSAT's built-in reachability constraints to ensure
 #nets are routed, while using propositional constraints over the edges in the graph to prevent nets from intersecting.
 #This function also supports a slightly more complex router, which combines reachability and maximum flow constraints.
 #The maximum flow constraint is not powerful enough to ensure correct routing, but is a (safe) overapproximative
 #constraint, that allows the solver to prune large parts of the search space early.
 #
-#The variation described here supports only 2-terminal routing; use router_multi.py for multi-terminal routing.
+#The variation described here supports on 2-terminal routing; use router_multi.py for multi-terminal routing.
 #Finally, for the special case of Escape Routing (in which the destinations are interchangeable), see
 #
 #Bayless, Sam, Holger H. Hoos, and Alan J. Hu. "Scalable, high-quality, SAT-based multi-layer escape routing."
@@ -69,7 +69,7 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
 
     disabled_nodes = set(disabled)
     undirected_edges = dict()
-
+    #create undirected edges between neighbouring nodes
     if draw_solution:
         #the dicts here are only used to print the solution at the end. Disable for benchmarking.
         lefts = dict()

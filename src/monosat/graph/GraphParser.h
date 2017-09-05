@@ -152,6 +152,17 @@ class GraphParser: public Parser<B, Solver> {
 	};
 	vec<ParseEdgeSet> edge_sets;
 
+
+
+public:
+	GraphTheorySolver<int64_t>* getGraphTheory(int graphID){
+		assert(graphID>=0);
+		assert(graphID<graphs.size());
+		assert(graphs[graphID]);
+		return graphs[graphID];
+	}
+private:
+
 	void readDiGraph(B& in, GraphType graph_type, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);

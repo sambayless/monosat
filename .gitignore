@@ -11,6 +11,13 @@ Release/*
 Release2/*
 Debug/*
 Klee/*
+MinSizeRel/*
+RelWithDebInfo/*
+SharedLibraryDbg/*
+cmake-build-debug/*
+cmake-build-minsizerel/*
+cmake-build-release/*
+cmake-build-relwithdebinfo/*
 coverage/*
 Static/*
 Win32/*

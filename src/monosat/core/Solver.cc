@@ -516,6 +516,7 @@ void Solver::cancelUntil(int lev) {
 				Lit p = trail[q];
 				if (hasTheory(p)) {
 					int theoryID = getTheoryID(p);
+                    theories[theoryID]->backtrackUntil(decisionLevel());
 					if (theory_reprop_trail_pos[theoryID] ==-1 &&  q>= theory_init_prop_trail_pos[theoryID] && !theorySatisfied(theories[theoryID])) {
 						needsPropagation(theoryID);
 						theories[theoryID]->enqueueTheory(getTheoryLit(p));

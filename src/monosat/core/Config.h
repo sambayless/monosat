@@ -256,7 +256,7 @@ enum class PointInPolygonAlg {
 extern PointInPolygonAlg pipalg;
 
 enum class ReachAlg {
-	ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_RAMAL_REPS
+	ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_RAMAL_REPS, ALG_RAMAL_REPS_BATCHED,ALG_RAMAL_REPS_BATCHED2
 };
 
 //For undirected reachability
@@ -307,7 +307,7 @@ enum class ConvexHullAlg {
 extern ConvexHullAlg hullAlg;
 
 enum class DistAlg {
-	ALG_SAT, ALG_DIJKSTRA, ALG_DISTANCE, ALG_RAMAL_REPS
+	ALG_SAT, ALG_DIJKSTRA, ALG_DISTANCE, ALG_RAMAL_REPS, ALG_RAMAL_REPS_BATCHED,ALG_RAMAL_REPS_BATCHED2
 };
 
 extern DistAlg distalg;

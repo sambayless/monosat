@@ -281,7 +281,11 @@ void _selectAlgorithms(){
 		reachalg = ReachAlg::ALG_SAT;
 	} else if (!strcasecmp(opt_reach_alg, "ramal-reps")) {
 		reachalg = ReachAlg::ALG_RAMAL_REPS;
-	} else {
+	} else if (!strcasecmp(opt_reach_alg, "ramal-reps-batch")) {
+		reachalg = ReachAlg::ALG_RAMAL_REPS_BATCHED;
+	} else if (!strcasecmp(opt_reach_alg, "ramal-reps-batch2")) {
+        reachalg = ReachAlg::ALG_RAMAL_REPS_BATCHED2;
+    } else {
 		api_errorf( "Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 
 	}
@@ -298,7 +302,11 @@ void _selectAlgorithms(){
 		distalg = DistAlg::ALG_SAT;
 	} else if (!strcasecmp(opt_dist_alg, "ramal-reps")) {
 		distalg = DistAlg::ALG_RAMAL_REPS;
-	} else {
+	}else if (!strcasecmp(opt_dist_alg, "ramal-reps-batch")) {
+		distalg = DistAlg::ALG_RAMAL_REPS_BATCHED;
+	}else if (!strcasecmp(opt_dist_alg, "ramal-reps-batch2")) {
+		distalg = DistAlg::ALG_RAMAL_REPS_BATCHED2;
+	}   else {
 		api_errorf(  "Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
 
 	}

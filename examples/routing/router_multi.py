@@ -536,7 +536,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                             assert(e in up_rights.values() or e in  down_rights.values() or e in  downs.values() or e in rights.values())
                             paths.add(e)
 
-               #print the solution to the console
+            #print the solution to the console
             for y in range(height):
                 for x in range(width):
                     n = (x,y)

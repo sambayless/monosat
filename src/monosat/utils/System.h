@@ -30,7 +30,7 @@
 //-------------------------------------------------------------------------------------------------
 
 namespace Monosat {
-static inline double fastTime(void); // CPU-time in seconds (fast, poosibly less accurate).
+static inline double fastTime(void); // CPU-time in seconds (fast, possibly less accurate).
 static inline double cpuTime(void); // CPU-time in seconds.
 extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
 extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for unsupported architectures).
