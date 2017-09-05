@@ -528,6 +528,9 @@ public:
 				}
 				INF += w;
 			}
+            if(INF<(INF*100)){
+                INF=INF*100;
+            }
             if(INF<oldInf){
                 INF=oldInf;
             }
