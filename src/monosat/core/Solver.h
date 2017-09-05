@@ -357,6 +357,9 @@ public:
 		return (Var) theory_vars[v].theory_var;
 	}
 
+    vec<Theory*> & getTheories(){
+        return theories;
+    }
 	//Translate a literal into its corresponding theory literal (if it has a theory literal)
 	Lit getTheoryLit(Lit l) {
 		assert(hasTheory(l));

@@ -236,6 +236,23 @@ public:
         if(opt_decide_theories){
             printf("\t%ld heuristic path recomputations\n",stats_heuristic_recomputes);
         }
+		if(overapprox_reach_detector){
+			printf("\t\tOverapproxReach: ");
+			overapprox_reach_detector->printStats();
+		}
+		if(overapprox_path_detector){
+			printf("\t\tOverapproxPath: ");
+			overapprox_path_detector->printStats();
+		}
+		if(underapprox_path_detector){
+			printf("\t\tUnderapproxReach: ");
+			underapprox_path_detector->printStats();
+		}
+
+		if(underapprox_fast_detector){
+			printf("\t\tUnderapproxFast: ");
+			underapprox_fast_detector->printStats();
+		}
 	}
 	
 	struct ReachStatus {
@@ -396,6 +413,7 @@ public:
 
 	 }*/
 
+	void attachSubHeuristic(Heuristic * h, int to);
 	void buildSATConstraints(bool onlyUnderApprox = false, int within_steps = -1);
 	bool propagate(vec<Lit> & conflict);
 	void buildReachReason(int node, vec<Lit> & conflict);
@@ -497,7 +515,9 @@ public:
 #endif
 		return true;
 	}
-
+	int getReachNode(Lit reachLit);
+	bool isConnected(int node, bool overapprox);
+	bool isConnected(Lit reachLit, bool overapprox);
     //Use paths from a maximum flow constraint as decisions for a reachability constraint
     void useFlowAsDecision(Lit outer_reach_lit, Lit outer_flow_literal, MaxflowDetector<Weight> * mf);
 

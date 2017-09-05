@@ -21,6 +21,8 @@
 #include "monosat/mtl/Vec.h"
 #include "monosat/graph/ReachDetector.h"
 #include "monosat/dgl/RamalReps.h"
+#include "monosat/dgl/RamalRepsBatched.h"
+#include "monosat/dgl/RamalRepsBatchedUnified.h"
 #include "monosat/dgl/BFS.h"
 #include "monosat/graph/GraphTheory.h"
 #include "monosat/core/Config.h"
@@ -146,7 +148,53 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
 		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
-	}/*else if (reachalg==ReachAlg::ALG_THORUP){
+	}else if (reachalg == ReachAlg::ALG_RAMAL_REPS_BATCHED) {
+        if (!opt_encode_reach_underapprox_as_sat) {
+            underapprox_detector = new UnweightedRamalRepsBatched<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
+                                                                                                             *(positiveReachStatus), 1, false);
+            underapprox_path_detector=underapprox_detector;
+        } else {
+            underapprox_fast_detector = new UnweightedRamalRepsBatched<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
+                                                                                                                  *(positiveReachStatus), 1, false);
+            underapprox_path_detector=underapprox_fast_detector;
+            //positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
+        }
+
+
+        overapprox_reach_detector = new UnweightedRamalRepsBatched<Weight, ReachDetector<Weight>::ReachStatus>(from,
+                                                                                                                   _antig,
+                                                                                                                   *(negativeReachStatus),
+                                                                                                                   -1, false);
+      
+        overapprox_path_detector=overapprox_reach_detector;
+        //RamalReps now supports finding paths
+        //underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
+        //overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+        negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+    }else if (reachalg == ReachAlg::ALG_RAMAL_REPS_BATCHED2) {
+        if (!opt_encode_reach_underapprox_as_sat) {
+            underapprox_detector = new UnweightedRamalRepsBatchedUnified<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
+                                                                                                             *(positiveReachStatus), 1, false);
+            underapprox_path_detector=underapprox_detector;
+        } else {
+            underapprox_fast_detector = new UnweightedRamalRepsBatchedUnified<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
+                                                                                                                  *(positiveReachStatus), 1, false);
+            underapprox_path_detector=underapprox_fast_detector;
+            //positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
+        }
+
+
+        overapprox_reach_detector = new UnweightedRamalRepsBatchedUnified<Weight, ReachDetector<Weight>::ReachStatus>(from,
+																													  _antig,
+																													  *(negativeReachStatus),
+																													  -1, false);
+     
+        overapprox_path_detector=overapprox_reach_detector;
+        //RamalReps now supports finding paths
+        //underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
+        //overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+        negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+    }/*else if (reachalg==ReachAlg::ALG_THORUP){
 
 
 	 positive_reach_detector = new DynamicConnectivity<ReachDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
@@ -160,14 +208,16 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		if (!opt_encode_reach_underapprox_as_sat) {
 			underapprox_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*positiveReachStatus, 1);
+			underapprox_path_detector=underapprox_detector;
 		} else {
 			underapprox_fast_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _g,
 					*positiveReachStatus, 1);
+			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		overapprox_reach_detector = new UnweightedDijkstra<Weight,ReachDetector<Weight>::ReachStatus>(from, _antig,
 				*negativeReachStatus, -1);
-		underapprox_path_detector = underapprox_detector;
+
 		overapprox_path_detector = overapprox_reach_detector;
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
@@ -487,9 +537,10 @@ public:
 
     }
 
-    void setSubHeuristic(Heuristic* h){
-        sub_heuristic=h;
-    }
+	void setSubHeuristic(Heuristic* h){
+		assert(!sub_heuristic);
+		sub_heuristic=h;
+	}
 
 	void computePath(){
 		path_is_cut=false;
@@ -1038,7 +1089,8 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 			Lit r = cnf_reach_lits[to];
 			//force equality between the new lit and the old reach lit, in the SAT solver
 			outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
-			return;
+			if(!overapprox_reach_detector)
+				return;
 		}
 
 	}
@@ -2454,6 +2506,11 @@ bool ReachDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & 
 	assert(u==this->source);
 	std::reverse(store_path.begin(),store_path.end());
 	return true;
+}
+template<typename Weight>
+void ReachDetector<Weight>::attachSubHeuristic(Heuristic * h, int to){
+	assert(to<reach_heuristics.size() && to>=0 && reach_heuristics[to]);
+	((ReachHeuristic<Weight>*) reach_heuristics[to])->setSubHeuristic(h);
  }
 
 template class Monosat::ReachDetector<int> ;

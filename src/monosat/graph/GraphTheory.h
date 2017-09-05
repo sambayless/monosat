@@ -770,22 +770,25 @@ public:
 
 	} propCutStatus;
 
+    vec<Theory*> & getTheories(){
+        return theories;
+    }
 	GraphTheorySolver(Solver * S_) :
 			S(S_), cutStatus(*this), propCutStatus(*this){
 
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
-			t+="/LOG_GRAPH_UNDER" +std::to_string(S->theories.size());
+			t+="/LOG_GRAPH_UNDER" +std::to_string(S->getTheories().size());
 			g_under.outfile = fopen(t.c_str(), "w");
 		}
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
-			t+="/LOG_GRAPH_OVER" +std::to_string(S->theories.size());
+			t+="/LOG_GRAPH_OVER" +std::to_string(S->getTheories().size());
 			g_over.outfile = fopen(t.c_str(), "w");
 		}
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
-			t+="/LOG_GRAPH_CUT" +std::to_string(S->theories.size());
+			t+="/LOG_GRAPH_CUT" +std::to_string(S->getTheories().size());
 			cutGraph.outfile = fopen(t.c_str(), "w");
 		}
 
@@ -811,7 +814,7 @@ public:
 
 
 
-		this->rnd_seed=drand(S->random_seed);
+		this->rnd_seed=drand(S->getRandomSeed());
         S->addTheory(this);
         graph_decision_reason = S->newReasonMarker(this,true);
 	}
@@ -3961,6 +3964,14 @@ public:
 	}
 
 	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance, bool strictComparison) {
+		if(to >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
+		if(from >= g_under.nodes()){
+			fprintf(stderr, "Undefined node %d\n",to);
+			exit(1);
+		}
 
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();

@@ -123,6 +123,9 @@ namespace APISignal{
 			assert(cur_time>=0);
 			int64_t local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
 
+		if(opt_verb>1){
+			printf("Limiting cpu time to %ld\n",local_time_limit);
+		}
 			if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
 				rl.rlim_cur = local_time_limit;
 
@@ -145,6 +148,9 @@ namespace APISignal{
 		if (memory_limit < INT32_MAX && memory_limit>=0) {
 			rlim_t new_mem_lim = (rlim_t) memory_limit * 1024 * 1024; //Is this safe?
 
+		if(opt_verb>1){
+			printf("Limiting virtual memory to %ld\n",new_mem_lim);
+		}
 			if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
 				rl.rlim_cur = new_mem_lim;
 
@@ -282,7 +288,11 @@ void _selectAlgorithms(){
 		reachalg = ReachAlg::ALG_SAT;
 	} else if (!strcasecmp(opt_reach_alg, "ramal-reps")) {
 		reachalg = ReachAlg::ALG_RAMAL_REPS;
-	} else {
+	} else if (!strcasecmp(opt_reach_alg, "ramal-reps-batch")) {
+		reachalg = ReachAlg::ALG_RAMAL_REPS_BATCHED;
+	} else if (!strcasecmp(opt_reach_alg, "ramal-reps-batch2")) {
+        reachalg = ReachAlg::ALG_RAMAL_REPS_BATCHED2;
+    } else {
 		api_errorf( "Error: unknown reachability algorithm %s, aborting\n", ((string) opt_reach_alg).c_str());
 
 	}
@@ -299,7 +309,11 @@ void _selectAlgorithms(){
 		distalg = DistAlg::ALG_SAT;
 	} else if (!strcasecmp(opt_dist_alg, "ramal-reps")) {
 		distalg = DistAlg::ALG_RAMAL_REPS;
-	} else {
+	}else if (!strcasecmp(opt_dist_alg, "ramal-reps-batch")) {
+		distalg = DistAlg::ALG_RAMAL_REPS_BATCHED;
+	}else if (!strcasecmp(opt_dist_alg, "ramal-reps-batch2")) {
+		distalg = DistAlg::ALG_RAMAL_REPS_BATCHED2;
+	}   else {
 		api_errorf(  "Error: unknown distance algorithm %s, aborting\n", ((string) opt_dist_alg).c_str());
 
 	}
@@ -368,7 +382,6 @@ struct MonosatData{
 	Monosat::FSMTheorySolver * fsm_theory=nullptr;
 	PB::PbSolver * pbsolver=nullptr;
 	vec< Monosat::GraphTheorySolver<int64_t> *> graphs;
-
 	bool last_solution_optimal=true;
 	bool has_conflict_clause_from_last_solution=false;
 	vec<Objective> optimization_objectives;
@@ -458,7 +471,6 @@ Monosat::SimpSolver * newSolver_arg(char*argv){
 		}*/
 		return s;
 	}else{
-
 		return newSolver_args(0,nullptr);
 	}
 }

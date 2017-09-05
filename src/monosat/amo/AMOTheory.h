@@ -56,7 +56,7 @@ public:
 	bool needs_propagation=false;
 	bool clausified = false;
 public:
-	
+
 	AMOTheory(Solver * S) :
 			S(S) {
 		S->addTheory(this);
@@ -276,7 +276,7 @@ public:
 	}
 private:
 
-	
+
 };
 
 }

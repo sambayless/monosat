@@ -471,7 +471,7 @@ public:
 private:
 	void parseOptsArray(const char * opts_){
 		opts_array.clear();
-		if(opts_) {
+		if(opts_ && strlen(opts_)>0) {
 			char *opts = strdup(opts_);
 			if (opts) {
 				int i;

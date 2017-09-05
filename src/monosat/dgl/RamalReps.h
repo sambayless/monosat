@@ -36,9 +36,10 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-//#define DEBUG_RAMAL
-
+/*#ifndef NDEBUG
+#define DEBUG_RAMAL
+#define DEBUG_RAMAL2
+#endif*/
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
 class RamalReps: public Distance<Weight>, public DynamicGraphAlgorithm {
@@ -46,9 +47,14 @@ public:
 	static bool ever_warned_about_zero_weights;
 	DynamicGraph<Weight> & g;
 	std::vector<Weight> & weights;
+    std::vector<Weight> local_weights;
 	Status & status;
 	int reportPolarity;
 	bool reportDistance;
+    uint64_t stats_updates=0;
+    uint64_t stats_resets=0;
+    uint64_t stats_all_updates=0;
+
 	int last_modification=-1;
 	int last_addition=-1;
 	int last_deletion=-1;
@@ -74,7 +80,7 @@ public:
 		}
 		;
 	};
-    alg::Heap<DistCmp> q;
+	alg::Heap<DistCmp> q;
 
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
@@ -111,13 +117,13 @@ public:
 			}
 		}
 		LocalDistanceStatus(RamalReps & _outer) :
-			outer(_outer) {
+				outer(_outer) {
 		}
 	} local_distance_status;
 	Dijkstra<Weight,LocalDistanceStatus> dijkstras;
 	bool has_zero_weights=false;
 public:
-	
+
 	long stats_full_updates=0;
 	long stats_fast_updates=0;
 	long stats_fast_failed_updates=0;
@@ -129,11 +135,11 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 	RamalReps(int s, DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,
-			bool reportDistance = false) :
+			  bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
-					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-					0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
-		
+			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
+			0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
+
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
 	}
@@ -155,29 +161,29 @@ public:
 	int getSource() {
 		return source;
 	}
-	
+
 	std::vector<int> & getChanged() {
 		return changed;
 	}
 	void clearChanged() {
 		changed.clear();
 	}
-	
+
 	void drawFull() {
-		
+
 	}
-	
+
 	void dbg_delta() {
 #ifdef DEBUG_RAMAL
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
-		
+
 		for (int i = 0; i < g.nEdgeIDs(); i++) {
 			if (!g.edgeEnabled(i)) {
 				assert(!edgeInShortestPathGraph[i]);
 			}
 		}
-		
+
 		std::vector<int> dbg_delta;
 		std::vector<Weight> dbg_dist;
 		dbg_dist.resize(g.nodes(), INF);
@@ -194,19 +200,19 @@ public:
 			;
 		};
 		alg::Heap<DistCmp> q(dbg_dist);
-		
+
 		q.insert(getSource());
-		
+
 		while (q.size()) {
 			int u = q.removeMin();
 			if (dbg_dist[u] == INF)
 				break;
 			dbg_delta[u] = 0;
-			
+
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				if (!g.edgeEnabled(g.incoming(u, i).id))
 					continue;
-				
+
 				int edgeID = g.incoming(u, i).id;
 				int v = g.getEdge(edgeID).from;
 				Weight alt = dbg_dist[v] + weights[edgeID];
@@ -215,18 +221,18 @@ public:
 				 dbg_delta[u]++;
 				 }*/
 			}
-			
+
 			for (int i = 0; i < g.nIncident(u); i++) {
 				if (!g.edgeEnabled(g.incident(u, i).id))
 					continue;
-				
+
 				int edgeID = g.incident(u, i).id;
 				int v = g.getEdge(edgeID).to;
 				Weight alt = dbg_dist[u] + weights[edgeID];
 				if (alt < dbg_dist[v]) {
-					
+
 					dbg_dist[v] = alt;
-					
+
 					if (!q.inHeap(v))
 						q.insert(v);
 					else
@@ -236,18 +242,22 @@ public:
 				 }*/
 			}
 		}
-		
+        Dijkstra<Weight> d2(source,g);
 		for (int u = 0; u < g.nodes(); u++) {
 			Weight & d = dist[u];
-			
+            if(d2.connected(u)) {
+                assert(d2.distance(u) == dist[u]);
+            }else{
+                assert(dist[u]>=INF);
+            }
 			assert(dbg_dist[u] == dist[u]);
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				if (!g.edgeEnabled(g.incoming(u, i).id))
 					continue;
-				
+
 				int edgeID = g.incoming(u, i).id;
 				int v = g.getEdge(edgeID).from;
-				
+
 				Weight alt = dbg_dist[v] + weights[edgeID];
 				assert(alt >= dbg_dist[u]);
 				if (alt == dbg_dist[u]) {
@@ -256,27 +266,27 @@ public:
 				} else {
 					assert(!edgeInShortestPathGraph[edgeID]);
 				}
-				
+
 			}
-			
+
 		}
 		for (int u = 0; u < g.nodes(); u++) {
 			Weight& d = dist[u];
 			Weight& d_expect = dbg_dist[u];
 			assert(d == dbg_dist[u]);
-			
+
 		}
 		for (int u = 0; u < g.nodes(); u++) {
 			int d = delta[u];
 			int d_expect = dbg_delta[u];
 			assert(d == dbg_delta[u]);
-			
+
 		}
 		dbg_delta_lite();
 #endif
 	}
-	
-	void GRRInc(int edgeID) {
+
+	void AddEdge(int edgeID) {
 		static int iter = 0;
 		++iter;
 		dbg_delta_lite();
@@ -285,14 +295,14 @@ public:
 			return;
 		int ru = g.getEdge(edgeID).from;
 		int rv = g.getEdge(edgeID).to;
-		
+
 		Weight & rdv = dist[rv];
 		Weight & rdu = dist[ru];
-		
+
 		Weight& weight = weights[edgeID];
-		if (dist[rv] < dist[ru] + weight)
+		if (dist[rv] < (dist[ru] + weight))
 			return;
-		else if (dist[rv] == dist[ru] + weight) {
+		else if (dist[rv] == (dist[ru] + weight)) {
 			assert(!edgeInShortestPathGraph[edgeID]);
 			edgeInShortestPathGraph[edgeID] = true;
 			delta[rv]++; //we have found an alternative shortest path to v
@@ -303,10 +313,10 @@ public:
 		dist[rv] = dist[ru] + weight;
 		q.clear();
 		q.insert(rv);
-		
+
 		while (q.size()) {
 			int u = q.removeMin();
-			
+
 			if (!node_changed[u]) {
 				node_changed[u] = true;
 				changed.push_back(u);
@@ -317,30 +327,30 @@ public:
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
-					
+
 					assert(g.getEdge(adjID).to == u);
 					int v = g.getEdge(adjID).from;
 					Weight & w = weights[adjID]; //assume a weight of one for now
 					Weight & du = dist[u];
 					Weight & dv = dist[v];
-					if (dist[u] == dist[v] + w) {
+					if (dist[u] == (dist[v] + w)) {
 						edgeInShortestPathGraph[adjID] = true;
 						delta[u]++;
 					} else if (dist[u] < (dist[v] + w)) {
 						//This doesn't hold for us, because we are allowing multiple edges to be added at once.
 						//assert(dist[u]<(dist[v]+w));
-						
+
 						edgeInShortestPathGraph[adjID] = false;
 					} else {
-						//don't do anything. This will get corrected in a future call to GRRInc.
+						//don't do anything. This will get corrected in a future call to AddEdge.
 						//assert(false);
-						
+
 					}
 				} else {
 					edgeInShortestPathGraph[adjID] = false;	//need to add this, because we may have disabled multiple edges at once.
 				}
 			}
-			
+
 			for (int i = 0; i < g.nIncident(u); i++) {
 				auto & e = g.incident(u, i);
 				int adjID = e.id;
@@ -350,10 +360,10 @@ public:
 					Weight & w = weights[adjID];							//assume a weight of one for now
 					Weight & du = dist[u];
 					Weight & ds = dist[s];
-					if (dist[s] > dist[u] + w) {
+					if (dist[s] > (dist[u] + w)) {
 						dist[s] = dist[u] + w;
 						q.update(s);
-					} else if (dist[s] == dist[u] + w && !edgeInShortestPathGraph[adjID]) {
+					} else if (dist[s] == (dist[u] + w) && !edgeInShortestPathGraph[adjID]) {
 						edgeInShortestPathGraph[adjID] = true;
 						delta[s]++;
 					}
@@ -372,7 +382,7 @@ public:
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
 				int from = g.getEdge(adjID).from;
-				
+
 				Weight dfrom = dist[from];
 				if (edgeInShortestPathGraph[adjID])
 					num_in++;
@@ -380,28 +390,298 @@ public:
 			assert(del == num_in);
 		}
 #endif
-		
+
 	}
-	
-	void GRRDec(int edgeID) {
+
+    //Called if an edge weight is decreased
+    void DecreaseWeight(int edgeID) {
+        static int iter = 0;
+        ++iter;
+        dbg_delta_lite();
+        assert(g.edgeEnabled(edgeID));
+        //if (edgeInShortestPathGraph[edgeID]) //must process this whether or not the edge is in the shortest path
+        //    return;
+        int ru = g.getEdge(edgeID).from;
+        int rv = g.getEdge(edgeID).to;
+        if(rv==2404){
+            int a =1;
+        }
+        Weight & rdv = dist[rv];
+        Weight & rdu = dist[ru];
+
+        Weight& weight = weights[edgeID];
+        if (dist[rv] < (dist[ru] + weight)) {
+            assert(!edgeInShortestPathGraph[edgeID]);
+            return;
+        }
+        else if (dist[rv] == (dist[ru] + weight)) {
+            if(!edgeInShortestPathGraph[edgeID]) {
+                edgeInShortestPathGraph[edgeID] = true;
+                delta[rv]++; //we have found an alternative shortest path to v
+            }
+            return;
+        }
+        //decreasing this edge weight has decreased the shortest path length to rv
+        edgeInShortestPathGraph[edgeID] = true;
+        delta[rv]++;//probably not required
+        assert((dist[ru] + weight) < dist[rv]);
+        dist[rv] = dist[ru] + weight;
+        q.clear();
+        q.insert(rv);
+
+        while (q.size()) {
+            int u = q.removeMin();
+
+            if (!node_changed[u]) {
+                node_changed[u] = true;
+                changed.push_back(u);
+            }
+            delta[u] = 0;
+            //for(auto & e:g.inverted_adjacency[u]){
+            for (int i = 0; i < g.nIncoming(u); i++) {
+                auto & e = g.incoming(u, i);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+
+                    assert(g.getEdge(adjID).to == u);
+                    int v = g.getEdge(adjID).from;
+                    //Weight & w = weights[adjID]; //assume a weight of one for now
+                    Weight & du = dist[u];
+                    Weight & dv = dist[v];
+                    Weight alt = (dist[v] + weights[adjID]);
+                    if(alt>INF){
+                        alt = INF;
+                    }
+                    if (alt<INF && dist[u] == alt) {
+                        edgeInShortestPathGraph[adjID] = true;
+                        delta[u]++;
+                    } else if (dist[u] < alt || alt==INF) {
+                        //This doesn't hold for us, because we are allowing multiple edges to be added at once.
+                        //assert(dist[u]<(dist[v]+w));
+
+                        edgeInShortestPathGraph[adjID] = false;
+                    } else {
+                        //don't do anything. This will get corrected in a future call to AddEdge.
+                        //assert(false);
+
+                    }
+                } else {
+                    edgeInShortestPathGraph[adjID] = false;	//need to add this, because we may have disabled multiple edges at once.
+                }
+            }
+
+            for (int i = 0; i < g.nIncident(u); i++) {
+                auto & e = g.incident(u, i);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+                    assert(g.getEdge(adjID).from == u);
+                    int s = g.getEdge(adjID).to;
+                    Weight & w = weights[adjID];							//assume a weight of one for now
+                    Weight & du = dist[u];
+                    Weight & ds = dist[s];
+                    Weight alt = (dist[u] + weights[adjID]);
+                    if(alt>INF){
+                        alt = INF;
+                    }
+                    if (alt<INF && dist[s] > alt) {
+                        dist[s] = alt;
+                        q.update(s);
+                    } else if (alt<INF && dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
+                        edgeInShortestPathGraph[adjID] = true;
+                        delta[s]++;
+                    }else{
+                        assert(!edgeInShortestPathGraph[adjID]);
+                    }
+                }
+            }
+        }
+        dbg_delta_lite();
+    }
+    //Called if the weight of an edge is increased
+    void IncreaseWeight(int edgeID) {
+        dbg_delta_lite();
+        assert(g.edgeEnabled(edgeID)); //the edge must be enabled, in order to have its weight decreased
+        //First, check if this edge is actually in the shortest path graph. If it isn't, then increasing its weight has no effect
+        if (!edgeInShortestPathGraph[edgeID]) {
+            return;
+        }
+
+        int ru = g.getEdge(edgeID).from;
+        int rv = g.getEdge(edgeID).to;
+        if(rv==2404){
+            int a =1;
+        }
+        assert(delta[rv] > 0);
+        delta[rv]--;
+        edgeInShortestPathGraph[edgeID] = false;                        //remove this edge from the shortest path graph
+        if (delta[rv] > 0) {
+            //there was another path to rv of the same previous length,
+            //so increasing this edge doesn't effect the total path length to rv,
+            //but does remove this edge from the shortest path graph
+            return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
+        }
+        //we increased this edge weight.
+        //this edge MAY or MAY NOT be in the shortest path after that change.
+
+
+        q.clear();
+        changeset.clear();
+        changeset.push_back(rv);
+
+        //find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
+        for (int i = 0; i < changeset.size(); i++) {
+            int u = changeset[i];
+            dist[u] = INF;
+            for (int i = 0; i < g.nIncident(u); i++) {
+                auto & e = g.incident(u, i);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+                    if (edgeInShortestPathGraph[adjID]) {
+                        edgeInShortestPathGraph[adjID] = false;
+                        assert(g.getEdge(adjID).from == u);
+                        int s = g.getEdge(adjID).to;
+                        assert(delta[s] > 0);
+                        delta[s]--;
+                        if (delta[s] == 0) {
+                            changeset.push_back(s);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < changeset.size(); i++) {
+            int u = changeset[i];
+            assert(dist[u] == INF);
+            for (int i = 0; i < g.nIncoming(u); i++) {
+                auto & e = g.incoming(u, i);
+                int adjID = e.id;
+
+                if (g.edgeEnabled(adjID)) {
+                    assert(g.getEdge(adjID).to == u);
+                    int v = g.getEdge(adjID).from;
+                    Weight & w = weights[adjID]; //assume a weight of one for now
+                    Weight alt = dist[v] + w;
+                    assert(!edgeInShortestPathGraph[adjID]);
+                    if (dist[u] > alt) {
+                        dist[u] = alt;
+                    }
+                }
+
+            }
+            if (dist[u] != INF) {
+                //q.insert(u);
+                //dbg_Q_add(q,u);
+                q.insert(u);
+
+                if (!reportDistance && reportPolarity >= 0) {
+                    if (!node_changed[u]) {
+                        node_changed[u] = true;
+                        changed.push_back(u);
+                    }
+                }
+            } else if (reportPolarity <= 0) {
+                //have to mark this change even if we are reporting distanec, as u has not been added to the queue.
+                if (!node_changed[u]) {
+                    node_changed[u] = true;
+                    changed.push_back(u);
+                }
+            }
+        }
+
+        while (q.size() > 0) {
+            int u = q.removeMin();
+            if (reportDistance) {
+                if (dist[u] != INF) {
+                    if (reportPolarity >= 0) {
+                        if (!node_changed[u]) {
+                            node_changed[u] = true;
+                            changed.push_back(u);
+                        }
+                    }
+                } else if (reportPolarity <= 0) {
+                    if (!node_changed[u]) {
+                        node_changed[u] = true;
+                        changed.push_back(u);
+                    }
+                }
+            }
+            for (int i = 0; i < g.nIncident(u); i++) {
+                auto & e = g.incident(u, i);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+                    assert(g.getEdge(adjID).from == u);
+                    int s = g.getEdge(adjID).to;
+                    Weight w = weights[adjID];				//assume a weight of one for now
+                    Weight alt = dist[u] + w;
+                    if (dist[s] > alt) {
+                        if (reportPolarity >= 0 && dist[s] >= 0) {
+                            //This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
+                            //to become reachable here. This is ONLY possible because we are batching multiple edge incs/decs at once (otherwise it would be impossible for removing an edge to decrease the distance to a node).
+                            if (!node_changed[s]) {
+                                node_changed[s] = true;
+                                changed.push_back(s);
+                            }
+                        }
+
+                        dist[s] = alt;
+                        q.update(s);
+                    } else if (dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
+                        edgeInShortestPathGraph[adjID] = true;
+                        delta[s]++;							//added by sam... not sure if this is correct or not.
+                    }
+                }
+            }
+
+            for (int i = 0; i < g.nIncoming(u); i++) {
+                auto & e = g.incoming(u, i);
+                int adjID = e.id;
+                if (g.edgeEnabled(adjID)) {
+
+                    assert(g.getEdge(adjID).to == u);
+                    int v = g.getEdge(adjID).from;
+                    Weight & dv = dist[v];
+                    Weight & du = dist[u];
+                    bool edgeIn = edgeInShortestPathGraph[adjID];
+                    Weight & w = weights[adjID];							//assume a weight of one for now
+                    if (dist[u] == (dist[v] + w) && !edgeInShortestPathGraph[adjID]) {
+                        assert(!edgeInShortestPathGraph[adjID]);
+                        edgeInShortestPathGraph[adjID] = true;
+                        delta[u]++;
+                    } else if (dist[u] < (dist[v] + w) && edgeInShortestPathGraph[adjID]) {
+                        edgeInShortestPathGraph[adjID] = false;
+                        delta[u]--;
+                        assert(!edgeInShortestPathGraph[adjID]);
+                    } else if (dist[u] > (dist[v] + w)) {
+                        //assert(false);
+                    }
+                }
+            }
+        }
+        dbg_delta_lite();
+    }
+
+    //Called if an edge is removed
+	void RemoveEdge(int edgeID) {
 		dbg_delta_lite();
-		assert(!g.edgeEnabled(edgeID));
+        assert(!g.edgeEnabled(edgeID));
 		//First, check if this edge is actually in the shortest path graph
 		if (!edgeInShortestPathGraph[edgeID])
 			return;
 		edgeInShortestPathGraph[edgeID] = false;						//remove this edge from the shortest path graph
-				
+
 		int ru = g.getEdge(edgeID).from;
 		int rv = g.getEdge(edgeID).to;
+
 		assert(delta[rv] > 0);
 		delta[rv]--;
 		if (delta[rv] > 0)
 			return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
-			
+
 		q.clear();
 		changeset.clear();
 		changeset.push_back(rv);
-		
+
 		//find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
 		for (int i = 0; i < changeset.size(); i++) {
 			int u = changeset[i];
@@ -423,14 +703,14 @@ public:
 				}
 			}
 		}
-		
+
 		for (int i = 0; i < changeset.size(); i++) {
 			int u = changeset[i];
 			assert(dist[u] == INF);
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
-				
+
 				if (g.edgeEnabled(adjID)) {
 					assert(g.getEdge(adjID).to == u);
 					int v = g.getEdge(adjID).from;
@@ -441,13 +721,13 @@ public:
 						dist[u] = alt;
 					}
 				}
-				
+
 			}
 			if (dist[u] != INF) {
 				//q.insert(u);
 				//dbg_Q_add(q,u);
 				q.insert(u);
-				
+
 				if (!reportDistance && reportPolarity >= 0) {
 					if (!node_changed[u]) {
 						node_changed[u] = true;
@@ -462,7 +742,7 @@ public:
 				}
 			}
 		}
-		
+
 		while (q.size() > 0) {
 			int u = q.removeMin();
 			if (reportDistance) {
@@ -497,7 +777,7 @@ public:
 								changed.push_back(s);
 							}
 						}
-						
+
 						dist[s] = alt;
 						q.update(s);
 					} else if (dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
@@ -506,27 +786,27 @@ public:
 					}
 				}
 			}
-			
+
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
-					
+
 					assert(g.getEdge(adjID).to == u);
 					int v = g.getEdge(adjID).from;
 					Weight & dv = dist[v];
 					Weight & du = dist[u];
 					bool edgeIn = edgeInShortestPathGraph[adjID];
 					Weight & w = weights[adjID];							//assume a weight of one for now
-					if (dist[u] == dist[v] + w && !edgeInShortestPathGraph[adjID]) {
+					if (dist[u] == (dist[v] + w) && !edgeInShortestPathGraph[adjID]) {
 						assert(!edgeInShortestPathGraph[adjID]);
 						edgeInShortestPathGraph[adjID] = true;
 						delta[u]++;
-					} else if (dist[u] < dist[v] + w && edgeInShortestPathGraph[adjID]) {
+					} else if (dist[u] < (dist[v] + w) && edgeInShortestPathGraph[adjID]) {
 						edgeInShortestPathGraph[adjID] = false;
 						delta[u]--;
 						assert(!edgeInShortestPathGraph[adjID]);
-					} else if (dist[u] > dist[v] + w) {
+					} else if (dist[u] > (dist[v] + w)) {
 						//assert(false);
 					}
 				}
@@ -534,16 +814,17 @@ public:
 		}
 		dbg_delta_lite();
 	}
-	
+
 	long num_updates = 0;
 	int numUpdates() const {
 		return num_updates;
 	}
-	
+
 	void update() {
 
 		if (g.outfile) {
-			fprintf(g.outfile, "r %d\n", getSource());
+			fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
+			//fprintf(g.outfile, "r %d\n", getSource());
 		}
 
 		static int iteration = 0;
@@ -551,10 +832,14 @@ public:
 		if (local_it == 7668) {
 			int a = 1;
 		}
+        stats_all_updates++;
 		if (last_modification > 0 && g.modifications == last_modification)
 			return;
+        stats_updates++;
 		if (last_modification <= 0 || g.changed()) {
+            stats_resets++;
 			Weight oldInf = INF;
+
 			INF = 1;							//g.nodes()+1;
 			has_zero_weights=false;
 			for (Weight & w : weights) {
@@ -567,6 +852,9 @@ public:
 				}
 				INF += w;
 			}
+            if(INF<oldInf){
+                INF=oldInf;
+            }
 			if(INF!=oldInf){
 				for(int i = 0;i<dist.size();i++){
 					if(dist[i]==oldInf){
@@ -574,11 +862,14 @@ public:
 					}
 				}
 			}
+            while(local_weights.size()<weights.size()){
+                local_weights.push_back(weights[local_weights.size()]);
+            }
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
 			delta.resize(g.nodes());
 			node_changed.resize(g.nodes(), true);
-			
+
 			for (int i = 0; i < g.nodes(); i++) {
 				if ((dist[i] >= INF && reportPolarity <= 0) || (dist[i] < INF && reportPolarity >= 0)) {
 					node_changed[i] = true;
@@ -606,24 +897,48 @@ public:
 					last_history_clear = g.historyclears;
 					for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 						if (g.edgeEnabled(edgeid)) {
-							GRRInc(edgeid);
+                            if(weights[edgeid]<local_weights[edgeid]){
+                                local_weights[edgeid] = weights[edgeid];
+                                DecreaseWeight(edgeid);
+                            }else if(weights[edgeid]>local_weights[edgeid]){
+                                local_weights[edgeid] = weights[edgeid];
+                                IncreaseWeight(edgeid);
+                            }else{
+                                AddEdge(edgeid);
+                            }
 						} else {
-							GRRDec(edgeid);
+                            local_weights[edgeid] = weights[edgeid];
+							RemoveEdge(edgeid);
 						}
 					}
 				}
 			}
 			for (int i = history_qhead; i < g.historySize(); i++) {
 				int edgeid = g.getChange(i).id;
-				if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-					GRRInc(edgeid);
+
+                if(g.getChange(i).weight_increase || g.getChange(i).weight_decrease) {
+                    if (g.getChange(i).weight_decrease && g.edgeEnabled(edgeid)) {
+                        local_weights[edgeid] = weights[edgeid];
+                        DecreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
+                        //code runs on weights, not local weights, and so it might be out of sync with local weights
+                    }else if (g.getChange(i).weight_increase && g.edgeEnabled(edgeid)){
+                        local_weights[edgeid] = weights[edgeid];
+                        IncreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
+                        //code runs on weights, not local weights, and so it might be out of sync with local weights
+                    }
+                }else if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
+                    assert(!g.getChange(i).weight_increase);assert(!g.getChange(i).weight_decrease);
+                    local_weights[edgeid] = weights[edgeid];
+					AddEdge(edgeid);
 				} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
-					GRRDec(edgeid);
+                    assert(!g.getChange(i).weight_increase);assert(!g.getChange(i).weight_decrease);
+                    local_weights[edgeid] = weights[edgeid];
+					RemoveEdge(edgeid);
 				}
 			}
 		}
-			//for(int i = 0;i<g.nodes();i++){
-			//	int u=i;
+		//for(int i = 0;i<g.nodes();i++){
+		//	int u=i;
 		if(reportPolarity>-2){
 			for (int u : changed) {
 				//int u = changed[i];
@@ -648,9 +963,16 @@ public:
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		history_qhead = g.historySize();
 		last_history_clear = g.historyclears;
-		
-		;
+
+#ifdef DEBUG_RAMAL
+      for(int edgeID = 0;edgeID<weights.size();edgeID++){
+          assert(weights[edgeID]==local_weights[edgeID]);
+      }
+#endif
 	}
+    void printStats(){
+        printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
+    }
 	void updateHistory(){
 		update();
 	}
@@ -674,8 +996,35 @@ public:
 #endif
 		return true;
 	}
+
+	bool dbg_manual_uptodate() override{
+
+		if(last_modification<0)
+		 return true;
+		 update();
+		 dbg_delta();
+		 Dijkstra<Weight> d(source,g);
+
+		 for(int i = 0;i<g.nodes();i++){
+		 Weight dis = dist[i];
+		 bool c = i<dist.size() && dist[i]<INF;
+		 if(!c)
+		 dis = this->unreachable();
+
+		 Weight dbgdist = d.distance(i);
+
+		 if(dis!=dbgdist){
+		 assert(false);
+		 throw std::logic_error("Internal error in Ramal Reps");
+		 }
+		 }
+//#endif
+
+		return true;
+	}
+
 	bool dbg_uptodate() {
-#ifdef DEBUG_RAMAL
+#ifdef DEBUG_RAMAL2
 		if(last_modification<0)
 		 return true;
 		 dbg_delta();
@@ -698,7 +1047,7 @@ public:
 #endif
 		return true;
 	}
-	
+
 	bool connected_unsafe(int t) {
 		dbg_uptodate();
 		if(has_zero_weights){
@@ -712,7 +1061,7 @@ public:
 	}
 	bool connected(int t) {
 
-		update();
+			update();
 
 		assert(dbg_uptodate());
 		if(has_zero_weights){
@@ -722,7 +1071,7 @@ public:
 	}
 	Weight & distance(int t) {
 
-		update();
+			update();
 		if(has_zero_weights){
 			return dijkstras.distance(t);
 		}
@@ -825,7 +1174,9 @@ public:
 	int last_addition=-1;
 	int last_deletion=-1;
 	int history_qhead=0;
-
+    uint64_t stats_updates=0;
+    uint64_t stats_resets=0;
+    uint64_t stats_all_updates=0;
 	int last_history_clear=0;
 
 	int source;
@@ -858,7 +1209,7 @@ public:
 	std::vector<int> changeset;
 	int alg_id;
 public:
-	
+
 	long stats_full_updates=0;
 	long stats_fast_updates=0;
 	long stats_fast_failed_updates=0;
@@ -870,10 +1221,10 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 	UnweightedRamalReps(int s, DynamicGraph<Weight> & graph, Status & status, int reportPolarity = 0,
-			bool reportDistance = true) :
+						bool reportDistance = true) :
 			g(graph), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
-					-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-					-1) {
+			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
+			-1) {
 		maxDistance = -1;
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
@@ -887,6 +1238,9 @@ public:
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
 	}
+    void printStats(){
+        printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
+    }
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	void setMaxDistance(int &_maxDistance) {
 		if (_maxDistance != maxDistance) {
@@ -907,24 +1261,24 @@ public:
 	int getSource() {
 		return source;
 	}
-	
+
 	std::vector<int> & getChanged() {
 		return changed;
 	}
 	void clearChanged() {
 		changed.clear();
 	}
-	
+
 	void drawFull() {
-		
+
 	}
-	
+
 	void dbg_delta() {
 #ifdef DEBUG_RAMAL
 		//g.drawFull();
 		dbg_delta_lite();
 		assert(delta.size() == g.nodes());
-		
+
 		for (int i = 0; i < g.nEdgeIDs(); i++) {
 			if (!g.edgeEnabled(i)) {
 				assert(!edgeInShortestPathGraph[i]);
@@ -933,13 +1287,13 @@ public:
 				}
 			}
 		}
-		
+
 		std::vector<int> dbg_delta;
 		std::vector<int> dbg_dist;
 		dbg_dist.resize(g.nodes(), INF);
 		dbg_delta.resize(g.nodes());
 		dbg_dist[getSource()] = 0;
-		
+
 		struct DistCmp {
 			std::vector<int> & _dist;
 			bool operator()(int a, int b) const {
@@ -951,19 +1305,19 @@ public:
 			;
 		};
 		alg::Heap<DistCmp> q(dbg_dist);
-		
+
 		q.insert(getSource());
-		
+
 		while (q.size()) {
 			int u = q.removeMin();
 			if (dbg_dist[u] == INF)
 				break;
 			dbg_delta[u] = 0;
-			
+
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				if (!g.edgeEnabled(g.incoming(u, i).id))
 					continue;
-				
+
 				int edgeID = g.incoming(u, i).id;
 				int v = g.getEdge(edgeID).from;
 				int alt = dbg_dist[v] + 1;
@@ -974,20 +1328,20 @@ public:
 				 dbg_delta[u]++;
 				 }*/
 			}
-			
+
 			for (int i = 0; i < g.nIncident(u); i++) {
 				if (!g.edgeEnabled(g.incident(u, i).id))
 					continue;
-				
+
 				int edgeID = g.incident(u, i).id;
 				int v = g.getEdge(edgeID).to;
 				int alt = dbg_dist[u] + 1;
 				if (maxDistance >= 0 && alt > maxDistance)
 					alt = INF;
 				if (alt < dbg_dist[v]) {
-					
+
 					dbg_dist[v] = alt;
-					
+
 					if (!q.inHeap(v))
 						q.insert(v);
 					else
@@ -995,17 +1349,17 @@ public:
 				}
 			}
 		}
-		
+
 		for (int u = 0; u < g.nodes(); u++) {
 			int d = dist[u];
-			
+
 			int db = dbg_dist[u];
 			assert(dbg_dist[u] == dist[u]);
-			
+
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				if (!g.edgeEnabled(g.incoming(u, i).id))
 					continue;
-				
+
 				int edgeID = g.incoming(u, i).id;
 				int v = g.getEdge(edgeID).from;
 				int alt = dbg_dist[v] + 1;
@@ -1021,7 +1375,7 @@ public:
 				}
 			}
 		}
-		
+
 		for (int u = 0; u < g.nodes(); u++) {
 			int d = dist[u];
 			int d_expect = dbg_dist[u];
@@ -1038,8 +1392,8 @@ public:
 		dbg_delta_lite();
 #endif
 	}
-	
-	void GRRInc(int edgeID) {
+
+	void AddEdge(int edgeID) {
 		static int iter = 0;
 		++iter;
 		dbg_delta_lite();
@@ -1048,10 +1402,10 @@ public:
 			return;
 		int ru = g.getEdge(edgeID).from;
 		int rv = g.getEdge(edgeID).to;
-		
+
 		int rdv = dist[rv];
 		int rdu = dist[ru];
-		
+
 		int weight = 1;
 		int altw = dist[ru] + weight;
 		if (altw > maxDistance)
@@ -1070,14 +1424,14 @@ public:
 		edgeInShortestPathGraph[edgeID] = true;
 		delta[rv]++;
 		dist[rv] = altw;
-		
+
 		q.clear();
 		in_queue.clear();
 		in_queue.resize(g.nodes());
 		in_queue2.resize(g.nodes());
 		q.push_back(rv);
 		in_queue[rv] = true;
-		
+
 		for (int i = 0; i < q.size(); i++) {
 			int u = q[i];
 			dbg_Q_order(q);
@@ -1092,7 +1446,7 @@ public:
 				auto & e = g.incoming(u, j);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
-					
+
 					assert(g.getEdge(adjID).to == u);
 					int v = g.getEdge(adjID).from;
 					int w = 1;		//assume a weight of one for now
@@ -1108,18 +1462,18 @@ public:
 					} else if (dist[u] < alt) {
 						//This doesn't hold for us, because we are allowing multiple edges to be added at once.
 						//assert(dist[u]<(dist[v]+w));
-						
+
 						edgeInShortestPathGraph[adjID] = false;
 					} else {
-						//don't do anything. This will get corrected in a future call to GRRInc.
+						//don't do anything. This will get corrected in a future call to AddEdge.
 						//assert(false);
-						
+
 					}
 				} else {
 					edgeInShortestPathGraph[adjID] = false;	//need to add this, because we may have disabled multiple edges at once.
 				}
 			}
-			
+
 			for (int j = 0; j < g.nIncident(u); j++) {
 				auto & e = g.incident(u, j);
 				int adjID = e.id;
@@ -1171,21 +1525,21 @@ public:
 			assert(dist[v] <= dist[u]);
 			//assert(in_queue[v]);
 		}
-		
+
 #endif
 	}
 	void dbg_Q_order(std::vector<int> & _q) {
 #ifdef DEBUG_RAMAL
-		
+
 		for (int i = 1; i < _q.size(); i++) {
 			int v = _q[i];
 			int u = _q[i - 1];
-			
+
 			if (&_q == &q) {
 				assert(in_queue[v]);
 				assert(in_queue[u]);
 				if (!(in_queue2[u] || in_queue2[v])) {
-					
+
 					assert(dist[u] <= dist[v]);
 				}
 			} else {
@@ -1194,13 +1548,13 @@ public:
 				assert(dist[u] <= dist[v]);
 			}
 		}
-		
+
 #endif
 	}
-	
+
 	void dbg_delta_lite() {
 #ifdef DEBUG_RAMAL
-	/*	for (int u = 0; u < g.nodes(); u++) {
+		/*	for (int u = 0; u < g.nodes(); u++) {
 			int del = delta[u];
 			int d = dist[u];
 			int num_in = 0;
@@ -1208,10 +1562,10 @@ public:
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
 				int from = g.getEdge(adjID).from;
-				
+
 				int dfrom = dist[from];
 				if (edgeInShortestPathGraph[adjID]) {
-					
+
 					assert(dist[u] < INF);
 					num_in++;
 				}
@@ -1219,39 +1573,39 @@ public:
 			assert(del == num_in);
 		}*/
 #endif
-		
+
 	}
-	
-	void GRRDec(int edgeID) {
+
+	void RemoveEdge(int edgeID) {
 		dbg_delta_lite();
 		assert(!g.edgeEnabled(edgeID));
 		//First, check if this edge is actually in the shortest path graph
 		if (!edgeInShortestPathGraph[edgeID])
 			return;
 		edgeInShortestPathGraph[edgeID] = false;						//remove this edge from the shortest path graph
-				
+
 		int ru = g.getEdge(edgeID).from;
 		int rv = g.getEdge(edgeID).to;
-		
+
 		assert(delta[rv] > 0);
 		delta[rv]--;
 		if (delta[rv] > 0)
 			return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
-			
+
 		in_queue.clear();
 		in_queue.resize(g.nodes());
 		in_queue2.clear();
 		in_queue2.resize(g.nodes());
 		q.clear();
 		q2.clear();
-		
+
 		changeset.clear();
 		changeset.push_back(rv);
-		
+
 		//find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
 		for (int i = 0; i < changeset.size(); i++) {
 			int u = changeset[i];
-			
+
 			dist[u] = INF;
 			for (int i = 0; i < g.nIncident(u); i++) {
 				auto & e = g.incident(u, i);
@@ -1261,7 +1615,7 @@ public:
 						edgeInShortestPathGraph[adjID] = false;
 						assert(g.getEdge(adjID).from == u);
 						int s = g.getEdge(adjID).to;
-						
+
 						assert(delta[s] > 0);
 						delta[s]--;
 						if (delta[s] == 0) {
@@ -1271,16 +1625,16 @@ public:
 				}
 			}
 		}
-		
+
 		for (int i = 0; i < changeset.size(); i++) {
 			int u = changeset[i];
-			
+
 			assert(dist[u] == INF);
 			//for(auto & e:g.inverted_adjacency[u]){
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
-				
+
 				if (g.edgeEnabled(adjID)) {
 					assert(g.getEdge(adjID).to == u);
 					int v = g.getEdge(adjID).from;
@@ -1293,15 +1647,15 @@ public:
 						dist[u] = alt;
 					}
 				}
-				
+
 			}
-			
+
 			if (dist[u] < INF) {
 				//q.insert(u);
 				//dbg_Q_add(q,u);
 				q.push_back(u);
 				in_queue[u] = true;
-				
+
 				if (reportPolarity >= 0) {
 					if (!node_changed[u]) {
 						node_changed[u] = true;
@@ -1315,8 +1669,17 @@ public:
 					changed.push_back(u);
 				}
 			}
-			
+
 		}
+
+		//breaking this up into a 'q' that is really a vector, and a second q2, also just a vector that will store the elements
+		//added to it afterward
+		//the idea here is to use vectors instead of heaps.
+		//the values in the original q might actually have differing values, and so do require sorting.
+		//this is why the line " else if (dist[q[i]] < dist[q2[j]]) " checks whether the next smallest element is in q or q2.
+		//however, because the graph is unweighted, it is safe to visit the elements of q2 in the order they are seen as well, storing them in a simple vector.
+
+
 		std::sort(q.begin(), q.end(), DistCmp(dist));
 		int i = 0, j = 0;
 		while (i < q.size() || j < q2.size()) {
@@ -1350,7 +1713,7 @@ public:
 			}
 			dbg_Q_order(q);
 			dbg_Q_order(q2);
-			
+
 			for (int i = 0; i < g.nIncident(u); i++) {
 				auto & e = g.incident(u, i);
 				int adjID = e.id;
@@ -1377,7 +1740,7 @@ public:
 							q2.push_back(s);
 							in_queue2[s] = true;
 						}
-						
+
 						dbg_Q_order(q2);
 						//dbg_not_seen_q(q2,s,j);
 					} else if (dist[s] == alt && !edgeInShortestPathGraph[adjID] && dist[s] < INF) {
@@ -1387,12 +1750,12 @@ public:
 					}
 				}
 			}
-			
+
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				auto & e = g.incoming(u, i);
 				int adjID = e.id;
 				if (g.edgeEnabled(adjID)) {
-					
+
 					assert(g.getEdge(adjID).to == u);
 					int v = g.getEdge(adjID).from;
 					int dv = dist[v];
@@ -1416,27 +1779,29 @@ public:
 					}
 				}
 			}
-			
+
 		}
 		dbg_delta_lite();
 	}
-	
+
 	long num_updates = 0;
 	int numUpdates() const {
 		return num_updates;
 	}
-	
+
 	void update() {
 
 		if (g.outfile) {
 			fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
 		}
-
+        stats_all_updates++;
 		if (last_modification > 0 && g.modifications == last_modification){
 			return;
 		}
+        stats_updates++;
 		if (last_modification <= 0 || g.changed()) {//Note for the future: there is probably room to improve this further.
-			stats_full_updates++;
+            stats_resets++;
+            stats_full_updates++;
 			int oldInf = INF;
 			INF = g.nodes() + 1;
 			if(INF!=oldInf){
@@ -1453,8 +1818,9 @@ public:
 			edgeInShortestPathGraph.resize(g.nEdgeIDs());
 			node_changed.resize(g.nodes());
 			changed.clear();
-			if (maxDistance < 0)
-				maxDistance = INF;
+			if(maxDistance<0 || maxDistance>=oldInf){
+                maxDistance = INF;
+            }
 			for (int i = 0; i < g.nodes(); i++) {
 				if ((dist[i] >= INF && reportPolarity <= 0) || (dist[i] < INF && reportPolarity >= 0)) {
 					node_changed[i] = true;
@@ -1473,29 +1839,29 @@ public:
 				last_history_clear = g.historyclears;
 				for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 					if (g.edgeEnabled(edgeid)) {
-						GRRInc(edgeid);
+						AddEdge(edgeid);
 					} else {
-						GRRDec(edgeid);
+						RemoveEdge(edgeid);
 					}
 				}
 			}
 		}
-		
+
 		for (int i = history_qhead; i < g.historySize(); i++) {
 			int edgeid = g.getChange(i).id;
 			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-				GRRInc(edgeid);
+				AddEdge(edgeid);
 			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
-				GRRDec(edgeid);
+				RemoveEdge(edgeid);
 			}
 		}
-		
+
 		//for(int i = 0;i<g.nodes();i++){
 		for (int u : changed) {
 			//int u=i;
 			//int u = changed[i];
 			node_changed[u] = false;
-			
+
 			if (reportPolarity <= 0 && dist[u] >= INF) {
 				status.setReachable(u, false);
 				status.setMininumDistance(u, dist[u] < INF, dist[u]);
@@ -1511,7 +1877,7 @@ public:
 		last_modification = g.modifications;
 		last_deletion = g.deletions;
 		last_addition = g.additions;
-		
+
 		history_qhead = g.historySize();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		last_history_clear = g.historyclears;
@@ -1544,7 +1910,7 @@ public:
 	}
 	bool dbg_uptodate() {
 //#ifdef DEBUG_GRAPH
-#ifdef DEBUG_RAMAL
+#ifdef DEBUG_RAMAL2
 		if(last_modification<0)
 		return true;
 		dbg_delta();
@@ -1590,7 +1956,7 @@ public:
 #endif
 		return true;
 	}
-	
+
 	bool connected_unsafe(int t) {
 		dbg_uptodate();
 		return t < dist.size() && dist[t] < INF;
@@ -1601,16 +1967,16 @@ public:
 	}
 	bool connected(int t) {
 
-		update();
+			update();
 
 
 		assert(dbg_uptodate());
-		
+
 		return dist[t] < INF;
 	}
 	int& distance(int t) {
 
-		update();
+			update();
 
 		if (connected_unsafe(t))
 			return dist[t];
@@ -1638,7 +2004,7 @@ public:
 		int prev = -1;
 		int prev_edgeID=-1;
 		int min_prev_dist=d;
-		
+
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;

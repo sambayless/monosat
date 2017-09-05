@@ -113,6 +113,9 @@ public:
      void removeDestination(int node) override{
 
     }
+    void printStats(){
+        reach->printStats();
+    }
     void recompute(){
         needs_recompute=false;
         reach->update();
@@ -254,6 +257,9 @@ public:
 
     }
 
+    virtual bool dbg_manual_uptodate(){
+        return reach->dbg_manual_uptodate();
+    }
     bool connected_unsafe(int t) {
         return has_path_to[t];
     }

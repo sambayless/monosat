@@ -40,6 +40,7 @@ public:
 	virtual void activateHeuristic(Heuristic*h){
 
 	}
+	virtual vec<Theory*> & getTheories() =0;
 	virtual lbool value(Lit l)const=0;
 	virtual lbool value(Var v)const=0;
 	virtual bool isConstant(Var v)const=0;
