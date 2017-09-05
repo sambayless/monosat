@@ -433,9 +433,9 @@ OptionSet Monosat::opt_route2(_cat_graph,"route","Use RUC-syle heuristics for ro
 BoolOption Monosat::opt_csv("GRAPH", "csv", "Output in CSV format", false);
 
 MinCutAlg Monosat::mincutalg = MinCutAlg::ALG_EDMONSKARP;
-ReachAlg Monosat::reachalg = ReachAlg::ALG_RAMAL_REPS;
+ReachAlg Monosat::reachalg = ReachAlg::ALG_RAMAL_REPS_BATCHED;
 ConnectivityAlg Monosat::undirectedalg = ConnectivityAlg::ALG_DFS;
-DistAlg Monosat::distalg = DistAlg::ALG_RAMAL_REPS;
+DistAlg Monosat::distalg = DistAlg::ALG_RAMAL_REPS_BATCHED;
 AllPairsAlg Monosat::allpairsalg = AllPairsAlg::ALG_DIJKSTRA_ALLPAIRS;
 AllPairsConnectivityAlg Monosat::undirected_allpairsalg = AllPairsConnectivityAlg::ALG_DIJKSTRA_ALLPAIRS;
 ComponentsAlg Monosat::componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;

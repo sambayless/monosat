@@ -185,8 +185,9 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 
         overapprox_reach_detector = new UnweightedRamalRepsBatchedUnified<Weight, ReachDetector<Weight>::ReachStatus>(from,
-                                                                                                                   _antig,
-                                                                                                                   *(negativeReachStatus),
+																													  _antig,
+																													  *(negativeReachStatus),
+																													  -1, false);
      
         overapprox_path_detector=overapprox_reach_detector;
         //RamalReps now supports finding paths
