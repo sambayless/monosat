@@ -25,6 +25,7 @@
 #include <climits>
 #include <vector>
 #include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/alg/IntMap.h"
 namespace dgl {
 struct MaxFlowEdge {
 	int u;

@@ -496,10 +496,14 @@ void Solver::cancelUntil(int lev) {
 				theory_init_prop_trail_pos[theoryID] = -1;
 				theory_reprop_trail_pos[theoryID] = -1;
 			} else if (theory_init_prop_trail_pos[theoryID] >=0 && qhead < theory_reprop_trail_pos[theoryID]) {
-				theory_reprop_trail_pos[theoryID] = -1;
+				theory_reprop_trail_pos[theoryID] = qhead;
 				assert(theory_init_prop_trail_pos[theoryID] >=0);
 
-				Lit p = trail[theory_init_prop_trail_pos[theoryID]];
+                int init_pos = theory_init_prop_trail_pos[theoryID];
+                if(trail_lim.size()>0 && init_pos<trail_lim[decisionLevel()]){
+                    init_pos=trail_lim[decisionLevel()];
+                }
+				Lit p = trail[init_pos];
 				assert(p!=lit_Undef);
 				int back_lev = level(var(p))-1;
 				if(back_lev<0)
@@ -1030,6 +1034,67 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 		//do nothing
 	}
 }
+/*
+
+void Solver::unsafeUnassign(Lit p){
+    if(value(p)!=l_True)
+        return;
+    assert(level(var(p))==decisionLevel());
+    for (int c = trail.size() - 1; ; c--) {
+        Var x = var(trail[c]);
+        int xlev = level(x);
+
+      {
+            if(hasTheory(x)){
+                int theoryID = getTheoryID(x);
+
+                if(c<= satisfied_theory_trail_pos[theoryID]){
+                    satisfied_theory_trail_pos[theoryID]=-1;
+                    post_satisfied_theory_trail_pos[theoryID]=-1;
+                    //printf("theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
+                }
+
+                if(satisfied_theory_trail_pos[theoryID]< 0 ) {
+                    theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
+                }else if (c>satisfied_theory_trail_pos[theoryID] && c<= post_satisfied_theory_trail_pos[theoryID]){
+                    theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
+
+                    post_satisfied_theory_trail_pos[theoryID]= c-1;
+                }
+                assert(satisfied_theory_trail_pos[theoryID]<c);
+                assert(post_satisfied_theory_trail_pos[theoryID]<c);
+            }
+            assigns[x] = l_Undef;
+            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
+                polarity[x] = sign(trail[c]);
+            insertVarOrder(x);
+        }
+        trail.pop();
+        if(x==var(p)){
+            break;
+        }
+
+    }
+    assert(trail.size());
+
+
+    if(qhead>trail.size())
+        qhead = trail.size();
+
+    if (local_qhead > qhead) {
+        local_qhead = qhead;
+    }
+    if (S && super_qhead > S->qhead) {
+        super_qhead = S->qhead;
+    }
+
+
+    if(qhead>trail.size()){
+        throw std::runtime_error("Internal error in backtracking");
+    }
+
+}
+*/
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assert(value(p) == l_Undef);
@@ -1382,42 +1447,42 @@ CRef Solver::propagate(bool propagate_theories) {
 
         while(qhead == trail.size() && confl==CRef_Undef && ((propagate_theories && theory_queue.size()) || unskippable_theory_q.size() )) {
 
-            while (propagate_theories && theory_queue.size() && (qhead == trail.size())
-			   && confl == CRef_Undef) {
-			int theoryID = theory_queue.last();
+            while (unskippable_theory_q.size() && (qhead == trail.size()) && confl == CRef_Undef) {
+                int theoryID = unskippable_theory_q.last();
                 if (!propagateTheorySolver(theoryID, confl, theory_conflict)) {
 					return confl;
 			}else{
 				//only remove theory from propagation queue if it does not conflict
 				//there is a complication here, which is that in certain cases a new theory id may have been pushed into the queue
 				//during theory propagation.
-				assert(in_theory_queue[theoryID]);
 
-				if (theory_queue.last() == theoryID) {
-					theory_queue.pop();
+                    assert(unskippable_theory_q.has(theoryID));
+                    if (unskippable_theory_q.last() == theoryID) {
+                        unskippable_theory_q.pop();
 				} else {
-					theory_queue.remove(theoryID);
+                        unskippable_theory_q.remove(theoryID);
 				}
-				assert(!theory_queue.contains(theoryID));
-				in_theory_queue[theoryID] = false;
+                    assert(!unskippable_theory_q.contains(theoryID));
 			}
             }
-            while (unskippable_theory_q.size() && (qhead == trail.size()) && confl == CRef_Undef) {
-                int theoryID = unskippable_theory_q.last();
+			while (propagate_theories && theory_queue.size() && (qhead == trail.size())
+				   && confl == CRef_Undef) {
+				int theoryID = theory_queue.last();
                 if (!propagateTheorySolver(theoryID, confl, theory_conflict)) {
                     return confl;
                 } else {
 
                     //only remove theory from propagation queue if it does not conflict
                     //there is a complication here, which is that in certain cases a new theory id may have been pushed into the queue
+					assert(in_theory_queue[theoryID]);
                     //during theory propagation.
-                    assert(unskippable_theory_q.has(theoryID));
-                    if (unskippable_theory_q.last() == theoryID) {
-                        unskippable_theory_q.pop();
+					if (theory_queue.last() == theoryID) {
+						theory_queue.pop();
                     } else {
-                        unskippable_theory_q.remove(theoryID);
+						theory_queue.remove(theoryID);
                     }
-                    assert(!unskippable_theory_q.contains(theoryID));
+					assert(!theory_queue.contains(theoryID));
+					in_theory_queue[theoryID] = false;
                 }
             }
 		}
