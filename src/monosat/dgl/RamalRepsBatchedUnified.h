@@ -1012,6 +1012,7 @@ public:
                     prev = from;
                     prev_edgeID=edgeID;
                 }*/
+				break;
 			}
 		}
 		assert(prev!=-1);
@@ -1049,7 +1050,7 @@ public:
                     min_prev_dist=dist[from];
                     prev = from;
                 }*/
-
+				break;
 			}
 		}
 		assert(prev!=-1);
@@ -1958,6 +1959,7 @@ public:
                 assert(from_dist!=INF);
                 prev = from;
                 prev_edgeID=edgeID;
+				break;
 			}
 		}
 		assert(prev!=-1);
@@ -1991,6 +1993,7 @@ public:
                 assert(from_dist>=0);
                 assert(from_dist!=INF);
                 prev = from;
+				break;
 			}
 		}
 		assert(prev!=-1);

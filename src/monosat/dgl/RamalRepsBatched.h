@@ -1092,6 +1092,7 @@ public:
 						prev = from;
 						prev_edgeID=edgeID;
                 }*/
+				break;
 			}
 		}
 		assert(prev!=-1);
@@ -1129,7 +1130,7 @@ public:
 						min_prev_dist=dist[from];
 						prev = from;
                 }*/
-
+				break;
 			}
 		}
 		assert(prev!=-1);
@@ -2186,13 +2187,15 @@ public:
 			    assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
 				assert(connected_unsafe(from));
-					int from_dist = dist[from];
-					assert(from_dist>=0);
-					assert(from_dist!=INF);
-						prev = from;
-						prev_edgeID=edgeID;
-					}
-				}
+				int from_dist = dist[from];
+				assert(from_dist>=0);
+				assert(from_dist!=INF);
+				prev = from;
+				prev_edgeID=edgeID;
+				break;
+			}
+
+		}
 		assert(prev!=-1);
 
 
@@ -2220,12 +2223,13 @@ public:
 			    assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
 				assert(connected_unsafe(from));
-					int from_dist = dist[from];
-					assert(from_dist>=0);
-					assert(from_dist!=INF);
-						prev = from;
-					}
-				}
+				int from_dist = dist[from];
+				assert(from_dist>=0);
+				assert(from_dist!=INF);
+				prev = from;
+				break;
+			}
+		}
 		assert(prev!=-1);
 
 
