@@ -1142,17 +1142,11 @@ public:
 			    assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
                 assert(connected_unsafe(from));
-					assert(dist[from]>=0);
-					assert(dist[from]!=INF);
+				assert(dist[from]>=0);
+				assert(dist[from]!=INF);
                 prev = from;
                 prev_edgeID=edgeID;
 				break;
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-                /*if (dist[from]<min_prev_dist){
-						min_prev_dist=dist[from];
-						prev = from;
-						prev_edgeID=edgeID;
-                }*/
 			}
 		}
 		assert(prev!=-1);
@@ -1182,14 +1176,9 @@ public:
                 assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
 				assert(connected_unsafe(from));
-					assert(dist[from]>=0);
-					assert(dist[from]!=INF);
+				assert(dist[from]>=0);
+				assert(dist[from]!=INF);
                 prev = from;
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-                /*if (dist[from]<min_prev_dist){
-						min_prev_dist=dist[from];
-						prev = from;
-                }*/
 				break;
 			}
 		}
@@ -2049,13 +2038,13 @@ public:
 			    assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
 				assert(connected_unsafe(from));
-					int from_dist = dist[from];
-					assert(from_dist>=0);
-					assert(from_dist!=INF);
-						prev = from;
-						prev_edgeID=edgeID;
+				int from_dist = dist[from];
+				assert(from_dist>=0);
+				assert(from_dist!=INF);
+				prev = from;
+				prev_edgeID=edgeID;
 				break;
-					}
+			}
 
 		}
 		assert(prev!=-1);
@@ -2085,10 +2074,10 @@ public:
 			    assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
 				assert(connected_unsafe(from));
-					int from_dist = dist[from];
-					assert(from_dist>=0);
-					assert(from_dist!=INF);
-						prev = from;
+				int from_dist = dist[from];
+				assert(from_dist>=0);
+				assert(from_dist!=INF);
+				prev = from;
 				break;
 			}
 		}

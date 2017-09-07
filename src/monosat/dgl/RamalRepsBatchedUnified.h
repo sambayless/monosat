@@ -1006,12 +1006,6 @@ public:
                 assert(dist[from]!=INF);
                 prev = from;
                 prev_edgeID=edgeID;
-                //Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-                /*if (dist[from]<min_prev_dist){
-                    min_prev_dist=dist[from];
-                    prev = from;
-                    prev_edgeID=edgeID;
-                }*/
 				break;
 			}
 		}
@@ -1045,11 +1039,6 @@ public:
                 assert(dist[from]>=0);
                 assert(dist[from]!=INF);
                 prev = from;
-                //Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-                /*if (dist[from]<min_prev_dist){
-                    min_prev_dist=dist[from];
-                    prev = from;
-                }*/
 				break;
 			}
 		}
