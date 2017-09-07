@@ -675,7 +675,7 @@ public:
 
 #ifdef DEBUG_RAMAL
       for(int edgeID = 0;edgeID<weights.size();edgeID++){
-          assert((weights[edgeID]==local_weights[edgeID]) || !g.edgeEnabled(edgeID) );
+          assert(has_zero_weights || (weights[edgeID]==local_weights[edgeID]) || !g.edgeEnabled(edgeID) );
       }
 #endif
 	}
