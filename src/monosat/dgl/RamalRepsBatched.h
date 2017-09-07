@@ -1068,29 +1068,35 @@ public:
 
 		assert( dist[t]>=0);
 		assert( dist[t]!=INF);
+        assert(delta[t]>0);
 		int prev = -1;
 		int prev_edgeID=-1;
 		Weight min_prev_dist= dist[t];
+		//it should be possible to maintain an explicit list of all the edges in the shortest path tree,
+		//or perhaps at least one such edge for each node, and avoid this search, at the cost of more storage and slightly more expensive
+		//edge updates
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
-			if(g.edgeEnabled(edgeID)){
+            if(edgeInShortestPathGraph[edgeID]){
+			    assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
-				if(connected_unsafe(from)){
+                assert(connected_unsafe(from));
 					assert(dist[from]>=0);
 					assert(dist[from]!=INF);
+                prev = from;
+                prev_edgeID=edgeID;
 					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-					if (dist[from]<min_prev_dist){
+                /*if (dist[from]<min_prev_dist){
 						min_prev_dist=dist[from];
 						prev = from;
 						prev_edgeID=edgeID;
-					}
-				}
+                }*/
 			}
 		}
 		assert(prev!=-1);
-		assert(min_prev_dist<dist[t]);
-
+		//assert(min_prev_dist<dist[t]);
+        assert(prev_edgeID!=-1);
 		return prev_edgeID;
 	}
 	int previous(int t) {
@@ -1105,26 +1111,29 @@ public:
 
 		assert( dist[t]>=0);
 		assert( dist[t]!=INF);
+        assert(delta[t]>0);
 		int prev = -1;
 		Weight min_prev_dist= dist[t];
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
-			if(g.edgeEnabled(edgeID)){
+            if(edgeInShortestPathGraph[edgeID]){
+                assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
-				if(connected_unsafe(from)){
+				assert(connected_unsafe(from));
 					assert(dist[from]>=0);
 					assert(dist[from]!=INF);
+                prev = from;
 					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-					if (dist[from]<min_prev_dist){
+                /*if (dist[from]<min_prev_dist){
 						min_prev_dist=dist[from];
 						prev = from;
-					}
-				}
+                }*/
+
 			}
 		}
 		assert(prev!=-1);
-		assert(min_prev_dist<dist[t]);
+		//assert(min_prev_dist<dist[t]);
 
 		return prev;
 	}
@@ -2163,33 +2172,29 @@ public:
 			return -1;
 
 		int d = dist[t];
-
+        assert(delta[t]>0);
 		assert(d>=0);
 		assert(d!=INF);
 		int prev = -1;
 		int prev_edgeID=-1;
-		int min_prev_dist=d;
+
 
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
-			if(g.edgeEnabled(edgeID)){
+            if(edgeInShortestPathGraph[edgeID]){
+			    assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
-				if(connected_unsafe(from)){
+				assert(connected_unsafe(from));
 					int from_dist = dist[from];
 					assert(from_dist>=0);
 					assert(from_dist!=INF);
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-					if (from_dist<min_prev_dist){
-						min_prev_dist=from_dist;
 						prev = from;
 						prev_edgeID=edgeID;
 					}
 				}
-			}
-		}
 		assert(prev!=-1);
-		assert(min_prev_dist<d);
+
 
 		return prev_edgeID;
 	}
@@ -2205,27 +2210,24 @@ public:
 
 		assert(d>=0);
 		assert(d!=INF);
+        assert(delta[t]>0);
 		int prev = -1;
-		int min_prev_dist=d;
+
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
-			if(g.edgeEnabled(edgeID)){
+            if(edgeInShortestPathGraph[edgeID]){
+			    assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
-				if(connected_unsafe(from)){
+				assert(connected_unsafe(from));
 					int from_dist = dist[from];
 					assert(from_dist>=0);
 					assert(from_dist!=INF);
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-					if (from_dist<min_prev_dist){
-						min_prev_dist=from_dist;
 						prev = from;
 					}
 				}
-			}
-		}
 		assert(prev!=-1);
-		assert(min_prev_dist<d);
+
 
 		return prev;
 	}
