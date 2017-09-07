@@ -59,17 +59,18 @@ public:
 
     double stats_full_update_time=0;
     double stats_fast_update_time=0;
-
+    double random_seed=0;
+    bool randomShortestPath=false;//If true, select a random (but still shortest) path
 
 public:
 
 
-    CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0) :
-            g(graph),status(status), reach(reach),reportPolarity(reportPolarity){
+    CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,bool randomShortestPath=false, double random_seed=0) :
+            g(graph),status(status), reach(reach),reportPolarity(reportPolarity),randomShortestPath(randomShortestPath),random_seed(random_seed){
 
     }
-    CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0) :
-            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity){
+    CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0,bool randomShortestPath=false, double random_seed=0) :
+            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity),randomShortestPath(randomShortestPath),random_seed(random_seed){
 
     }
 
@@ -100,6 +101,8 @@ public:
     std::vector<int> previous_edge;
     bool has_non_reach_destinations=false;
     bool needs_recompute=true;
+
+
     void clearCache(){
         needs_recompute=true;
     }
@@ -123,6 +126,10 @@ public:
         edge_in_path.clear();//clear and rebuild the path tree
         int source = getSource();
         assert(previous_edge[source]==-1);
+        static int iter =0;
+        if(++iter==25){
+            int a=1;
+        };
         has_non_reach_destinations=false;
         for(int d:destinations){
 
@@ -137,7 +144,7 @@ public:
                     status.setReachable(d, true);
                 }
                 //extract path
-                int edgeID = reach->incomingEdge(d);
+                int edgeID = randomShortestPath ?   reach->randomIncomingEdge(d,random_seed) : reach->incomingEdge(d) ;
                 assert(edgeID>=0);
                 int p = d;
                 while(!edge_in_path.has(edgeID)){
@@ -145,15 +152,15 @@ public:
                     previous_edge[p] = edgeID;//do not need to reset previous_edge vector here; instead we allow it to contain incorrect values on the assumption they will be corrected before being accessed
 
                     edge_in_path.insert(edgeID);
-                    p = reach->previous(p);
+                    p = g.getEdge(edgeID).from;
                     if(p==source){
                         edgeID=-1;
                         break;
                     }
-                    edgeID = reach->incomingEdge(p);
+                    edgeID = randomShortestPath ?   reach->randomIncomingEdge(p,random_seed) : reach->incomingEdge(p) ;
                     assert(edgeID>=0);
                 }
-                assert(previous_edge[p] == edgeID);
+                assert(randomShortestPath || previous_edge[p] == edgeID);
             }else{
                 has_path_to[d]=false;
                 previous_edge[d]=-1;

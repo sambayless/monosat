@@ -23,6 +23,7 @@
 #define RAMAL_REPS_BATCHED_H_
 
 #include <monosat/dgl/alg/Heap.h>
+#include <monosat/dgl/alg/Rnd.h>
 #include <monosat/dgl/Dijkstra.h>
 #include <monosat/dgl/Distance.h>
 #include <monosat/dgl/DynamicGraph.h>
@@ -1071,7 +1072,7 @@ public:
         assert(delta[t]>0);
 		int prev = -1;
 		int prev_edgeID=-1;
-		Weight min_prev_dist= dist[t];
+
 		//it should be possible to maintain an explicit list of all the edges in the shortest path tree,
 		//or perhaps at least one such edge for each node, and avoid this search, at the cost of more storage and slightly more expensive
 		//edge updates
@@ -1086,17 +1087,12 @@ public:
 					assert(dist[from]!=INF);
                 prev = from;
                 prev_edgeID=edgeID;
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-                /*if (dist[from]<min_prev_dist){
-						min_prev_dist=dist[from];
-						prev = from;
-						prev_edgeID=edgeID;
-                }*/
+
 				break;
 			}
 		}
 		assert(prev!=-1);
-		//assert(min_prev_dist<dist[t]);
+
         assert(prev_edgeID!=-1);
 		return prev_edgeID;
 	}
@@ -1114,7 +1110,7 @@ public:
 		assert( dist[t]!=INF);
         assert(delta[t]>0);
 		int prev = -1;
-		Weight min_prev_dist= dist[t];
+
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
@@ -1125,18 +1121,93 @@ public:
 					assert(dist[from]>=0);
 					assert(dist[from]!=INF);
                 prev = from;
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-                /*if (dist[from]<min_prev_dist){
-						min_prev_dist=dist[from];
-						prev = from;
-                }*/
+
 				break;
 			}
 		}
 		assert(prev!=-1);
-		//assert(min_prev_dist<dist[t]);
+
 
 		return prev;
+	}
+	//Select a randomly chosen, but still shortest path, previous node or edge (falling back on selecting a deterministic edge if this functionality is not supported)
+	int randomPrevious(int t,double & seed) override{
+		if(has_zero_weights){
+			return dijkstras.previous(t);
+		}
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		assert( dist[t]>=0);
+		assert( dist[t]!=INF);
+		assert(delta[t]>0);
+		int prev = -1;
+
+		int start = dgl::alg::irand(seed,g.nIncoming(t));
+		assert(start>=0);assert(start<g.nIncoming(t));
+		for(int j = 0;j<g.nIncoming(t);j++){
+			int i = (j+start)%g.nIncoming(t);
+			assert(i>=0);assert(i<g.nIncoming(t));
+			int edgeID = g.incoming(t,i).id;
+			if(edgeInShortestPathGraph[edgeID]){
+				assert(g.edgeEnabled(edgeID));
+				int from = g.incoming(t,i).node;
+				assert(connected_unsafe(from));
+				assert(dist[from]>=0);
+				assert(dist[from]!=INF);
+				prev = from;
+				break;
+			}
+		}
+		assert(prev!=-1);
+
+
+		return prev;
+	}
+	int randomIncomingEdge(int t,double & seed) override{
+		if(has_zero_weights){
+			return dijkstras.incomingEdge(t);
+		}
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		assert( dist[t]>=0);
+		assert( dist[t]!=INF);
+		assert(delta[t]>0);
+		int prev = -1;
+		int prev_edgeID=-1;
+
+		//it should be possible to maintain an explicit list of all the edges in the shortest path tree,
+		//or perhaps at least one such edge for each node, and avoid this search, at the cost of more storage and slightly more expensive
+		//edge updates
+		int start = dgl::alg::irand(seed,g.nIncoming(t));
+		assert(start>=0);assert(start<g.nIncoming(t));
+		for(int j = 0;j<g.nIncoming(t);j++){
+			int i = (j+start)%g.nIncoming(t);
+			assert(i>=0);assert(i<g.nIncoming(t));
+
+			int edgeID = g.incoming(t,i).id;
+			if(edgeInShortestPathGraph[edgeID]){
+				assert(g.edgeEnabled(edgeID));
+				int from = g.incoming(t,i).node;
+				assert(connected_unsafe(from));
+				assert(dist[from]>=0);
+				assert(dist[from]!=INF);
+				prev = from;
+				prev_edgeID=edgeID;
+				break;
+			}
+		}
+		assert(prev!=-1);
+
+		assert(prev_edgeID!=-1);
+		return prev_edgeID;
 	}
 };
 
@@ -2221,6 +2292,83 @@ public:
 			int edgeID = g.incoming(t,i).id;
             if(edgeInShortestPathGraph[edgeID]){
 			    assert(g.edgeEnabled(edgeID));
+				int from = g.incoming(t,i).node;
+				assert(connected_unsafe(from));
+				int from_dist = dist[from];
+				assert(from_dist>=0);
+				assert(from_dist!=INF);
+				prev = from;
+				break;
+			}
+		}
+		assert(prev!=-1);
+
+
+		return prev;
+	}
+
+	int randomIncomingEdge(int t,double & seed) override{
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		int d = dist[t];
+		assert(delta[t]>0);
+		assert(d>=0);
+		assert(d!=INF);
+		int prev = -1;
+		int prev_edgeID=-1;
+
+
+		int start = dgl::alg::irand(seed,g.nIncoming(t));
+		assert(start>=0);assert(start<g.nIncoming(t));
+		for(int j = 0;j<g.nIncoming(t);j++){
+			int i = (j+start)%g.nIncoming(t);
+			assert(i>=0);assert(i<g.nIncoming(t));
+
+			int edgeID = g.incoming(t,i).id;
+			if(edgeInShortestPathGraph[edgeID]){
+				assert(g.edgeEnabled(edgeID));
+				int from = g.incoming(t,i).node;
+				assert(connected_unsafe(from));
+				int from_dist = dist[from];
+				assert(from_dist>=0);
+				assert(from_dist!=INF);
+				prev = from;
+				prev_edgeID=edgeID;
+				break;
+			}
+		}
+		assert(prev!=-1);
+
+
+		return prev_edgeID;
+	}
+	int randomPrevious(int t,double & seed) override{
+		if (!connected_unsafe(t)){
+			return -1;
+		}
+		if(t==source)
+			return -1;
+
+		int d = dist[t];
+
+		assert(d>=0);
+		assert(d!=INF);
+		assert(delta[t]>0);
+		int prev = -1;
+
+		int start = dgl::alg::irand(seed,g.nIncoming(t));
+		assert(start>=0);assert(start<g.nIncoming(t));
+		for(int j = 0;j<g.nIncoming(t);j++){
+			int i = (j+start)%g.nIncoming(t);
+			assert(i>=0);assert(i<g.nIncoming(t));
+
+			int edgeID = g.incoming(t,i).id;
+			if(edgeInShortestPathGraph[edgeID]){
+				assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
 				assert(connected_unsafe(from));
 				int from_dist = dist[from];

@@ -386,6 +386,10 @@ BoolOption Monosat::opt_shrink_theory_conflicts(_cat, "shrink-theory-conflicts",
 
 BoolOption Monosat::opt_rnd_shuffle(_cat_graph, "rnd-shuffle",
                                     "Inject randomness into the solver by shuffling the order of propagation of graph constraints.", true);
+
+BoolOption Monosat::opt_rnd_shortest_path(_cat_graph, "rnd-shortest-path",
+									"Select a random (but still shortest) path in path selection heuristics.", false);
+
 BoolOption Monosat::opt_components_learn_connect(_cat_graph, "components-learn-connect", "", false);
 
 BoolOption Monosat::opt_dinics_recursive(_cat_graph, "dinitz-recursive",
