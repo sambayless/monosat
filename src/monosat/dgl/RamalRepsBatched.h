@@ -123,7 +123,7 @@ public:
 				outer(_outer) {
 		}
 	} local_distance_status;
-	Dijkstra<Weight,LocalDistanceStatus> dijkstras;
+	Dijkstra<Weight,Status> dijkstras;
 	bool has_zero_weights=false;
 public:
 
@@ -141,7 +141,7 @@ public:
 			  bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-			0), q_dec(DistCmp(dist)),q_inc(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
+			0), q_dec(DistCmp(dist)),q_inc(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,status,reportPolarity) {
 
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
@@ -149,7 +149,7 @@ public:
 	RamalRepsBatched(int s, DynamicGraph<Weight> & graph,int reportPolarity = 0, bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-			0), q_dec(DistCmp(dist)), q_inc(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
+			0), q_dec(DistCmp(dist)), q_inc(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,status,reportPolarity) {
 
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
@@ -379,6 +379,7 @@ public:
         Weight & rdu = dist[ru];
 
         Weight& weight = weights[edgeID];
+        assert(weight>0);
         if (dist[rv] < (dist[ru] + weight)) {
             assert(!edgeInShortestPathGraph[edgeID]);
             return;
@@ -417,7 +418,7 @@ public:
                     int v = g.getEdge(adjID).from;
                     Weight &w = weights[adjID]; //assume a weight of one for now
                     Weight alt = dist[v] + w;
-
+                    assert(w>0);
                     if (dist[rv] < alt || alt>=INF) {
                         edgeInShortestPathGraph[adjID]=false;
                         delta[rv]--;
@@ -443,6 +444,7 @@ public:
         if(rv==5748){
             int a =1;
         }
+        assert(weights[edgeID]>0);
         assert(delta[rv] > 0);
         delta[rv]--;
         edgeInShortestPathGraph[edgeID] = false;                        //remove this edge from the shortest path graph
@@ -580,6 +582,16 @@ public:
 						if (g.edgeEnabled(edgeid)) {
                             if(weights[edgeid]<local_weights[edgeid]){
                                 local_weights[edgeid] = weights[edgeid];
+                                if(weights[edgeid]==0){
+                                    assert(!has_zero_weights);
+                                    if(!ever_warned_about_zero_weights){
+                                        ever_warned_about_zero_weights=true;
+                                        fprintf(stderr,"Warning: Ramalingham-Reps doesn't support zero-weight edges; falling back on Dijkstra's (which is much slower)\n");
+                                    }
+                                    has_zero_weights=true;
+                                    dijkstras.update();
+                                    break;
+                                }
                                 DecreaseWeight(edgeid);
                             }else if(weights[edgeid]>local_weights[edgeid]){
                                 local_weights[edgeid] = weights[edgeid];
@@ -600,6 +612,16 @@ public:
                 if(g.getChange(i).weight_increase || g.getChange(i).weight_decrease) {
                     if (g.getChange(i).weight_decrease && g.edgeEnabled(edgeid)) {
                         local_weights[edgeid] = weights[edgeid];
+                        if(weights[edgeid]==0){
+                            assert(!has_zero_weights);
+                            if(!ever_warned_about_zero_weights){
+                                ever_warned_about_zero_weights=true;
+                                fprintf(stderr,"Warning: Ramalingham-Reps doesn't support zero-weight edges; falling back on Dijkstra's (which is much slower)\n");
+                            }
+                            has_zero_weights=true;
+                            dijkstras.update();
+                            break;
+                        }
                         DecreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
                         //code runs on weights, not local weights, and so it might be out of sync with local weights
                     }else if (g.getChange(i).weight_increase && g.edgeEnabled(edgeid)){
@@ -618,13 +640,15 @@ public:
 				}
 			}
 		}
+		if (!has_zero_weights){
         processChanged();
         processDistanceLonger();
         processDistanceShorter();
         dbg_delta_lite();
+        }
 		//for(int i = 0;i<g.nodes();i++){
 		//	int u=i;
-		if(reportPolarity>-2){
+		if(reportPolarity>-2 && !has_zero_weights){
 			for (int u : changed) {
 				//int u = changed[i];
 				node_changed[u] = false;
@@ -968,7 +992,7 @@ public:
 
 	bool dbg_uptodate() {
 #ifdef DEBUG_RAMAL2
-		if(last_modification<0)
+		if(last_modification<0 || has_zero_weights)
 		 return true;
 		 dbg_delta();
 		 Dijkstra<Weight> d(source,g);
