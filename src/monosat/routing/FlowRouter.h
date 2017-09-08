@@ -49,7 +49,9 @@ class FlowRouter : public Theory,public MaxflowDetector<Weight>::FlowListener {
         vec<Lit> dest_edgelits;
         //int disconnectedEdge=-1;
         Lit disconnectedEdgeLit=lit_Undef;
+        int cur_routing_dest =-1;
         int n_satisifed = 0;
+        int netID = -1;
         int size()const{
             return reach_lits.size();
         }
@@ -375,11 +377,43 @@ public:
              * 1) route if the current net happens to connect to the right destination node
              * 2) route if the current net happens to connect to the right destination node, and it is not the last unrouted net
              * 3) route only if _all_ nets happen to connect to all the right destination nodes
+             * 4) route the shortest path as would have been chosen by the normal reach heuristic,
+             * but after removing from the space of options any paths in the flow solution that connect valid targets for other nets             *
              */
 
-            if (opt_flow_router_heuristic==2 &&  router->nets[netID].nUnsat() <=1){
+            if ((opt_flow_router_heuristic==2 || opt_flow_router_heuristic==5) &&  router->nets[netID].nUnsat() <=1){
                 //suppress flow based decisions if only 1 path is left to route.
                 return lit_Undef;
+            }
+            if (opt_flow_router_heuristic==3 || opt_flow_router_heuristic==5){
+                //check if _all_ of the paths happen to connect valid targets
+                bool all_connected=true;
+                for(int i =0;i<router->nets.size();i++){
+                    Net & n2 = router->nets[i];
+                    assert(n2.netID>=0);
+                    int current_dest = n2.cur_routing_dest;
+                    if(current_dest>=0){
+                        Reach * reach= router->dest_sets[n2.netID].reach;
+                        NetHeurisitc & n2b = router->dest_sets[n2.netID];
+                        assert(reach);
+                        if(!reach->connected(n2b.outer_dest)){
+                            all_connected=false;
+                            break;
+                        }
+                    }
+                }
+                if(!all_connected){
+                    if(opt_verb>=4){ //&& (path_edges.size() || to_decide.size())) {
+                       // printf("r over graph:\n");
+                        //drawGrid(g_over,dest);
+                        /*printf("r under graph:\n");
+                        drawGrid(g_under,dest);*/
+                        printf("r flow graph:\n");
+                        drawGrid(g_h,dest);
+                    }
+                    //suppress flow based decisions if any net is unsatisfied by the current flow
+                    return lit_Undef;
+                }
             }
 
             /*if(opt_verb>2){
@@ -660,7 +694,7 @@ void FlowRouter<Weight>::addNet(Lit disabledEdge,vec<Lit> & dest_edges, vec<Lit>
     nets.push();
     dest_sets.push();
     int common_source=-1;
-
+    nets.last().netID = nets.size()-1;
 
     nets.last().disconnectedEdgeLit = disabledEdge;
     dest_edges.copyTo(nets.last().dest_edgelits);
@@ -771,6 +805,7 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
     //nets that are completely routed are connected directly to the dest node; if all are connected then do nothing
     for(int j = 0;j<nets.size();j++){
         Net & net = nets[j];
+        net.cur_routing_dest = -1;
         net.n_satisifed = 0;
         if(opt_verb>2)
         {
@@ -845,6 +880,7 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
         }
 
         assert(unrouted!=lit_Undef);
+        net.cur_routing_dest = unrouted_n;
         /*
         if(unrouted==lit_Undef){
             //connect source to dest directly
