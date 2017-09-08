@@ -50,6 +50,12 @@ class FlowRouter : public Theory,public MaxflowDetector<Weight>::FlowListener {
         //int disconnectedEdge=-1;
         Lit disconnectedEdgeLit=lit_Undef;
         int n_satisifed = 0;
+        int size()const{
+            return reach_lits.size();
+        }
+        int nUnsat()const{
+            return size()-n_satisifed;
+        }
     };
     Solver * S;
     GraphTheorySolver<Weight> *g_theory=nullptr;
@@ -104,6 +110,9 @@ public:
     bool propagateTheory(vec<Lit> & conflict) override{
         return propagateTheory(conflict,false);
     }
+
+    void drawGrid(DynamicGraph<Weight> & g,int net_to_draw=-1, bool only_path=false);
+
     bool propagateTheory(vec<Lit> & conflict, bool solve);
     bool solveTheory(vec<Lit> & conflict) override{
         return propagateTheory(conflict,true);
@@ -360,14 +369,30 @@ public:
             decision_reason = CRef_Undef;
             NetHeurisitc & n = router->dest_sets[netID];
             Reach * reach= router->dest_sets[netID].reach;
-            if (opt_flow_router_heuristic==2 && router->nets[netID].n_satisifed <=1){
+
+            /*
+             * Possible routing heuristic policies:
+             * 1) route if the current net happens to connect to the right destination node
+             * 2) route if the current net happens to connect to the right destination node, and it is not the last unrouted net
+             * 3) route only if _all_ nets happen to connect to all the right destination nodes
+             */
+
+            if (opt_flow_router_heuristic==2 &&  router->nets[netID].nUnsat() <=1){
                 //suppress flow based decisions if only 1 path is left to route.
                 return lit_Undef;
             }
 
-            /*if(opt_verb>=2){
+            /*if(opt_verb>2){
                 g_h.drawFull(false,true);
             }*/
+            if(opt_verb>=4){ //&& (path_edges.size() || to_decide.size())) {
+                printf("r over graph:\n");
+                drawGrid(g_over,dest);
+                /*printf("r under graph:\n");
+                drawGrid(g_under,dest);*/
+                printf("r flow graph:\n");
+                drawGrid(g_h,dest);
+            }
             if (reach->connected(n.outer_dest)){
                 //step back from outer dest
                 int prev = reach->previous(n.outer_dest);
@@ -402,6 +427,12 @@ public:
                         under_history_qhead = g_under.historySize();
                         last_under_history_clear = g_under.historyclears;
 
+                    }
+                    if(opt_verb>=4){ //&& (path_edges.size() || to_decide.size())) {
+                        printf("r over graph:\n");
+                        drawGrid(g_over);
+                        printf("r under graph:\n");
+                        drawGrid(g_under);
                     }
     #ifdef DEBUG_GRAPH
                     for(Lit l:to_decide){
@@ -454,6 +485,123 @@ public:
                 }
                 return lit_Undef;
             }
+
+        void drawGrid(DynamicGraph<Weight> & g,int highlight_dest=-1, bool only_path=false){
+            int width =10;
+            int height = 10;
+
+            vec<int> startsX;
+            vec<int> endsX;
+            vec<int> startsY;
+            vec<int> endsY;
+
+            vec<std::pair<int,int>> starts;
+            vec<std::pair<int,int>> ends;
+
+
+            bool found_source = false;
+            bool found_dest = false;
+            printf("\n");
+            for(int y = 0;y<height;y++) {
+                for (int x = 0; x < width; x++){
+                    int f_node = (y*height + x)*2+1;
+                    std::pair <int, int> p = std::make_pair(x,y);
+
+                    if (f_node == r->source || f_node-1==r->source){
+                        //assert(starts.contains(p));
+                        found_source=true;
+                        if (f_node == highlight_dest || f_node-1==highlight_dest){
+                            printf("!");
+                        }else {
+                            printf("*");
+                        }
+                    }else if (f_node == dest || f_node-1==dest){
+                        found_dest=true;
+                        // assert(ends.contains(p));
+                        if (f_node == highlight_dest || f_node-1==highlight_dest){
+                            printf("!");
+                        }else {
+                            printf("@");
+                        }
+                    }else{
+
+                        if(starts.contains(p)){
+                            int id = starts.indexOf(p)%10;
+                            printf("%d",id);
+                        }else if(ends.contains(p)){
+                            //printf("%%");
+                            int id = ends.indexOf(p)%10;
+                            printf("%d",id);
+                        }else {
+                            printf("+");
+                        }
+                    }
+                    if (x<width-1) {
+                        int t_node = (y*height+x+1)*2;
+                        //assert(g.hasEdge(f_node,t_node));
+                        if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node+1, f_node-1) || g.hasEdge(t_node, f_node) || g.hasEdge(f_node-1,t_node+1)){
+                            if(only_path){
+                                int edgea =    g.getEdge(f_node, t_node);
+                                int edgeb =    g.getEdge(t_node, f_node);
+                                if(path_edges.has(edgea) || path_edges.has(edgeb)){
+                                    printf("-");
+                                }else{
+                                    printf(" ");
+                                }
+                            }else {
+                                //int to_edge = g.getEdge(f_node,t_node);
+                                int edgea =    g.getEdge(f_node, t_node);
+                                int edgeb =    g.getEdge(t_node, f_node);
+                                printf("-");
+                                /*if((edgea>=0 && g.edgeEnabled(edgea)) || (edgeb>=0 &&  g.edgeEnabled(edgeb))) {
+                                    printf("-");
+                                }else{
+                                    printf(" ");
+                                }*/
+                            }
+                        }else{
+                            printf(" ");
+                        }
+                    }
+                }
+                printf("\n");
+                for (int x = 0; x < width; x++) {
+                    int f_node = (y*height + x)*2+1;
+                    if (y < height - 1) {
+                        int t_node = ((y + 1) * height + x)*2;
+                        //assert(g.hasEdge(f_node, t_node));
+                        if(only_path) {
+                            int edgea = g.getEdge(f_node, t_node);
+                            int edgeb = g.getEdge(t_node, f_node);
+
+                            if (path_edges.has(edgea)) {
+                                assert(g.hasEdge(edgea));
+                                printf("| ");
+                            }else if  (path_edges.has(edgeb)){
+                                assert(g.hasEdge(edgeb));
+                                printf("| ");
+                            } else {
+                                printf("  ");
+                            }
+                        }else if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node+1, f_node-1) || g.hasEdge(t_node, f_node) || g.hasEdge(f_node-1,t_node+1)){
+                            int edgea =    g.getEdge(f_node, t_node);
+                            int edgeb =    g.getEdge(t_node, f_node);
+                            //if((edgea >=0 && g.edgeEnabled(edgea)) || (edgeb>=0 && g.edgeEnabled(edgeb))) {
+                            printf("| ");
+                            /*}else{
+                                printf("  ");
+                            }*/
+                        }else{
+                            printf("  ");
+                        }
+                    }
+                }
+                printf("\n");
+            }
+            printf("\n");
+            assert(found_source);
+            assert(found_dest);
+        }
 
 
 
@@ -596,7 +744,12 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
 
    /* if(S->decisionLevel()==0)
         return true;//don't do anything at level 0*/
-
+    if(opt_verb>2){
+        printf("Under:\n");
+        drawGrid(g_theory->g_under);
+        printf("Over:\n");
+        drawGrid(g_theory->g_over);
+    }
 
     bool has_level_decision=false;
     int lev = S->decisionLevel();
@@ -607,10 +760,23 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
     DynamicGraph<Weight> & g = g_theory->g_over;
     //vec<int> routing_edges;
 
+    /*
+    * Possible net choice policies
+    * 1) for each net, pick the first unrouted destination
+    * 2) for each net, pick the heuristically hardest unrouted destination
+    * 3) for each net, pick the unrouted destination that is next to be decided in the RUC heuristic
+    * 4) for each net, pick the unrouted destination that is last to be decided in the RUC heuristic
+    */
+
     //nets that are completely routed are connected directly to the dest node; if all are connected then do nothing
     for(int j = 0;j<nets.size();j++){
         Net & net = nets[j];
         net.n_satisifed = 0;
+        if(opt_verb>2)
+        {
+            printf("Under %d:\n",j);
+            drawGrid(g_theory->g_under,j);
+        }
         //check if any members of this detector are unrouted
         Lit unrouted = lit_Undef;
         int unrouted_n = -1;
@@ -620,32 +786,64 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
             if(S->value(l)==l_True) {
                 Lit edge_lit = net.dest_edgelits[i];
                 //find an endpoint that is not yet connected in the under approx graph, or arbitrarily use the last one if all of them are connected
-                if ((i==net.dest_edgelits.size()-1)  || ( !r->isConnected(S->getTheoryLit(l),false) && unrouted==lit_Undef)){
-                	unrouted = edge_lit;
-					unrouted_n = i;
-                    //assert(S->value(net.disconnectedEdgeLit)!=l_True);
-                    if(S->value(edge_lit)==l_Undef){
-						enabled_routing_lits.push(edge_lit);
-                        if(!has_level_decision){
-                            has_level_decision=true;
-                            S->newDecisionLevel();
+                if (( !r->isConnected(S->getTheoryLit(l),false))){
+                    if(unrouted==lit_Undef) {
+                        unrouted = edge_lit;
+                        unrouted_n = i;
+                        //assert(S->value(net.disconnectedEdgeLit)!=l_True);
+                        if (S->value(edge_lit) == l_Undef) {
+                            assert(S->value(edge_lit)!=l_False);
+                            enabled_routing_lits.push(edge_lit);
+                            if (!has_level_decision) {
+                                has_level_decision = true;
+                                S->newDecisionLevel();
+                            }
+                            S->enqueue((edge_lit), CRef_Undef);
                         }
-						S->enqueue((edge_lit),CRef_Undef);
-                	}
+                    }else{
+                        if( i==net.dest_edgelits.size()-1 )
+                        if(S->value(edge_lit)==l_Undef){
+                            disabled_routing_lits.push(~edge_lit);
+                            //g_theory->enqueue(~S->getTheoryLit(edge_lit),CRef_Undef);
+                            if(!has_level_decision){
+                                has_level_decision=true;
+                                S->newDecisionLevel();
+                            }
+                            S->enqueue(~(edge_lit),CRef_Undef);
+                        }
+                    }
                 }else{
                     net.n_satisifed++;
-                	if(S->value(edge_lit)==l_Undef){
-                    disabled_routing_lits.push(~edge_lit);
-                    //g_theory->enqueue(~S->getTheoryLit(edge_lit),CRef_Undef);
-                        if(!has_level_decision){
-                            has_level_decision=true;
-                            S->newDecisionLevel();
+                    if(unrouted==lit_Undef && i==net.dest_edgelits.size()-1){
+                        //if all lits are routed, route an arbitrary lit.
+                        unrouted = edge_lit;
+                        unrouted_n = i;
+                        assert(S->value(edge_lit)!=l_False);
+                        if (S->value(edge_lit) == l_Undef) {
+                            assert(S->value(edge_lit)!=l_False);
+                            enabled_routing_lits.push(edge_lit);
+                            if (!has_level_decision) {
+                                has_level_decision = true;
+                                S->newDecisionLevel();
+                            }
+                            S->enqueue((edge_lit), CRef_Undef);
                         }
-                        S->enqueue(~(edge_lit),CRef_Undef);
-                	}
+                    }else {
+                        if (S->value(edge_lit) == l_Undef) {
+                            disabled_routing_lits.push(~edge_lit);
+                            //g_theory->enqueue(~S->getTheoryLit(edge_lit),CRef_Undef);
+                            if (!has_level_decision) {
+                                has_level_decision = true;
+                                S->newDecisionLevel();
+                            }
+                            S->enqueue(~(edge_lit), CRef_Undef);
+                        }
+                    }
                 }
             }
+
         }
+
         assert(unrouted!=lit_Undef);
         /*
         if(unrouted==lit_Undef){
@@ -723,6 +921,12 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
     /*if(opt_verb>=2){
         heuristic_graph.drawFull(false,true);
     }*/
+    if(opt_verb>2)
+    {
+        printf("Flow graph");
+        drawGrid(heuristic_graph);
+    }
+
     if(!solve) {
         S->cancelUntil(lev);
 
@@ -743,7 +947,121 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
     return true;
 
 }
+template<typename Weight>
+void FlowRouter<Weight>::drawGrid(DynamicGraph<Weight> & g,int net_to_draw, bool only_path){
+    int width =10;
+    int height = 10;
 
+    vec<int> startsX;
+    vec<int> endsX;
+    vec<int> startsY;
+    vec<int> endsY;
+
+    vec<std::pair<int,int>> starts;
+    vec<std::pair<int,int>> ends;
+
+    vec<int> all_starts;
+    vec<int> all_dests;
+    for(int i =0;i<nets.size();i++){
+        if(net_to_draw>=0 && i!=net_to_draw)
+            continue;
+        Net & net = nets[i];
+        ReachDetector<Weight> * r = net.detectors[0];
+        all_starts.push(r->source);
+        for(int j = 0;j<net.reach_lits.size();j++){
+            Lit l = net.reach_lits[j];
+            int node =  net.detectors[j]->getNode(var(S->getTheoryLit(l)));
+            all_dests.push(node);
+        }
+    }
+
+    bool found_source = false;
+    bool found_dest = false;
+    printf("\n");
+    for(int y = 0;y<height;y++) {
+        for (int x = 0; x < width; x++){
+            int f_node = (y*height + x)*2+1;
+            std::pair <int, int> p = std::make_pair(x,y);
+            if (all_starts.contains(f_node) ||all_starts.contains(f_node-1)){
+                //assert(starts.contains(p));
+                found_source=true;
+                printf("*");
+            }else if (all_dests.contains(f_node) ||all_dests.contains(f_node-1)){
+                found_dest=true;
+                // assert(ends.contains(p));
+                printf("@");
+            }else{
+
+                if(starts.contains(p)){
+                    int id = starts.indexOf(p)%10;
+                    printf("%d",id);
+                }else if(ends.contains(p)){
+                    //printf("%%");
+                    int id = ends.indexOf(p)%10;
+                    printf("%d",id);
+                }else {
+                    printf("+");
+                }
+            }
+            if (x<width-1) {
+                int t_node = (y*height+x+1)*2;
+                //assert(g.hasEdge(f_node,t_node));
+                if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node+1, f_node-1) || g.hasEdge(t_node, f_node) || g.hasEdge(f_node-1,t_node+1)){
+                    if(only_path){
+                        int edgea =    g.getEdge(f_node, t_node);
+                        int edgeb =    g.getEdge(t_node, f_node);
+                        if(g.edgeEnabled(edgea)||g.edgeEnabled(edgeb)){
+                            printf("-");
+                        }else{
+                            printf(" ");
+                        }
+                        /*if(path_edges.has(edgea) || path_edges.has(edgeb)){
+                            printf("-");
+                        }else{
+                            printf(" ");
+                        }*/
+                    }else {
+                        //int to_edge = g.getEdge(f_node,t_node);
+                        //if(g.edgeEnabled(to_edge)){
+                        printf("-");
+                    }
+                }else{
+                    printf(" ");
+                }
+            }
+        }
+        printf("\n");
+        for (int x = 0; x < width; x++) {
+            int f_node = (y*height + x)*2+1;
+            if (y < height - 1) {
+                int t_node = ((y + 1) * height + x)*2;
+                //assert(g.hasEdge(f_node, t_node));
+                if(only_path) {
+                    int edgea = g.getEdge(f_node, t_node);
+                    int edgeb = g.getEdge(t_node, f_node);
+                    if(g.edgeEnabled(edgea)||g.edgeEnabled(edgeb)){
+                        printf("| ");
+                    }else{
+                        printf("  ");
+                    }
+
+                }else if(g.hasEdge(f_node, t_node) || g.hasEdge(t_node+1, f_node-1) || g.hasEdge(t_node, f_node) || g.hasEdge(f_node-1,t_node+1)){
+                    //int to_edge = g.getEdge(f_node, t_node);
+                    //if(g.edgeEnabled(to_edge)){
+                    //int to_edge = g.getEdge(f_node,t_node);
+                    //if(g.edgeEnabled(to_edge)){
+                    printf("| ");
+                }else{
+                    printf("  ");
+                }
+            }
+        }
+        printf("\n");
+    }
+    printf("\n");
+    assert(found_source);
+    assert(found_dest);
+}
 
 };
 
