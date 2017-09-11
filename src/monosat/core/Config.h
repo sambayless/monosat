@@ -202,6 +202,7 @@ extern BoolOption opt_sat_distance_encoding_unconstrained_default;
 extern BoolOption opt_csv;
 extern BoolOption opt_rnd_shuffle;
 extern DoubleOption opt_rnd_shortest_path;
+extern DoubleOption opt_rnd_shortest_edge;
 extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;

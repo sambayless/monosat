@@ -277,23 +277,23 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	if(opt_graph_cache_propagation){
 		if(underapprox_detector){
 			Reach* original_underapprox_detector = underapprox_detector;
-			underapprox_detector = new CachedReach<Weight,ReachDetector<Weight>::ReachStatus>(original_underapprox_detector, _g,*(positiveReachStatus),1,opt_rnd_shortest_path,drand(rnd_seed));
+			underapprox_detector = new CachedReach<Weight,ReachDetector<Weight>::ReachStatus>(original_underapprox_detector, _g,*(positiveReachStatus),1,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 			if(opt_graph_use_cache_for_decisions>=1) {
 				if (underapprox_path_detector == original_underapprox_detector) {
 					underapprox_path_detector = underapprox_detector;
 				} else {
-					underapprox_path_detector = new CachedReach<Weight>(underapprox_path_detector, _g);
+					underapprox_path_detector = new CachedReach<Weight>(underapprox_path_detector, _g,0,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 				}
 			}
 		}
 		if(overapprox_reach_detector){
 			Reach* original_overapprox_detector = overapprox_reach_detector;
-			overapprox_reach_detector = new CachedReach<Weight,ReachDetector<Weight>::ReachStatus>(original_overapprox_detector, _antig,*(negativeReachStatus),-1,opt_rnd_shortest_path,drand(rnd_seed));
+			overapprox_reach_detector = new CachedReach<Weight,ReachDetector<Weight>::ReachStatus>(original_overapprox_detector, _antig,*(negativeReachStatus),-1,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 			if(opt_graph_use_cache_for_decisions>=1) {
 				if (overapprox_path_detector == original_overapprox_detector) {
 					overapprox_path_detector = overapprox_reach_detector;
 				} else {
-					overapprox_path_detector = new CachedReach<Weight>(overapprox_path_detector, _antig,opt_rnd_shortest_path,drand(rnd_seed));
+					overapprox_path_detector = new CachedReach<Weight>(overapprox_path_detector, _antig,0,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 				}
 			}
 		}

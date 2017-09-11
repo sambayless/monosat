@@ -389,7 +389,11 @@ BoolOption Monosat::opt_rnd_shuffle(_cat_graph, "rnd-shuffle",
                                     "Inject randomness into the solver by shuffling the order of propagation of graph constraints.", true);
 
 DoubleOption Monosat::opt_rnd_shortest_path(_cat_graph, "rnd-shortest-path-freq",
-									"Frequency with which t o select a random (but still shortest) path in path selection heuristics.",0, DoubleRange(0, true, 1, true));
+									"Frequency with which to select a random (but still shortest) path in path selection heuristics.",0, DoubleRange(0, true, 1, true));
+
+DoubleOption Monosat::opt_rnd_shortest_edge(_cat_graph, "rnd-shortest-path-edge",
+                                            "Frequency with which to select a random (but still shortest) edge in path selection heuristics.",0, DoubleRange(0, true, 1, true));
+
 
 BoolOption Monosat::opt_components_learn_connect(_cat_graph, "components-learn-connect", "", false);
 

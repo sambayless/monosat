@@ -56,21 +56,22 @@ public:
     long stats_skipped_updates=0;
     long stats_num_skipable_deletions=0;
     long stats_random_shortest_paths =0;
+    long stats_random_shortest_edges =0;
 
     double stats_full_update_time=0;
     double stats_fast_update_time=0;
     double random_seed=0;
     double randomShortestPathFrequency=0;//With this probability, select a random (but still shortest) path
-
+    double randomShortestEdgeFrequency =0;
 public:
 
 
-    CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,double randomShortestPathFrequency=0, double random_seed=0) :
-            g(graph),status(status), reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),random_seed(random_seed){
+    CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
+            g(graph),status(status), reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestPathFrequency),random_seed(random_seed){
 
     }
-    CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0,double randomShortestPathFrequency=0, double random_seed=0) :
-            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),random_seed(random_seed){
+    CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
+            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestPathFrequency),random_seed(random_seed){
 
     }
 
@@ -118,9 +119,14 @@ public:
     }
     void printStats(){
         reach->printStats();
-        if(stats_random_shortest_paths>0){
-            printf("Random shortest paths: %d\n",stats_random_shortest_paths);
+
+        if(randomShortestPathFrequency>0){
+            printf("Random shortest paths (%f freq): %ld\n",randomShortestPathFrequency,stats_random_shortest_paths);
         }
+        if(randomShortestEdgeFrequency>0){
+            printf("Random shortest edges (%f freq): %ld\n",randomShortestEdgeFrequency,stats_random_shortest_edges);
+        }
+
     }
     void recompute() {
         needs_recompute = false;
@@ -135,8 +141,7 @@ public:
         };
         has_non_reach_destinations = false;
 
-        bool randomShortestPath = (randomShortestPathFrequency > 0 &&
-                alg::drand(random_seed) < randomShortestPathFrequency);
+        bool randomShortestPath = alg::drand(random_seed) < randomShortestPathFrequency;
         if (randomShortestPath) {
             stats_random_shortest_paths++;
         }
@@ -154,7 +159,11 @@ public:
                     status.setReachable(d, true);
                 }
                 //extract path
-                int edgeID = randomShortestPath ?   reach->randomIncomingEdge(d,random_seed) : reach->incomingEdge(d) ;
+                bool randomShortestEdge = randomShortestPath || ( alg::drand(random_seed) < randomShortestEdgeFrequency);
+                if (randomShortestEdge && ! randomShortestPath) {
+                    stats_random_shortest_edges++;
+                }
+                int edgeID = randomShortestEdge ?   reach->randomIncomingEdge(d,random_seed) : reach->incomingEdge(d) ;
                 assert(edgeID>=0);
                 int p = d;
                 while(!edge_in_path.has(edgeID)){
