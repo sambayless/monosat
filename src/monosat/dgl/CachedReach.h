@@ -67,11 +67,11 @@ public:
 
 
     CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
-            g(graph),status(status), reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestPathFrequency),random_seed(random_seed){
+            g(graph),status(status), reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }
     CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
-            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestPathFrequency),random_seed(random_seed){
+            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }
 

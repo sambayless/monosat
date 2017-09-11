@@ -391,7 +391,7 @@ BoolOption Monosat::opt_rnd_shuffle(_cat_graph, "rnd-shuffle",
 DoubleOption Monosat::opt_rnd_shortest_path(_cat_graph, "rnd-shortest-path-freq",
 									"Frequency with which to select a random (but still shortest) path in path selection heuristics.",0, DoubleRange(0, true, 1, true));
 
-DoubleOption Monosat::opt_rnd_shortest_edge(_cat_graph, "rnd-shortest-path-edge",
+DoubleOption Monosat::opt_rnd_shortest_edge(_cat_graph, "rnd-shortest-edge-freq",
                                             "Frequency with which to select a random (but still shortest) edge in path selection heuristics.",0, DoubleRange(0, true, 1, true));
 
 
