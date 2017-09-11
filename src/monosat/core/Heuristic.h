@@ -32,6 +32,7 @@ class Heuristic {
     double activity=0;
     int heuristic_index=-1;
     int heuristic_order=0;
+    Heuristic * parent=nullptr;
 public:
 
 
@@ -68,11 +69,17 @@ public:
         assert(id>0);
         heuristic_index=id;
     }
+
     virtual Lit decideTheory(CRef & decision_reason){
         decision_reason = CRef_Undef;
         return lit_Undef;
     }
-
+    void setParentHeuristic(Heuristic * parent){
+        this->parent = parent;
+    }
+    Heuristic * getParentHeuristic()const{
+        return this->parent;
+    }
 };
 }
 

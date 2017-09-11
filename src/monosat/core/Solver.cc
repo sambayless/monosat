@@ -2959,7 +2959,6 @@ lbool Solver::solve_() {
 				}
 				theory_order_heap.build(decision_heuristics);
 			}
-
 			if(opt_verb>=3){
 				printf("Initial theory order: ");
 				for (Heuristic *h:decision_heuristics) {

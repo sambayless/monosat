@@ -566,6 +566,7 @@ public:
 	void setSubHeuristic(Heuristic* h){
 		assert(!sub_heuristic);
 		sub_heuristic=h;
+        h->setParentHeuristic(this);
 	}
 
 	void computePath(){

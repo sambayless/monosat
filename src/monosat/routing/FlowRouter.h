@@ -41,9 +41,13 @@ template<typename Weight>
 class FlowRouter : public Theory,public MaxflowDetector<Weight>::FlowListener {
     IntSet<> edgevars;
     int theory_index=-1;
+public:
+    class OpportunisticHeuristic;
+private:
     struct Net{
         //vec<int> members;
         vec<ReachDetector<Weight>*> detectors;
+        vec<OpportunisticHeuristic*> heuristics;
         vec<Lit> reach_lits;
         //vec<int> dest_edges;
         vec<Lit> dest_edgelits;
@@ -212,8 +216,8 @@ public:
             Lit l = reach_lit;
             assert (l != lit_Undef);
 
-
-            if (outer->value(l) == l_True) {
+            assert(outer->getSolver()->value(l) == l_True);
+            if (outer->getSolver()->value(l) == l_True) {
 
                 if (over_path->connected(to)) {
 
@@ -251,9 +255,9 @@ public:
             bool needsRecompute(int to){
                 if (to!=current_path_dest)
                     return true;
-                if (outer->value(reach_lit) != l_False && path_is_cut) {
+                if (outer->getSolver()->value(reach_lit) != l_False && path_is_cut) {
                     return true;
-                }else if (outer->value(reach_lit) != l_True && !path_is_cut) {
+                }else if (outer->getSolver()->value(reach_lit) != l_True && !path_is_cut) {
                     return true;
                 }
 
@@ -420,8 +424,8 @@ public:
                 g_h.drawFull(false,true);
             }*/
             if(opt_verb>=4){ //&& (path_edges.size() || to_decide.size())) {
-                printf("r over graph:\n");
-                drawGrid(g_over,dest);
+                //printf("r over graph:\n");
+                //drawGrid(g_over,dest);
                 /*printf("r under graph:\n");
                 drawGrid(g_under,dest);*/
                 printf("r flow graph:\n");
@@ -437,7 +441,8 @@ public:
                     int to = prev;
 
 
-                    if (outer->value(reach_lit)==l_Undef){
+                    if (outer->getSolver()->value(reach_lit)==l_Undef){
+                        assert(false);
                         return lit_Undef;//if the reach lit is unassigned, do not make any decisions here
                     }
                     static int iter = 0;
@@ -521,8 +526,8 @@ public:
             }
 
         void drawGrid(DynamicGraph<Weight> & g,int highlight_dest=-1, bool only_path=false){
-            int width =10;
-            int height = 10;
+            int width =60;
+            int height = 60;
 
             vec<int> startsX;
             vec<int> endsX;
@@ -737,7 +742,9 @@ void FlowRouter<Weight>::addNet(Lit disabledEdge,vec<Lit> & dest_edges, vec<Lit>
             int outer_dest = dest_sets.last().outer_dest;
             heuristic_graph.addEdge(dest,outer_dest);
             dest_sets.last().destinations.insert(dest);
-            rd->attachSubHeuristic(new OpportunisticHeuristic(this,nets.size()-1,rd,dest,l),dest);
+            auto * h = new OpportunisticHeuristic(this,nets.size()-1,rd,dest,l);
+            nets.last().heuristics.push(h);
+            rd->attachSubHeuristic(h,dest);
         }
 
     }
@@ -775,14 +782,15 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
     if(!maxflow_detector->propagate(conflict)){
         return false;
     }
-
+    if(opt_flow_router_policy==0)
+        return true;
    /* if(S->decisionLevel()==0)
         return true;//don't do anything at level 0*/
     if(opt_verb>2){
-        printf("Under:\n");
+       /* printf("Under:\n");
         drawGrid(g_theory->g_under);
         printf("Over:\n");
-        drawGrid(g_theory->g_over);
+        drawGrid(g_theory->g_over);*/
     }
 
     bool has_level_decision=false;
@@ -809,25 +817,57 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
         net.n_satisifed = 0;
         if(opt_verb>2)
         {
-            printf("Under %d:\n",j);
-            drawGrid(g_theory->g_under,j);
+           /* printf("Under %d:\n",j);
+            drawGrid(g_theory->g_under,j);*/
         }
         //check if any members of this detector are unrouted
         Lit unrouted = lit_Undef;
         int unrouted_n = -1;
-        for(int i = 0;i<net.dest_edgelits.size();i++){
-            ReachDetector<Weight> * r = net.detectors[i];
+        if(opt_flow_router_policy==2 && net.dest_edgelits.size()>1) {
+            int best_heuristic_value = -1;
+            int best_heuristic_net = -1;
+            for(int i = 0;i<net.dest_edgelits.size();i++) {
+                ReachDetector<Weight> *r = net.detectors[i];
+                Lit l = net.reach_lits[i];
+                if (S->value(l) == l_True) {
+                    Lit edge_lit = net.dest_edgelits[i];
+                    //find an endpoint that is not yet connected in the under approx graph, or arbitrarily use the last one if all of them are connected
+                    if ((!r->isConnected(S->getTheoryLit(l), false))) {
+                        OpportunisticHeuristic * h = net.heuristics[i];
+
+                        int heuristic_value = h->getParentHeuristic()->getHeuristicOrder();
+                        assert(heuristic_value!=best_heuristic_value);//all heuristic values should be unique
+                        if(best_heuristic_value<0 || heuristic_value<best_heuristic_value) {
+                            best_heuristic_net = i;
+                            best_heuristic_value=heuristic_value;
+                        }
+                    }
+
+                }
+            }
+            if(best_heuristic_net>=0) {
+                unrouted =  net.dest_edgelits[best_heuristic_net];
+                unrouted_n = best_heuristic_net;
+                if(unrouted_n>0){
+                    int a=1;
+                }
+            }
+        }
+        for(int i = 0;i<net.dest_edgelits.size();i++) {
+
+            ReachDetector<Weight> *r = net.detectors[i];
             Lit l = net.reach_lits[i];
-            if(S->value(l)==l_True) {
+            if (S->value(l) == l_True) {
                 Lit edge_lit = net.dest_edgelits[i];
                 //find an endpoint that is not yet connected in the under approx graph, or arbitrarily use the last one if all of them are connected
-                if (( !r->isConnected(S->getTheoryLit(l),false))){
-                    if(unrouted==lit_Undef) {
+                if ((!r->isConnected(S->getTheoryLit(l), false))) {
+                    if (unrouted == lit_Undef || unrouted==edge_lit) {
                         unrouted = edge_lit;
                         unrouted_n = i;
+
                         //assert(S->value(net.disconnectedEdgeLit)!=l_True);
                         if (S->value(edge_lit) == l_Undef) {
-                            assert(S->value(edge_lit)!=l_False);
+                            assert(S->value(edge_lit) != l_False);
                             enabled_routing_lits.push(edge_lit);
                             if (!has_level_decision) {
                                 has_level_decision = true;
@@ -835,27 +875,28 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
                             }
                             S->enqueue((edge_lit), CRef_Undef);
                         }
-                    }else{
-                        if( i==net.dest_edgelits.size()-1 )
-                        if(S->value(edge_lit)==l_Undef){
-                            disabled_routing_lits.push(~edge_lit);
-                            //g_theory->enqueue(~S->getTheoryLit(edge_lit),CRef_Undef);
-                            if(!has_level_decision){
-                                has_level_decision=true;
-                                S->newDecisionLevel();
+
+                    } else {
+                        if (i == net.dest_edgelits.size() - 1)
+                            if (S->value(edge_lit) == l_Undef) {
+                                disabled_routing_lits.push(~edge_lit);
+                                //g_theory->enqueue(~S->getTheoryLit(edge_lit),CRef_Undef);
+                                if (!has_level_decision) {
+                                    has_level_decision = true;
+                                    S->newDecisionLevel();
+                                }
+                                S->enqueue(~(edge_lit), CRef_Undef);
                             }
-                            S->enqueue(~(edge_lit),CRef_Undef);
-                        }
                     }
-                }else{
+                } else {
                     net.n_satisifed++;
-                    if(unrouted==lit_Undef && i==net.dest_edgelits.size()-1){
+                    if (unrouted == lit_Undef && i == net.dest_edgelits.size() - 1) {
                         //if all lits are routed, route an arbitrary lit.
                         unrouted = edge_lit;
                         unrouted_n = i;
-                        assert(S->value(edge_lit)!=l_False);
+                        assert(S->value(edge_lit) != l_False);
                         if (S->value(edge_lit) == l_Undef) {
-                            assert(S->value(edge_lit)!=l_False);
+                            assert(S->value(edge_lit) != l_False);
                             enabled_routing_lits.push(edge_lit);
                             if (!has_level_decision) {
                                 has_level_decision = true;
@@ -863,7 +904,7 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
                             }
                             S->enqueue((edge_lit), CRef_Undef);
                         }
-                    }else {
+                    } else {
                         if (S->value(edge_lit) == l_Undef) {
                             disabled_routing_lits.push(~edge_lit);
                             //g_theory->enqueue(~S->getTheoryLit(edge_lit),CRef_Undef);
@@ -876,8 +917,10 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
                     }
                 }
             }
-
         }
+
+
+
 
         assert(unrouted!=lit_Undef);
         net.cur_routing_dest = unrouted_n;
@@ -957,7 +1000,7 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
     /*if(opt_verb>=2){
         heuristic_graph.drawFull(false,true);
     }*/
-    if(opt_verb>2)
+    if(opt_verb>2 && opt_flow_router_heuristic>0)
     {
         printf("Flow graph");
         drawGrid(heuristic_graph);
@@ -985,8 +1028,8 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
 }
 template<typename Weight>
 void FlowRouter<Weight>::drawGrid(DynamicGraph<Weight> & g,int net_to_draw, bool only_path){
-    int width =10;
-    int height = 10;
+    int width =60;
+    int height = 60;
 
     vec<int> startsX;
     vec<int> endsX;
@@ -1095,8 +1138,8 @@ void FlowRouter<Weight>::drawGrid(DynamicGraph<Weight> & g,int net_to_draw, bool
         printf("\n");
     }
     printf("\n");
-    assert(found_source);
-    assert(found_dest);
+    //assert(found_source);
+    //assert(found_dest);
 }
 
 };

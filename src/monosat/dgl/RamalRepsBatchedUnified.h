@@ -37,10 +37,10 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#ifndef NDEBUG
+/*#ifndef NDEBUG
 #define DEBUG_RAMAL
 #define DEBUG_RAMAL2
-#endif
+#endif*/
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
 class RamalRepsBatchedUnified: public Distance<Weight>, public DynamicGraphAlgorithm {

@@ -314,7 +314,8 @@ BoolOption Monosat::opt_detect_pure_lits(_cat, "detect-pure-lits",
 IntOption Monosat::opt_detect_satisfied_predicates(_cat, "detect-sat-predicates", "Take extra effort to detect satisfied"
         " theory atoms, so that they don't need to be checked subsequently. Check every Nth round (0 to never check, 1 to always check)", 0, IntRange(0,INT32_MAX));
 
-IntOption Monosat::opt_flow_router_heuristic(_cat, "flow-router-heuristic", "Enabled if >0. If opt_flow_router_heuristic=2, then suppress flow decisions when only 1 path is left in the flow.", 0, IntRange(0,4));
+IntOption Monosat::opt_flow_router_heuristic(_cat, "flow-router-heuristic", "Enabled if >0. If opt_flow_router_heuristic=2, then suppress flow decisions when only 1 path is left in the flow.", 0, IntRange(0,5));
+IntOption Monosat::opt_flow_router_policy(_cat, "flow-router-policy", "Flow router propagation enabled if >0.", 1, IntRange(0,2));
 
 BoolOption Monosat::opt_ignore_assign_edge_weights(_cat_graph, "ignore-edge-weight-heuristic",
 												"Ignore any edge weight heuristic directives", false);
@@ -387,8 +388,8 @@ BoolOption Monosat::opt_shrink_theory_conflicts(_cat, "shrink-theory-conflicts",
 BoolOption Monosat::opt_rnd_shuffle(_cat_graph, "rnd-shuffle",
                                     "Inject randomness into the solver by shuffling the order of propagation of graph constraints.", true);
 
-BoolOption Monosat::opt_rnd_shortest_path(_cat_graph, "rnd-shortest-path",
-									"Select a random (but still shortest) path in path selection heuristics.", false);
+DoubleOption Monosat::opt_rnd_shortest_path(_cat_graph, "rnd-shortest-path-freq",
+									"Frequency with which t o select a random (but still shortest) path in path selection heuristics.",0, DoubleRange(0, true, 1, true));
 
 BoolOption Monosat::opt_components_learn_connect(_cat_graph, "components-learn-connect", "", false);
 

@@ -152,6 +152,7 @@ public:
 		assert(heuristic_id>0);
 		t->setHeuristicIndex(heuristic_id);
 		all_decision_heuristics.push(t);
+		t->setHeuristicOrder(decision_heuristics.size());
 		decision_heuristics.push(t);
 		theory_order_heap.insert(t);
 		theory_conflict_counters.growTo(all_decision_heuristics.size(),0);
