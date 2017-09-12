@@ -334,6 +334,7 @@ BoolOption Monosat::opt_skip_deletions(_cat_graph, "skip-deletions", "", false);
 BoolOption Monosat::opt_skip_additions(_cat_graph, "skip-additions", "", false);
 
 BoolOption Monosat::opt_allow_reach_decisions(_cat_graph, "allow-reach-decision", "", true);
+BoolOption Monosat::opt_joint_reach_decisions(_cat_graph, "joint-reach-decision", "Make decisions for all reach lits sharing a common source at the same time, instead of separately", false);
 
 StringOption Monosat::opt_hull_alg(_cat_geom, "hull", "Select convex-hull algorithm (monotone,quick)", "monotone");
 

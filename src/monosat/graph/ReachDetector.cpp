@@ -519,6 +519,11 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 }
 
 template<typename Weight>
+class CombinedReachHeuristic : public GraphHeuristic<Weight>{
+
+};
+
+template<typename Weight>
 class ReachHeuristic : public GraphHeuristic<Weight>{
 
 	ReachDetector<Weight> * r;
@@ -547,8 +552,13 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
 	bool path_is_cut=false;
 	int dest_node=-1;
 	Heuristic * sub_heuristic=nullptr;
+    long stats_random_shortest_paths =0;
+    long stats_random_shortest_edges =0;
+    double random_seed=0;
+    double randomShortestPathFrequency=0;//With this probability, select a random (but still shortest) path
+    double randomShortestEdgeFrequency =0;
 public:
-	ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, Lit reach_lit,int dest_node): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit),g_over(r->g_over),g_under(r->g_under),dest_node(dest_node) {
+	ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, Lit reach_lit,int dest_node,double randomShortestPathFrequency,double randomShortestEdgeFrequency, double random_seed): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit),g_over(r->g_over),g_under(r->g_under),dest_node(dest_node),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed) {
 		this->setPriority(outer->getSolver()->getDecisionPriority(var(outer->toSolver(reach_lit))));
 		if (opt_use_random_path_for_decisions) {
 			rnd_weight.clear();
@@ -647,14 +657,25 @@ public:
 							over_path->update();
 							//over_path->dbg_manual_uptodate();
 							//printf("ReachPath %d: ",iter);
-							p = j;
+                            bool randomShortestPath = alg::drand(random_seed) < randomShortestPathFrequency;
+                            if (randomShortestPath) {
+                                stats_random_shortest_paths++;
+                            }
+
+                            p = j;
 							last = j;
 							//while (!under_reach->connected(p)) {
 							while(p!=r->source){
 								//printf("%d, ",p);
 								last = p;
+                                assert(p>=0);
 								assert(p != r->source);
-								last_edge = over_path->incomingEdge(p);
+                                bool randomShortestEdge = randomShortestPath || ( alg::drand(random_seed) < randomShortestEdgeFrequency);
+                                if (randomShortestEdge && ! randomShortestPath) {
+                                    stats_random_shortest_edges++;
+                                }
+                                last_edge = randomShortestEdge ?   over_path->randomIncomingEdge(p,random_seed) : over_path->incomingEdge(p) ;
+                                assert(last_edge>=0);
 								path_edges.insert(last_edge);
 								Var edge_var = outer->getEdgeVar(last_edge);
 								if (outer->value(edge_var) == l_Undef) {
@@ -669,10 +690,10 @@ public:
 						}
 					} else {
 						//Randomly re-weight the graph sometimes
-						if (drand(r->rnd_seed) < opt_decide_graph_re_rnd) {
+						if (drand(random_seed) < opt_decide_graph_re_rnd) {
 
 							for (int i = 0; i < outer->edge_list.size(); i++) {
-								double w = drand(r->rnd_seed);
+								double w = drand(random_seed);
 								/* w-=0.5;
 								 w*=w;*/
 								//printf("%f (%f),",w,rnd_seed);
@@ -1028,7 +1049,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		buildSATConstraints(false);
 	}
 	if(opt_decide_theories && opt_allow_reach_decisions && overapprox_reach_detector){
-		Heuristic * h = new ReachHeuristic<Weight>(outer,this,reachLit,to);
+		Heuristic * h = new ReachHeuristic<Weight>(outer,this,reachLit,to,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 		reach_heuristics.growTo(to+1,nullptr);
 		reach_heuristics[to]=h;
 		all_reach_heuristics.push(h);

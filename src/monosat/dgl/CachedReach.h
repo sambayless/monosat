@@ -57,7 +57,7 @@ public:
     long stats_num_skipable_deletions=0;
     long stats_random_shortest_paths =0;
     long stats_random_shortest_edges =0;
-
+    long stats_n_recomputes =0;
     double stats_full_update_time=0;
     double stats_fast_update_time=0;
     double random_seed=0;
@@ -119,7 +119,7 @@ public:
     }
     void printStats(){
         reach->printStats();
-
+        printf("Cached Reach Recomputes: %ld\n",stats_n_recomputes);
         if(randomShortestPathFrequency>0){
             printf("Random shortest paths (%f freq): %ld\n",randomShortestPathFrequency,stats_random_shortest_paths);
         }
@@ -130,6 +130,7 @@ public:
     }
     void recompute() {
         needs_recompute = false;
+        stats_n_recomputes++;
         reach->update();
         //do not need to reset previous_edge vector here; instead we allow it to contain incorrect values on the assumption they will be corrected before being accessed
         edge_in_path.clear();//clear and rebuild the path tree
@@ -176,7 +177,11 @@ public:
                         edgeID=-1;
                         break;
                     }
-                    edgeID = randomShortestPath ?   reach->randomIncomingEdge(p,random_seed) : reach->incomingEdge(p) ;
+                    randomShortestEdge = randomShortestPath || ( alg::drand(random_seed) < randomShortestEdgeFrequency);
+                    if (randomShortestEdge && ! randomShortestPath) {
+                        stats_random_shortest_edges++;
+                    }
+                    edgeID = randomShortestEdge ?   reach->randomIncomingEdge(p,random_seed) : reach->incomingEdge(p) ;
                     assert(edgeID>=0);
                 }
                 assert(randomShortestPath || previous_edge[p] == edgeID);
