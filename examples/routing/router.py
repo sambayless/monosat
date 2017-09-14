@@ -48,7 +48,6 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
         if(len(net)!=2):
             raise Exception("router.py  only supports routing nets with exactly 2 vertices. Use router_multi.py for routing nets with 2+ vertices.")
 
-
     if(len(monosat_args)>0):
         args = " ".join(monosat_args)
         print("MonoSAT args: " + args)

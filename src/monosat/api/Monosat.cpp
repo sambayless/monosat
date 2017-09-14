@@ -35,6 +35,7 @@
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
+#include "monosat/routing/FlowRouter.h"
 #include "monosat/Version.h"
 #include <csignal>
 #include <set>
@@ -1468,6 +1469,35 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 		}
 	}
 }
+
+void graph_setAssignEdgesToWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
+    write_out(S,"graph_assign_edges_to_weight %d %ld\n", G->getGraphID(),weight);
+    G->setAssignEdgesToWeight(weight);
+}
+
+//flow routing interface
+
+Monosat::FlowRouter<int64_t> * createFlowRouting(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int sourceNode,int destNode,int maxflowLit){
+    FlowRouter<int64_t>  * r = new FlowRouter<int64_t>(S,G,sourceNode,destNode,toLit(maxflowLit));
+    write_out(S,"f_router %d %d %d %d %d\n", G->getGraphID(),  r->getRouterID(), sourceNode, destNode, dimacs(toLit(maxflowLit)));
+    return r;
+}
+
+void addRoutingNet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, Monosat::FlowRouter<int64_t> * router, int disabledEdge, int n_members, int * edge_lits, int * reach_lits){
+    vec<Lit> dest_edge_lits;
+	vec<Lit> net_reach_lits;
+    write_out(S,"f_router_net %d %d %d %d", G->getGraphID(), router->getRouterID(), dimacs(toLit(disabledEdge)), n_members);
+    for(int i = 0;i<n_members;i++){
+		dest_edge_lits.push(toLit(edge_lits[i]));
+		net_reach_lits.push(toLit(reach_lits[i]));
+        write_out(S," %d %d",dimacs(toLit(edge_lits[i])),dimacs(toLit(reach_lits[i])));
+    }
+    write_out(S,"\n");
+    router->addNet(toLit(disabledEdge),dest_edge_lits,net_reach_lits);
+}
+
+
+
 //FSM Interface
 
 Monosat::FSMTheorySolver * initFSMTheory(Monosat::SimpSolver * S){

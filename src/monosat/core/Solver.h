@@ -152,6 +152,7 @@ public:
 		assert(heuristic_id>0);
 		t->setHeuristicIndex(heuristic_id);
 		all_decision_heuristics.push(t);
+		t->setHeuristicOrder(decision_heuristics.size());
 		decision_heuristics.push(t);
 		theory_order_heap.insert(t);
 		theory_conflict_counters.growTo(all_decision_heuristics.size(),0);
@@ -940,6 +941,7 @@ public:
 	bool theoriesEnabled()const{
 		return !disable_theories;
 	}
+   // void unsafeUnassign(Lit p);
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
 	inline void needsPropagation(int theoryID){
 		if(theories[theoryID]->unskipable()){

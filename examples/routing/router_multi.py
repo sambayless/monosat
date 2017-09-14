@@ -53,7 +53,8 @@ def BVEQ(bva,bvb):
 #
 #The variation described here supports multi-terminal routing; if your instance only has 2-terminal nets, router.py is recommended,
 #As it's encoding is more efficient .
-def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_separation_enforcement_style=0,graph_separation_enforcement_style=1,draw_solution=True):
+
+def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_separation_enforcement_style=0,graph_separation_enforcement_style=1,heuristicEdgeWeights=False,draw_solution=True):
     (width, height),diagonals,nets,constraints,disabled = pcrt.read(filename)
     print(filename)
     print("Width = %d, Height = %d, %d nets, %d constraints" % (width, height, len(nets), len(constraints)))
@@ -85,6 +86,10 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
         #for each net to be routed, created a separate symbolic graph.
         #later we will add constraints to force each edge to be enabled in at most one of these graphs
         graphs.append(Graph())
+
+        if heuristicEdgeWeights:
+            graphs[-1].assignWeightsTo(1) # this enables a heuristic on these graphs, from the RUC paper, which sets assigned edges to zero weight, to encourage edge-reuse in solutions
+
         all_graphs.append(graphs[-1])
     flow_graph=None
     flow_graph_edges = dict()
@@ -115,7 +120,10 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
                 in_grid[g][(x, y)] = g.addNode("in_%d_%d" % (x, y))
                 fromGrid[out_grid[g][(x, y)]] = (x, y)
                 fromGrid[in_grid[g][(x, y)]] = (x, y)
-                e = g.addEdge(in_grid[g][(x, y)], out_grid[g][(x, y)], 1)  # add an edge with constant capacity of 1
+                if(g!=flow_graph):
+                    e = g.addEdge(in_grid[g][(x, y)], out_grid[g][(x, y)], 1 if not heuristicEdgeWeights else 1000)  #a large-enough weight, only relevant if heuristicEdgeWeights>0
+                else:
+                    e = g.addEdge(in_grid[g][(x, y)], out_grid[g][(x, y)],1)  # add an edge with constant capacity of 1
                 vertex_grid[g][(x,y)]=e
 
                 if(g !=flow_graph):
@@ -608,6 +616,8 @@ if __name__ == '__main__':
     parser.add_argument('--enforce-separate',default=0, type=int,  help='This controls the type of constraint used to prevent nets from intersecting with each other in the maximum flow constraint, IF maxflow constraints are used.',choices=range(0,4))
     parser.add_argument('--amo-builtin-size',default=20, type=int,  help='The largest at-most-one constraint size to manually build instead of using builtin AMO solver')
 
+    parser.add_argument('--heuristic-edge-weights',default=0, type=int, help='This enables a heuristic which sets assigned edges to unit weight, to encourage edge-reuse in solutions in the solver.',choices=range(0,2))
+
     parser.add_argument('filename', type=str)
 
     args, unknown = parser.parse_known_args()
@@ -617,4 +627,6 @@ if __name__ == '__main__':
     if len(unknown)>0:
         print("Passing unrecognized arguments to monosat: " + str(unknown))
         monosat_args = unknown
-    route_multi(args.filename, monosat_args, args.use_maxflow,args.enforce_separate,args.separate_graphs,True)
+
+    route_multi(args.filename, monosat_args, args.use_maxflow,args.enforce_separate,args.separate_graphs,args.heuristic_edge_weights>0,True)
+

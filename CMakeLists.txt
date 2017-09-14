@@ -245,11 +245,13 @@ set(SOURCE_FILES
         src/monosat/utils/System.cc
         src/monosat/utils/System.h
         src/monosat/Main.cc
+        #tests/dgl/test_ramal_reps3.cpp
         src/monosat/core/Heuristic.h
         src/monosat/api/Logic.h
         src/monosat/graph/GraphHeuristic.h
         src/monosat/dgl/CachedReach.h
-
+        src/monosat/routing/FlowRouter.h
+        src/monosat/routing/FlowRouterParser.h
         )
 
 set(SOURCE_FILES_PB

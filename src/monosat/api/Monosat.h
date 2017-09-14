@@ -40,6 +40,7 @@
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
+#include "monosat/routing/FlowRouter.h"
 extern "C"
 {
 typedef Monosat::SimpSolver *  SolverPtr;
@@ -47,13 +48,15 @@ typedef Monosat::GraphTheorySolver<int64_t> * GraphTheorySolver_long;
 typedef Monosat::GraphTheorySolver<double>*  GraphTheorySolver_double;
 typedef Monosat::BVTheorySolver<int64_t>* BVTheoryPtr;
 typedef Monosat::FSMTheorySolver * FSMTheorySolverPtr;
+typedef Monosat::FlowRouter<int64_t> * FlowRouterPtr;
 typedef int64_t Weight;
 #else
 typedef void * SolverPtr;
-typedef void*  BVTheoryPtr;
-typedef void*  GraphTheorySolver_long;
-typedef void*  GraphTheorySolver_double;
-typedef void*  FSMTheorySolverPtr;
+typedef void *  BVTheoryPtr;
+typedef void *  GraphTheorySolver_long;
+typedef void *  GraphTheorySolver_double;
+typedef void *  FSMTheorySolverPtr;
+typedef void *  FlowRouterPtr;
 typedef int Var;
 typedef int64_t Weight;
 #endif
@@ -223,6 +226,14 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
   void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges, bool enforceEdgeAssignment);
+
+  //this enables a heuristic on this graph, from the RUC paper, which sets assigned edges to zero weight, to encourage edge-reuse in solutions
+  void graph_setAssignEdgesToWeight(SolverPtr S,GraphTheorySolver_long G, int64_t weight);
+  //flow routing interface
+
+  FlowRouterPtr createFlowRouting(SolverPtr S,GraphTheorySolver_long G, int sourceNode,int destNode,int maxflowLit);
+  void addRoutingNet(SolverPtr S,GraphTheorySolver_long G, FlowRouterPtr router, int disabledEdge, int n_members, int * edge_lits, int * reach_lits);
+
 
   //theory interface for finite state machines
   FSMTheorySolverPtr initFSMTheory(SolverPtr S);

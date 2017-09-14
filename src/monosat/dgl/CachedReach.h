@@ -30,7 +30,7 @@
 #include "monosat/core/Config.h"
 #include "Reach.h"
 #include "alg/IntMap.h"
-
+#include "alg/Rnd.h"
 namespace dgl {
 
 template<typename Weight,class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
@@ -55,21 +55,23 @@ public:
     long stats_skip_deletes=0;
     long stats_skipped_updates=0;
     long stats_num_skipable_deletions=0;
-
-
+    long stats_random_shortest_paths =0;
+    long stats_random_shortest_edges =0;
+    long stats_n_recomputes =0;
     double stats_full_update_time=0;
     double stats_fast_update_time=0;
-
-
+    double random_seed=0;
+    double randomShortestPathFrequency=0;//With this probability, select a random (but still shortest) path
+    double randomShortestEdgeFrequency =0;
 public:
 
 
-    CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0) :
-            g(graph),status(status), reach(reach),reportPolarity(reportPolarity){
+    CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
+            g(graph),status(status), reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }
-    CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0) :
-            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity){
+    CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
+            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }
 
@@ -100,6 +102,8 @@ public:
     std::vector<int> previous_edge;
     bool has_non_reach_destinations=false;
     bool needs_recompute=true;
+
+
     void clearCache(){
         needs_recompute=true;
     }
@@ -115,15 +119,34 @@ public:
     }
     void printStats(){
         reach->printStats();
+        printf("Cached Reach Recomputes: %ld\n",stats_n_recomputes);
+        if(randomShortestPathFrequency>0){
+            printf("Random shortest paths (%f freq): %ld\n",randomShortestPathFrequency,stats_random_shortest_paths);
+        }
+        if(randomShortestEdgeFrequency>0){
+            printf("Random shortest edges (%f freq): %ld\n",randomShortestEdgeFrequency,stats_random_shortest_edges);
+        }
+
     }
-    void recompute(){
-        needs_recompute=false;
+    void recompute() {
+        needs_recompute = false;
+        stats_n_recomputes++;
         reach->update();
         //do not need to reset previous_edge vector here; instead we allow it to contain incorrect values on the assumption they will be corrected before being accessed
         edge_in_path.clear();//clear and rebuild the path tree
         int source = getSource();
-        assert(previous_edge[source]==-1);
-        has_non_reach_destinations=false;
+        assert(previous_edge[source] == -1);
+        static int iter = 0;
+        if (++iter == 25) {
+            int a = 1;
+        };
+        has_non_reach_destinations = false;
+
+        bool randomShortestPath = alg::drand(random_seed) < randomShortestPathFrequency;
+        if (randomShortestPath) {
+            stats_random_shortest_paths++;
+        }
+
         for(int d:destinations){
 
             if(d==getSource()){
@@ -137,7 +160,11 @@ public:
                     status.setReachable(d, true);
                 }
                 //extract path
-                int edgeID = reach->incomingEdge(d);
+                bool randomShortestEdge = randomShortestPath || ( alg::drand(random_seed) < randomShortestEdgeFrequency);
+                if (randomShortestEdge && ! randomShortestPath) {
+                    stats_random_shortest_edges++;
+                }
+                int edgeID = randomShortestEdge ?   reach->randomIncomingEdge(d,random_seed) : reach->incomingEdge(d) ;
                 assert(edgeID>=0);
                 int p = d;
                 while(!edge_in_path.has(edgeID)){
@@ -145,15 +172,19 @@ public:
                     previous_edge[p] = edgeID;//do not need to reset previous_edge vector here; instead we allow it to contain incorrect values on the assumption they will be corrected before being accessed
 
                     edge_in_path.insert(edgeID);
-                    p = reach->previous(p);
+                    p = g.getEdge(edgeID).from;
                     if(p==source){
                         edgeID=-1;
                         break;
                     }
-                    edgeID = reach->incomingEdge(p);
+                    randomShortestEdge = randomShortestPath || ( alg::drand(random_seed) < randomShortestEdgeFrequency);
+                    if (randomShortestEdge && ! randomShortestPath) {
+                        stats_random_shortest_edges++;
+                    }
+                    edgeID = randomShortestEdge ?   reach->randomIncomingEdge(p,random_seed) : reach->incomingEdge(p) ;
                     assert(edgeID>=0);
                 }
-                assert(previous_edge[p] == edgeID);
+                assert(randomShortestPath || previous_edge[p] == edgeID);
             }else{
                 has_path_to[d]=false;
                 previous_edge[d]=-1;

@@ -61,6 +61,13 @@ public:
 	//virtual int distance_unsafe(int t)=0;
 	virtual int previous(int node)=0;
 	virtual int incomingEdge(int node)=0;
+	//Select a randomly chosen, but still shortest path, previous node or edge (falling back on selecting a deterministic edge if this functionality is not supported)
+	virtual int randomPrevious(int node,double & seed){
+		return previous(node);
+	}
+	virtual int randomIncomingEdge(int node,double & seed){
+		return incomingEdge(node);
+	}
 	//The maximum distance to compute up to.
 	/*	virtual void setMaxDistance(int maxDistance){
 

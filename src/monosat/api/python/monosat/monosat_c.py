@@ -405,7 +405,15 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.getModel_Path_EdgeLits_Length.restype=c_int    
 
         self.monosat_c.getModel_Path_EdgeLits.argtypes=[c_solver_p,c_graph_p, c_literal, c_int, c_int_p]
-        self.monosat_c.getModel_Path_EdgeLits.restype=c_int 
+        self.monosat_c.getModel_Path_EdgeLits.restype=c_int
+
+        self.monosat_c.createFlowRouting.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_literal]
+        self.monosat_c.createFlowRouting.restype=c_void_p
+
+        self.monosat_c.addRoutingNet.argtypes=[c_solver_p,c_graph_p,c_void_p, c_literal,c_int, c_literal_p, c_literal_p]
+
+        self.monosat_c.graph_setAssignEdgesToWeight.argtypes=[c_solver_p,c_graph_p,c_long]
+
 
 
         self.newSolver()
@@ -1112,7 +1120,20 @@ class Monosat(metaclass=Singleton):
             self._echoOutput(edgestr + " ".join((str(dimacs(c)) for c in edges))+"\n")
         lp = self.getIntArray(edges)
         self.monosat_c.newEdgeSet(self.solver._ptr,graph,lp,len(edges), c_bool(enforceEdgeAssignments))
-    
+
+
+    def assignWeightsTo(self,graph,weight):
+        self.monosat_c.graph_setAssignEdgesToWeight(self.solver._ptr,graph,c_long(weight))
+
+
+    def enforceRouting(self,graph,source,destination,nets,maxflowlit):
+        r_ptr = self.monosat_c.createFlowRouting(self.solver._ptr,graph,c_int(source),c_int(destination),maxflowlit)
+        for dest_edge_lits,net_reach_lits,disabled_edge_lit in nets:
+            lp = self.getIntArray(dest_edge_lits)
+            lp2 = self.getIntArray2(net_reach_lits)
+            self.monosat_c.addRoutingNet(self.solver._ptr,graph,r_ptr,disabled_edge_lit, len(dest_edge_lits),lp,lp2)
+
+
     def reaches(self, graph, u,v):
         self.backtrack()
         l= self.monosat_c.reaches(self.solver._ptr,graph,c_int(u),c_int(v))

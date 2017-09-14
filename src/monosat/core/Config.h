@@ -178,7 +178,9 @@ extern IntOption opt_temporary_theory_reasons;
 extern BoolOption opt_force_directed;
 extern BoolOption opt_decide_graph_chokepoints;
 extern IntOption opt_sort_graph_decisions;
-
+extern IntOption opt_flow_router_heuristic;
+extern IntOption opt_flow_router_policy;
+extern BoolOption opt_ignore_assign_edge_weights;
 
 extern BoolOption opt_decide_fsm_neg;
 extern BoolOption opt_decide_fsm_pos;
@@ -199,6 +201,8 @@ extern IntOption opt_encode_dist_underapprox_as_sat;
 extern BoolOption opt_sat_distance_encoding_unconstrained_default;
 extern BoolOption opt_csv;
 extern BoolOption opt_rnd_shuffle;
+extern DoubleOption opt_rnd_shortest_path;
+extern DoubleOption opt_rnd_shortest_edge;
 extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;

@@ -47,13 +47,13 @@ public:
 	static bool ever_warned_about_zero_weights;
 	DynamicGraph<Weight> & g;
 	std::vector<Weight> & weights;
-    std::vector<Weight> local_weights;
+	std::vector<Weight> local_weights;
 	Status & status;
 	int reportPolarity;
 	bool reportDistance;
-    uint64_t stats_updates=0;
-    uint64_t stats_resets=0;
-    uint64_t stats_all_updates=0;
+	uint64_t stats_updates=0;
+	uint64_t stats_resets=0;
+	uint64_t stats_all_updates=0;
 
 	int last_modification=-1;
 	int last_addition=-1;
@@ -120,7 +120,7 @@ public:
 				outer(_outer) {
 		}
 	} local_distance_status;
-	Dijkstra<Weight,LocalDistanceStatus> dijkstras;
+	Dijkstra<Weight,Status> dijkstras;
 	bool has_zero_weights=false;
 public:
 
@@ -138,7 +138,7 @@ public:
 			  bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-			0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
+			0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,status,reportPolarity) {
 
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
@@ -146,7 +146,7 @@ public:
 	RamalReps(int s, DynamicGraph<Weight> & graph,int reportPolarity = 0, bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
-			0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,local_distance_status,reportPolarity) {
+			0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,status,reportPolarity) {
 
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
@@ -295,7 +295,9 @@ public:
 			return;
 		int ru = g.getEdge(edgeID).from;
 		int rv = g.getEdge(edgeID).to;
-
+		if(rv==2404){
+			int a =1;
+		}
 		Weight & rdv = dist[rv];
 		Weight & rdu = dist[ru];
 
@@ -393,278 +395,280 @@ public:
 
 	}
 
-    //Called if an edge weight is decreased
-    void DecreaseWeight(int edgeID) {
-        static int iter = 0;
-        ++iter;
-        dbg_delta_lite();
-        assert(g.edgeEnabled(edgeID));
-        //if (edgeInShortestPathGraph[edgeID]) //must process this whether or not the edge is in the shortest path
-        //    return;
-        int ru = g.getEdge(edgeID).from;
-        int rv = g.getEdge(edgeID).to;
-        if(rv==2404){
-            int a =1;
-        }
-        Weight & rdv = dist[rv];
-        Weight & rdu = dist[ru];
+	//Called if an edge weight is decreased
+	void DecreaseWeight(int edgeID) {
+		static int iter = 0;
+		++iter;
+		dbg_delta_lite();
+		assert(g.edgeEnabled(edgeID));
+		//if (edgeInShortestPathGraph[edgeID]) //must process this whether or not the edge is in the shortest path
+		//    return;
+		int ru = g.getEdge(edgeID).from;
+		int rv = g.getEdge(edgeID).to;
+		if(rv==2404){
+			int a =1;
+		}
+		Weight & rdv = dist[rv];
+		Weight & rdu = dist[ru];
 
-        Weight& weight = weights[edgeID];
-        if (dist[rv] < (dist[ru] + weight)) {
-            assert(!edgeInShortestPathGraph[edgeID]);
-            return;
-        }
-        else if (dist[rv] == (dist[ru] + weight)) {
-            if(!edgeInShortestPathGraph[edgeID]) {
-                edgeInShortestPathGraph[edgeID] = true;
-                delta[rv]++; //we have found an alternative shortest path to v
-            }
-            return;
-        }
-        //decreasing this edge weight has decreased the shortest path length to rv
-        edgeInShortestPathGraph[edgeID] = true;
-        delta[rv]++;//probably not required
-        assert((dist[ru] + weight) < dist[rv]);
-        dist[rv] = dist[ru] + weight;
-        q.clear();
-        q.insert(rv);
+		Weight& weight = weights[edgeID];
+		assert(weight>0);
+		if (dist[rv] < (dist[ru] + weight)) {
+			assert(!edgeInShortestPathGraph[edgeID]);
+			return;
+		}
+		else if (dist[rv] == (dist[ru] + weight)) {
+			if(!edgeInShortestPathGraph[edgeID]) {
+				edgeInShortestPathGraph[edgeID] = true;
+				delta[rv]++; //we have found an alternative shortest path to v
+			}
+			return;
+		}
+		//decreasing this edge weight has decreased the shortest path length to rv
+		edgeInShortestPathGraph[edgeID] = true;
+		delta[rv]++;//probably not required
+		assert((dist[ru] + weight) < dist[rv]);
+		dist[rv] = dist[ru] + weight;
+		q.clear();
+		q.insert(rv);
 
-        while (q.size()) {
-            int u = q.removeMin();
+		while (q.size()) {
+			int u = q.removeMin();
 
-            if (!node_changed[u]) {
-                node_changed[u] = true;
-                changed.push_back(u);
-            }
-            delta[u] = 0;
-            //for(auto & e:g.inverted_adjacency[u]){
-            for (int i = 0; i < g.nIncoming(u); i++) {
-                auto & e = g.incoming(u, i);
-                int adjID = e.id;
-                if (g.edgeEnabled(adjID)) {
+			if (!node_changed[u]) {
+				node_changed[u] = true;
+				changed.push_back(u);
+			}
+			delta[u] = 0;
+			//for(auto & e:g.inverted_adjacency[u]){
+			for (int i = 0; i < g.nIncoming(u); i++) {
+				auto & e = g.incoming(u, i);
+				int adjID = e.id;
+				if (g.edgeEnabled(adjID)) {
 
-                    assert(g.getEdge(adjID).to == u);
-                    int v = g.getEdge(adjID).from;
-                    //Weight & w = weights[adjID]; //assume a weight of one for now
-                    Weight & du = dist[u];
-                    Weight & dv = dist[v];
-                    Weight alt = (dist[v] + weights[adjID]);
-                    if(alt>INF){
-                        alt = INF;
-                    }
-                    if (alt<INF && dist[u] == alt) {
-                        edgeInShortestPathGraph[adjID] = true;
-                        delta[u]++;
-                    } else if (dist[u] < alt || alt==INF) {
-                        //This doesn't hold for us, because we are allowing multiple edges to be added at once.
-                        //assert(dist[u]<(dist[v]+w));
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
+					//Weight & w = weights[adjID]; //assume a weight of one for now
+					Weight & du = dist[u];
+					Weight & dv = dist[v];
+					Weight alt = (dist[v] + weights[adjID]);
+					if(alt>INF){
+						alt = INF;
+					}
+					if (alt<INF && dist[u] == alt) {
+						edgeInShortestPathGraph[adjID] = true;
+						delta[u]++;
+					} else if (dist[u] < alt || alt==INF) {
+						//This doesn't hold for us, because we are allowing multiple edges to be added at once.
+						//assert(dist[u]<(dist[v]+w));
 
-                        edgeInShortestPathGraph[adjID] = false;
-                    } else {
-                        //don't do anything. This will get corrected in a future call to AddEdge.
-                        //assert(false);
+						edgeInShortestPathGraph[adjID] = false;
+					} else {
+						//don't do anything. This will get corrected in a future call to AddEdge.
+						//assert(false);
 
-                    }
-                } else {
-                    edgeInShortestPathGraph[adjID] = false;	//need to add this, because we may have disabled multiple edges at once.
-                }
-            }
+					}
+				} else {
+					edgeInShortestPathGraph[adjID] = false;	//need to add this, because we may have disabled multiple edges at once.
+				}
+			}
 
-            for (int i = 0; i < g.nIncident(u); i++) {
-                auto & e = g.incident(u, i);
-                int adjID = e.id;
-                if (g.edgeEnabled(adjID)) {
-                    assert(g.getEdge(adjID).from == u);
-                    int s = g.getEdge(adjID).to;
-                    Weight & w = weights[adjID];							//assume a weight of one for now
-                    Weight & du = dist[u];
-                    Weight & ds = dist[s];
-                    Weight alt = (dist[u] + weights[adjID]);
-                    if(alt>INF){
-                        alt = INF;
-                    }
-                    if (alt<INF && dist[s] > alt) {
-                        dist[s] = alt;
-                        q.update(s);
-                    } else if (alt<INF && dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
-                        edgeInShortestPathGraph[adjID] = true;
-                        delta[s]++;
-                    }else{
-                        assert(!edgeInShortestPathGraph[adjID]);
-                    }
-                }
-            }
-        }
-        dbg_delta_lite();
-    }
-    //Called if the weight of an edge is increased
-    void IncreaseWeight(int edgeID) {
-        dbg_delta_lite();
-        assert(g.edgeEnabled(edgeID)); //the edge must be enabled, in order to have its weight decreased
-        //First, check if this edge is actually in the shortest path graph. If it isn't, then increasing its weight has no effect
-        if (!edgeInShortestPathGraph[edgeID]) {
-            return;
-        }
+			for (int i = 0; i < g.nIncident(u); i++) {
+				auto & e = g.incident(u, i);
+				int adjID = e.id;
+				if (g.edgeEnabled(adjID)) {
+					assert(g.getEdge(adjID).from == u);
+					int s = g.getEdge(adjID).to;
+					Weight & w = weights[adjID];							//assume a weight of one for now
+					Weight & du = dist[u];
+					Weight & ds = dist[s];
+					Weight alt = (dist[u] + weights[adjID]);
+					if(alt>INF){
+						alt = INF;
+					}
+					if (alt<INF && dist[s] > alt) {
+						dist[s] = alt;
+						q.update(s);
+					} else if (alt<INF && dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
+						edgeInShortestPathGraph[adjID] = true;
+						delta[s]++;
+					}else{
+						assert(!edgeInShortestPathGraph[adjID]);
+					}
+				}
+			}
+		}
+		dbg_delta_lite();
+	}
+	//Called if the weight of an edge is increased
+	void IncreaseWeight(int edgeID) {
+		dbg_delta_lite();
+		assert(g.edgeEnabled(edgeID)); //the edge must be enabled, in order to have its weight decreased
+		//First, check if this edge is actually in the shortest path graph. If it isn't, then increasing its weight has no effect
+		if (!edgeInShortestPathGraph[edgeID]) {
+			return;
+		}
 
-        int ru = g.getEdge(edgeID).from;
-        int rv = g.getEdge(edgeID).to;
-        if(rv==2404){
-            int a =1;
-        }
-        assert(delta[rv] > 0);
-        delta[rv]--;
-        edgeInShortestPathGraph[edgeID] = false;                        //remove this edge from the shortest path graph
-        if (delta[rv] > 0) {
-            //there was another path to rv of the same previous length,
-            //so increasing this edge doesn't effect the total path length to rv,
-            //but does remove this edge from the shortest path graph
-            return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
-        }
-        //we increased this edge weight.
-        //this edge MAY or MAY NOT be in the shortest path after that change.
+		int ru = g.getEdge(edgeID).from;
+		int rv = g.getEdge(edgeID).to;
+		if(rv==2404){
+			int a =1;
+		}
+		assert(delta[rv] > 0);
+		delta[rv]--;
+		edgeInShortestPathGraph[edgeID] = false;                        //remove this edge from the shortest path graph
+		if (delta[rv] > 0) {
+			//there was another path to rv of the same previous length,
+			//so increasing this edge doesn't effect the total path length to rv,
+			//but does remove this edge from the shortest path graph
+			return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
+		}
+		//we increased this edge weight.
+		//this edge MAY or MAY NOT be in the shortest path after that change.
+		assert(weights[edgeID]>0);
 
+		q.clear();
+		changeset.clear();
+		changeset.push_back(rv);
 
-        q.clear();
-        changeset.clear();
-        changeset.push_back(rv);
+		//find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
+		for (int i = 0; i < changeset.size(); i++) {
+			int u = changeset[i];
+			dist[u] = INF;
+			for (int i = 0; i < g.nIncident(u); i++) {
+				auto & e = g.incident(u, i);
+				int adjID = e.id;
+				if (g.edgeEnabled(adjID)) {
+					if (edgeInShortestPathGraph[adjID]) {
+						edgeInShortestPathGraph[adjID] = false;
+						assert(g.getEdge(adjID).from == u);
+						int s = g.getEdge(adjID).to;
+						assert(delta[s] > 0);
+						delta[s]--;
+						if (delta[s] == 0) {
+							changeset.push_back(s);
+						}
+					}
+				}
+			}
+		}
 
-        //find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
-        for (int i = 0; i < changeset.size(); i++) {
-            int u = changeset[i];
-            dist[u] = INF;
-            for (int i = 0; i < g.nIncident(u); i++) {
-                auto & e = g.incident(u, i);
-                int adjID = e.id;
-                if (g.edgeEnabled(adjID)) {
-                    if (edgeInShortestPathGraph[adjID]) {
-                        edgeInShortestPathGraph[adjID] = false;
-                        assert(g.getEdge(adjID).from == u);
-                        int s = g.getEdge(adjID).to;
-                        assert(delta[s] > 0);
-                        delta[s]--;
-                        if (delta[s] == 0) {
-                            changeset.push_back(s);
-                        }
-                    }
-                }
-            }
-        }
+		for (int i = 0; i < changeset.size(); i++) {
+			int u = changeset[i];
+			assert(dist[u] == INF);
+			for (int i = 0; i < g.nIncoming(u); i++) {
+				auto & e = g.incoming(u, i);
+				int adjID = e.id;
 
-        for (int i = 0; i < changeset.size(); i++) {
-            int u = changeset[i];
-            assert(dist[u] == INF);
-            for (int i = 0; i < g.nIncoming(u); i++) {
-                auto & e = g.incoming(u, i);
-                int adjID = e.id;
+				if (g.edgeEnabled(adjID)) {
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
+					Weight & w = weights[adjID]; //assume a weight of one for now
+					assert(w>0);
+					Weight alt = dist[v] + w;
+					assert(!edgeInShortestPathGraph[adjID]);
+					if (dist[u] > alt) {
+						dist[u] = alt;
+					}
+				}
 
-                if (g.edgeEnabled(adjID)) {
-                    assert(g.getEdge(adjID).to == u);
-                    int v = g.getEdge(adjID).from;
-                    Weight & w = weights[adjID]; //assume a weight of one for now
-                    Weight alt = dist[v] + w;
-                    assert(!edgeInShortestPathGraph[adjID]);
-                    if (dist[u] > alt) {
-                        dist[u] = alt;
-                    }
-                }
+			}
+			if (dist[u] != INF) {
+				//q.insert(u);
+				//dbg_Q_add(q,u);
+				q.insert(u);
 
-            }
-            if (dist[u] != INF) {
-                //q.insert(u);
-                //dbg_Q_add(q,u);
-                q.insert(u);
+				if (!reportDistance && reportPolarity >= 0) {
+					if (!node_changed[u]) {
+						node_changed[u] = true;
+						changed.push_back(u);
+					}
+				}
+			} else if (reportPolarity <= 0) {
+				//have to mark this change even if we are reporting distanec, as u has not been added to the queue.
+				if (!node_changed[u]) {
+					node_changed[u] = true;
+					changed.push_back(u);
+				}
+			}
+		}
 
-                if (!reportDistance && reportPolarity >= 0) {
-                    if (!node_changed[u]) {
-                        node_changed[u] = true;
-                        changed.push_back(u);
-                    }
-                }
-            } else if (reportPolarity <= 0) {
-                //have to mark this change even if we are reporting distanec, as u has not been added to the queue.
-                if (!node_changed[u]) {
-                    node_changed[u] = true;
-                    changed.push_back(u);
-                }
-            }
-        }
+		while (q.size() > 0) {
+			int u = q.removeMin();
+			if (reportDistance) {
+				if (dist[u] != INF) {
+					if (reportPolarity >= 0) {
+						if (!node_changed[u]) {
+							node_changed[u] = true;
+							changed.push_back(u);
+						}
+					}
+				} else if (reportPolarity <= 0) {
+					if (!node_changed[u]) {
+						node_changed[u] = true;
+						changed.push_back(u);
+					}
+				}
+			}
+			for (int i = 0; i < g.nIncident(u); i++) {
+				auto & e = g.incident(u, i);
+				int adjID = e.id;
+				if (g.edgeEnabled(adjID)) {
+					assert(g.getEdge(adjID).from == u);
+					int s = g.getEdge(adjID).to;
+					Weight w = weights[adjID];				//assume a weight of one for now
+					Weight alt = dist[u] + w;
+					if (dist[s] > alt) {
+						if (reportPolarity >= 0 && dist[s] >= 0) {
+							//This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
+							//to become reachable here. This is ONLY possible because we are batching multiple edge incs/decs at once (otherwise it would be impossible for removing an edge to decrease the distance to a node).
+							if (!node_changed[s]) {
+								node_changed[s] = true;
+								changed.push_back(s);
+							}
+						}
 
-        while (q.size() > 0) {
-            int u = q.removeMin();
-            if (reportDistance) {
-                if (dist[u] != INF) {
-                    if (reportPolarity >= 0) {
-                        if (!node_changed[u]) {
-                            node_changed[u] = true;
-                            changed.push_back(u);
-                        }
-                    }
-                } else if (reportPolarity <= 0) {
-                    if (!node_changed[u]) {
-                        node_changed[u] = true;
-                        changed.push_back(u);
-                    }
-                }
-            }
-            for (int i = 0; i < g.nIncident(u); i++) {
-                auto & e = g.incident(u, i);
-                int adjID = e.id;
-                if (g.edgeEnabled(adjID)) {
-                    assert(g.getEdge(adjID).from == u);
-                    int s = g.getEdge(adjID).to;
-                    Weight w = weights[adjID];				//assume a weight of one for now
-                    Weight alt = dist[u] + w;
-                    if (dist[s] > alt) {
-                        if (reportPolarity >= 0 && dist[s] >= 0) {
-                            //This check is needed (in addition to the above), because even if we are NOT reporting distances, it is possible for a node that was previously not reachable
-                            //to become reachable here. This is ONLY possible because we are batching multiple edge incs/decs at once (otherwise it would be impossible for removing an edge to decrease the distance to a node).
-                            if (!node_changed[s]) {
-                                node_changed[s] = true;
-                                changed.push_back(s);
-                            }
-                        }
+						dist[s] = alt;
+						q.update(s);
+					} else if (dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
+						edgeInShortestPathGraph[adjID] = true;
+						delta[s]++;							//added by sam... not sure if this is correct or not.
+					}
+				}
+			}
 
-                        dist[s] = alt;
-                        q.update(s);
-                    } else if (dist[s] == alt && !edgeInShortestPathGraph[adjID]) {
-                        edgeInShortestPathGraph[adjID] = true;
-                        delta[s]++;							//added by sam... not sure if this is correct or not.
-                    }
-                }
-            }
+			for (int i = 0; i < g.nIncoming(u); i++) {
+				auto & e = g.incoming(u, i);
+				int adjID = e.id;
+				if (g.edgeEnabled(adjID)) {
 
-            for (int i = 0; i < g.nIncoming(u); i++) {
-                auto & e = g.incoming(u, i);
-                int adjID = e.id;
-                if (g.edgeEnabled(adjID)) {
+					assert(g.getEdge(adjID).to == u);
+					int v = g.getEdge(adjID).from;
+					Weight & dv = dist[v];
+					Weight & du = dist[u];
+					bool edgeIn = edgeInShortestPathGraph[adjID];
+					Weight & w = weights[adjID];							//assume a weight of one for now
+					if (dist[u] == (dist[v] + w) && !edgeInShortestPathGraph[adjID]) {
+						assert(!edgeInShortestPathGraph[adjID]);
+						edgeInShortestPathGraph[adjID] = true;
+						delta[u]++;
+					} else if (dist[u] < (dist[v] + w) && edgeInShortestPathGraph[adjID]) {
+						edgeInShortestPathGraph[adjID] = false;
+						delta[u]--;
+						assert(!edgeInShortestPathGraph[adjID]);
+					} else if (dist[u] > (dist[v] + w)) {
+						//assert(false);
+					}
+				}
+			}
+		}
+		dbg_delta_lite();
+	}
 
-                    assert(g.getEdge(adjID).to == u);
-                    int v = g.getEdge(adjID).from;
-                    Weight & dv = dist[v];
-                    Weight & du = dist[u];
-                    bool edgeIn = edgeInShortestPathGraph[adjID];
-                    Weight & w = weights[adjID];							//assume a weight of one for now
-                    if (dist[u] == (dist[v] + w) && !edgeInShortestPathGraph[adjID]) {
-                        assert(!edgeInShortestPathGraph[adjID]);
-                        edgeInShortestPathGraph[adjID] = true;
-                        delta[u]++;
-                    } else if (dist[u] < (dist[v] + w) && edgeInShortestPathGraph[adjID]) {
-                        edgeInShortestPathGraph[adjID] = false;
-                        delta[u]--;
-                        assert(!edgeInShortestPathGraph[adjID]);
-                    } else if (dist[u] > (dist[v] + w)) {
-                        //assert(false);
-                    }
-                }
-            }
-        }
-        dbg_delta_lite();
-    }
-
-    //Called if an edge is removed
+	//Called if an edge is removed
 	void RemoveEdge(int edgeID) {
 		dbg_delta_lite();
-        assert(!g.edgeEnabled(edgeID));
+		assert(!g.edgeEnabled(edgeID));
 		//First, check if this edge is actually in the shortest path graph
 		if (!edgeInShortestPathGraph[edgeID])
 			return;
@@ -672,7 +676,9 @@ public:
 
 		int ru = g.getEdge(edgeID).from;
 		int rv = g.getEdge(edgeID).to;
-
+		if(rv==2404){
+			int a =1;
+		}
 		assert(delta[rv] > 0);
 		delta[rv]--;
 		if (delta[rv] > 0)
@@ -832,12 +838,12 @@ public:
 		if (local_it == 7668) {
 			int a = 1;
 		}
-        stats_all_updates++;
+		stats_all_updates++;
 		if (last_modification > 0 && g.modifications == last_modification)
 			return;
-        stats_updates++;
+		stats_updates++;
 		if (last_modification <= 0 || g.changed()) {
-            stats_resets++;
+			stats_resets++;
 			Weight oldInf = INF;
 
 			INF = 1;							//g.nodes()+1;
@@ -852,9 +858,9 @@ public:
 				}
 				INF += w;
 			}
-            if(INF<oldInf){
-                INF=oldInf;
-            }
+			if(INF<oldInf){
+				INF=oldInf;
+			}
 			if(INF!=oldInf){
 				for(int i = 0;i<dist.size();i++){
 					if(dist[i]==oldInf){
@@ -862,9 +868,9 @@ public:
 					}
 				}
 			}
-            while(local_weights.size()<weights.size()){
-                local_weights.push_back(weights[local_weights.size()]);
-            }
+			while(local_weights.size()<weights.size()){
+				local_weights.push_back(weights[local_weights.size()]);
+			}
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
 			delta.resize(g.nodes());
@@ -897,17 +903,27 @@ public:
 					last_history_clear = g.historyclears;
 					for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 						if (g.edgeEnabled(edgeid)) {
-                            if(weights[edgeid]<local_weights[edgeid]){
-                                local_weights[edgeid] = weights[edgeid];
-                                DecreaseWeight(edgeid);
-                            }else if(weights[edgeid]>local_weights[edgeid]){
-                                local_weights[edgeid] = weights[edgeid];
-                                IncreaseWeight(edgeid);
-                            }else{
-                                AddEdge(edgeid);
-                            }
+							if(weights[edgeid]<local_weights[edgeid]){
+								local_weights[edgeid] = weights[edgeid];
+								if(weights[edgeid]==0){
+									assert(!has_zero_weights);
+									if(!ever_warned_about_zero_weights){
+										ever_warned_about_zero_weights=true;
+										fprintf(stderr,"Warning: Ramalingham-Reps doesn't support zero-weight edges; falling back on Dijkstra's (which is much slower)\n");
+									}
+									has_zero_weights=true;
+									dijkstras.update();
+									break;
+								}
+								DecreaseWeight(edgeid);
+							}else if(weights[edgeid]>local_weights[edgeid]){
+								local_weights[edgeid] = weights[edgeid];
+								IncreaseWeight(edgeid);
+							}else{
+								AddEdge(edgeid);
+							}
 						} else {
-                            local_weights[edgeid] = weights[edgeid];
+							local_weights[edgeid] = weights[edgeid];
 							RemoveEdge(edgeid);
 						}
 					}
@@ -916,30 +932,41 @@ public:
 			for (int i = history_qhead; i < g.historySize(); i++) {
 				int edgeid = g.getChange(i).id;
 
-                if(g.getChange(i).weight_increase || g.getChange(i).weight_decrease) {
-                    if (g.getChange(i).weight_decrease && g.edgeEnabled(edgeid)) {
-                        local_weights[edgeid] = weights[edgeid];
-                        DecreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
-                        //code runs on weights, not local weights, and so it might be out of sync with local weights
-                    }else if (g.getChange(i).weight_increase && g.edgeEnabled(edgeid)){
-                        local_weights[edgeid] = weights[edgeid];
-                        IncreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
-                        //code runs on weights, not local weights, and so it might be out of sync with local weights
-                    }
-                }else if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-                    assert(!g.getChange(i).weight_increase);assert(!g.getChange(i).weight_decrease);
-                    local_weights[edgeid] = weights[edgeid];
+				if(g.getChange(i).weight_increase || g.getChange(i).weight_decrease) {
+					if (g.getChange(i).weight_decrease && g.edgeEnabled(edgeid)) {
+						local_weights[edgeid] = weights[edgeid];
+						if(weights[edgeid]==0){
+							assert(!has_zero_weights);
+							if(!ever_warned_about_zero_weights){
+								ever_warned_about_zero_weights=true;
+								fprintf(stderr,"Warning: Ramalingham-Reps doesn't support zero-weight edges; falling back on Dijkstra's (which is much slower)\n");
+							}
+							has_zero_weights=true;
+							dijkstras.update();
+							break;
+						}
+						DecreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
+						//code runs on weights, not local weights, and so it might be out of sync with local weights
+					}else if (g.getChange(i).weight_increase && g.edgeEnabled(edgeid)){
+						local_weights[edgeid] = weights[edgeid];
+						IncreaseWeight(edgeid);//need to run this EVEN IF local weights==weights, because the DecreaseWeight
+						//code runs on weights, not local weights, and so it might be out of sync with local weights
+					}
+				}else if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
+					assert(!g.getChange(i).weight_increase);assert(!g.getChange(i).weight_decrease);
+					local_weights[edgeid] = weights[edgeid];
 					AddEdge(edgeid);
 				} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
-                    assert(!g.getChange(i).weight_increase);assert(!g.getChange(i).weight_decrease);
-                    local_weights[edgeid] = weights[edgeid];
+					assert(!g.getChange(i).weight_increase);assert(!g.getChange(i).weight_decrease);
+					local_weights[edgeid] = weights[edgeid];
 					RemoveEdge(edgeid);
 				}
 			}
 		}
 		//for(int i = 0;i<g.nodes();i++){
 		//	int u=i;
-		if(reportPolarity>-2){
+
+		if(reportPolarity>-2 && !has_zero_weights){
 			for (int u : changed) {
 				//int u = changed[i];
 				node_changed[u] = false;
@@ -965,14 +992,14 @@ public:
 		last_history_clear = g.historyclears;
 
 #ifdef DEBUG_RAMAL
-      for(int edgeID = 0;edgeID<weights.size();edgeID++){
+		for(int edgeID = 0;edgeID<weights.size();edgeID++){
           assert(weights[edgeID]==local_weights[edgeID]);
       }
 #endif
 	}
-    void printStats(){
-        printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
-    }
+	void printStats(){
+		printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
+	}
 	void updateHistory(){
 		update();
 	}
@@ -1000,24 +1027,24 @@ public:
 	bool dbg_manual_uptodate() override{
 
 		if(last_modification<0)
-		 return true;
-		 update();
-		 dbg_delta();
-		 Dijkstra<Weight> d(source,g);
+			return true;
+		update();
+		dbg_delta();
+		Dijkstra<Weight> d(source,g);
 
-		 for(int i = 0;i<g.nodes();i++){
-		 Weight dis = dist[i];
-		 bool c = i<dist.size() && dist[i]<INF;
-		 if(!c)
-		 dis = this->unreachable();
+		for(int i = 0;i<g.nodes();i++){
+			Weight dis = dist[i];
+			bool c = i<dist.size() && dist[i]<INF;
+			if(!c)
+				dis = this->unreachable();
 
-		 Weight dbgdist = d.distance(i);
+			Weight dbgdist = d.distance(i);
 
-		 if(dis!=dbgdist){
-		 assert(false);
-		 throw std::logic_error("Internal error in Ramal Reps");
-		 }
-		 }
+			if(dis!=dbgdist){
+				assert(false);
+				throw std::logic_error("Internal error in Ramal Reps");
+			}
+		}
 //#endif
 
 		return true;
@@ -1025,7 +1052,7 @@ public:
 
 	bool dbg_uptodate() {
 #ifdef DEBUG_RAMAL2
-		if(last_modification<0)
+		if(last_modification<0 || has_zero_weights)
 		 return true;
 		 dbg_delta();
 		 Dijkstra<Weight> d(source,g);
@@ -1061,7 +1088,7 @@ public:
 	}
 	bool connected(int t) {
 
-			update();
+		update();
 
 		assert(dbg_uptodate());
 		if(has_zero_weights){
@@ -1071,7 +1098,7 @@ public:
 	}
 	Weight & distance(int t) {
 
-			update();
+		update();
 		if(has_zero_weights){
 			return dijkstras.distance(t);
 		}
@@ -1101,29 +1128,30 @@ public:
 
 		assert( dist[t]>=0);
 		assert( dist[t]!=INF);
+		assert(delta[t]>0);
 		int prev = -1;
 		int prev_edgeID=-1;
 		Weight min_prev_dist= dist[t];
+		//it should be possible to maintain an explicit list of all the edges in the shortest path tree,
+		//or perhaps at least one such edge for each node, and avoid this search, at the cost of more storage and slightly more expensive
+		//edge updates
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
-			if(g.edgeEnabled(edgeID)){
+			if(edgeInShortestPathGraph[edgeID]){
+				assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
-				if(connected_unsafe(from)){
-					assert(dist[from]>=0);
-					assert(dist[from]!=INF);
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-					if (dist[from]<min_prev_dist){
-						min_prev_dist=dist[from];
-						prev = from;
-						prev_edgeID=edgeID;
-					}
-				}
+				assert(connected_unsafe(from));
+				assert(dist[from]>=0);
+				assert(dist[from]!=INF);
+				prev = from;
+				prev_edgeID=edgeID;
+				break;
 			}
 		}
 		assert(prev!=-1);
-		assert(min_prev_dist<dist[t]);
-
+		//assert(min_prev_dist<dist[t]);
+		assert(prev_edgeID!=-1);
 		return prev_edgeID;
 	}
 	int previous(int t) {
@@ -1138,26 +1166,24 @@ public:
 
 		assert( dist[t]>=0);
 		assert( dist[t]!=INF);
+		assert(delta[t]>0);
 		int prev = -1;
 		Weight min_prev_dist= dist[t];
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
-			if(g.edgeEnabled(edgeID)){
+			if(edgeInShortestPathGraph[edgeID]){
+				assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
-				if(connected_unsafe(from)){
-					assert(dist[from]>=0);
-					assert(dist[from]!=INF);
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-					if (dist[from]<min_prev_dist){
-						min_prev_dist=dist[from];
-						prev = from;
-					}
-				}
+				assert(connected_unsafe(from));
+				assert(dist[from]>=0);
+				assert(dist[from]!=INF);
+				prev = from;
+				break;
 			}
 		}
 		assert(prev!=-1);
-		assert(min_prev_dist<dist[t]);
+		//assert(min_prev_dist<dist[t]);
 
 		return prev;
 	}
@@ -1174,9 +1200,9 @@ public:
 	int last_addition=-1;
 	int last_deletion=-1;
 	int history_qhead=0;
-    uint64_t stats_updates=0;
-    uint64_t stats_resets=0;
-    uint64_t stats_all_updates=0;
+	uint64_t stats_updates=0;
+	uint64_t stats_resets=0;
+	uint64_t stats_all_updates=0;
 	int last_history_clear=0;
 
 	int source;
@@ -1238,9 +1264,9 @@ public:
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
 	}
-    void printStats(){
-        printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
-    }
+	void printStats(){
+		printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
+	}
 	//Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	void setMaxDistance(int &_maxDistance) {
 		if (_maxDistance != maxDistance) {
@@ -1794,14 +1820,14 @@ public:
 		if (g.outfile) {
 			fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
 		}
-        stats_all_updates++;
+		stats_all_updates++;
 		if (last_modification > 0 && g.modifications == last_modification){
 			return;
 		}
-        stats_updates++;
+		stats_updates++;
 		if (last_modification <= 0 || g.changed()) {//Note for the future: there is probably room to improve this further.
-            stats_resets++;
-            stats_full_updates++;
+			stats_resets++;
+			stats_full_updates++;
 			int oldInf = INF;
 			INF = g.nodes() + 1;
 			if(INF!=oldInf){
@@ -1819,8 +1845,8 @@ public:
 			node_changed.resize(g.nodes());
 			changed.clear();
 			if(maxDistance<0 || maxDistance>=oldInf){
-                maxDistance = INF;
-            }
+				maxDistance = INF;
+			}
 			for (int i = 0; i < g.nodes(); i++) {
 				if ((dist[i] >= INF && reportPolarity <= 0) || (dist[i] < INF && reportPolarity >= 0)) {
 					node_changed[i] = true;
@@ -1967,7 +1993,7 @@ public:
 	}
 	bool connected(int t) {
 
-			update();
+		update();
 
 
 		assert(dbg_uptodate());
@@ -1976,7 +2002,7 @@ public:
 	}
 	int& distance(int t) {
 
-			update();
+		update();
 
 		if (connected_unsafe(t))
 			return dist[t];
@@ -1998,33 +2024,31 @@ public:
 			return -1;
 
 		int d = dist[t];
-
+		assert(delta[t]>0);
 		assert(d>=0);
 		assert(d!=INF);
 		int prev = -1;
 		int prev_edgeID=-1;
-		int min_prev_dist=d;
+
 
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
-			if(g.edgeEnabled(edgeID)){
+			if(edgeInShortestPathGraph[edgeID]){
+				assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
-				if(connected_unsafe(from)){
-					int from_dist = dist[from];
-					assert(from_dist>=0);
-					assert(from_dist!=INF);
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-					if (from_dist<min_prev_dist){
-						min_prev_dist=from_dist;
-						prev = from;
-						prev_edgeID=edgeID;
-					}
-				}
+				assert(connected_unsafe(from));
+				int from_dist = dist[from];
+				assert(from_dist>=0);
+				assert(from_dist!=INF);
+				prev = from;
+				prev_edgeID=edgeID;
+				break;
 			}
+
 		}
 		assert(prev!=-1);
-		assert(min_prev_dist<d);
+
 
 		return prev_edgeID;
 	}
@@ -2040,27 +2064,25 @@ public:
 
 		assert(d>=0);
 		assert(d!=INF);
+		assert(delta[t]>0);
 		int prev = -1;
-		int min_prev_dist=d;
+
 		for(int i = 0;i<g.nIncoming(t);i++){
 
 			int edgeID = g.incoming(t,i).id;
-			if(g.edgeEnabled(edgeID)){
+			if(edgeInShortestPathGraph[edgeID]){
+				assert(g.edgeEnabled(edgeID));
 				int from = g.incoming(t,i).node;
-				if(connected_unsafe(from)){
-					int from_dist = dist[from];
-					assert(from_dist>=0);
-					assert(from_dist!=INF);
-					//Note: RamalReps doesn't support 0-weighted edges, so it is safe to assume that the previous node on the path has a lower distance from the source
-					if (from_dist<min_prev_dist){
-						min_prev_dist=from_dist;
-						prev = from;
-					}
-				}
+				assert(connected_unsafe(from));
+				int from_dist = dist[from];
+				assert(from_dist>=0);
+				assert(from_dist!=INF);
+				prev = from;
+				break;
 			}
 		}
 		assert(prev!=-1);
-		assert(min_prev_dist<d);
+
 
 		return prev;
 	}
