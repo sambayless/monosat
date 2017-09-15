@@ -34,6 +34,15 @@ Contains types, macros, and inline functions generally useful in a C++ program.
 #include <cfloat>
 #include <new>
 
+
+//Move includes up to avoid compilation errors; thanks to Makai Mann for this fix
+#ifdef _MSC_VER
+#include <ctime>
+#else
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
+
 #include "monosat/mtl/Vec.h"
 namespace Monosat {
 namespace PB {
@@ -195,14 +204,9 @@ macro int irand(double &seed, int size) {
 
 
 #ifdef _MSC_VER
-#include <ctime>
 macro double cpuTime(void) {
     return (double)clock() / CLOCKS_PER_SEC; }
 #else
-
-#include <sys/time.h>
-
-#include <sys/resource.h>
 
 macro double cpuTime(void) {
     struct rusage ru;

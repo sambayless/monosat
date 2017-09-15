@@ -1,4 +1,4 @@
-# Demonstrate writing GNF files
+# Demonstrate writing and loading GNF files
 
 from monosat import *
 Monosat().setOutputFile("tutorial.gnf")
