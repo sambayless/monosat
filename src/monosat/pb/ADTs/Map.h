@@ -141,11 +141,11 @@ public:
 
     // Don't allow copying:
     Map<K, D, Par> &operator=(Map<K, D, Par> &other) {
-        TEMPLATE_FAIL;
+        assert(false);
         return *this;
     }
 
-    Map(Map<K, D, Par> &other) { TEMPLATE_FAIL; }
+    Map(Map<K, D, Par> &other) { assert(false); }
 
     //---------------------------------------------------------------------------------------------
     // Export:

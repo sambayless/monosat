@@ -5,7 +5,7 @@
 template<>
 const int LinkCutCost<int>::INF=INT_MAX/2;
 template<>
-const long LinkCutCost<int64_t>::INF=LONG_MAX/2;
+const int64_t LinkCutCost<int64_t>::INF=LONG_MAX/2;
 template<>
 const mpq_class LinkCutCost<mpq_class>::INF=LONG_MAX;//fix this...
 template<>
