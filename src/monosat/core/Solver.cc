@@ -498,11 +498,10 @@ void Solver::cancelUntil(int lev) {
 			} else if (theory_init_prop_trail_pos[theoryID] >=0 && qhead < theory_reprop_trail_pos[theoryID]) {
 				theory_reprop_trail_pos[theoryID] = qhead;
 				assert(theory_init_prop_trail_pos[theoryID] >=0);
-
-                int init_pos = theory_init_prop_trail_pos[theoryID];
-                if(trail_lim.size()>0 && init_pos<trail_lim[decisionLevel()]){
-                    init_pos=trail_lim[decisionLevel()];
-                }
+				int init_pos = theory_init_prop_trail_pos[theoryID];
+				if(trail_lim.size()>0 && init_pos<trail_lim[decisionLevel()]){
+					init_pos=trail_lim[decisionLevel()];
+				}
 				Lit p = trail[init_pos];
 				assert(p!=lit_Undef);
 				int back_lev = level(var(p))-1;
@@ -520,10 +519,10 @@ void Solver::cancelUntil(int lev) {
 				Lit p = trail[q];
 				if (hasTheory(p)) {
 					int theoryID = getTheoryID(p);
-                    theories[theoryID]->backtrackUntil(decisionLevel());
+					theories[theoryID]->backtrackUntil(decisionLevel());
 					if (theory_reprop_trail_pos[theoryID] ==-1 &&  q>= theory_init_prop_trail_pos[theoryID] && !theorySatisfied(theories[theoryID])) {
-                        needsPropagation(theoryID);
-                        //theories[theoryID]->backtrackUntil(level(var(p)));
+						needsPropagation(theoryID);
+						//theories[theoryID]->backtrackUntil(level(var(p)));
 						theories[theoryID]->enqueueTheory(getTheoryLit(p));
 					}
 				}
@@ -558,19 +557,19 @@ void Solver::cancelUntil(int lev) {
 
 	}
 
-    while(partially_propagated_levels.size() && partially_propagated_levels.last()>decisionLevel()){
-        partially_propagated_levels.pop();
-    }
-    if(partially_propagated_levels.size() && partially_propagated_levels.last()==decisionLevel()){
-        //mark all theories as needing propagation. in principle, we could try to keep track of exactly which theories might need propagation, but that could be expensive (memory-wise)
-        partially_propagated_levels.pop();
-        for(int i = 0;i<theories.size();i++){
-            if(theories[i] && !theories[i]->unskipable())
-                needsPropagation(i);
-        }
+	while(partially_propagated_levels.size() && partially_propagated_levels.last()>decisionLevel()){
+		partially_propagated_levels.pop();
+	}
+	if(partially_propagated_levels.size() && partially_propagated_levels.last()==decisionLevel()){
+		//mark all theories as needing propagation. in principle, we could try to keep track of exactly which theories might need propagation, but that could be expensive (memory-wise)
+		partially_propagated_levels.pop();
+		for(int i = 0;i<theories.size();i++){
+			if(theories[i] && !theories[i]->unskipable())
+				needsPropagation(i);
+		}
 
-    }
-    assert(partially_propagated_levels.size() ==0 || partially_propagated_levels.last()<decisionLevel());
+	}
+	assert(partially_propagated_levels.size() ==0 || partially_propagated_levels.last()<decisionLevel());
 }
 
 void Solver::backtrackUntil(int lev) {
@@ -1446,27 +1445,26 @@ CRef Solver::propagate(bool propagate_theories) {
 		//printf("iter %d\n",iter);
 		//propagate theories;
 
-        while(qhead == trail.size() && confl==CRef_Undef && ((propagate_theories && theory_queue.size()) || unskippable_theory_q.size() )) {
+		while(qhead == trail.size() && confl==CRef_Undef && ((propagate_theories && theory_queue.size()) || unskippable_theory_q.size() )) {
 
-            while (unskippable_theory_q.size() && (qhead == trail.size()) && confl == CRef_Undef) {
-                int theoryID = unskippable_theory_q.last();
-                if (!propagateTheorySolver(theoryID, confl, theory_conflict)) {
-                    return confl;
-                } else {
+			while (unskippable_theory_q.size() && (qhead == trail.size()) && confl == CRef_Undef) {
+				int theoryID = unskippable_theory_q.last();
+				if (!propagateTheorySolver(theoryID, confl, theory_conflict)) {
+					return confl;
+				} else {
 
-                    //only remove theory from propagation queue if it does not conflict
-                    //there is a complication here, which is that in certain cases a new theory id may have been pushed into the queue
-					assert(in_theory_queue[theoryID]);
-                    //during theory propagation.
-					if (theory_queue.last() == theoryID) {
-						theory_queue.pop();
-                    } else {
-						theory_queue.remove(theoryID);
-                    }
-					assert(!theory_queue.contains(theoryID));
-					in_theory_queue[theoryID] = false;
-                }
-            }
+					//only remove theory from propagation queue if it does not conflict
+					//there is a complication here, which is that in certain cases a new theory id may have been pushed into the queue
+					//during theory propagation.
+					assert(unskippable_theory_q.has(theoryID));
+					if (unskippable_theory_q.last() == theoryID) {
+						unskippable_theory_q.pop();
+					} else {
+						unskippable_theory_q.remove(theoryID);
+					}
+					assert(!unskippable_theory_q.contains(theoryID));
+				}
+			}
 			while (propagate_theories && theory_queue.size() && (qhead == trail.size())
 				   && confl == CRef_Undef) {
 				int theoryID = theory_queue.last();
@@ -1505,7 +1503,7 @@ CRef Solver::propagate(bool propagate_theories) {
 	propagations += num_props;
 	simpDB_props -= num_props;
 
-    assert(confl!=CRef_Undef || unskippable_theory_q.size()==0);
+	assert(confl!=CRef_Undef || unskippable_theory_q.size()==0);
 	//one or more theories was not propagated (this is allowed in some settings)
 	if(confl==CRef_Undef && theory_queue.size() &&  decisionLevel() >0 ){
 		for(int theoryID:theory_queue){
@@ -1520,30 +1518,30 @@ CRef Solver::propagate(bool propagate_theories) {
 }
 
 bool Solver::propagateTheorySolver(int theoryID, CRef & confl, vec<Lit> & theory_conflict){
-    double start_t = rtime(1);
-    theory_conflict.clear();
-    //todo: ensure that the bv theory comes first, as otherwise dependent theories may have to be propagated twice...
+	double start_t = rtime(1);
+	theory_conflict.clear();
+	//todo: ensure that the bv theory comes first, as otherwise dependent theories may have to be propagated twice...
 
 
-    if (!theories[theoryID]->propagateTheory(theory_conflict)) {
-        bool has_conflict=true;
+	if (!theories[theoryID]->propagateTheory(theory_conflict)) {
+		bool has_conflict=true;
 #ifdef DEBUG_CORE
-        for(Lit l:theory_conflict)
-            assert(value(l)!=l_Undef);
+		for(Lit l:theory_conflict)
+			assert(value(l)!=l_Undef);
 #endif
-        if (has_conflict && !addConflictClause(theory_conflict, confl)) {
-            conflicting_heuristic=theories[theoryID]->getConflictingHeuristic();
-            if(conflicting_heuristic){
-                assert(conflicting_heuristic->getHeuristicIndex()>0);
-            }
-            qhead = trail.size();
-            stats_theory_conflicts++;
-            stats_theory_conflict_time+= (rtime(1)-start_t);
-            return false;
-        }
-    }
-    stats_theory_prop_time+= (rtime(1)-start_t);
-    return true;
+		if (has_conflict && !addConflictClause(theory_conflict, confl)) {
+			conflicting_heuristic=theories[theoryID]->getConflictingHeuristic();
+			if(conflicting_heuristic){
+				assert(conflicting_heuristic->getHeuristicIndex()>0);
+			}
+			qhead = trail.size();
+			stats_theory_conflicts++;
+			stats_theory_conflict_time+= (rtime(1)-start_t);
+			return false;
+		}
+	}
+	stats_theory_prop_time+= (rtime(1)-start_t);
+	return true;
 }
 
 /*_________________________________________________________________________________________________
@@ -2574,7 +2572,7 @@ lbool Solver::search(int nof_conflicts) {
 		} else {
 			last_propagation_was_conflict=false;
 			assert(theory_queue.size() == 0 || !propagate_theories);
-            assert(!unskippable_theory_q.size());
+			assert(!unskippable_theory_q.size());
 			if (!addDelayedClauses(confl))
 				goto conflict;
 
