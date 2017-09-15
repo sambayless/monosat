@@ -28,7 +28,7 @@ datum types, (plus default constructor unless null value is passed to constructo
 
 #include "VecAlloc.h"
 #include "Hash_standard.h"
-
+#include <stdexcept>
 
 //=================================================================================================
 // Map implementation:
@@ -142,10 +142,11 @@ public:
     // Don't allow copying:
     Map<K, D, Par> &operator=(Map<K, D, Par> &other) {
         assert(false);
+        throw std::runtime_error("Internal solver error");
         return *this;
     }
 
-    Map(Map<K, D, Par> &other) { assert(false); }
+    Map(Map<K, D, Par> &other) { assert(false); throw std::runtime_error("Internal solver error");  }
 
     //---------------------------------------------------------------------------------------------
     // Export:
