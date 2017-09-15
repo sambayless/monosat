@@ -30,9 +30,16 @@ template<>
 double Distance<double>::INF = std::numeric_limits<double>::infinity();
 template<>
 float Distance<float>::INF = std::numeric_limits<float>::infinity();
+#ifdef __APPLE__
+//work around to deal with missing long long in gmp...
+template<>
+mpq_class Distance<mpq_class>::INF = std::numeric_limits<int>::max()*std::numeric_limits<int>::max();//hopefully big enough...
+template<>
+mpz_class Distance<mpz_class>::INF = std::numeric_limits<int>::max()*std::numeric_limits<int>::max();//hopefully big enough...
+#else
 
 template<>
 mpq_class Distance<mpq_class>::INF = std::numeric_limits<int64_t>::max();//hopefully big enough...
 template<>
 mpz_class Distance<mpz_class>::INF = std::numeric_limits<int64_t>::max();//hopefully big enough...
-
+#endif
