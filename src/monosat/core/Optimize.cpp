@@ -43,7 +43,10 @@ static rlim_t system_mem_limit;
 
 static Solver * solver;
 
-static sighandler_t system_sigxcpu_handler = nullptr;
+#ifdef __APPLE__
+using sighandler_t = sig_t; //sighandler_t is a gnu extension
+#endif
+static sighandler_t system_sigxcpu_handler  = nullptr; //void (*system_sigxcpu_handler)(int) is also an option
 
 //static initializer, following http://stackoverflow.com/a/1681655
 namespace {
@@ -123,7 +126,7 @@ void enableResourceLimits(Solver * S){
 					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
 			}
 		}
-		sighandler_t old_sigxcpu = signal(SIGXCPU, SIGNAL_HANDLER_api);
+		auto old_sigxcpu = signal(SIGXCPU, SIGNAL_HANDLER_api);
 		if(old_sigxcpu != SIGNAL_HANDLER_api){
 			system_sigxcpu_handler = old_sigxcpu;//store this value for later
 		}
