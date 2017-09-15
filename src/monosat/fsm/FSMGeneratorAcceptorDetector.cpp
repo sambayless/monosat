@@ -66,7 +66,7 @@ FSMGeneratorAcceptorDetector::FSMGeneratorAcceptorDetector(int detectorID, FSMTh
 		gen_next_seen.growTo(g_over.states());
 		seen_chars.growTo(g_over.outAlphabet()+1);
 	}else{
-		graph = new GraphTheorySolver<long>(outer->getSolver());
+		graph = new GraphTheorySolver<int64_t>(outer->getSolver());
 		outer->getSolver()->addTheory(graph);
 
 		//fully unroll the fsm you get by feeding the generator into the acceptor
