@@ -578,7 +578,7 @@ public:
 			&& (forceClear
 				|| (history.size()
 					>= (std::min((int64_t)history.max_size(), (adaptive_history_clear ?
-															   std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))))) {//){
+															   std::max((int64_t)1000, historyClearInterval * edges()) : historyClearInterval)))))) {//){
 
 
 			if(!forceClear && dynamic_history_clears>0){
