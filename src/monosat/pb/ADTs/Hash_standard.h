@@ -131,7 +131,7 @@ DefineHash(unsigned
 
 DefineHash(short, return (uint) key;)
 
-DefineHash(ushort, return (uint) key;)
+DefineHash(unsigned short, return (uint) key;)
 
 DefineHash(int, return (uint) key;)
 
