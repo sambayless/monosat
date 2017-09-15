@@ -738,7 +738,7 @@ private:
 			reachVar= mapVar(S,reachVar);
 
 			if (graphs[graphID]) {
-				maxflows_int64_t.push({graphID,s,t,reachVar,!inclusive,flow});
+				maxflows_int64_t.push({graphID,s,t,reachVar,!inclusive,(int64_t)flow});
 			} else if (graphs_float[graphID]) {
 				maxflows_float.push({graphID,s,t,reachVar,!inclusive,(double)flow});
 			} else if (graphs_rational[graphID]) {
