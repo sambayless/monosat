@@ -1294,14 +1294,14 @@ void resetDecisionPriority(SimpSolver & S,vec<std::pair<Var, int>> & decision_va
 			fflush(stdout);
 		}
 
-		if (opt_verb > 1 && assume.size()) {
+		/*if (opt_verb > 1 && assume.size()) {
 			printf("Assumptions: ");
 			for (int i = 0; i < assume.size(); i++) {
 				Lit l = assume[i];
 				printf("%d, ", dimacs(l));
 			}
 			printf("\n");
-		}
+		}*/
 		vec<std::pair<Var,int>> old_decision_priority;
 		if(!objectives.size()){
 
