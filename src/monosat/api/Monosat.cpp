@@ -35,6 +35,7 @@
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
+#include "monosat/pb/PbParser.h"
 #include "monosat/Version.h"
 #include <csignal>
 #include <set>
@@ -652,61 +653,65 @@ void minimizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, i
 }
 
 
-void readGNF(Monosat::SimpSolver * S, const char  * filename){
-	bool precise = true;
+int readGNF(Monosat::SimpSolver * S, const char  * filename){
+    bool precise = true;
 
-	gzFile in = gzopen(filename, "rb");
-	if (in == nullptr)
-		throw std::runtime_error("ERROR! Could not open file");
-	MonosatData * d = (MonosatData*) S->_external_data;
+    gzFile in = gzopen(filename, "rb");
+    if (in == nullptr)
+        throw std::runtime_error("ERROR! Could not open file");
+    MonosatData * d = (MonosatData*) S->_external_data;
 
-	Dimacs<StreamBuffer, SimpSolver> parser;
-	BVParser<char *, SimpSolver> bvParser;
-	parser.addParser(&bvParser);
+    Dimacs<StreamBuffer, SimpSolver> parser;
+    BVParser<char *, SimpSolver> bvParser;
+    parser.addParser(&bvParser);
 
-	SymbolParser<char*,SimpSolver> symbolParser;
-	parser.addParser(&symbolParser);
+    SymbolParser<char*,SimpSolver> symbolParser;
+    parser.addParser(&symbolParser);
 
-	GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
-	parser.addParser(&graphParser);
+    GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
+    parser.addParser(&graphParser);
 
-	AMOParser<char *, SimpSolver> amo;
-	parser.addParser(&amo);
+    PBParser<char *, SimpSolver> pbParser(*S);
+    parser.addParser(&pbParser);
 
-	StreamBuffer strm(in);
-	vec<int> assumps;
-	bool ran_last_solve=false;
-	d->optimization_objectives.clear();
-	while(parser.parse(strm, *S)){
-		assumps.clear();
-		for(Lit l:parser.assumptions){
-			assumps.push(toInt(l));
-		}
-		d->optimization_objectives.clear();
-		for(Objective & o:parser.objectives){
-			d->optimization_objectives.push(o);
-		}
+    AMOParser<char *, SimpSolver> amo;
+    parser.addParser(&amo);
 
-		solveAssumptions(S,&assumps[0],assumps.size());
-		if(*strm==EOF){
-			ran_last_solve=true;
-		}
-	}
-	assert(*strm==EOF);
-	if(!ran_last_solve){
-		for(Lit l:parser.assumptions){
-			assumps.push(toInt(l));
-		}
-		d->optimization_objectives.clear();
-		for(Objective & o:parser.objectives){
-			d->optimization_objectives.push(o);
-	}
-		solveAssumptions(S,&assumps[0],assumps.size());
-	}
-	d->optimization_objectives.clear();
+    StreamBuffer strm(in);
+    vec<int> assumps;
+    lbool ret = l_Undef;
+    bool ran_last_solve=false;
+    d->optimization_objectives.clear();
+    while(parser.parse(strm, *S)){
+        assumps.clear();
+        for(Lit l:parser.assumptions){
+            assumps.push(toInt(l));
+        }
+        d->optimization_objectives.clear();
+        for(Objective & o:parser.objectives){
+            d->optimization_objectives.push(o);
+        }
 
-	gzclose(in);
+        ret=solveAssumptions(S,&assumps[0],assumps.size()) ? l_True:l_False;
+        if(*strm==EOF){
+            ran_last_solve=true;
+        }
+    }
+    assert(*strm==EOF);
+    if(!ran_last_solve){
+        for(Lit l:parser.assumptions){
+            assumps.push(toInt(l));
+        }
+        d->optimization_objectives.clear();
+        for(Objective & o:parser.objectives){
+            d->optimization_objectives.push(o);
+        }
+        ret=solveAssumptions(S,&assumps[0],assumps.size()) ? l_True:l_False;
+    }
+    d->optimization_objectives.clear();
 
+    gzclose(in);
+    return toInt(ret);
 }
 
 Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
