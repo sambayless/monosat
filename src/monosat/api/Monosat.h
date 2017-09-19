@@ -59,11 +59,11 @@ typedef int64_t Weight;
 #endif
 
 
-  int varToLit(int var, bool negated){
+ inline int varToLit(int var, bool negated){
 	  return toInt(mkLit(var,negated));
   }
 
-  int litToVar(int lit){
+  inline int litToVar(int lit){
 	  return lit/2;
   }
  const char * getVersion();
@@ -77,7 +77,7 @@ typedef int64_t Weight;
   void deleteSolver (SolverPtr S);
   //If set, dump constraints to this file (as they are asserted in the solver)
   void setOutputFile(SolverPtr S,char * output);
-  void readGNF(SolverPtr S, const char  * filename);
+  int readGNF(SolverPtr S, const char  * filename);
 
   bool solve(SolverPtr S);
   bool solveAssumptions(SolverPtr S,int * assumptions, int n_assumptions);
