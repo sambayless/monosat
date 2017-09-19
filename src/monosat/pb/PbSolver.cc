@@ -366,9 +366,14 @@ void PbSolver::setupOccurs() {
     occur.growTo(nVars() * 2);
     assert(nVars() == pb_n_vars);
     for (int i = 0; i < nVars() * 2; i++) {
-        vec<int> tmp(xmalloc<int>(n_occurs[i]), n_occurs[i]);
-        tmp.clear();
-        tmp.moveTo(occur[i]);
+        /* vec<int> tmp(xmalloc<int>(n_occurs[i]), n_occurs[i]);
+         tmp.clear();
+         tmp.moveTo(occur[i]);*/
+        //is this just pre-allocating the vector? Is this even needed anymore?
+        //the above seems to cause problems with valgrind.
+        //is the new implementation below correct?
+        occur[i].growTo(n_occurs[i]);
+        occur[i].clear();
     }
 
     // Fill vectors:
