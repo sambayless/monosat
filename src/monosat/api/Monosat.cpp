@@ -32,6 +32,7 @@
 #include "monosat/core/Dimacs.h"
 #include "monosat/bv/BVParser.h"
 #include "monosat/graph/GraphParser.h"
+#include "monosat/pb/PbParser.h"
 #include "monosat/amo/AMOParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
@@ -666,6 +667,9 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 
 	GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
 	parser.addParser(&graphParser);
+
+    PBParser<char *, SimpSolver> pbParser(*S);
+    parser.addParser(&pbParser);
 
 	AMOParser<char *, SimpSolver> amo;
 	parser.addParser(&amo);
