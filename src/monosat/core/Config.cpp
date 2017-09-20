@@ -419,6 +419,10 @@ IntOption Monosat::opt_bits("GRAPH", "bits", "Bits per position in graph.\n", 1,
 BoolOption Monosat::opt_graph_cache_propagation(_cat_graph,"cache-graph-propagation","",true);
 IntOption Monosat::opt_graph_use_cache_for_decisions(_cat_graph,"cache-graph-decisions", "(when using cache-graph-propagation, 2== use cache for all decisions, 1 = clear cache before decisions, 0=never use cache for decisions",2, IntRange(0,2));
 
+IntOption Monosat::opt_gnf_detail_level(_cat_graph,"gnf-detail", "",1, IntRange(0,3));
+
+
+BoolOption Monosat::opt_respect_preprocessor_gnf_directives(_cat,"respect-preprocessor-directives","If false, ignore any preprocessor directives in the GNF files",false);
 
 OptionSet Monosat::opt_route(_cat_graph,"ruc","Use RUC-syle heuristics for routing circuits","-cache-graph-propagation -cache-graph-decisions=2 -only-prop-theories-on-heuristic-change -theory-order-swapping-preserve -no-theory-order-conflict-sort-vsids -no-theory-order-initial-sort -no-theory-order-swapping-first-on-unit -theory-order-conflict-restart=10 -theory-order-swapping-luby -no-theory-order-restart-sorting -no-theory-order-swapping-last-decision -decide-theories -theory-order-swapping -no-theory-order-vsids",false);
 

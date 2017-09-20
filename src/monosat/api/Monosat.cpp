@@ -33,6 +33,7 @@
 #include "monosat/bv/BVParser.h"
 #include "monosat/graph/GraphParser.h"
 #include "monosat/amo/AMOParser.h"
+#include "monosat/simp/SimpParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
 #include "monosat/pb/PbParser.h"
@@ -46,7 +47,7 @@
 #include <iterator>
 #include <cstdint>
 
-#define ECHO_API
+//#define ECHO_API
 
 
 using namespace Monosat;
@@ -425,7 +426,21 @@ inline void write_out(Monosat::SimpSolver * S, const char *fmt, ...) {
 	va_end(args);
 	fflush(d->outfile);
 }
-
+inline void write_out_detail(Monosat::SimpSolver * S, int level, const char *fmt, ...) {
+    if(level<=opt_gnf_detail_level) {
+        MonosatData * d = (MonosatData*) S->_external_data;
+        if (!d || !d->outfile){
+            return;
+        }
+        va_list args;
+        va_start(args, fmt);
+        if( vfprintf(d->outfile,fmt,args)<0){
+            api_errorf("Failed to write output");
+        }
+        va_end(args);
+        fflush(d->outfile);
+    }
+}
 void setOutputFile(Monosat::SimpSolver * S, char * output){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	assert(d);
@@ -692,6 +707,10 @@ int readGNF(Monosat::SimpSolver * S, const char  * filename){
 	MonosatData * d = (MonosatData*) S->_external_data;
 
 	Dimacs<StreamBuffer, SimpSolver> parser;
+
+    SimpParser<char *,SimpSolver> simpParser;
+    parser.addParser(&simpParser);
+
 	BVParser<char *, SimpSolver> bvParser;
 	parser.addParser(&bvParser);
 
@@ -757,7 +776,7 @@ Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 	return graph;
 }
 void backtrack(Monosat::SimpSolver * S){
-    api_(__PRETTY_FUNCTION__);
+    //api_(__PRETTY_FUNCTION__);
 	S->cancelUntil(0);
 }
 Monosat::BVTheorySolver<int64_t> * initBVTheory(Monosat::SimpSolver * S){
@@ -920,21 +939,25 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 
 
  int newVar(Monosat::SimpSolver * S){
-    api_(__PRETTY_FUNCTION__);
+    //api_(__PRETTY_FUNCTION__);
 	  return S->newVar();
  }
 
  bool disallowLiteralSimplification(Monosat::SimpSolver * S, int lit){
      api_(__PRETTY_FUNCTION__);
+
 	 if(S->isEliminated(var(toLit(lit)))){
 		 fprintf(stderr,"Warning: Literal %d has already been eliminated by the pre-processor\n", dimacs(toLit(lit)));
 		 return false;
-	 }else
-		 S->setFrozen(var(toLit(lit)),true);
+	 }else {
+         write_out(S,"disallow_simp %d\n",var(toLit(lit))+1);//add 1 for dimacs
+         S->setFrozen(var(toLit(lit)), true);
+     }
 	 return true;
  }
  void disablePreprocessing(Monosat::SimpSolver * S){
      api_(__PRETTY_FUNCTION__);
+     write_out(S,"disable_pre\n");//add 1 for dimacs
 	S->disablePreprocessing();
  }
 
@@ -1006,7 +1029,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return S->addClause(clause);
  }
  bool addUnitClause(Monosat::SimpSolver * S,int lit){
-     api_(__PRETTY_FUNCTION__);
+     //api_(__PRETTY_FUNCTION__);
 	  write_out(S,"%d 0\n",dimacs(toLit(lit)));
 
 	  return S->addClause(toLit(lit));
@@ -1391,11 +1414,11 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  //theory interface for graphs
 
  int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
-     api_(__PRETTY_FUNCTION__);
+     //api_(__PRETTY_FUNCTION__);
 	  return G->newNode();
  }
  int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to,  int64_t weight){
-     api_(__PRETTY_FUNCTION__);
+     //api_(__PRETTY_FUNCTION__);
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 
@@ -1673,7 +1696,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  //model query
  //Returns 0 for true, 1 for false, 2 for unassigned.
  int getModel_Literal(Monosat::SimpSolver * S,int lit){
+     api_(__PRETTY_FUNCTION__);
      Lit l = toLit(lit);
+     write_out_detail(S,2,"getModel_Literal %d\n",dimacs(l));
+
      //if (var(l)>=S->model.size())
      if(var(l)<0 || var(l)>=S->nVars())
          api_errorf("Variable %d is undefined",dimacs(l));
@@ -1693,6 +1719,8 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
      return toInt(val);//toInt(S->value(toLit(lit)));
  }
  int64_t getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, bool getMaximumValue){
+     api_(__PRETTY_FUNCTION__);
+     write_out_detail(S,2,"getModel_BV %d %d\n",bvID,getMaximumValue);
 	 if(getMaximumValue){
 		 return bv->getOverApprox(bvID);
 	 }else{
@@ -1702,7 +1730,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  }
  //graph queries:
  int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal){
- 	 Lit l = toLit(reach_or_distance_literal);
+     api_(__PRETTY_FUNCTION__);
+     Lit l = toLit(reach_or_distance_literal);
+     write_out_detail(S,2,"getModel_Path_Nodes_Length %d %d\n",G->getGraphID(),dimacs(l));
+
  	std::vector<int> store_path;
  	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
  		return -1;
@@ -1711,7 +1742,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  	}
   }
  int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal, int store_length, int * store){
+     api_(__PRETTY_FUNCTION__);
+
  	 Lit l = toLit(reach_or_distance_literal);
+     write_out_detail(S,2,"getModel_Path_Nodes %d %d\n",G->getGraphID(),dimacs(l));
  	std::vector<int> store_path;
  	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
  		return -1;
@@ -1725,7 +1759,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  	}
   }
  int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal){
+     api_(__PRETTY_FUNCTION__);
+
  	 Lit l = toLit(reach_or_distance_literal);
+     write_out_detail(S,2,"getModel_Path_EdgeLits_Length %d %d\n",G->getGraphID(),dimacs(l));
  	std::vector<Lit> store_path;
  	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
  		return -1;
@@ -1734,7 +1771,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  	}
   }
  int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal, int store_length, int * store){
+     api_(__PRETTY_FUNCTION__);
+
  	 Lit l = toLit(reach_or_distance_literal);
+     write_out_detail(S,2,"getModel_Path_EdgeLits %d %d\n",G->getGraphID(),dimacs(l));
   	std::vector<Lit> store_path;
  	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
  		return -1;
@@ -1748,21 +1788,31 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  	}
   }
  int64_t getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal){
+     api_(__PRETTY_FUNCTION__);
+
 	 Lit l = toLit(maxflow_literal);
+     write_out_detail(S,2,"getModel_MaxFlow %d %d\n",G->getGraphID(),dimacs(l));
 	 return G->getModel_MaximumFlow(S->getTheoryLit(l));
  }
  int64_t getModel_EdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
+     api_(__PRETTY_FUNCTION__);
+
 	 Lit l = toLit(maxflow_literal);
 	 Lit e = toLit(edge_assignment_literal);
+     write_out_detail(S,2,"getModel_EdgeFlow %d %d %d\n",G->getGraphID(),dimacs(l),dimacs(e));
 	 return G->getModel_MaximumFlow_EdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
  }
  int64_t getModel_AcyclicEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
+     api_(__PRETTY_FUNCTION__);
+
 	 Lit l = toLit(maxflow_literal);
 	 Lit e = toLit(edge_assignment_literal);
+     write_out_detail(S,2,"getModel_AcyclicEdgeFlow %d %d %d\n",G->getGraphID(),dimacs(l),dimacs(e));
 	 return G->getModel_MaximumFlow_AcyclicEdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
  }
 
  int64_t getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int spanning_tree_literal){
+     api_(__PRETTY_FUNCTION__);
 	 Lit l = toLit(spanning_tree_literal);
 	 return G->getModel_MinimumSpanningWeight(S->getTheoryLit(l));
  }

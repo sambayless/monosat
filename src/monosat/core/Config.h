@@ -199,6 +199,8 @@ extern BoolOption opt_dinics_recursive;
 extern StringOption opt_hull_alg;
 extern StringOption opt_convex_pip;
 
+extern BoolOption opt_respect_preprocessor_gnf_directives;
+extern IntOption opt_gnf_detail_level;
 extern BoolOption opt_conflict_dfs;
 extern BoolOption opt_conflict_from_source;
 extern BoolOption opt_allow_reach_decisions;

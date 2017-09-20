@@ -285,7 +285,9 @@ private:
 			if (*in == EOF)
 				break;
 			line_num++;//this will merge line counts if there are multiple blank lines...
-
+            if(line_num==2385286){
+                int a=1;
+            }
 			//Typically, 99% of lines are either comments or clauses, and so it makes a lot of sense to handle these first, and before reading the whole line into a buffer.
 			if(*in=='-' || (*in >= '0' && *in<='9')){
 				//this is a clause
@@ -317,7 +319,16 @@ private:
 				}
 				solves++;
 				solve=true;
-			}else if (match(b,"priority")) {
+			}else if (match(b,"backtrack")){
+                S.cancelUntil(0);
+            }else if (match(b,"getModel_Literal")){
+                int parsed_int = parseInt(b);
+                bool sign = parsed_int<0;
+                int var = abs(parsed_int)-1;
+                var = mapVar(S,var);
+                //do nothing
+
+            }else if (match(b,"priority")) {
 				int parsed_int = parseInt(b);
 				int var = abs(parsed_int)-1;
 				var = mapVar(S,var);
@@ -401,6 +412,18 @@ private:
 				objectives.last().pb_weights.growTo(objectives.last().pb_lits.size(),1);
 			}else if (parseLine(b,line_num, S)) {
 				//do nothing
+			}else if (match(b,"disable_pre")){
+				if(!opt_respect_preprocessor_gnf_directives) {
+                    //do nothing
+				}else{
+					throw std::runtime_error("Failed to parse preprocessing directive (either compile with simplification, or set --no-respect-preprocessor-directives");
+				}
+			}else if (match(b,"disallow_simp")) {
+				if (!opt_respect_preprocessor_gnf_directives) {
+                    //do nothing
+				}else{
+					throw std::runtime_error("Failed to parse preprocessing directive (either compile with simplification, or set --no-respect-preprocessor-directives");
+				}
 			} else if (linebuf[0] == 'p') {
 
 				if (eagerMatch(b, "p cnf")) {

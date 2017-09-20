@@ -36,6 +36,7 @@
 #include "monosat/graph/GraphParser.h"
 #include "monosat/fsm/FSMParser.h"
 #include "monosat/core/Dimacs.h"
+#include "monosat/simp/SimpParser.h"
 #include "monosat/core/AssumptionParser.h"
 #include "monosat/fsm/LSystemParser.h"
 #include "monosat/core/Solver.h"
@@ -614,6 +615,10 @@ int main(int argc, char** argv) {
 		}
 
 		Dimacs<StreamBuffer, SimpSolver> parser;
+
+		SimpParser<char *,SimpSolver> simpParser;
+		parser.addParser(&simpParser);
+
 		BVParser<char *, SimpSolver> bvParser;
 		parser.addParser(&bvParser);
 

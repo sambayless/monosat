@@ -573,14 +573,27 @@ public:
 			}else if (match(in,"bitblast")){
 				readBitblast(in,S);
 				return true;
-			}
-			else{
+			}else{
 				readBV(in,S);
 				return true;
 			}
 
 			return false;
-		}
+		}else if (match(in,"getModel_BV")) {
+            skipWhitespace(in);
+            int bvID = parseInt(in);
+            skipWhitespace(in);
+            bool getMaximumValue = parseInt(in)>0;
+            if(!theory){
+                throw std::runtime_error("getModel before solve");
+            }
+            if(getMaximumValue){
+                theory->getOverApprox(bvID);
+            }else{
+                theory->getUnderApprox(bvID);
+            }
+            return true;
+        }
 		return false;
 	}
 
