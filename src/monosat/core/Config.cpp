@@ -122,6 +122,7 @@ BoolOption Monosat::opt_randomize_theory_order_all(_cat, "rnd-theory-order-all",
 BoolOption Monosat::opt_theory_decision_round_robin(_cat, "round-robin-theory-order",
 													 "If theory decisions are used, use a round-robin policy for which theory to decide first", false);
 
+
 BoolOption Monosat::opt_parser_immediate_mode(_cat,"immediate-parser","",false);
  BoolOption Monosat::opt_remap_vars(_cat,"remap-vars","Remap variables in the GNF internally in the solver, to minimize space required",true);
  BoolOption Monosat::opt_decide_optimization_lits(_cat_opt,"decide-opt-lits","Allow decisions on literals introduced by optimization constraints",true);

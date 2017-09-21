@@ -244,7 +244,8 @@ set(SOURCE_FILES
         src/monosat/utils/ParseUtils.h
         src/monosat/utils/System.cc
         src/monosat/utils/System.h
-        src/monosat/Main.cc
+        #src/monosat/Main.cc
+        src/monosat/Main_api.cc
         src/monosat/core/Heuristic.h
         src/monosat/api/Logic.h
         src/monosat/graph/GraphHeuristic.h

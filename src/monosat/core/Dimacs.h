@@ -57,7 +57,9 @@ public:
 	const char * getParserName() const{
 		return parser_name;
 	}
-
+	virtual bool supportsImmediateMode(){
+		return true;
+	}
 	Var mapVar(Solver & S, Var v){
 		return dimacsParser->mapVar(S,v);
 	}
@@ -226,7 +228,7 @@ private:
 			char * ln = (char*) line; //intentionally discard const qualifier
 			try{
 				if (p->parseLine(ln, S)) {
-					if(opt_parser_immediate_mode){
+					if(opt_parser_immediate_mode && p->supportsImmediateMode()){
 						p->implementConstraints(S);
 					}
 					return true;
@@ -328,7 +330,17 @@ private:
                 var = mapVar(S,var);
                 //do nothing
 
-            }else if (match(b,"priority")) {
+            }else if (match(b,"newVar")){
+				int parsed_var = parseInt(b);
+				assert(parsed_var>0);
+
+				int var = parsed_var-1;
+				var = mapVar(S,var);
+				//Var v2 = S.newVar();
+				//assert(v2==var);
+				//do nothing
+
+			}else if (match(b,"priority")) {
 				int parsed_int = parseInt(b);
 				int var = abs(parsed_int)-1;
 				var = mapVar(S,var);
@@ -458,6 +470,7 @@ private:
 			if (cnt != clauses)
 				fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");*/
 			for (auto * p : parsers) {
+
 				try{
 					p->implementConstraints(S);
 				}catch(const std::exception & e){

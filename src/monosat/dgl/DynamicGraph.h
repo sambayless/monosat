@@ -688,6 +688,19 @@ public:
 
 	}
 
+	void crc(){
+		unsigned long prime = 31;
+		unsigned long result = 1;
+
+		for (int i = 0;i<edges();i++){
+			if (edgeEnabled(i)){
+				result = prime * result + i;
+			}
+		}
+		printf("Graph CRC: %ld",result);
+	}
+
+
 };
 
 }

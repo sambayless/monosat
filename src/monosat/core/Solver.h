@@ -24,6 +24,7 @@
 #ifndef Monosat_Solver_h
 #define Monosat_Solver_h
 
+
 #include "monosat/mtl/Vec.h"
 #include "monosat/mtl/Heap.h"
 #include "monosat/mtl/Alg.h"
@@ -75,7 +76,33 @@ public:
 	virtual bool addClause(Lit p, Lit q);                           // Add a binary clause to the solver.
 	virtual bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
 	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);           // Add a clause to the solver without making superflous internal copy. Will
+	unsigned long result = 1;
+	void crc(int iter =0){
+		unsigned long prime = 31;
 
+
+		//result = prime * result + *reinterpret_cast<unsigned long*>(&random_seed);
+/*
+		for(int v = 0;v<nVars();v++){
+			lbool val = value(v);
+			if (val==l_True){
+				result = prime * result + 1;
+			}else if(val==l_False){
+				result = prime * result + 2;
+			}else{
+
+			}
+		}
+		for (int i = 0;i<trail.size();i++){
+			Lit l = trail[i];
+			result = prime * result + toInt(l);
+		}*/
+		long dr = result;
+		if(result==8459023320759178031){
+			int a=1;
+		}
+		printf("Solver CRC %d: %ld\n",iter,result);
+	}
 
 	void setDecisionPriority(Var v, unsigned int p) {
 		priority[v] = p;

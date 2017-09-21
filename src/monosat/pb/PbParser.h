@@ -194,6 +194,9 @@ public:
 			pbsolver->convert();
 		}
 	}
+	bool supportsImmediateMode()override{
+		return false;
+	}
 };
 //=================================================================================================
 }

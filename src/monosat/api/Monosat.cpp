@@ -844,8 +844,9 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	APISignal::enableResourceLimits();
 
 	S->cancelUntil(0);
+	S->crc(-5);
 	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
-
+	S->crc(-5);
 	  vec<Monosat::Lit> assume;
 	  for (int i = 0;i<n_assumptions;i++){
 		   Lit l =toLit( assumptions[i]);
@@ -940,7 +941,10 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 
  int newVar(Monosat::SimpSolver * S){
     //api_(__PRETTY_FUNCTION__);
-	  return S->newVar();
+
+	int v = S->newVar();
+	write_out_detail(S,2,"newVar %d\n",v+1);
+	return v;
  }
 
  bool disallowLiteralSimplification(Monosat::SimpSolver * S, int lit){

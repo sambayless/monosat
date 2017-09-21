@@ -327,7 +327,9 @@ public:
     void solve(solve_Command cmd = sc_Minimize);    // Returns best/first solution found or Int_MAX if UNSAT.
     //convert the pb constraints into cnfs in the sat solver and return without solving
     void convert()override{
+        printf("Start PB conversion\n");
         solve(sc_Convert);
+        printf("Done PB conversion\n");
     }
 
 };
