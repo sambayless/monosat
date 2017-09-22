@@ -436,7 +436,7 @@ class MonosatPB:
 
     #not required, will be called automatically inside monosat
     def write(self):
-        self._monoast.flushPB()
+        self._monosat.flushPB()
 
 class MonosatTheoryPB:
 
