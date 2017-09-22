@@ -24,6 +24,7 @@
 #ifndef Monosat_Solver_h
 #define Monosat_Solver_h
 
+
 #include "monosat/mtl/Vec.h"
 #include "monosat/mtl/Heap.h"
 #include "monosat/mtl/Alg.h"

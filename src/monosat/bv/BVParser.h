@@ -59,7 +59,7 @@ private:
 		vec<Var> vector;
 	};
 	vec<BV> bvs;
-
+	vec<int> bvs_to_implement;
 
 
 	vec<int> weights;
@@ -164,6 +164,7 @@ private:
 		bvs[id].id = id;
 		bvs[id].width=width;
 		bvs[id].constval=parseLong(in);
+		bvs_to_implement.push(id);
 	}
 
 	void readAnonBV(B& in,  Solver& S) {
@@ -182,6 +183,7 @@ private:
 		bvs[id].id = id;
 		bvs[id].width=width;
 		bvs[id].anon=true;
+		bvs_to_implement.push(id);
 	}
 
 	void readBV(B& in,  Solver& S) {
@@ -203,6 +205,7 @@ private:
 			v= mapVar(S,v);
 			bvs[id].vector.push(v);
 		}
+		bvs_to_implement.push(id);
 	}
 	void readMinMaxBV(B& in, Solver& S, bool min){
 
@@ -573,27 +576,42 @@ public:
 			}else if (match(in,"bitblast")){
 				readBitblast(in,S);
 				return true;
-			}
-			else{
+			}else{
 				readBV(in,S);
 				return true;
 			}
 
 			return false;
-		}
+		}else if (match(in,"getModel_BV")) {
+            skipWhitespace(in);
+            int bvID = parseInt(in);
+            skipWhitespace(in);
+            bool getMaximumValue = parseInt(in)>0;
+            if(!theory){
+                throw std::runtime_error("getModel before solve");
+            }
+            if(getMaximumValue){
+                theory->getOverApprox(bvID);
+            }else{
+                theory->getUnderApprox(bvID);
+            }
+            return true;
+        }
 		return false;
 	}
 
 	void implementConstraints(Solver & S) {
 		theory = (BVTheorySolver<int64_t>*) S.bvtheory;
-		if(bvs.size() || multbvs.size() || divbvs.size()  || subtractionbvs.size() || addbvs.size() || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
+		if(bvs_to_implement.size() || multbvs.size() || divbvs.size()  || subtractionbvs.size() || addbvs.size() || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
 
 			if(!theory){
 				theory = new BVTheorySolver<int64_t>(&S);
 				theory->setBVMap(this->bvmap);
 			}
 
-			for (auto & bv:bvs){
+			for (auto & bvID:bvs_to_implement){
+				assert(bvID>=0);
+				auto & bv = bvs[bvID];
 				if(bv.id>-1){
 					int mappedBV = theory->nBitvectors();
 					if(!opt_remap_vars)
@@ -611,7 +629,8 @@ public:
 					}
 				}
 			}
-			bvs.clear();
+			bvs_to_implement.clear();
+			//bvs.clear();
 			for(auto & c:compares){
 				c.bvID = mapBV(S,c.bvID);
 				if(!theory->hasBV(c.bvID)){

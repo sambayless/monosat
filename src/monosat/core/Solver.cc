@@ -124,7 +124,6 @@ Var Solver::newVar(bool sign, bool dvar) {
 	if (v < min_decision_var)
 		dvar = false;
 	setDecisionVar(v, dvar);
-
 	return v;
 }
 
@@ -1254,8 +1253,12 @@ void Solver::enqueueAnyUnqueued(){
 			int start = post_satisfied_theory_trail_pos[theoryID];
 			if(start>=0 && start<= i) {
 				Theory * theory = theories[theoryID];
-
-				theory->enqueueTheory(theoryLit);
+                int old_level = level(var(l));
+                int new_level = decisionLevel();//temporarily pretend the literal to the current decision level, in case the theory solver
+                //has been enqueued past this level (should that actually be possible?).
+                vardata[var(l)].level = new_level;
+				theory->enqueueTheory(theoryLit);//enqueue the lit at the theories current decision level.
+                vardata[var(l)].level = old_level;
 				assert(post_satisfied_theory_trail_pos[theoryID]<=i);
 				post_satisfied_theory_trail_pos[theoryID] = i;
 				assert(post_satisfied_theory_trail_pos[theoryID]>=satisfied_theory_trail_pos[theoryID]);
@@ -2076,6 +2079,7 @@ lbool Solver::search(int nof_conflicts) {
 
 		conflict:
 
+
 #ifdef DEBUG_CORE
         /*{
            for (int i = 0; i < decision_heuristics.size(); i++) {
@@ -2776,7 +2780,7 @@ lbool Solver::solve_() {
 				theory_conflict_counters.clear();
 				theory_conflict_counters.growTo(all_decision_heuristics.size());
 			}
-			if ( opt_randomize_theory_order_restart_freq > 0 && drand(random_seed)<opt_randomize_theory_order_restart_freq) {
+			if (opt_randomize_theory_order_restart_freq > 0 && drand(random_seed)<opt_randomize_theory_order_restart_freq) {
 				randomShuffle(random_seed, decision_heuristics);
 				for(int i = 0;i<decision_heuristics.size();i++){
 					decision_heuristics[i]->setHeuristicOrder(i);

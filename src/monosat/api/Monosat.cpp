@@ -33,6 +33,7 @@
 #include "monosat/bv/BVParser.h"
 #include "monosat/graph/GraphParser.h"
 #include "monosat/amo/AMOParser.h"
+#include "monosat/simp/SimpParser.h"
 #include "monosat/core/Optimize.h"
 #include "monosat/pb/PbSolver.h"
 #include "monosat/pb/PbParser.h"
@@ -46,13 +47,13 @@
 #include <iterator>
 #include <cstdint>
 
-
 using namespace Monosat;
 using namespace std;
 
 #ifdef __APPLE__
 using sighandler_t = sig_t;
 #endif
+
 
 //Supporting function for throwing parse errors
 inline void api_errorf(const char *fmt, ...) {
@@ -368,6 +369,9 @@ void _selectAlgorithms(){
 
 	}
 }
+
+
+
 void printStats(SimpSolver* solver) {
 	double cpu_time = cpuTime();
     double mem_used = memUsedPeak(); // not available in osx
@@ -404,7 +408,21 @@ inline void write_out(Monosat::SimpSolver * S, const char *fmt, ...) {
 	va_end(args);
 	fflush(d->outfile);
 }
-
+inline void write_out_detail(Monosat::SimpSolver * S, int level, const char *fmt, ...) {
+    if(level<=opt_gnf_detail_level) {
+        MonosatData * d = (MonosatData*) S->_external_data;
+        if (!d || !d->outfile){
+            return;
+        }
+        va_list args;
+        va_start(args, fmt);
+        if( vfprintf(d->outfile,fmt,args)<0){
+            api_errorf("Failed to write output");
+        }
+        va_end(args);
+        fflush(d->outfile);
+    }
+}
 void setOutputFile(Monosat::SimpSolver * S, char * output){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	assert(d);
@@ -526,12 +544,14 @@ void deleteSolver (Monosat::SimpSolver * S)
 }
 
 void clearOptimizationObjectives(Monosat::SimpSolver * S){
+    
 	MonosatData * d = (MonosatData*) S->_external_data;
 	write_out(S,"clear_opt\n");
 	d->optimization_objectives.clear();
 }
 
 void maximizeBV(Monosat::SimpSolver *  S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID){
+    
 	MonosatData * d = (MonosatData*) S->_external_data;
 	write_out(S,"maximize bv %d\n", bvID);
 	if(!S->getBVTheory()){
@@ -544,6 +564,7 @@ void maximizeBV(Monosat::SimpSolver *  S,  Monosat::BVTheorySolver<int64_t> *  b
 }
 
 void minimizeBV(Monosat::SimpSolver *  S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID){
+    
 	MonosatData * d = (MonosatData*) S->_external_data;
 	write_out(S,"minimize bv %d\n", bvID);
 	if(!S->getBVTheory()){
@@ -556,6 +577,7 @@ void minimizeBV(Monosat::SimpSolver *  S,  Monosat::BVTheorySolver<int64_t> *  b
 }
 
 void maximizeLits(Monosat::SimpSolver *  S, int * lits, int n_lits){
+    
 	if(n_lits<=0)
 		return;
 	MonosatData * d = (MonosatData*) S->_external_data;
@@ -573,6 +595,7 @@ void maximizeLits(Monosat::SimpSolver *  S, int * lits, int n_lits){
 	d->optimization_objectives.push(Objective(lits_opt,true));
 }
 void minimizeLits(Monosat::SimpSolver *  S, int * lits, int n_lits){
+    
 	if(n_lits<=0)
 		return;
 	MonosatData * d = (MonosatData*) S->_external_data;
@@ -590,6 +613,7 @@ void minimizeLits(Monosat::SimpSolver *  S, int * lits, int n_lits){
 	d->optimization_objectives.push(Objective(lits_opt,false));
 }
 void maximizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, int n_lits){
+    
 	if(n_lits<=0)
 		return;
 	MonosatData * d = (MonosatData*) S->_external_data;
@@ -622,6 +646,7 @@ void maximizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, i
 	d->optimization_objectives.push(Objective(lits_opt,weights_opt,true));
 }
 void minimizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, int n_lits){
+    
 	if(n_lits<=0)
 		return;
 	MonosatData * d = (MonosatData*) S->_external_data;
@@ -661,9 +686,14 @@ int readGNF(Monosat::SimpSolver * S, const char  * filename){
         throw std::runtime_error("ERROR! Could not open file");
     MonosatData * d = (MonosatData*) S->_external_data;
 
-    Dimacs<StreamBuffer, SimpSolver> parser;
-    BVParser<char *, SimpSolver> bvParser;
-    parser.addParser(&bvParser);
+
+	Dimacs<StreamBuffer, SimpSolver> parser;
+    SimpParser<char *,SimpSolver> simpParser;
+    parser.addParser(&simpParser);
+
+	BVParser<char *, SimpSolver> bvParser;
+	parser.addParser(&bvParser);
+
 
     SymbolParser<char*,SimpSolver> symbolParser;
     parser.addParser(&symbolParser);
@@ -674,47 +704,48 @@ int readGNF(Monosat::SimpSolver * S, const char  * filename){
     PBParser<char *, SimpSolver> pbParser(*S);
     parser.addParser(&pbParser);
 
-    AMOParser<char *, SimpSolver> amo;
-    parser.addParser(&amo);
+	AMOParser<char *, SimpSolver> amo;
+	parser.addParser(&amo);
 
-    StreamBuffer strm(in);
-    vec<int> assumps;
+	StreamBuffer strm(in);
+	vec<int> assumps;
     lbool ret = l_Undef;
-    bool ran_last_solve=false;
-    d->optimization_objectives.clear();
-    while(parser.parse(strm, *S)){
-        assumps.clear();
-        for(Lit l:parser.assumptions){
-            assumps.push(toInt(l));
-        }
-        d->optimization_objectives.clear();
-        for(Objective & o:parser.objectives){
-            d->optimization_objectives.push(o);
-        }
+	bool ran_last_solve=false;
+	d->optimization_objectives.clear();
+	while(parser.parse(strm, *S)){
+		assumps.clear();
+		for(Lit l:parser.assumptions){
+			assumps.push(toInt(l));
+		}
+		d->optimization_objectives.clear();
+		for(Objective & o:parser.objectives){
+			d->optimization_objectives.push(o);
+		}
 
         ret=solveAssumptions(S,&assumps[0],assumps.size()) ? l_True:l_False;
-        if(*strm==EOF){
-            ran_last_solve=true;
-        }
-    }
-    assert(*strm==EOF);
-    if(!ran_last_solve){
-        for(Lit l:parser.assumptions){
-            assumps.push(toInt(l));
-        }
-        d->optimization_objectives.clear();
-        for(Objective & o:parser.objectives){
-            d->optimization_objectives.push(o);
-        }
+		if(*strm==EOF){
+			ran_last_solve=true;
+		}
+	}
+	assert(*strm==EOF);
+	if(!ran_last_solve){
+		for(Lit l:parser.assumptions){
+			assumps.push(toInt(l));
+		}
+		d->optimization_objectives.clear();
+		for(Objective & o:parser.objectives){
+			d->optimization_objectives.push(o);
+	    }
         ret=solveAssumptions(S,&assumps[0],assumps.size()) ? l_True:l_False;
-    }
-    d->optimization_objectives.clear();
+	}
+	d->optimization_objectives.clear();
 
-    gzclose(in);
+	gzclose(in);
     return toInt(ret);
 }
 
 Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
+    
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  Monosat::GraphTheorySolver<int64_t> *graph = new Monosat::GraphTheorySolver<int64_t>(S);
 
@@ -726,9 +757,11 @@ Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 	return graph;
 }
 void backtrack(Monosat::SimpSolver * S){
+    //
 	S->cancelUntil(0);
 }
 Monosat::BVTheorySolver<int64_t> * initBVTheory(Monosat::SimpSolver * S){
+    
 	MonosatData * d = (MonosatData*) S->_external_data;
 	if(d->bv_theory)
 		return d->bv_theory;
@@ -742,25 +775,30 @@ Monosat::BVTheorySolver<int64_t> * initBVTheory(Monosat::SimpSolver * S){
 	  return bv;
 }
 bool solve(Monosat::SimpSolver * S){
+    
 	return solveAssumptions(S,nullptr,0);
   }
 
 
 void setTimeLimit(Monosat::SimpSolver * S,int seconds){
+    
 	using namespace APISignal;
 	// Set limit on CPU-time:
 	time_limit=seconds;
 
 }
 void setMemoryLimit(Monosat::SimpSolver * S,int mb){
+    
 	using namespace APISignal;
 	memory_limit=mb;
 
 }
 void setConflictLimit(Monosat::SimpSolver * S,int num_conflicts){
+    
 	S->setConfBudget(num_conflicts);
 }
 void setPropagationLimit(Monosat::SimpSolver * S,int num_propagations){
+    
 	S->setPropBudget(num_propagations);
 }
 
@@ -768,6 +806,7 @@ void setPropagationLimit(Monosat::SimpSolver * S,int num_propagations){
 
 
 int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+    
 	bool found_optimal=true;
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  d->last_solution_optimal=true;
@@ -786,6 +825,7 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	APISignal::enableResourceLimits();
 
 	S->cancelUntil(0);
+
 	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
 
 	  vec<Monosat::Lit> assume;
@@ -820,18 +860,22 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 }
 
 int solveLimited(Monosat::SimpSolver * S){
+    
 	return solveAssumptionsLimited(S,nullptr,0);
 }
 
 int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+    
 	return _solve(S, assumptions,  n_assumptions);
 	//return solveAssumptionsLimited_MinBVs(S,assumptions,n_assumptions,nullptr,0);
 }
 
 bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
+    
 	return _solve(S,assumptions,n_assumptions);
 }
 bool lastSolutionWasOptimal(Monosat::SimpSolver * S){
+    
 	  MonosatData * d = (MonosatData*) S->_external_data;
 	  if(d){
 		  return d->last_solution_optimal;
@@ -842,6 +886,7 @@ bool lastSolutionWasOptimal(Monosat::SimpSolver * S){
 
 
 int getConflictClause(Monosat::SimpSolver * S, int * store_clause, int max_store_size){
+    
 	 MonosatData * d = (MonosatData*) S->_external_data;
 	  if(d && d->has_conflict_clause_from_last_solution){
 		  int size =  S->conflict.size();
@@ -876,56 +921,76 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 
 
  int newVar(Monosat::SimpSolver * S){
-	  return S->newVar();
+    //
+
+	int v = S->newVar();
+	write_out_detail(S,2,"newVar %d\n",v+1);
+	return v;
  }
 
  bool disallowLiteralSimplification(Monosat::SimpSolver * S, int lit){
+     
+
 	 if(S->isEliminated(var(toLit(lit)))){
 		 fprintf(stderr,"Warning: Literal %d has already been eliminated by the pre-processor\n", dimacs(toLit(lit)));
 		 return false;
-	 }else
-		 S->setFrozen(var(toLit(lit)),true);
+	 }else {
+         write_out(S,"disallow_simp %d\n",var(toLit(lit))+1);//add 1 for dimacs
+         S->setFrozen(var(toLit(lit)), true);
+     }
 	 return true;
  }
  void disablePreprocessing(Monosat::SimpSolver * S){
+     
+     write_out(S,"disable_pre\n");//add 1 for dimacs
 	S->disablePreprocessing();
  }
 
  void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable){
+     
 	 S->setDecisionVar(var,decidable);
  }
  void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority){
+     
 	 write_out(S,"priority %d %d\n",var+1,priority);//add 1 for dimacs
 	 S->setDecisionPriority(var,priority);
  }
  bool isDecisionVar(Monosat::SimpSolver * S,int var){
+     
 	 return S->isDecisionVar(var);
  }
  int getDecisionPriority(Monosat::SimpSolver * S,int var){
+     
 	 return S->getDecisionPriority(var);
  }
 
  void setDecisionPolarity(Monosat::SimpSolver * S,Var v, bool b){
+     
 	  S->setPolarity(v,b);
  }
 
  bool getDecisionPolarity(Monosat::SimpSolver * S,Var v){
+     
 	return S->getPolarity(v);
  }
 
 
  int nVars(Monosat::SimpSolver * S){
+     
 	 return S->nVars();
  }
 
  int nClauses(Monosat::SimpSolver * S){
+     
 	 return S->nClauses();
  }
  int nBitvectors(Monosat::SimpSolver * S,Monosat::BVTheorySolver<int64_t> * bv){
+     
 	 return bv->nBitvectors();
  }
 
  int true_lit(Monosat::SimpSolver * S){
+     
 	 bool needs_record=S->const_true==lit_Undef;
 
 	 Lit l = S->True();
@@ -935,6 +1000,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	 return toInt(l);
  }
  bool addClause(Monosat::SimpSolver * S,int * lits, int n_lits){
+     
 	  static vec<Lit> clause;
 	  clause.clear();
 	  for (int i = 0;i<n_lits;i++){
@@ -948,28 +1014,31 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return S->addClause(clause);
  }
  bool addUnitClause(Monosat::SimpSolver * S,int lit){
-
+     //
 	  write_out(S,"%d 0\n",dimacs(toLit(lit)));
 
 	  return S->addClause(toLit(lit));
  }
  bool addBinaryClause(Monosat::SimpSolver * S,int lit1, int lit2){
+     
 	 write_out(S,"%d %d 0\n",dimacs(toLit(lit1)), dimacs(toLit(lit2)));
 	  return S->addClause(toLit(lit1),toLit(lit2));
  }
  bool addTertiaryClause(Monosat::SimpSolver * S,int lit1, int lit2, int lit3){
+     
 	  write_out(S,"%d %d %d 0\n",dimacs(toLit(lit1)), dimacs(toLit(lit2)), dimacs(toLit(lit3)));
 	  return S->addClause(toLit(lit1),toLit(lit2),toLit(lit3));
  }
 
  //theory interface for bitvectors
  int newBitvector_anon(Monosat::SimpSolver * S,Monosat::BVTheorySolver<int64_t> * bv, int bvWidth){
-
+     
 	 int bvID = bv->newBitvector_Anon(-1,bvWidth).getID();
 	 write_out(S,"bv anon %d %d\n",bvID, bvWidth);
 	 return bvID;
  }
  int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvWidth, int64_t constval){
+     
 	 int bvID = bv->newBitvector(-1,bvWidth,constval).getID();
 	 write_out(S,"bv const %d %d %ld\n",bvID, bvWidth, constval);
 	 return bvID;
@@ -977,6 +1046,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 
 
  int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int * bits, int n_bits){
+     
 	  static vec<Var> lits;
 	  lits.clear();
 	  for (int i = 0;i<n_bits;i++){
@@ -992,9 +1062,11 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return bvID;
  }
  int bv_width(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int bvID){
+     
 	 return bv->getWidth(bvID);
  }
  int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
+     
 	  //Var v = newVar(S);
 	  //Lit l =mkLit(v);
 	 Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::lt,bvID,weight));
@@ -1003,6 +1075,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return toInt(l);
  }
  int newBVComparison_bv_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
+     
 	  //Var v = newVar(S);
 	  //Lit l =mkLit(v);
 	 Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::lt,bvID,compareID));
@@ -1011,6 +1084,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	 return toInt(l);
  }
  int newBVComparison_const_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
+     
 	  //Var v = newVar(S);
 	  //Lit l =mkLit(v);
 
@@ -1020,6 +1094,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return toInt(l);
  }
  int newBVComparison_bv_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
+     
 	  //Var v = newVar(S);
 	 // Lit l =mkLit(v);
 	 Lit l =bv->toSolver(bv->newComparisonBV(Monosat::Comparison::leq,bvID,compareID));
@@ -1028,6 +1103,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
  }
 
  int newBVComparison_const_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
+     
 	 // Var v = newVar(S);
 	 // Lit l =mkLit(v);
 	 Lit l =bv->toSolver( bv->newComparison(Monosat::Comparison::gt,bvID,weight));
@@ -1035,6 +1111,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return toInt(l);
  }
  int newBVComparison_bv_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
+     
 	  //Var v = newVar(S);
 	  //Lit l =mkLit(v);
 	 Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::gt,bvID,compareID));
@@ -1042,6 +1119,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return toInt(l);
  }
  int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
+     
 	  //Var v = newVar(S);
 	  //Lit l =mkLit(v);
 	  Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::geq,bvID,weight));
@@ -1050,6 +1128,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return toInt(l);
  }
  int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
+     
 	  //Var v = newVar(S);
 	  //Lit l =mkLit(v);
 	  Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID));
@@ -1057,6 +1136,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 	  return toInt(l);
  }
  void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int* args, int n_args,int resultID){
+     
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++)
 		 m_args.push(args[i]);
@@ -1070,6 +1150,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 
  }
  void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
+     
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++)
 		 m_args.push(args[i]);
@@ -1082,6 +1163,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 
  }
  void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
+     
 	 vec<int> m_args;
 	 for (int i = 0;i<n_args;i++){
 		 Lit l = toLit(args[i]);
@@ -1100,6 +1182,7 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
  }
 
 void bv_unary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
+    
     vec<Lit> m_args;
     for (int i = 0;i<n_args;i++){
         Lit l = toLit(args[i]);
@@ -1126,24 +1209,29 @@ void bv_unary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  i
 }
 
  void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
+     
 	 write_out(S,"bv + %d %d %d\n",resultID,bvID1, bvID2);
 	 bv->newAdditionBV(resultID,bvID1,bvID2);
 
  }
  void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
+     
 	 write_out(S,"bv - %d %d %d\n",resultID,bvID1, bvID2);
  	  bv->newSubtractionBV(resultID,bvID1,bvID2);
   }
 void bv_multiply( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
+    
 	write_out(S,"bv * %d %d %d\n",resultID,bvID1, bvID2);
 	bv->newMultiplicationBV(resultID,bvID1,bvID2);
 }
 void bv_divide( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1,  int bvID2, int resultID){
+    
 	write_out(S,"bv / %d %d %d\n",resultID,bvID1, bvID2);
 	bv->newDivisionBV(resultID,bvID1,bvID2);
 }
 
 void bv_ite( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int condition_lit,int bvThenID, int bvElseID, int bvResultID){
+    
 	Lit l = toLit(condition_lit);
 
 	write_out(S,"bv_ite %d %d %d %d\n",dimacs(mkLit(condition_lit)),bvThenID,bvElseID,bvResultID);
@@ -1151,54 +1239,64 @@ void bv_ite( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int
 }
 
 void bv_not(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a,  int out){
+    
 	//return bv->bitwiseAnd(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv not %d %d\n",a, out);
 	bv->bitwiseNot(bv->getBV(a),bv->getBV(out));
 }
 
 void bv_and(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
+    
 	//return bv->bitwiseAnd(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv and %d %d %d \n",a,b, out);
 	bv->bitwiseAnd(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
 void bv_nand( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
+    
 	//return bv->bitwiseNand(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv nand %d %d %d \n",a,b, out);
 	bv->bitwiseNand(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
 void bv_or( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
+    
 	//return bv->bitwiseOr(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv or %d %d %d \n",a,b, out);
 	bv->bitwiseOr(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
 void bv_nor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
+    
 	//return bv->bitwiseNor(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv nor %d %d %d \n",a,b, out);
 	bv->bitwiseNor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
 void bv_xor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
+    
 	//return bv->bitwiseXor(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv xor %d %d %d \n",a,b, out);
 	bv->bitwiseXor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
 void bv_xnor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
+    
 	//return bv->bitwiseXnor(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv xnor %d %d %d \n",a,b, out);
 	bv->bitwiseXnor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
 }
 
 void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int aID, int bID, int resultID){
+    
 	write_out(S,"bv concat %d %d %d \n",aID,bID, resultID);
 	bv->concat(bv->getBV(aID), bv->getBV(bID),bv->getBV(resultID));
 }
 
 void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int aID, int lower, int upper, int resultID){
+    
 	write_out(S,"bv slice %d %d %d %d\n",aID,lower,upper, resultID);
 	bv->slice(bv->getBV(aID),lower,upper,bv->getBV(resultID));
 }
 
 //Convert the specified bitvector, as well as any other bitvectors in its cone of influence, into pure CNF
 void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
+    
 	S->cancelUntil(0);
 	write_out(S,"bv bitblast %d\n",bvID);
 	bv->bitblast(bvID);
@@ -1207,6 +1305,7 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
  //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
  //for small numbers of variables, consider using a direct CNF encoding instead
  void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars){
+     
 	 if(n_vars>1){
 		 write_out(S,"amo");
 		 for(int i = 0;i<n_vars;i++){
@@ -1222,6 +1321,7 @@ void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
  }
 
 void flushPB(Monosat::SimpSolver * S){
+    
 	MonosatData *d = (MonosatData *) S->_external_data;
 
 	if (d->pbsolver) {
@@ -1247,6 +1347,7 @@ const char * ineqToStr(PB::Ineq ineq){
 }
 
 void assertPB(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, int * coefficients, PB::Ineq ineq){
+    
 	if(n_args>0) {
 
 		MonosatData *d = (MonosatData *) S->_external_data;
@@ -1298,9 +1399,11 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  //theory interface for graphs
 
  int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
+     //
 	  return G->newNode();
  }
  int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to,  int64_t weight){
+     //
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 
@@ -1309,6 +1412,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  return toInt(l);
  }
  int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	 write_out(S,"edge %d %d %d %d %f\n",G->getGraphID(),from,to, dimacs(l),weight);
@@ -1316,6 +1420,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  return toInt(l);
 }
  int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to, int bvID){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  write_out(S,"edge_bv %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
@@ -1324,6 +1429,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
  }
 
  int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 
@@ -1333,6 +1439,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  return toInt(l);
  }
  int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  write_out(S,"distance_lt %d %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),steps);
@@ -1341,6 +1448,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  return toInt(l);
  }
  int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  write_out(S,"distance_leq %d %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),steps);
@@ -1381,6 +1489,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  return toInt(l);
  }
  int maximumFlow_geq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  write_out(S,"maximum_flow_geq %d %d %d %d %ld\n",G->getGraphID(),source,sink, dimacs(l),weight);
@@ -1389,6 +1498,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  return toInt(l);
  }
  int maximumFlow_gt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	 write_out(S,"maximum_flow_gt %d %d %d %d %ld\n",G->getGraphID(),source,sink, dimacs(l),weight);
@@ -1397,6 +1507,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  return toInt(l);
  }
  int maximumFlow_geq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  write_out(S,"maximum_flow_bv_geq %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
@@ -1405,6 +1516,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 	  return toInt(l);
  }
  int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
+     
 	  Var v = newVar(S);
 	  Lit l =mkLit(v);
 	  write_out(S,"maximum_flow_bv_gt %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
@@ -1447,6 +1559,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 
 
  void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int * edges, int n_edges, bool enforceEdgeAssignment){
+     
 	  static vec<int> edge_set;
 	  edge_set.clear();
 	 write_out(S,"edge_set %d %d", G->getGraphID(), n_edges);
@@ -1475,6 +1588,7 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 
 
  void useFlowAsDecision(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int reach_literal, int flow_literal){
+     
 	 Lit r =toLit(reach_literal);
 	 Lit mf =toLit(flow_literal);
 	 write_out(S,"use_flow_decision %d %d %d\n", G->getGraphID(), dimacs(toLit(reach_literal)),dimacs(toLit(flow_literal)));
@@ -1567,7 +1681,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  //model query
  //Returns 0 for true, 1 for false, 2 for unassigned.
  int getModel_Literal(Monosat::SimpSolver * S,int lit){
+     
      Lit l = toLit(lit);
+     write_out_detail(S,2,"getModel_Literal %d\n",dimacs(l));
+
      //if (var(l)>=S->model.size())
      if(var(l)<0 || var(l)>=S->nVars())
          api_errorf("Variable %d is undefined",dimacs(l));
@@ -1587,6 +1704,8 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
      return toInt(val);//toInt(S->value(toLit(lit)));
  }
  int64_t getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, bool getMaximumValue){
+     
+     write_out_detail(S,2,"getModel_BV %d %d\n",bvID,getMaximumValue);
 	 if(getMaximumValue){
 		 return bv->getOverApprox(bvID);
 	 }else{
@@ -1596,7 +1715,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  }
  //graph queries:
  int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal){
- 	 Lit l = toLit(reach_or_distance_literal);
+     
+     Lit l = toLit(reach_or_distance_literal);
+     write_out_detail(S,2,"getModel_Path_Nodes_Length %d %d\n",G->getGraphID(),dimacs(l));
+
  	std::vector<int> store_path;
  	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
  		return -1;
@@ -1605,7 +1727,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  	}
   }
  int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal, int store_length, int * store){
+     
+
  	 Lit l = toLit(reach_or_distance_literal);
+     write_out_detail(S,2,"getModel_Path_Nodes %d %d\n",G->getGraphID(),dimacs(l));
  	std::vector<int> store_path;
  	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
  		return -1;
@@ -1619,7 +1744,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  	}
   }
  int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal){
+     
+
  	 Lit l = toLit(reach_or_distance_literal);
+     write_out_detail(S,2,"getModel_Path_EdgeLits_Length %d %d\n",G->getGraphID(),dimacs(l));
  	std::vector<Lit> store_path;
  	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
  		return -1;
@@ -1628,7 +1756,10 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  	}
   }
  int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal, int store_length, int * store){
+     
+
  	 Lit l = toLit(reach_or_distance_literal);
+     write_out_detail(S,2,"getModel_Path_EdgeLits %d %d\n",G->getGraphID(),dimacs(l));
   	std::vector<Lit> store_path;
  	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
  		return -1;
@@ -1642,21 +1773,31 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
  	}
   }
  int64_t getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal){
+     
+
 	 Lit l = toLit(maxflow_literal);
+     write_out_detail(S,2,"getModel_MaxFlow %d %d\n",G->getGraphID(),dimacs(l));
 	 return G->getModel_MaximumFlow(S->getTheoryLit(l));
  }
  int64_t getModel_EdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
+     
+
 	 Lit l = toLit(maxflow_literal);
 	 Lit e = toLit(edge_assignment_literal);
+     write_out_detail(S,2,"getModel_EdgeFlow %d %d %d\n",G->getGraphID(),dimacs(l),dimacs(e));
 	 return G->getModel_MaximumFlow_EdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
  }
  int64_t getModel_AcyclicEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
+     
+
 	 Lit l = toLit(maxflow_literal);
 	 Lit e = toLit(edge_assignment_literal);
+     write_out_detail(S,2,"getModel_AcyclicEdgeFlow %d %d %d\n",G->getGraphID(),dimacs(l),dimacs(e));
 	 return G->getModel_MaximumFlow_AcyclicEdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
  }
 
  int64_t getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int spanning_tree_literal){
+     
 	 Lit l = toLit(spanning_tree_literal);
 	 return G->getModel_MinimumSpanningWeight(S->getTheoryLit(l));
  }

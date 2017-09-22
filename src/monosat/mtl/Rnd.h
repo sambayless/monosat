@@ -18,7 +18,6 @@
 
 #ifndef Minisat_Rnd_h
 #define Minisat_Rnd_h
-
 #include "monosat/mtl/Vec.h"
 
 namespace Monosat {

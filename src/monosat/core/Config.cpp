@@ -122,6 +122,7 @@ BoolOption Monosat::opt_randomize_theory_order_all(_cat, "rnd-theory-order-all",
 BoolOption Monosat::opt_theory_decision_round_robin(_cat, "round-robin-theory-order",
 													 "If theory decisions are used, use a round-robin policy for which theory to decide first", false);
 
+
 BoolOption Monosat::opt_parser_immediate_mode(_cat,"immediate-parser","",false);
  BoolOption Monosat::opt_remap_vars(_cat,"remap-vars","Remap variables in the GNF internally in the solver, to minimize space required",true);
  BoolOption Monosat::opt_decide_optimization_lits(_cat_opt,"decide-opt-lits","Allow decisions on literals introduced by optimization constraints",true);
@@ -419,6 +420,10 @@ IntOption Monosat::opt_bits("GRAPH", "bits", "Bits per position in graph.\n", 1,
 BoolOption Monosat::opt_graph_cache_propagation(_cat_graph,"cache-graph-propagation","",true);
 IntOption Monosat::opt_graph_use_cache_for_decisions(_cat_graph,"cache-graph-decisions", "(when using cache-graph-propagation, 2== use cache for all decisions, 1 = clear cache before decisions, 0=never use cache for decisions",2, IntRange(0,2));
 
+IntOption Monosat::opt_gnf_detail_level(_cat_graph,"gnf-detail", "",1, IntRange(0,3));
+
+
+BoolOption Monosat::opt_respect_preprocessor_gnf_directives(_cat,"respect-preprocessor-directives","If false, ignore any preprocessor directives in the GNF files",false);
 
 OptionSet Monosat::opt_route(_cat_graph,"ruc","Use RUC-syle heuristics for routing circuits","-cache-graph-propagation -cache-graph-decisions=2 -only-prop-theories-on-heuristic-change -theory-order-swapping-preserve -no-theory-order-conflict-sort-vsids -no-theory-order-initial-sort -no-theory-order-swapping-first-on-unit -theory-order-conflict-restart=10 -theory-order-swapping-luby -no-theory-order-restart-sorting -no-theory-order-swapping-last-decision -decide-theories -theory-order-swapping -no-theory-order-vsids",false);
 

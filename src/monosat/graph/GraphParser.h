@@ -1171,7 +1171,63 @@ public:
 			//An _undirected_ acyclic graph constraint
 			readAcyclic(in, S,false);
 			return true;
-		}
+		}else if (match(in, "getModel_MaxFlow")) {
+            skipWhitespace(in);
+            int graph_n = parseInt(in);
+            skipWhitespace(in);
+            int parsed_int = parseInt(in);
+            bool sign = parsed_int<0;
+            int var = abs(parsed_int)-1;
+            var = mapVar(S,var);
+            Lit maxflow_literal = mkLit(var, sign);
+            if(graph_n>=graphs.size() || !graphs[graph_n]){
+                throw std::runtime_error("Model requested for uninitialized graph");
+            }
+            graphs[graph_n]->getModel_MaximumFlow(S.getTheoryLit(maxflow_literal));
+            return true;
+        }else if (match(in, "getModel_EdgeFlow")) {
+            skipWhitespace(in);
+            int graph_n = parseInt(in);
+            skipWhitespace(in);
+            int parsed_int = parseInt(in);
+            bool sign = parsed_int<0;
+            int var = abs(parsed_int)-1;
+            var = mapVar(S,var);
+            Lit maxflow_literal = mkLit(var, sign);
+            skipWhitespace(in);
+            int parsed_int2 = parseInt(in);
+            bool sign2 = parsed_int2<0;
+            int var2 = abs(parsed_int2)-1;
+            var2 = mapVar(S,var2);
+            Lit edge_literal = mkLit(var2, sign2);
+
+            if(graph_n>=graphs.size() || !graphs[graph_n]){
+                throw std::runtime_error("Model requested for uninitialized graph");
+            }
+            graphs[graph_n]->getModel_MaximumFlow_EdgeFlow(S.getTheoryLit(maxflow_literal),S.getTheoryLit(edge_literal));
+            return true;
+        }else if (match(in, "getModel_AcyclicEdgeFlow")) {
+            skipWhitespace(in);
+            int graph_n = parseInt(in);
+            skipWhitespace(in);
+            int parsed_int = parseInt(in);
+            bool sign = parsed_int<0;
+            int var = abs(parsed_int)-1;
+            var = mapVar(S,var);
+            Lit maxflow_literal = mkLit(var, sign);
+            skipWhitespace(in);
+            int parsed_int2 = parseInt(in);
+            bool sign2 = parsed_int2<0;
+            int var2 = abs(parsed_int2)-1;
+            var2 = mapVar(S,var2);
+            Lit edge_literal = mkLit(var2, sign2);
+
+            if(graph_n>=graphs.size() || !graphs[graph_n]){
+                throw std::runtime_error("Model requested for uninitialized graph");
+            }
+            graphs[graph_n]->getModel_MaximumFlow_AcyclicEdgeFlow(S.getTheoryLit(maxflow_literal),S.getTheoryLit(edge_literal));
+            return true;
+        }
 		return false;
 	}
 	

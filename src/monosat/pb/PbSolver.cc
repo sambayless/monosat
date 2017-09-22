@@ -539,7 +539,6 @@ Int evalGoal(Linear &goal, Monosat::vec<lbool> &model) {
 
 void PbSolver::solve(solve_Command cmd) {
     if (!okay()) return;
-
     // Convert constraints:
     pb_n_vars = nVars();
     pb_n_constrs = constrs.size();
