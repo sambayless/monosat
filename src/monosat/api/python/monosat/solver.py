@@ -9,9 +9,9 @@ def FoundOptimal():
 class SolveException(Exception):
     pass
 def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_seconds=None, memory_limit_mb=None,conflict_limit=None):
-    print("Start Python Monosat Solve")
+
     WriteConstraints()
-    print("Finished Writing Constraints Python Monosat Solve")
+
     if time_limit_seconds is None or time_limit_seconds <=0:
         time_limit_seconds=-1
     if memory_limit_mb is None or memory_limit_mb <=0:
@@ -42,7 +42,7 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
         bvID = bv.getID()
         Monosat().minimizeBV(bvID)
 
-    print("Start SolveLimited Monosat Solve")
+
     r= Monosat().solveLimited([x.getLit() for x in assumptions])
     if r is None:
         raise SolveException("MonoSAT aborted before solving (possibly do to a time or memory limit)")

@@ -59,7 +59,7 @@ using sighandler_t = sig_t;
 
 
 
-//Supporting function for throwing parse errors
+
 inline void api_(const char *fmt, ...) {
 #ifdef ECHO_API
     va_list args;
@@ -70,7 +70,6 @@ inline void api_(const char *fmt, ...) {
     fprintf(stdout,"API Call: %s\n", buf);
     fflush(stdout);
 #endif
-
 }
 
 //Supporting function for throwing parse errors
@@ -844,9 +843,9 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	APISignal::enableResourceLimits();
 
 	S->cancelUntil(0);
-	S->crc(-5);
+
 	  S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
-	S->crc(-5);
+
 	  vec<Monosat::Lit> assume;
 	  for (int i = 0;i<n_assumptions;i++){
 		   Lit l =toLit( assumptions[i]);

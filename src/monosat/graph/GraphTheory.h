@@ -2544,9 +2544,7 @@ public:
 		Var v = var(l);
 		stats_enqueues++;
 		int lev = level(v);//level from the SAT solver.
-		if(stats_enqueues==484){
-			int a=1;
-		}
+
 
 		while (lev > decisionLevel()) {
 			newDecisionLevel();

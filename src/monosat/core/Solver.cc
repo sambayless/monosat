@@ -124,9 +124,6 @@ Var Solver::newVar(bool sign, bool dvar) {
 	if (v < min_decision_var)
 		dvar = false;
 	setDecisionVar(v, dvar);
-	crc(-3);
-	result = 31 * result + v;
-	crc(-3);
 	return v;
 }
 
@@ -159,13 +156,6 @@ bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 		else if (value(ps[i]) != l_False && ps[i] != p)
 			ps[j++] = p = ps[i];
 	ps.shrink(i - j);
-	crc(-2);
-	for(int i = 0;i<ps.size();i++){
-		//printf("L %d: ",toInt(ps[i]));
-		result = 31 * result + toInt(ps[i]);
-	}
-	//printf("\n");
-	crc(-2);
 	if (ps.size() == 0)
 		return ok = false;
 	else if (ps.size() == 1) {
@@ -1043,9 +1033,6 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);
-	crc(-1);
-	result = 31 * result + toInt(p);
-	crc(-1);
 	if (hasTheory(p)) {
 		int theoryID = getTheoryID(p);
 		if(!theorySatisfied(theories[theoryID])) {
@@ -2052,7 +2039,6 @@ bool Solver::addDelayedClauses(CRef & conflict_out) {
  |________________________________________________________________________________________________@*/
 lbool Solver::search(int nof_conflicts) {
 	assert(ok);
-	crc();
 	int backtrack_level;
 	int conflictC = 0;
 	vec<Lit> learnt_clause;
@@ -2093,7 +2079,7 @@ lbool Solver::search(int nof_conflicts) {
 
 		conflict:
 
-		crc(iter);
+
 #ifdef DEBUG_CORE
         /*{
            for (int i = 0; i < decision_heuristics.size(); i++) {
@@ -2741,9 +2727,6 @@ lbool Solver::solve_() {
 		fprintf(stderr,"Warning: MonoSAT was compiled with DEBUG_* (will be very slow!).\n");
 	}
 #endif
-    printf("Start solve:\n");
-	crc(-4);
-
 	clearInterrupt();
 	cancelUntil(0);
 	model.clear();

@@ -18,7 +18,6 @@
 
 #ifndef Minisat_Rnd_h
 #define Minisat_Rnd_h
-//#include <cstdio>
 #include "monosat/mtl/Vec.h"
 
 namespace Monosat {
@@ -28,7 +27,6 @@ static inline double drand(double& seed) {
 	seed *= 1389796;
 	int q = (int) (seed / 2147483647);
 	seed -= (double) q * 2147483647;
-	//printf("random seed : %f\n",seed);
 	return seed / 2147483647;
 }
 
