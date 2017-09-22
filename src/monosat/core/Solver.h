@@ -101,7 +101,7 @@ public:
 		if(result==8459023320759178031){
 			int a=1;
 		}
-		printf("Solver CRC %d: %ld\n",iter,result);
+		//printf("Solver CRC %d: %ld\n",iter,result);
 	}
 
 	void setDecisionPriority(Var v, unsigned int p) {

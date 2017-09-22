@@ -161,10 +161,10 @@ bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 	ps.shrink(i - j);
 	crc(-2);
 	for(int i = 0;i<ps.size();i++){
-		printf("L %d: ",toInt(ps[i]));
+		//printf("L %d: ",toInt(ps[i]));
 		result = 31 * result + toInt(ps[i]);
 	}
-	printf("\n");
+	//printf("\n");
 	crc(-2);
 	if (ps.size() == 0)
 		return ok = false;
@@ -1266,8 +1266,12 @@ void Solver::enqueueAnyUnqueued(){
 			int start = post_satisfied_theory_trail_pos[theoryID];
 			if(start>=0 && start<= i) {
 				Theory * theory = theories[theoryID];
-
-				theory->enqueueTheory(theoryLit);
+                int old_level = level(var(l));
+                int new_level = decisionLevel();//temporarily pretend the literal to the current decision level, in case the theory solver
+                //has been enqueued past this level (should that actually be possible?).
+                vardata[var(l)].level = new_level;
+				theory->enqueueTheory(theoryLit);//enqueue the lit at the theories current decision level.
+                vardata[var(l)].level = old_level;
 				assert(post_satisfied_theory_trail_pos[theoryID]<=i);
 				post_satisfied_theory_trail_pos[theoryID] = i;
 				assert(post_satisfied_theory_trail_pos[theoryID]>=satisfied_theory_trail_pos[theoryID]);
