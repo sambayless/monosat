@@ -287,9 +287,6 @@ private:
 			if (*in == EOF)
 				break;
 			line_num++;//this will merge line counts if there are multiple blank lines...
-            if(line_num==2385286){
-                int a=1;
-            }
 			//Typically, 99% of lines are either comments or clauses, and so it makes a lot of sense to handle these first, and before reading the whole line into a buffer.
 			if(*in=='-' || (*in >= '0' && *in<='9')){
 				//this is a clause
