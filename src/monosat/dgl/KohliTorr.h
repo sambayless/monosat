@@ -169,56 +169,62 @@ public:
 	}
 
 	void updateMaxCapacity(Weight new_max_capacity){
+
 		if(same_source_sink)
 			return;
-		{
-			if(new_max_capacity<1){
-				new_max_capacity=1;
-			}
-			assert(new_max_capacity>=max_capacity);
-			if (kt) {
-				if (dynamic) {
-					Weight dif = new_max_capacity-max_capacity;
-					Weight curweight = kt->getTweight(source);
-					Weight newweight = curweight+dif;
-					assert(newweight>=0);
-					kt->edit_tweights(source, newweight, 0);
-				} else {
-					Weight dif = new_max_capacity-max_capacity;
-					Weight curweight = kt->getTweight(source);
-					Weight newweight = curweight+dif;
-					assert(newweight>=0);
-					kt->edit_tweights_wt(source, newweight, 0);
 
+		max_capacity_increased=false;
+		if(new_max_capacity>max_capacity) {
+			{
+				if (new_max_capacity < 1) {
+					new_max_capacity = 1;
+				}
+				assert(new_max_capacity >= max_capacity);
+				if (kt) {
+					if (dynamic) {
+						Weight dif = new_max_capacity - max_capacity;
+						Weight curweight = kt->getTweight(source);
+						Weight newweight = curweight + dif;
+						assert(newweight >= 0);
+						kt->edit_tweights(source, newweight, 0);
+					} else {
+						Weight dif = new_max_capacity - max_capacity;
+						Weight curweight = kt->getTweight(source);
+						Weight newweight = curweight + dif;
+						assert(newweight >= 0);
+						kt->edit_tweights_wt(source, newweight, 0);
+
+					}
 				}
 			}
-		}
-		{
+			{
 
-			if (kt) {
-				if (dynamic) {
-					Weight dif = new_max_capacity-max_capacity;
-					Weight curweight = -kt->getTweight(sink);
-					assert(curweight>=0);
-					Weight newweight = curweight+dif;
-					assert(newweight>curweight);
-					assert(newweight>=0);
-					kt->edit_tweights(sink, 0, newweight);
+				if (kt) {
+					if (dynamic) {
+						Weight dif = new_max_capacity - max_capacity;
+						Weight curweight = -kt->getTweight(sink);
+						assert(curweight >= 0);
+						Weight newweight = curweight + dif;
+						assert(newweight >= curweight);
+						assert(newweight >= 0);
+						kt->edit_tweights(sink, 0, newweight);
 
-				} else {
-					Weight dif = new_max_capacity-max_capacity;
-					Weight curweight = -kt->getTweight(sink);
-					assert(curweight>=0);
-					Weight newweight = curweight+dif;
-					assert(newweight>curweight);
-					assert(newweight>=0);
-					kt->edit_tweights_wt(sink, 0, newweight);
+					} else {
+						Weight dif = new_max_capacity - max_capacity;
+						Weight curweight = -kt->getTweight(sink);
+						assert(curweight >= 0);
+						Weight newweight = curweight + dif;
+						assert(newweight >= curweight);
+						assert(newweight >= 0);
+						kt->edit_tweights_wt(sink, 0, newweight);
+					}
 				}
 			}
+			max_capacity = new_max_capacity;
+			last_modification = g.modifications - 1;
 		}
-		max_capacity=new_max_capacity;
-		last_modification = g.modifications - 1;
 		flow_needs_recalc = true;
+		needs_recompute=true;
 	}
 	void setSource(int s) {
 		same_source_sink=false;
@@ -580,7 +586,7 @@ public:
 		}
 		updateSourceSink();
 	}
-
+	bool max_capacity_increased=true;
 	const Weight update() {
 		int s = source;
 		int t = sink;
@@ -588,7 +594,7 @@ public:
 			return INF;
 		//see http://cstheory.stackexchange.com/a/10186
 		static int it = 0;
-		if (++it == 89) {
+		if (++it == 54) {
 			int a = 1;
 		}
 
@@ -643,6 +649,8 @@ public:
 						flow_needs_recalc = true;
 						needs_recompute=true;
 					}
+
+
 					kt->edit_edge_inc(g.getEdge(edgeid).from, g.getEdge(edgeid).to, dif, 0,getArc(edgeid));
 					set_local_weight(edgeid, g.getWeight(edgeid));
 					if (dif >0 && curflow<static_maxflow){
@@ -712,7 +720,7 @@ public:
 				set_local_weight(edgeid,0);
 			}
 		}
-		if(sum_of_edge_capacities>max_capacity){
+		if(sum_of_edge_capacities>max_capacity || max_capacity_increased){
 			updateMaxCapacity(sum_of_edge_capacities);
 		}
 		if(needs_recompute) {
@@ -807,11 +815,13 @@ private:
 	inline void set_local_weight(int edgeid, Weight  w){
 		flow_needs_recalc = true;
 		Weight dif = w-local_weight(edgeid);
+		Weight old_max_cap = sum_of_edge_capacities;
 		if(dif!=0) {
 			sum_of_edge_capacities -= local_weights[edgeid];
 			local_weights[edgeid] = w;
 
 			sum_of_edge_capacities += w;
+
 			if (sum_of_edge_capacities <
 				0) {//this is a total hack... how should overflows be dealt with, properly, here?
 				sum_of_edge_capacities = std::numeric_limits<Weight>::max() / 2;
@@ -821,6 +831,16 @@ private:
 			if(from!=to) {
 				if (from == getSource()) {
 					source_max += dif;
+
+
+
+
+
+
+
+
+
+
 					if (source_max < dest_max) {
 						if (static_maxflow != source_max) {
 							static_maxflow = source_max;
@@ -848,6 +868,9 @@ private:
 					}
 				}
 			}
+		}
+		if(sum_of_edge_capacities>old_max_cap){
+			max_capacity_increased=true;
 		}
 	}
 /*	inline void collect_multi_edges(int for_edge) {

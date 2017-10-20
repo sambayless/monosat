@@ -899,7 +899,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
         return true;
     }
     static int iter1 = 0;
-    if (++iter1 == 20) {
+    if (++iter1 == 7 ) {
         int a = 1;
     }
 
@@ -1140,7 +1140,8 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
         }else{
             Weight dist_under = flow_lits[j].bv.getUnder();
             Weight dist_over = flow_lits[j].bv.getOver();
-
+            Weight under = underCheck.maxFlow();
+            Weight over = overCheck.maxFlow();
             if (l != lit_Undef) {
                 //int node =getNode(var(l));
                 if(flow_lits[j].inclusive) {
