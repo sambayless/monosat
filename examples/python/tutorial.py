@@ -11,6 +11,7 @@
 
 #Import the MonoSAT library
 from monosat import *
+
 #Create two Boolean variables:
 a = Var() 
 b = Var() 
@@ -220,7 +221,7 @@ Assert(g2.maxFlowGreaterOrEqualTo(n4,n6,bv5))
 #Just like with reachability and shortest path constraints, these maximum flow predicates are two sided
 #so you can assert that the maximum flow must be less than a given bitvector, or you can include the
 #maximum flow predicate as part of arbitrary Boolean logic 
-Assert(Or(~c,~g2.maxFlowGreaterOrEqualTo(n4,n6,bv5+1)))
+
 result = Solve()
 if result:
 	print("SAT")
