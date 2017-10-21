@@ -29,6 +29,8 @@ module_path = os.path.abspath(path.dirname(__file__))
 library_monosat = "libmonosat.so"
 if platform.system() == 'Windows':
     library_monosat = "libmonosat.dll"
+elif platform.system() == 'Darwin':
+        library_monosat = "libmonosat.dylib"
 try:
     try:
         #First try loading monosat from the python library directory
