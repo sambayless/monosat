@@ -102,7 +102,8 @@ n1 = g.addNode()
 n2 = g.addNode()
 n3 = g.addNode()
 
-#Add three directed edges to the graph
+#Add three directed edges to the graph.
+#You can also create undirected edges, using g.addUndirectedEdge().
 e1 = g.addEdge(n1,n2) 
 e2 = g.addEdge(n2,n3) 
 e3 = g.addEdge(n1,n3)
@@ -184,6 +185,7 @@ n5 = g2.addNode()
 n6 = g2.addNode()
 
 #Add three weighted, undirected edges to the graph
+#Weights may be bitvectors, or integer constants.
 e4 = g2.addEdge(n4,n5, bv1) 
 e5 = g2.addEdge(n5,n6, bv2) 
 e6 = g2.addEdge(n4,n6, bv3)
@@ -222,6 +224,7 @@ Assert(g2.maxFlowGreaterOrEqualTo(n4,n6,bv5))
 #so you can assert that the maximum flow must be less than a given bitvector, or you can include the
 #maximum flow predicate as part of arbitrary Boolean logic 
 Assert(Or(~c,~g2.maxFlowGreaterOrEqualTo(n4,n6,bv5+1)))
+
 result = Solve()
 if result:
 	print("SAT")
@@ -247,8 +250,7 @@ if result:
 	print("bv5: " + str(bv5.value()))
 else:
 	print("UNSAT")
-	
-	
+
 result = Solve([bv5>4, bv5<7])
 if result:
 	print("SAT")
