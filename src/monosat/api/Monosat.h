@@ -210,6 +210,8 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int newEdge(SolverPtr S, GraphTheorySolver_long G,int from,int  to,  Weight weight);
   int newEdge_double(SolverPtr S, GraphTheorySolver_double G,int from,int  to,  double weight);
   int newEdge_bv(SolverPtr S, GraphTheorySolver_long G,int from,int  to, int bvID);
+  int nNodes(SolverPtr S,GraphTheorySolver_long G);
+  int nEdges(SolverPtr S,GraphTheorySolver_long G);
   int reaches(SolverPtr S,GraphTheorySolver_long G,int from, int to);
   int shortestPathUnweighted_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int steps);
   int shortestPathUnweighted_leq_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int steps);

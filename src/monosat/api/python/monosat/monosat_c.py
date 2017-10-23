@@ -291,6 +291,12 @@ class Monosat(metaclass=Singleton):
 
         self.monosat_c.newNode.argtypes=[c_solver_p,c_graph_p]
         self.monosat_c.newNode.restype=c_int
+
+        self.monosat_c.nNodes.argtypes=[c_solver_p,c_graph_p]
+        self.monosat_c.nNodes.restype=c_int
+
+        self.monosat_c.nEdges.argtypes=[c_solver_p,c_graph_p]
+        self.monosat_c.nEdges.restype=c_int
         
         self.monosat_c.newEdge.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_long]
         self.monosat_c.newEdge.restype=c_literal
@@ -1094,6 +1100,12 @@ class Monosat(metaclass=Singleton):
         self.backtrack()
         return self.monosat_c.newNode(self.solver._ptr,graph)
 
+    def nNodes(self, graph):
+        return self.monosat_c.nNodes(self.solver._ptr,graph)
+
+    def nEdges(self, graph):
+        return self.monosat_c.nEdges(self.solver._ptr,graph)
+
     def newEdge(self, graph, u,v, weight):
         self.backtrack()
         l = self.monosat_c.newEdge(self.solver._ptr,graph,c_int(u),c_int(v),c_long(weight))
@@ -1137,6 +1149,8 @@ class Monosat(metaclass=Singleton):
 
 
     def reaches(self, graph, u,v):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.reaches(self.solver._ptr,graph,c_int(u),c_int(v))
         if self.solver.output:
@@ -1144,6 +1158,8 @@ class Monosat(metaclass=Singleton):
         return l
 
     def shortestPathUnweighted_lt_const(self, graph, u,v,dist):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.shortestPathUnweighted_lt_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
         if self.solver.output:
@@ -1151,6 +1167,8 @@ class Monosat(metaclass=Singleton):
         return l
     
     def shortestPathUnweighted_leq_const(self, graph, u,v,dist):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.shortestPathUnweighted_leq_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
         if self.solver.output:
@@ -1158,6 +1176,8 @@ class Monosat(metaclass=Singleton):
         return l
 
     def shortestPath_lt_const(self, graph, u,v,dist):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.shortestPath_lt_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
         if self.solver.output:
@@ -1165,6 +1185,8 @@ class Monosat(metaclass=Singleton):
         return l
     
     def shortestPath_leq_const(self, graph, u,v,dist):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.shortestPath_leq_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
         if self.solver.output:
@@ -1172,6 +1194,9 @@ class Monosat(metaclass=Singleton):
         return l
     
     def shortestPath_lt_bv(self, graph, u,v,bvID):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
+        self.checkBV(bvID);
         self.backtrack()
         l= self.monosat_c.shortestPath_lt_bv(self.solver._ptr,graph,c_int(u),c_int(v),c_bvID(bvID))
         if self.solver.output:
@@ -1179,6 +1204,9 @@ class Monosat(metaclass=Singleton):
         return l
                   
     def shortestPath_leq_bv(self, graph, u,v,bvID):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
+        self.checkBV(bvID);
         self.backtrack()
         l= self.monosat_c.shortestPath_leq_bv(self.solver._ptr,graph,c_int(u),c_int(v),c_bvID(bvID))
         if self.solver.output:
@@ -1186,6 +1214,8 @@ class Monosat(metaclass=Singleton):
         return l
     
     def maximumFlow_geq(self, graph, s,t,flow):
+        self.checkNode(graph,s);
+        self.checkNode(graph,t);
         self.backtrack()
         l= self.monosat_c.maximumFlow_geq(self.solver._ptr,graph,c_int(s),c_int(t),c_long(flow))
         if self.solver.output:  
@@ -1193,6 +1223,8 @@ class Monosat(metaclass=Singleton):
         return l
     
     def maximumFlow_gt(self, graph, s,t,flow):
+        self.checkNode(graph,s);
+        self.checkNode(graph,t);
         self.backtrack()
         l= self.monosat_c.maximumFlow_gt(self.solver._ptr,graph,c_int(s),c_int(t),c_long(flow))
         if self.solver.output: 
@@ -1200,6 +1232,9 @@ class Monosat(metaclass=Singleton):
         return l
                
     def maximumFlow_geq_bv(self, graph, s,t,bvID):
+        self.checkNode(graph,s);
+        self.checkNode(graph,t);
+        self.checkBV(bvID)
         self.backtrack()
         l= self.monosat_c.maximumFlow_geq_bv(self.solver._ptr,graph,c_int(s),c_int(t),c_bvID(bvID))
         if self.solver.output:
@@ -1207,6 +1242,9 @@ class Monosat(metaclass=Singleton):
         return l
     
     def maximumFlow_gt_bv(self, graph, s,t,bvID):
+        self.checkNode(graph,s);
+        self.checkNode(graph,t);
+        self.checkBV(bvID)
         self.backtrack()
         l= self.monosat_c.maximumFlow_gt_bv(self.solver._ptr,graph,c_int(s),c_int(t),c_bvID(bvID))
         if self.solver.output:
@@ -1243,26 +1281,34 @@ class Monosat(metaclass=Singleton):
   
     #0 = true, 1=false, 2=unassigned
     def getModel_Literal(self, lit):
+        self.checkLit(lit);
         return self.monosat_c.getModel_Literal(self.solver._ptr, lit);
 
     def getModel_BV(self, bvID,getMaximumValue=False):
+        self.checkBV(bvID)
         return self.monosat_c.getModel_BV(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_bool(getMaximumValue));
         
     def getModel_MaxFlow(self, graph, flowlit):
+        self.checkLit(flowlit);
         return self.monosat_c.getModel_MaxFlow(self.solver._ptr, graph,flowlit);
         
     def getModel_EdgeFlow(self, graph, flowlit,edgelit):
+        self.checkLit(flowlit);
+        self.checkLit(edgelit);
         return self.monosat_c.getModel_EdgeFlow(self.solver._ptr, graph,flowlit, edgelit);
 
     def getModel_AcyclicEdgeFlow(self, graph, flowlit,edgelit):
+        self.checkLit(flowlit);
+        self.checkLit(edgelit);
         return self.monosat_c.getModel_AcyclicEdgeFlow(self.solver._ptr, graph,flowlit, edgelit);
 
 
     def getModel_MinimumSpanningTreeWeight(self, graph, mstlit):
+        self.checkLit(mstlit)
         return self.monosat_c.getModel_MinimumSpanningTreeWeight(self.solver._ptr, graph,mstlit); 
 
     def getModel_Path_Nodes(self, graph, reach_or_distance_lit):
-        
+        self.checkLit(reach_or_distance_lit)
         arg_length = self.monosat_c.getModel_Path_Nodes_Length(self.solver._ptr, graph,reach_or_distance_lit);
         if (arg_length <0):
             return None
@@ -1277,7 +1323,7 @@ class Monosat(metaclass=Singleton):
         return self.intArrayToList(path_pointer,arg_length)
 
     def getModel_Path_EdgeLits(self, graph, reach_or_distance_lit):
-        
+        self.checkLit(reach_or_distance_lit)
         arg_length = self.monosat_c.getModel_Path_EdgeLits_Length(self.solver._ptr, graph,reach_or_distance_lit);
         if (arg_length <0):
             return None
@@ -1291,5 +1337,21 @@ class Monosat(metaclass=Singleton):
         
         return self.intArrayToList(path_pointer,arg_length)
 
-    
+    def checkLit(self,l):
+        if (l<0):
+            raise RuntimeError("Bad literal %d"%(l))
+        v = l//2
+        if(v>= self.nVars()):
+            raise RuntimeError("Bad variable %d (largest variable is %d)"%(v, self.nVars()-1))
+
+
+    def checkBV(self,bvID):
+        if(bvID<0 or bvID>=self.nBitvectors()):
+            raise RuntimeError("Bitvector %d does not exist"%(bvID))
+
+    def checkNode(self,g,s):
+
+        if s<0 or s>=self.nNodes(g):
+            raise RuntimeError("Node %d does not exist in this graph (the largest node is %d)"%(s,self.nNodes(g)-1))
+
         

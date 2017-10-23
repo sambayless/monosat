@@ -1296,6 +1296,14 @@ int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int 
 	G->newEdge( from,  to, v,  weight );
 	return toInt(l);
 }
+int nNodes(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G){
+	return G->nNodes();
+}
+int nEdges(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G){
+	return G->nEdges();
+}
+
+
 int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
