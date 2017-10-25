@@ -148,7 +148,7 @@ static int parseInt(B& in) {
 }
 template<class B>
 static int parseLong(B& in) {
-	long val = 0;
+	int64_t val = 0;
 	bool neg = false;
 	skipWhitespace(in);
 	if (*in == '-')

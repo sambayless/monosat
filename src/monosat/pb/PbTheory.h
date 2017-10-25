@@ -101,8 +101,8 @@ private:
 		//bool isOverEq; //true iff the sum of the lhs is >= the rhs
 
 		//maintain running counts of the under/over approximations of this clause.
-		long under;
-		long unassigned;
+		int64_t under;
+		int64_t unassigned;
 		bool inQueue;
 		PbElement rhs;
 		CRef reason;
@@ -123,10 +123,10 @@ private:
 	vec<Lit> tmp_clause;
 	vec<int> tmp_weights;
 	double propagationtime;
-	long stats_propagations, stats_propagations_skipped;
-	long stats_shrink_removed = 0;
-	long stats_reasons = 0;
-	long stats_conflicts = 0;
+	int64_t stats_propagations, stats_propagations_skipped;
+	int64_t stats_shrink_removed = 0;
+	int64_t stats_reasons = 0;
+	int64_t stats_conflicts = 0;
 	/*	 Var newVar(){
 	 Var s= S->newVar();
 	 Var v = vars.size();
@@ -1481,7 +1481,7 @@ public:
 				continue; 		//this constraint is unenforced
 			}
 
-			long lhs = 0;
+			int64_t lhs = 0;
 			for (PbElement & e : c.clause) {
 				if (value(e.lit) == l_True) {
 					lhs += e.weight;
@@ -1507,7 +1507,7 @@ public:
 				continue; 		//this constraint is unenforced
 			}
 
-			long lhs = 0;
+			int64_t lhs = 0;
 			for (int i = 0; i < c.clause.size(); i++) {
 				Lit l = c.clause[i];
 				if (S->value(l) == l_True) {

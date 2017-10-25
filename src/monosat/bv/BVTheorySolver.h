@@ -85,6 +85,10 @@ inline double evalBit(int bit){
 }
 
 template<>
+inline int64_t evalBit(int bit){
+	return ((int64_t)1)<<((int64_t)bit);
+}
+template<>
 inline uint64_t evalBit(int bit){
 	return ((uint64_t)1)<<((uint64_t)bit);
 }
