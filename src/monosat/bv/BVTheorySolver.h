@@ -58,14 +58,40 @@ enum class Comparison{
 
 
 
-inline long getLong(long w) {
+inline uint64_t getLong(uint64_t w) {
 	return w;
 }
 
-inline long getLong(mpq_class w){
+inline uint64_t getLong(mpq_class w){
 	return 0;
 }
 
+template<class Weight>
+Weight evalBit(int bit){
+	return ((Weight)1)<<((Weight)bit);
+}
+
+template<>
+inline mpq_class evalBit(int bit){
+	mpq_class result(1);
+	mpz_class base(2);
+	mpz_pow_ui(result.get_num().get_mpz_t(),base.get_mpz_t(),bit);
+	return result;
+}
+
+template<>
+inline double evalBit(int bit){
+	throw std::runtime_error("Cannot evaluate doubles");
+}
+
+template<>
+inline uint64_t evalBit(int bit){
+	return ((uint64_t)1)<<((uint64_t)bit);
+}
+template<>
+inline int evalBit(int bit){
+	return 1<<bit;
+}
 inline Comparison operator ~(Comparison p) {
 	switch (p){
 		case Comparison::lt:
@@ -336,7 +362,7 @@ public:
 				new_change=false;
 				//for(int i = 0;i<bv.size();i++){
 				for(int i = bv.size()-1;i>=0;i--){
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					lbool val = value(bv[i]);
 					Lit l = bv[i];
 					if(val==l_True){
@@ -416,12 +442,12 @@ public:
 			for(int i = 0;i<bv.size();i++){
 				lbool val = value(bv[i]);
 				if(val==l_True){
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					under+=bit;
 					over+=bit;
 				}else if (val==l_False){
 				}else{
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					over+=bit;
 				}
 			}
@@ -439,20 +465,20 @@ public:
 			vec<Lit> & bv = theory.bitvectors[bvID];
 			for(int i = 0;i<bv.size();i++){
 				if(var(bv[i])==ignore_bv){
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					over+=bit;
 					continue;
 				}
 				lbool val = value(bv[i]);
 				if(val==l_True){
-					Weight bit = 1<<i;
+					Weight bit =  evalBit<Weight>(i);
 					under+=bit;
 					over+=bit;
 
 				}else if (val==l_False){
 
 				}else{
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					over+=bit;
 				}
 			}
@@ -501,7 +527,7 @@ public:
 			Weight over=(1L<<bv.size())-1;
 
 			for(int i = bv.size()-1;i>=0;i--){
-				Weight bit = 1<<i;
+				Weight bit =  evalBit<Weight>(i);
 				lbool val = value(bv[i]);
 				Lit l = bv[i];
 				if(val==l_True){
@@ -554,7 +580,7 @@ public:
 				for(int i =0;i<bv.size();i++){
 					Lit bl = bv[i];
 					if(value(bl)==l_False ){
-						Weight bit = 1<<i;
+						Weight bit = evalBit<Weight>(i);
 						if(theory.comp(op,over+bit,to)&& theory.level(var(bl))>0){
 							//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
 							over+=bit;
@@ -571,7 +597,7 @@ public:
 					lbool val = value(bl);
 
 					if(value(bl)==l_True){
-						Weight bit = 1<<i;
+						Weight bit = evalBit<Weight>(i);
 						if(theory.comp(op,under-bit,to)  && theory.level(var(bl))>0){
 							//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
 							under-=bit;
@@ -595,13 +621,13 @@ public:
 			for(int i = 0;i<bv.size();i++){
 				lbool val = value(bv[i]);
 				if(val==l_True){
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					under+=bit;
 					over+=bit;
 				}else if (val==l_False){
 
 				}else{
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					over+=bit;
 				}
 			}
@@ -1703,13 +1729,13 @@ public:
 			for(int i = 0;i<bv_compare.size();i++){
 				lbool val = value(bv_compare[i]);
 				if(val==l_True){
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					under_compare+=bit;
 					over_compare+=bit;
 				}else if (val==l_False){
 
 				}else{
-					Weight bit = 1<<i;
+					Weight bit = evalBit<Weight>(i);
 					over_compare+=bit;
 				}
 			}
@@ -6017,8 +6043,8 @@ public:
 
 			return false;
 		}
-		long under_old_l = getLong(under_old);
-		long over_old_l = getLong( over_old);
+		uint64_t under_old_l = getLong(under_old);
+		uint64_t over_old_l = getLong( over_old);
 		assert_in_range(under_new,bvID);
 		assert_in_range(over_new,bvID);
 		Cause under_cause_old = under_causes[bvID];
@@ -6146,8 +6172,8 @@ public:
 		over_approx[bvID]=over_new;
 		under_causes[bvID]= under_cause_new;
 		over_causes[bvID]= over_cause_new;
-		long under = getLong(under_new);
-		long over = getLong( over_new);
+		uint64_t under = getLong(under_new);
+		uint64_t over = getLong( over_new);
 		if(decisionLevel()==0){
 			under_approx0[bvID]=under_approx[bvID];
 			over_approx0[bvID]=over_approx[bvID];

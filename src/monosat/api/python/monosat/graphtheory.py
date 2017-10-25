@@ -304,7 +304,17 @@ class Graph():
             for node in self.out_edges:
                 for edge in node:
                     yield edge
-                        
+
+    def getOutgoingEdges(self,node=-1):
+        if(node>=0):
+            for edge in  self.out_edges[node]:
+                yield edge
+        else:
+            for node in self.out_edges:
+                for edge in node:
+                    yield edge
+
+
     def getIncomingEdges(self,node=-1):
         if(node>=0):
             for edge in  self.in_edges[node]:
@@ -321,7 +331,27 @@ class Graph():
         else:
             for node in self.out_edges:
                 for edge in node:
-                    yield edge[2]    
+                    yield edge[2]
+
+    def getOutgoingEdgeVars(self,node=-1):
+        if(node>=0):
+            for edge in  self.out_edges[node]:
+                yield edge[2]
+        else:
+            for node in self.out_edges:
+                for edge in node:
+                    yield edge[2]
+
+
+    def getIncomingEdgeVars(self,node=-1):
+        if(node>=0):
+            for edge in  self.in_edges[node]:
+                yield edge[2]
+        else:
+            for node in self.in_edges:
+                for edge in node:
+                    yield edge[2]
+
 
     #def createSteinerTree(self):
         #s = Graph.SteinerTree(len(self.steiners))
