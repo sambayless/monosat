@@ -12,7 +12,7 @@ import sys
 import itertools
 import bz2
 #note: for testing purposes, not recommended for practical pb solving!
-Monosat().init("-verb=1 -pb-verb=1 -no-pb-binary-search")
+Monosat().init("-verb=1 -pb-verb=1")
 
 
 
