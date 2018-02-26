@@ -63,8 +63,11 @@ class Graph():
         self.nodes=0
         self.numedges=0
         self.names=dict()
+        self.nodemap=dict() # maps node names to node objects
         self.out_edges=[]   
-        self.in_edges=[]      
+        self.in_edges=[]
+        self.out_edge_map =[]
+        self.in_edge_map =[]
         self.queries=[]
         self.queryLookup=dict()
         #elf.fullqueries=[]
@@ -86,6 +89,18 @@ class Graph():
         
         self.edgemap=dict()
         self.acyclic_querries=[]
+
+    def __getitem__(self, key):
+        if isinstance(key,str):
+            return self.nodemap[key]
+        if isinstance(key, tuple) or isinstance(obj, list):
+            if len(key)==2:
+                #interpret the key as an edge
+                return self.getEdge(self.nodemap[str(key[0])],self.nodemap[str(key[1])])
+        return self.nodemap[str(key)]
+
+    def __contains__(self,item):
+        return str(item) in self.nodemap.keys()
 
     def assignWeightsTo(self,w):
         self._monosat.assignWeightsTo(self.graph,w)
@@ -138,6 +153,9 @@ class Graph():
         if name is None:
             name = str(n)
         self.names[n] = str(name)
+        self.nodemap[str(name)]=n
+        self.out_edge_map.append(dict())
+        self.in_edge_map.append(dict())
 
         return n
     
@@ -173,13 +191,17 @@ class Graph():
             return lit_list
 
     
-    
+    #Returns either a list containing all the edges from f to t, or, if there is only 1 edge from f to t, returns that edge.
+    #throws a ValueError if there are no edges from f to t.
     def getEdge(self,f,t):
-        for (v,w,var,weight) in self.out_edges[f]:
-            if(w==t):
-                return var;
-           
-        return None; 
+        if t in self.out_edge_map[f]:
+            edges = self.out_edge_map[f][t]
+            assert(len(edges)>0)
+            if len(edges)==1:
+                return edges[0] # the common case is that the graph has no multiedges, so handle that specially
+            else:
+                return edges
+        raise ValueError("No edge " + str(f) + "->" + str(t))
     
     def getAllEdges(self, undirected=False):
         if undirected:
@@ -233,6 +255,13 @@ class Graph():
         self.out_edges[v].append(e)
         self.in_edges[w].append(e)
         self.edgemap[e[2].getLit()] =e
+        if w not in self.out_edge_map [v].keys():
+            self.out_edge_map [v][w] = list()
+
+        if v not in self.in_edge_map [w].keys():
+            self.in_edge_map [w][v] = list()
+        self.out_edge_map [v][w].append(e)
+        self.in_edge_map [w][v].append(e)
         return e[2]
     
     def addUndirectedEdge(self,v,w, weight=1):
@@ -276,6 +305,24 @@ class Graph():
         self.edgemap[v2.getLit()] =e2
         AssertEq(v1,v2)
         self.all_undirectededges.append(e1)
+
+        if w not in self.out_edge_map [v].keys():
+            self.out_edge_map [v][w] = list()
+
+        if v not in self.in_edge_map [w].keys():
+            self.in_edge_map [w][v] = list()
+
+        self.out_edge_map [v][w].append(e1)
+        self.in_edge_map [w][v].append(e1)
+
+        if v not in self.out_edge_map [w].keys():
+            self.out_edge_map [w][v] = list()
+
+        if w not in self.in_edge_map [v].keys():
+            self.in_edge_map [v][w] = list()
+        #add the edge twice, one for each direction.
+        self.out_edge_map [w][v].append(e2)
+        self.in_edge_map [v][w].append(e2)
         return v1
     
     def setEdgePriority(self, edgeVar, priority):
