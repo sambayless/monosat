@@ -144,7 +144,7 @@ class Graph():
         print("}",file=out)
 
     
-    def addNode(self, name=None):  
+    def addNode(self, name=None):
         n= self._monosat.newNode(self.graph)        
         self.nodes=n+1
         self.out_edges.append([]);
@@ -152,8 +152,14 @@ class Graph():
         
         if name is None:
             name = str(n)
-        self.names[n] = str(name)
-        self.nodemap[str(name)]=n
+        else:
+            name = str(name)
+
+        if name is not None and name in self.names:
+            raise ValueError("Node %s already exists"%(str(name)))
+
+        self.names[n] = name
+        self.nodemap[name]=n
         self.out_edge_map.append(dict())
         self.in_edge_map.append(dict())
 
@@ -211,8 +217,8 @@ class Graph():
 
     
     def hasEdge(self,f,t):
-        for (v,w,var,w) in self.out_edges[f]:
-           if(w==t):
+        for (v,u,var,weight) in self.out_edges[f]:
+           if(u==t):
                return True;
            
         return False;
@@ -232,9 +238,7 @@ class Graph():
             assert(self.graph_type==Graph.GraphType.float or self.graph_type==Graph.GraphType.rational)
         elif weight and isinstance(weight, tuple):
             assert(self.graph_type==Graph.GraphType.rational)
-        
 
-        
         if weight and isinstance(weight, BitVector):
             assert(self.graph_type==Graph.GraphType.int)
             self.has_any_bv_edges=True
@@ -247,7 +251,6 @@ class Graph():
                 var = Var(self._monosat.newEdge(self.graph,v,w,weight))
             elif self.graph_type==Graph.GraphType.float:
                 var = Var(self._monosat.newEdge_double(self.graph,v,w,weight))
-
         
         e=(v,w,var,weight)
         self.alledges.append(e)
