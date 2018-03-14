@@ -215,7 +215,18 @@ class Graph():
         else:
             return self.alledges;
 
-    
+
+    #returns the variable corresponding to the backward (directed) edge of the edge
+    #corresponding to this variable, if such an edge exists. Returns None otherwise.
+    def backEdgeVar(self, v):
+        (v,w,var,weight) = self.getEdgeFromVar(v)
+        if v in self.out_edge_map[w]:
+            edges = self.out_edge_map[w][v]
+            assert(len(edges)>0)
+            return edges[0][2]
+        return None
+
+
     def hasEdge(self,f,t):
         for (v,u,var,weight) in self.out_edges[f]:
            if(u==t):

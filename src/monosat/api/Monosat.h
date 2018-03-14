@@ -62,11 +62,11 @@ typedef int64_t Weight;
 #endif
 
 
-  int varToLit(int var, bool negated){
+  inline int varToLit(int var, bool negated){
 	  return toInt(mkLit(var,negated));
   }
 
-  int litToVar(int lit){
+ inline  int litToVar(int lit){
 	  return lit/2;
   }
  const char * getVersion();
