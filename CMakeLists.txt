@@ -3,6 +3,7 @@ project(monosat)
 
 set (PB_SUPPORT 1)
 set (JAVA_SUPPORT 1) #set to 1 to compile Java JNI support into the shared library (requires a JDK)
+set (JAVA_SOURCE_FILES "")
 if(NOT NO_GIT_VERSION)
     set (SHOW_GIT_VERSION 1)
 endif()
@@ -57,6 +58,9 @@ set(SOURCE_FILES
         src/monosat/api/Circuit.h
         src/monosat/api/Monosat.cpp
         src/monosat/api/Monosat.h
+        src/monosat/api/CircuitC.h
+        src/monosat/api/CircuitC.cpp
+        src/monosat/api/MonosatInternal.h
         src/monosat/bv/BVParser.h
         src/monosat/bv/BVTheory.h
         src/monosat/bv/BVTheorySolver.h
@@ -292,20 +296,23 @@ if (${PB_SUPPORT})
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_FILES_PB})
 endif (${PB_SUPPORT})
 
+
 if (${JAVA_SUPPORT})
     find_package(Java REQUIRED)
     find_package(JNI REQUIRED)
 
-    message(STATUS "Compiling with support for JNI, using ${Java_JAVAH_EXECUTABLE}")
+    message(STATUS "Compiling shared library with support for JNI")
 
     # generate MonosatJNI.h header
     add_custom_command(
-            OUTPUT src/monosat/api/java/MonosatJNI.h
+            OUTPUT src/monosat/api/java/monosat_MonosatJNI.h
             WORKING_DIRECTORY src/monosat/api/java/
-            COMMAND ${Java_JAVAH_EXECUTABLE} -jni -verbose  MonosatJNI
+            #javah is now deprecated, using javac -h instead
+            # COMMAND ${Java_JAVAH_EXECUTABLE} -jni -verbose  monosat.MonosatJNI
+            COMMAND ${Java_JAVAC_EXECUTABLE} -h  monosat.MonosatJNI
     )
 
-    set(SOURCE_FILES ${SOURCE_FILES} src/monosat/api/java/MonosatJNI.cpp src/monosat/api/java/MonosatJNI.h)
+    set(JAVA_SOURCE_FILES ${JAVA_SOURCE_FILES} src/monosat/api/java/MonosatJNI.cpp src/monosat/api/java/monosat_MonosatJNI.h)
 
     if (JNI_FOUND)
         message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
@@ -313,7 +320,6 @@ if (${JAVA_SUPPORT})
     endif()
     include_directories(${JNI_INCLUDE_DIRS})
 endif (${JAVA_SUPPORT})
-
 
 if (${SHOW_GIT_VERSION})
     #only attempt to load the git version if the git repo is found in the source directory
@@ -377,7 +383,9 @@ if (${UNIX})
     endif()
 endif (${UNIX})
 
-add_library(libmonosat SHARED ${SOURCE_FILES})
+
+
+add_library(libmonosat SHARED ${SOURCE_FILES} ${JAVA_SOURCE_FILES})
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 if (NOT ${APPLE})
@@ -386,7 +394,6 @@ endif()
 target_link_libraries(libmonosat gmpxx)
 target_link_libraries(libmonosat gmp)
 if (${JAVA_SUPPORT})
-
     target_link_libraries(libmonosat ${JNI_LIBRARIES})
 endif (${JAVA_SUPPORT})
 if (${UNIX})
@@ -406,9 +413,7 @@ target_link_libraries(libmonosat_static z.a)
 target_link_libraries(libmonosat_static m.a)
 target_link_libraries(libmonosat_static gmpxx.a)
 target_link_libraries(libmonosat_static gmp.a)
-if (${JAVA_SUPPORT})
-    target_link_libraries(libmonosat_static ${JNI_LIBRARIES})
-endif (${JAVA_SUPPORT})
+
 if (${UNIX})
     #librt is needed for clock_gettime, which is enabled for linux only
     #(clock_gettime is used for capturing detailed timing statistics only)

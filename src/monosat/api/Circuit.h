@@ -28,7 +28,8 @@
 
 namespace Monosat{
 
-//Barebones helper methods for expressing combinatorial logic in CNF.
+//Helper methods for expressing combinatorial logic in CNF.
+//Does not perform any kind of circuit rewriting, simplification, or memoization.
 template<class Solver>
 class Circuit{
 	Solver & S;
@@ -87,6 +88,10 @@ public:
 		S.addClause(lit_True);
 	}
 
+	Lit newLit(bool decisionLit=true){
+		return mkLit(S.newVar(false,decisionLit));
+	}
+
 	Solver & getSolver(){
 		return S;
 	}
@@ -109,11 +114,13 @@ public:
 			if(isConstTrue(a) && isConstTrue(b)){
 				if(out!=lit_Undef) {
 					Assert(out);
+                    return out;
 				}
 				return getTrue();
 			}else if (isConstFalse(a) || isConstFalse(b)){
 				if(out!=lit_Undef) {
 					Assert(~out);
+                    return out;
 				}
 				return getFalse();
 			}
@@ -121,21 +128,25 @@ public:
 			if (isConstFalse(a)){
 				if(out!=lit_Undef) {
 					Assert(~out);
+                    return out;
 				}
 				return getFalse();
 			}else if (isConstFalse(b)){
 				if(out!=lit_Undef) {
 					Assert(~out);
+                    return out;
 				}
 				return getFalse();
 			}else if (isConstTrue(a)){
 				if(out!=lit_Undef) {
 					AssertEqual(b,out);
+                    return out;
 				}
 				return b;
 			}else if (isConstTrue(b)){
 				if(out!=lit_Undef) {
 					AssertEqual(a,out);
+                    return out;
 				}
 				return a;
 			}
@@ -158,7 +169,7 @@ public:
 
 	}
 	Lit And_(const vec<Lit> & vals, Lit out){
-		assert(tmp.size()==0);
+        tmp.clear();
 		for(Lit l:vals){
 			if (isConstFalse(l)){
 				if(out!=lit_Undef){
@@ -180,6 +191,7 @@ public:
 		}else if (tmp.size()==1){
 			if(out!=lit_Undef){
 				AssertEqual(tmp[0],out);
+                return out;
 			}
 			return tmp[0];
 		}
@@ -197,9 +209,44 @@ public:
 		tmp.clear();
 		return out;
 	}
+	void AssertImpliesAnd_(Lit implies,const vec<Lit> & vals, Lit out){
+		tmp.clear();
+		for(Lit l:vals){
+			if (isConstFalse(l)){
+				if(out!=lit_Undef){
+					AssertImplies(implies,~out);
+				}
+				return;
+			}else if (isConstTrue(l)){
+				//leave literal out
+			}else{
+				tmp.push(l);
+			}
+		}
 
+
+		if(out==lit_Undef){
+			out = mkLit(S.newVar());
+		}
+		for(Lit l:tmp){
+			S.addClause(l,~out,~implies);
+		}
+		for(int i = 0;i<tmp.size();i++){
+			tmp[i]=~tmp[i];
+		}
+		tmp.push(out);
+		tmp.push(~implies);
+		S.addClause(tmp);
+		tmp.clear();
+	}
 
 	Lit And(Lit a, Lit b){
+		if(a==b){
+			return a;
+		}else if (var(a)==var(b)){
+			assert(sign(a)!=sign(b));
+			return getFalse();
+		}
 		//special case these
 		if(isConst(a) || isConst(b)){
 			if (isConstTrue(a)){
@@ -248,6 +295,12 @@ public:
 	}
 
 	Lit Or(Lit a, Lit b){
+		if(a==b){
+			return a;
+		}else if (var(a)==var(b)){
+			assert(sign(a)!=sign(b));
+			return getTrue();
+		}
 		if(isConstTrue(a)){
 			return getTrue();
 		}else if (isConstTrue(b)){
@@ -312,7 +365,7 @@ public:
 		return out;
 	}
 	Lit Or_(const vec<Lit> & vals, Lit out){
-		assert(tmp.size()==0);
+                tmp.clear();
 		for(Lit l:vals){
 			if (isConstFalse(l)){
 				//leave literal out
@@ -334,6 +387,7 @@ public:
 		}else if (tmp.size()==1){
 			if(out!=lit_Undef){
 				AssertEqual(tmp[0],out);
+                return out;
 			}
 			return tmp[0];
 		}
@@ -350,6 +404,68 @@ public:
 		return out;
 	}
 
+	//If this gate is true, then all of vals must be true.
+	//But if this gate is false, vals may be true or false.
+	Lit ImpliesAnd(const vec<Lit> & vals, Lit out=lit_Undef){
+		if(out==lit_Undef) {
+			out = mkLit(S.newVar());
+		}
+		for(Lit l:vals){
+			AssertImplies(out,l);
+		}
+		return out;
+	}
+
+	//If this gate is true, then at least one of vals must be true.
+	//But if this gate is false, vals may be true or false.
+	Lit ImpliesOr(const vec<Lit> & vals, Lit out=lit_Undef){
+		if(out==lit_Undef) {
+			out = mkLit(S.newVar());
+		}
+		AssertImpliesOr_(out, vals,lit_Undef);
+		return out;
+	}
+
+	//This is an OR condition that holds only if implies is true
+	void AssertImpliesOr_(Lit implies,const vec<Lit> & vals, Lit out=lit_Undef){
+		tmp.clear();
+		for(Lit l:vals){
+			if (isConstFalse(l)){
+				//leave literal out
+			}else if (isConstTrue(l)){
+				if(out!=lit_Undef){
+					AssertImplies(implies,out);
+				}
+				//no effect on implies, otherwise
+				return ;
+			}else{
+				tmp.push(l);
+			}
+		}
+
+		if(vals.size()==0){
+			//all literals in vals are false (or vals is empty)
+			if(out!=lit_Undef){
+				AssertImplies(out,~implies);
+			}else{
+				Assert(~implies);
+			}
+			return ;
+		}
+		if(out!=lit_Undef) {
+			//is this correct?
+			tmp.push(~out);
+			tmp.push(~implies);//if implies is true, then at least one of the elements of tmp must be true, or out must be false.
+			S.addClause(tmp);
+			tmp.clear();
+		}else{
+			tmp.push(~implies);//if implies is true, then at least one of the elements of tmp must be true.
+			S.addClause(tmp);
+			tmp.clear();
+		}
+
+
+	}
 	Lit Or(const std::list<Lit> & vals){
 
 		tmp2.clear();
@@ -539,6 +655,12 @@ public:
 		return Or(~a, b);
 	}
 
+
+	Lit Implies_(Lit a, Lit b, Lit out){
+		return Or_(~a, b,out);
+	}
+
+
 	Lit Ite(Lit cond, Lit thn, Lit els){
 		Lit l = ~And(cond,~thn);
 		Lit r = ~And(~cond,~els);
@@ -555,11 +677,31 @@ public:
 		return Xor(a,b);
 	}
 
+    Lit FullAdder(Lit a, Lit b, Lit c_in, Lit & carry_out){
+        Lit a_xor_b = Xor(a,b);
+        Lit a_and_b = And(a,b);
+        carry_out = Or(a_and_b,And(c_in, a_xor_b));
+        return Xor(a_xor_b,c_in);
+
+    }
 
 	Lit HalfAdder_(Lit a, Lit b, Lit & carry_out, Lit & out){
 		carry_out = And_(a,b,carry_out);
 		return Xor_(a,b,out);
 	}
+
+	//a-b
+	Lit HalfSubtractor(Lit a, Lit b, Lit & borrow_out){
+		borrow_out = And(~a,b);
+		return Xor(a,b);
+	}
+
+	//a-b
+	Lit HalfSubtractor_(Lit a, Lit b, Lit & borrow_out, Lit & out){
+		borrow_out = And_(~a,b,borrow_out);
+		return Xor_(a,b,out);
+	}
+
 
 	void Add(vec<Lit> & a, vec<Lit> & b,vec<Lit> & store_out, Lit & carry_out){
 		assert(b.size()==a.size());
@@ -592,6 +734,146 @@ public:
 			carry_out = carry;
 		}
 	}
+	void Subtract(vec<Lit> & a, vec<Lit> & b,vec<Lit> & store_out, Lit & borrow_out){
+		assert(b.size()==a.size());
+		store_out.clear();
+		Lit borrow=lit_Undef;
+		Lit dif = HalfSubtractor(a[0],b[0],borrow);
+		store_out.push(dif);
+		for(int i = 1;i<a.size();i++){
+			Lit x1 = Xor(a[i],b[i]);
+			store_out.push(Xor(x1, borrow));
+			Lit c1 = And(~x1,borrow);
+			borrow = Or(And(~a[i],b[i]),c1); //check this!
+		}
+		borrow_out= borrow;
+	}
+	void Subtract_(vec<Lit> & a, vec<Lit> & b,vec<Lit> & store_out, Lit & borrow_out){
+		assert(b.size()==a.size());
+		assert(store_out.size()==a.size());
+		Lit borrow=lit_Undef;
+		Lit dif = HalfSubtractor_(a[0],b[0],borrow,store_out[0]);
+		for(int i = 1;i<a.size();i++){
+			Lit x1 = Xor(a[i],b[i]);
+			Xor_(x1, borrow,store_out[i]);
+			Lit c1 = And(~x1,borrow);
+			borrow = Or(And(~a[i],b[i]),c1); //check this!
+		}
+		if(borrow_out!=lit_Undef){
+			AssertEqual(borrow_out,borrow);
+		}else {
+			borrow_out = borrow;
+		}
+	}
+
+	//perform two's complement negation (invert bits and add 1)
+	void Negate(vec<Lit> & a, vec<Lit> & store_out){
+		store_out.clear();
+		Lit carry=lit_Undef;
+		Lit sum = HalfAdder(~a[0],getTrue(),carry);
+		store_out.push(sum);
+		for(int i = 1;i<a.size();i++){
+			Lit x1 = Xor(~a[i],carry);
+			store_out.push(x1);
+			carry = And(~a[i],carry);
+
+		}
+	}
+	//perform two's complement negation (invert bits and add 1)
+	void Negate_(vec<Lit> & a, vec<Lit> & store_out){
+		store_out.clear();
+		assert(store_out.size()==a.size());
+		Lit carry=lit_Undef;
+		Lit sum = HalfAdder(~a[0],getTrue(),carry);
+		store_out.push(sum);
+		for(int i = 1;i<a.size();i++){
+			Xor_(~a[i], carry,store_out[i]);
+			carry = And(~a[i],carry);
+		}
+	}
+
+protected:
+    Lit mBlock(Lit m0, Lit m1, Lit q0, Lit q1, Lit c_in,Lit & c_out){
+        Lit a = And(q1, m0);
+        Lit b = And(q0, m1);
+        Lit res = FullAdder(a,b,c_in,c_out);
+		return res;
+    }
+    Lit nBlock(Lit m0, Lit m1, Lit q0, Lit c_in,Lit & c_out){
+        Lit a = And(q0, m0);
+        Lit res = FullAdder(a,m1,c_in,c_out);
+		return res;
+    }
+public:
+    void Multiply(vec<Lit> & m, vec<Lit> & q,vec<Lit> & store_out){
+        assert(m.size()==q.size());
+        store_out.clear();
+
+        Lit res = And(m[0],q[0]);
+        store_out.push(res);
+
+        if(m.size()==1){
+            return;
+        }
+
+        vec<Lit> cur_results;
+        vec<Lit> cur_passthrough;
+
+        //first row
+        Lit prev_c_out=getFalse();
+        for(int i = 1;i<=m.size();i++){
+            Lit m0 = m[i-1];
+            Lit m1 = i< m.size() ? m[i] : getFalse();
+            Lit q0 = q[0];
+            Lit q1 = q[1];
+            Lit c_in = prev_c_out;
+            Lit c_out;
+            Lit res = mBlock(m0,m1,q0,q1,c_in,c_out);
+            prev_c_out = c_out;
+            cur_passthrough.push(m0);
+            cur_results.push(res);
+            if(i==1) {
+                store_out.push(res);
+            }
+        }
+        cur_results.push(prev_c_out);
+        vec<Lit> prev_results;
+        vec<Lit> prev_passthrough;
+        //remaining rows
+        for(int j = 2;j<q.size();j++){
+            assert(cur_passthrough.size()==cur_results.size()-1);
+            cur_results.copyTo(prev_results);
+            cur_results.clear();
+            cur_passthrough.copyTo(prev_passthrough);
+            cur_passthrough.clear();
+
+            Lit q_in = q[j];
+            prev_c_out=getFalse();
+			assert(prev_results.size()==m.size()+1);
+            for(int i = 1;i<=m.size();i++){
+                Lit m0 = prev_passthrough[i-1];
+                Lit m1 = prev_results[i];
+                Lit c_in = prev_c_out;
+                Lit c_out;
+                Lit res = nBlock(m0,m1,q_in,c_in,c_out);
+                prev_c_out = c_out;
+                cur_passthrough.push(m0);
+                cur_results.push(res);
+                if(i==1){
+                    store_out.push(res);
+                }
+            }
+            cur_results.push(prev_c_out);
+        }
+		//last row
+		assert(cur_results[0]==store_out.last());
+		for(int i = 1;i<cur_results.size();i++){
+			store_out.push(cur_results[i]);
+		}
+		assert(store_out.last()==prev_c_out);
+        //store_out.push(prev_c_out);
+        assert(store_out.size()==(m.size()+q.size()));
+    }
 
 	void Assert(Lit l){
 		S.addClause(l);
@@ -606,6 +888,10 @@ public:
 		S.addClause(a,b);
 	}
 
+	void AssertOr(Lit a, Lit b, Lit c){
+		S.addClause(a,b,c);
+	}
+
 	void AssertOr(const std::list<Lit> & vals){
 
 		tmp.clear();
@@ -617,8 +903,10 @@ public:
 
 	void AssertOr(const vec<Lit> & vals){
 		tmp.clear();
-		for (Lit l:vals)
+		for (Lit l:vals) {
+			assert(l!=lit_Undef);
 			tmp.push(l);
+		}
 		S.addClause(tmp);
 	}
 
@@ -846,6 +1134,304 @@ public:
 		collect(store,b,args...);
 		AssertXnor(store);
 	}
+
+	int pow2roundup (uint32_t v)
+	{
+		if(v==0)
+			return 0;
+		uint32_t r=0;
+		while (v >>= 1) // unroll for more speed...
+		{
+			r++;
+		}
+		return r;
+	}
+public:
+//from http://www.graphics.stanford.edu/~seander/bithacks.html
+	bool _isPower2(int n){
+		return (n>0 && ((n & (n-1)) == 0));
+	}
+    vec<Lit> assert_tmp;
+	vec<Lit> assert_tmp2;
+
+
+	Lit Equal(Lit a, Lit b){
+		return Xnor(a,b);
+	}
+
+    Lit Equal(vec<Lit> & A, vec<Lit> & B){
+
+
+        B.copyTo(assert_tmp);
+        while(assert_tmp.size()<A.size())
+            assert_tmp.push(getFalse());
+		vec<Lit> xnors;
+        //Lit all_eq=getTrue();
+		for(int i = 0;i<A.size();i++){
+			xnors.push(Xnor(A[i], assert_tmp[i]));
+		}
+
+       /* for(int i = 0;i<A.size();i++){
+            if(i==0){
+                all_eq =  Xnor(A[i], assert_tmp[i]);
+            }else {
+                all_eq = And(all_eq, Xnor(A[i], assert_tmp[i]));
+            }
+        }*/
+       // return all_eq;
+		return And(xnors);
+    }
+
+    Lit LEQ(vec<Lit> & A, vec<Lit> & B){
+
+        Lit p_lt_n=getFalse();
+        Lit p_eq_n =getTrue();
+        B.copyTo(assert_tmp);
+        while(assert_tmp.size()<A.size())
+            assert_tmp.push(getFalse());
+
+        for(int j = A.size()-1;j>=0;j--){
+            Lit pj_eq_n = Xnor(A[j],assert_tmp[j]);
+            Lit pj_ltn = And(~A[j],assert_tmp[j]);
+            Lit lt = And(p_eq_n,pj_ltn);
+            p_lt_n = Or(lt,p_lt_n);
+
+            p_eq_n = And(pj_eq_n, p_eq_n);
+
+        }
+		for(int j = A.size();j<B.size();j++){
+			p_lt_n = Or(B[j],p_lt_n);
+		}
+        //The A must be less than or equal to B
+        return Or(p_lt_n, p_eq_n);
+
+    }
+
+    Lit LT(vec<Lit> & A, vec<Lit> & B){
+
+        Lit p_lt_n=getFalse();
+        Lit p_eq_n =getTrue();
+        B.copyTo(assert_tmp);
+        while(assert_tmp.size()<A.size())
+            assert_tmp.push(getFalse());
+
+        for(int j = A.size()-1;j>=0;j--){
+            Lit pj_eq_n = Xnor(A[j],assert_tmp[j]);
+            Lit pj_ltn = And(~A[j],assert_tmp[j]);
+            Lit lt = And(p_eq_n,pj_ltn);
+            p_lt_n = Or(lt,p_lt_n);
+            if(j>0) {
+                p_eq_n = And(pj_eq_n, p_eq_n);
+            }
+        }
+		for(int j = A.size();j<B.size();j++){
+			p_lt_n = Or(B[j],p_lt_n);
+		}
+        //The A must be less than B
+        return p_lt_n;
+    }
+
+    void AssertEqual(vec<Lit> & A, vec<Lit> & B){
+
+        Lit p_lt_n=getFalse();
+        Lit p_eq_n =getTrue();
+        B.copyTo(assert_tmp);
+        while(assert_tmp.size()<A.size())
+            assert_tmp.push(getFalse());
+
+        for(int i = 0;i<A.size();i++){
+            AssertEqual(A[i], B[i]);
+        }
+		for(int j = A.size();j<B.size();j++){
+			Assert(~B[j]);//if B is larger than A, then all larger bits must be false.
+		}
+    }
+
+    void AssertLEQ(const vec<Lit> & A,const vec<Lit> & B){
+
+        Lit p_lt_n=getFalse();
+        Lit p_eq_n =getTrue();
+        B.copyTo(assert_tmp);
+        while(assert_tmp.size()<A.size())
+            assert_tmp.push(getFalse());
+
+        for(int j = A.size()-1;j>=0;j--){
+            Lit pj_eq_n = Xnor(A[j],assert_tmp[j]);
+            Lit pj_ltn = And(~A[j],assert_tmp[j]);
+            Lit lt = And(p_eq_n,pj_ltn);
+            p_lt_n = Or(lt,p_lt_n);
+
+            p_eq_n = And(pj_eq_n, p_eq_n);
+
+        }
+		//if B is bigger than A, and any of the larger B bits are true, then A is less than B
+		for(int j = A.size();j<B.size();j++){
+			p_lt_n = Or(B[j],p_lt_n);
+		}
+        //The A must be less than or equal to B
+        S.addClause(p_lt_n, p_eq_n);
+
+    }
+
+    void AssertLT(vec<Lit> & A, vec<Lit> & B){
+
+        S.addClause(LT(A,B));
+    }
+
+	Lit Mux(vec<Lit> & selector, vec<Lit> & data, int opt_mux=0){
+
+		vec<Lit> args;
+		int n_args = pow2roundup(data.size()-1)+1;
+
+		while(selector.size()<n_args) {
+            selector.push(mkLit(S.newVar()));
+        }
+
+		Lit out = mkLit(S.newVar());
+		if((1<<n_args)>data.size()){
+			//printf("Warning: non-power-of-2 number of operations incurs some small overhead\n");
+		}
+		if(opt_mux==0 ||opt_mux==1){
+			//build an explicit mux, without adding any new literals
+			for(int i = 0;i<data.size();i++){
+				Lit in = data[i];
+				args.clear();
+				for(int j = 0;j<selector.size();j++){
+					bool v = i&(1<<j);
+					if(v){
+						args.push(selector[j]);
+					}else{
+						args.push(~selector[j]);
+					}
+				}
+				for(int i = 0;i<args.size();i++){
+					args[i]=~args[i];
+				}
+				args.push(~in);
+				args.push(out);
+				S.addClause(args);
+				args.shrink(2);
+				args.push(in);
+				args.push(~out);
+				S.addClause(args);
+			}
+			if(opt_mux==1) {
+				int max = 1<<selector.size();
+				for(int i = data.size();i<max;i++){
+
+					args.clear();
+					for(int j = 0;j<selector.size();j++){
+						bool v = i&(1<<j);
+						if(v){
+							args.push(selector[j]);
+						}else{
+							args.push(~selector[j]);
+						}
+					}
+					for(int i = 0;i<args.size();i++){
+						args[i]=~args[i];
+					}
+					//explicitly rule out this assignment to args
+					S.addClause(args);
+
+				}
+			}
+		}else{
+            //for opt_mux==2, consider using unary selectors, instead of binary.
+			assert(false);
+		}
+		if(opt_mux==0) {
+		//finally, if data.size() is not an exact power of two, assert that selector <= data.size()
+		if(!_isPower2(data.size() )){
+			vec<Lit> max_val;
+			for(int j = 0;j<selector.size();j++){
+				bool v = data.size()&(1<<j);
+				if(v){
+					max_val.push(getTrue());
+				}else{
+					max_val.push(getFalse());
+				}
+			}
+            AssertLT(selector,max_val);
+/*
+			Lit p_lt_n=getFalse();
+			Lit p_eq_n = getTrue();
+
+
+			for(int j = selector.size()-1;j>=0;j--){
+				Lit pj_eq_n = Xnor(selector[j],max_val[j]);
+				Lit pj_ltn = And(~selector[j],max_val[j]);
+				Lit lt = And(p_eq_n,pj_ltn);
+				p_lt_n = Or(lt,p_lt_n);
+				if(j>0) {
+					p_eq_n = And(pj_eq_n, p_eq_n);
+				}
+			}
+			//The p must be less than max_val
+			S.addClause(p_lt_n);*/
+		}
+		}
+		return out;
+	}
+
+    //uses n^2 binary clauses to create a simple at-most-one constraint.
+    //if you have more than 20 or so literals, strongly consider using a pseudo-Boolean constraint solver instead
+    void AssertAMO(const vec<Lit> & lits) {
+        vec<Lit> set;
+        S.cancelUntil(0);
+        assert(S.decisionLevel() == 0);
+        Lit constant_true_lit = lit_Undef;
+
+        //first check if there are any literals which are constant true,
+        //or if all literals are constant false.
+        for (int i = 0; i < lits.size(); i++) {
+            Lit l = lits[i];
+            if (S.value(l) == l_False && S.level(var(l)) == 0) {
+                //don't add this to the set
+            } else if (S.value(l) == l_True && S.level(var(l)) == 0) {
+                if (constant_true_lit == lit_Undef) {
+                    constant_true_lit = l;
+                } else {
+                    //multiple literals are known to be true; this is a conflict
+                    S.addClause(~constant_true_lit, ~l);//this is a conflict
+                    return;
+                }
+            } else {
+                set.push(l);
+            }
+        }
+
+        if (constant_true_lit == lit_Undef) {
+            if(set.size()==0){
+                //all literals are known to be false.
+                //this is a conflict
+                S.addClause(getFalse());
+            }else if(set.size()==1){
+                S.addClause(set[0]);
+            }else {
+                for (int i = 0; i < set.size(); i++) {
+                    for (int j = i + 1; j < set.size(); j++) {
+                        S.addClause(~set[i], ~set[j]);
+                    }
+                }
+            }
+        }else{
+            //all remaining elements of the set must be false, because constant_true_lit is true.
+            for (int i = 0; i < set.size(); i++) {
+                S.addClause(~constant_true_lit,~set[i]);//technically don't need to include ~constant_true_lit here, but it might make things cleaner to reason about elsewhere.
+                // (It will be eliminated by the solver anyhow, so this doesn't cost anything.)
+            }
+        }
+
+    }
+
+    //uses n^2 binary clauses to create a simple exactly-one-constraint.
+    //if you have more than 20 or so literals, strongly consider using a pseudo-Boolean constraint solver instead
+    void AssertExactlyOne(const vec<Lit> & lits) {
+        AssertOr(lits);
+        AssertAMO(lits);
+    }
+
 };
 };
 

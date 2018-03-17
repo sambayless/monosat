@@ -71,7 +71,7 @@ typedef int64_t Weight;
   }
  const char * getVersion();
   SolverPtr newSolver();
-  SolverPtr newSolver_arg(char*argv);
+  SolverPtr newSolver_arg(const char*argv);
 #ifndef JNA
   //Java Native Access sometimes has problems with string arrays
   SolverPtr newSolver_args(int argc, char**argv);
@@ -79,7 +79,7 @@ typedef int64_t Weight;
 
   void deleteSolver (SolverPtr S);
   //If set, dump constraints to this file (as they are asserted in the solver)
-  void setOutputFile(SolverPtr S,char * output);
+  void setOutputFile(SolverPtr S,const char * output);
   void readGNF(SolverPtr S, const char  * filename);
 
   bool solve(SolverPtr S);
@@ -266,6 +266,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
 
   int getModel_Path_EdgeLits_Length(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal);
   int getModel_Path_EdgeLits(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal, int store_length, int * store);
+
 
 #ifdef __cplusplus
 }

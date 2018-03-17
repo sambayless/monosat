@@ -22,7 +22,7 @@
 #ifndef LOGIC_H_
 #define LOGIC_H_
 
-#include "monosat/Circuit.h"
+#include "monosat/api/Circuit.h"
 #include "monosat/core/Solver.h"
 #include "monosat/simp/SimpSolver.h"
 #include "monosat/core/SolverTypes.h"
@@ -32,6 +32,7 @@
 #include <list>
 
 //High-level C++ interface to Monosat
+//Note: this is incomplete, use with caution!
 namespace Monosat {
 
 namespace Internal {

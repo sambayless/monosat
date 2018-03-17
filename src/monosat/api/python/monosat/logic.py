@@ -370,10 +370,12 @@ def And(*args):
             return And(*args[0])
         return VAR(args[0])
     else:
-        a=VAR(args[0])
-        for i in range(1,len(args)):
-            a=a.And(VAR(args[i]))
-        return a;
+
+
+        #a=VAR(args[0])
+        #for i in range(1,len(args)):
+        #    a=a.And(VAR(args[i]))
+        #return a;
 
 def Or(*args):
     if len(args)==0:

@@ -38,6 +38,7 @@
 #include "monosat/pb/PbSolver.h"
 #include "monosat/routing/FlowRouter.h"
 #include "monosat/Version.h"
+#include "MonosatInternal.h"
 #include <csignal>
 #include <set>
 #include <iostream>
@@ -373,17 +374,6 @@ void printStats(SimpSolver* solver) {
 	printf("CPU time              : %g s\n", cpu_time);
 }
 
-struct MonosatData{
-	Monosat::BVTheorySolver<int64_t> * bv_theory=nullptr;
-	Monosat::FSMTheorySolver * fsm_theory=nullptr;
-	PB::PbSolver * pbsolver=nullptr;
-	vec< Monosat::GraphTheorySolver<int64_t> *> graphs;
-	bool last_solution_optimal=true;
-	bool has_conflict_clause_from_last_solution=false;
-	vec<Objective> optimization_objectives;
-	FILE * outfile =nullptr;
-	string args = "";
-};
 
 //Supporting function for throwing parse errors
 inline void write_out(Monosat::SimpSolver * S, const char *fmt, ...) {
@@ -400,7 +390,7 @@ inline void write_out(Monosat::SimpSolver * S, const char *fmt, ...) {
 	fflush(d->outfile);
 }
 
-void setOutputFile(Monosat::SimpSolver * S, char * output){
+void setOutputFile(Monosat::SimpSolver * S,const  char * output){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	assert(d);
 	if(d->outfile){
@@ -452,7 +442,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
 	return elems;
 }
 
-Monosat::SimpSolver * newSolver_arg(char*argv){
+Monosat::SimpSolver * newSolver_arg(const char*argv){
 	if (argv && strlen(argv)>0){
 		std::string args;
 		args = argv;
@@ -472,7 +462,7 @@ Monosat::SimpSolver * newSolver_arg(char*argv){
 }
 
 
-Monosat::SimpSolver * newSolver_args(int argc, char**argv){
+Monosat::SimpSolver * newSolver_args(int argc,  char**argv){
 	using namespace APISignal;
 	string args ="";
 	for (int i = 0;i<argc;i++){
@@ -496,7 +486,7 @@ Monosat::SimpSolver * newSolver_args(int argc, char**argv){
 	solvers.insert(S);//add S to the list of solvers handled by signals
 
 
-	S->_external_data =(void*)new MonosatData();
+	S->_external_data =(void*)new MonosatData(S);
 	((MonosatData*)S->_external_data)->args =args;
 	if(!opt_pre){
 		S->eliminate(true);//disable preprocessing.
