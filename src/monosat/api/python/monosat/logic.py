@@ -370,12 +370,14 @@ def And(*args):
             return And(*args[0])
         return VAR(args[0])
     else:
-
-
-        #a=VAR(args[0])
-        #for i in range(1,len(args)):
-        #    a=a.And(VAR(args[i]))
-        #return a;
+        out=Var()
+        clause = []
+        for a in args:
+           clause.append(_monosat.Not(VAR(a).getLit()))
+           _monosat.addBinaryClause(a.getLit(),_monosat.Not(out.getLit()))
+        clause.append(out.getLit())
+        _monosat.addClause(clause)
+        return out
 
 def Or(*args):
     if len(args)==0:
@@ -385,10 +387,14 @@ def Or(*args):
             return Or(*args[0])
         return VAR(args[0])
     else:
-        a=VAR(args[0])
-        for i in range(1,len(args)):
-            a=a.Or(VAR(args[i]))
-        return a;
+        out=Var()
+        clause = []
+        for a in args:
+            clause.append(VAR(a).getLit())
+            _monosat.addBinaryClause(_monosat.Not(a.getLit()),out.getLit())
+        clause.append(_monosat.Not(out.getLit()))
+        _monosat.addClause(clause)
+        return out
 
 def Nand(*args):
     return And(*args).Not()
