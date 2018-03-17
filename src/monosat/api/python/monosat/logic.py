@@ -77,8 +77,15 @@ class Var:
         _monosat.setDecisionPolarity(self.getVar(),b)
 
     def getDecisionPolarity(self):
-        return self.monosat_c.getDecisionPolarity(self.getVar())
+        return _monosat.getDecisionPolarity(self.getVar())
 
+
+    def setDecisionVar(self, decidable):
+        _monosat.setDecisionVar(self.getVar(),decidable)
+
+
+    def isDecisionVar(self):
+        return _monosat.isDecisionVar(self.getVar())
 
     def setSymbol(self,s):
         pass

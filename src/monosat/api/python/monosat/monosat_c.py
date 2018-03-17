@@ -597,7 +597,7 @@ class Monosat(metaclass=Singleton):
         return self.monosat_c.backtrack(self.solver._ptr)        
     
     def addUnitClause(self,clause):
-        self.backtrack()        
+
         if isinstance(clause, int ):
             if self.solver.output:
                 self._echoOutput("%d 0\n"%(dimacs(clause)))            
@@ -610,14 +610,14 @@ class Monosat(metaclass=Singleton):
             assert(False)
 
     def addBinaryClause(self,l0,l1):
-        self.backtrack()        
+
         if self.solver.output:       
             self._echoOutput(" ".join((str(dimacs(c)) for c in (l0,l1)))+" 0\n")    
         self.monosat_c.addBinaryClause(self.solver._ptr,l0,l1)           
 
 
     def addTertiaryClause(self,l0,l1,l2):
-        self.backtrack()
+
         if self.solver.output:   
             self._echoOutput(" ".join((str(dimacs(c)) for c in (l0,l1,l2)))+" 0\n")      
         self.monosat_c.addTertiaryClause(self.solver._ptr,l0,l1,l2)  
@@ -633,7 +633,7 @@ class Monosat(metaclass=Singleton):
         elif len(clause)==3:            
             self.addTertiaryClause(clause[0],clause[1],clause[2])  
         else:         
-            self.backtrack()
+
             if self.solver.output:
                 self._echoOutput(" ".join((str(dimacs(c)) for c in clause))+" 0\n")
             lp = self.getIntArray(clause)
