@@ -1,4 +1,4 @@
-from libc cimport bool
+
 from libc.stdint cimport  int64_t
 cdef extern from "monosat/api/Monosat.h":
 
@@ -32,9 +32,9 @@ cdef extern from "monosat/api/Monosat.h":
 
     void readGNF(SolverPtr S, char* filename)
 
-    bool solve(SolverPtr S)
+    bint solve(SolverPtr S)
 
-    bool solveAssumptions(SolverPtr S, int64_t assumptions, int n_assumptions)
+    bint solveAssumptions(SolverPtr S, int* assumptions, int n_assumptions)
 
     void setTimeLimit(SolverPtr S, int seconds)
 
@@ -46,31 +46,31 @@ cdef extern from "monosat/api/Monosat.h":
 
     int solveLimited(SolverPtr S)
 
-    int solveAssumptionsLimited(SolverPtr S, int64_t assumptions, int n_assumptions)
+    int solveAssumptionsLimited(SolverPtr S, int* assumptions, int n_assumptions)
 
-    bool lastSolutionWasOptimal(SolverPtr S)
+    bint lastSolutionWasOptimal(SolverPtr S)
 
-    int getConflictClause(SolverPtr S, int64_t store_clause, int max_store_size)
+    int getConflictClause(SolverPtr S, int* store_clause, int max_store_size)
 
     void backtrack(SolverPtr S)
 
     int newVar(SolverPtr S)
 
-    void setDecisionVar(SolverPtr S, int var, bool decidable)
+    void setDecisionVar(SolverPtr S, int var, bint decidable)
 
-    bool isDecisionVar(SolverPtr S, int var)
+    bint isDecisionVar(SolverPtr S, int var)
 
     void setDecisionPriority(SolverPtr S, int var, int priority)
 
     int getDecisionPriority(SolverPtr S, int var)
 
-    void setDecisionPolarity(SolverPtr S, Var v, bool b)
+    void setDecisionPolarity(SolverPtr S, Var v, bint b)
 
-    bool getDecisionPolarity(SolverPtr S, Var v)
+    bint getDecisionPolarity(SolverPtr S, Var v)
 
     int true_lit(SolverPtr S)
 
-    bool disallowLiteralSimplification(SolverPtr S, int lit)
+    bint disallowLiteralSimplification(SolverPtr S, int lit)
 
     void disablePreprocessing(SolverPtr S)
 
@@ -80,15 +80,15 @@ cdef extern from "monosat/api/Monosat.h":
 
     int nBitvectors(SolverPtr S, BVTheoryPtr bv)
 
-    bool addClause(SolverPtr S, int64_t lits, int n_lits)
+    bint addClause(SolverPtr S, int* lits, int n_lits)
 
-    bool addUnitClause(SolverPtr S, int lit)
+    bint addUnitClause(SolverPtr S, int lit)
 
-    bool addBinaryClause(SolverPtr S, int lit1, int lit2)
+    bint addBinaryClause(SolverPtr S, int lit1, int lit2)
 
-    bool addTertiaryClause(SolverPtr S, int lit1, int lit2, int lit3)
+    bint addTertiaryClause(SolverPtr S, int lit1, int lit2, int lit3)
 
-    void addBinaryClauses(SolverPtr S, int64_t first_args, int64_t second_args, int n_pairs)
+    void addBinaryClauses(SolverPtr S, int* first_args, int* second_args, int n_pairs)
 
     void clearOptimizationObjectives(SolverPtr S)
 
@@ -96,13 +96,13 @@ cdef extern from "monosat/api/Monosat.h":
 
     void minimizeBV(SolverPtr S, BVTheoryPtr bv, int bvID)
 
-    void maximizeLits(SolverPtr S, int64_t lits, int n_lits)
+    void maximizeLits(SolverPtr S, int* lits, int n_lits)
 
-    void minimizeLits(SolverPtr S, int64_t lits, int n_lits)
+    void minimizeLits(SolverPtr S, int* lits, int n_lits)
 
-    void maximizeWeightedLits(SolverPtr S, int64_t lits, int64_t weights, int n_lits)
+    void maximizeWeightedLits(SolverPtr S, int* lits, int* weights, int n_lits)
 
-    void minimizeWeightedLits(SolverPtr S, int64_t lits, int64_t weights, int n_lits)
+    void minimizeWeightedLits(SolverPtr S, int* lits, int* weights, int n_lits)
 
     BVTheoryPtr initBVTheory(SolverPtr S)
 
@@ -110,7 +110,7 @@ cdef extern from "monosat/api/Monosat.h":
 
     int newBitvector_anon(SolverPtr S, BVTheoryPtr bv, int bvWidth)
 
-    int newBitvector(SolverPtr S, BVTheoryPtr bv, int64_t bits, int n_bits)
+    int newBitvector(SolverPtr S, BVTheoryPtr bv, int* bits, int n_bits)
 
     int bv_width(SolverPtr S, BVTheoryPtr bv, int bvID)
 
@@ -160,25 +160,25 @@ cdef extern from "monosat/api/Monosat.h":
 
     void bv_divide(SolverPtr S, BVTheoryPtr bv, int bvID1, int bvID2, int resultID)
 
-    void bv_min(SolverPtr S, BVTheoryPtr bv, int64_t args, int n_args, int resultID)
+    void bv_min(SolverPtr S, BVTheoryPtr bv, int* args, int n_args, int resultID)
 
-    void bv_max(SolverPtr S, BVTheoryPtr bv, int64_t args, int n_args, int resultID)
+    void bv_max(SolverPtr S, BVTheoryPtr bv, int* args, int n_args, int resultID)
 
-    void bv_popcount(SolverPtr S, BVTheoryPtr bv, int64_t args, int n_args, int resultID)
+    void bv_popcount(SolverPtr S, BVTheoryPtr bv, int* args, int n_args, int resultID)
 
-    void bv_unary(SolverPtr S, BVTheoryPtr bv, int64_t args, int n_args, int resultID)
+    void bv_unary(SolverPtr S, BVTheoryPtr bv, int* args, int n_args, int resultID)
 
-    void at_most_one(SolverPtr S, int64_t vars, int n_vars)
+    void at_most_one(SolverPtr S, int* vars, int n_vars)
 
-    void assertPB_lt(SolverPtr S, int rhs, int n_args, int64_t literals, int64_t coefficients)
+    void assertPB_lt(SolverPtr S, int rhs, int n_args, int* literals, int* coefficients)
 
-    void assertPB_leq(SolverPtr S, int rhs, int n_args, int64_t literals, int64_t coefficients)
+    void assertPB_leq(SolverPtr S, int rhs, int n_args, int* literals, int* coefficients)
 
-    void assertPB_eq(SolverPtr S, int rhs, int n_args, int64_t literals, int64_t coefficients)
+    void assertPB_eq(SolverPtr S, int rhs, int n_args, int* literals, int* coefficients)
 
-    void assertPB_geq(SolverPtr S, int rhs, int n_args, int64_t literals, int64_t coefficients)
+    void assertPB_geq(SolverPtr S, int rhs, int n_args, int* literals, int* coefficients)
 
-    void assertPB_gt(SolverPtr S, int rhs, int n_args, int64_t literals, int64_t coefficients)
+    void assertPB_gt(SolverPtr S, int rhs, int n_args, int* literals, int* coefficients)
 
     void flushPB(SolverPtr S)
 
@@ -226,13 +226,13 @@ cdef extern from "monosat/api/Monosat.h":
 
     int acyclic_directed(SolverPtr S, GraphTheorySolver_long G)
 
-    void newEdgeSet(SolverPtr S, GraphTheorySolver_long G, int64_t edges, int n_edges, bool enforceEdgeAssignment)
+    void newEdgeSet(SolverPtr S, GraphTheorySolver_long G, int* edges, int n_edges, bint enforceEdgeAssignment)
 
     void graph_setAssignEdgesToWeight(SolverPtr S, GraphTheorySolver_long G, int64_t weight)
 
     FlowRouterPtr createFlowRouting(SolverPtr S, GraphTheorySolver_long G, int sourceNode, int destNode, int maxflowLit)
 
-    void addRoutingNet(SolverPtr S, GraphTheorySolver_long G, FlowRouterPtr router, int disabledEdge, int n_members, int64_t edge_lits, int64_t reach_lits)
+    void addRoutingNet(SolverPtr S, GraphTheorySolver_long G, FlowRouterPtr router, int disabledEdge, int n_members, int* edge_lits, int* reach_lits)
 
     FSMTheorySolverPtr initFSMTheory(SolverPtr S)
 
@@ -242,7 +242,7 @@ cdef extern from "monosat/api/Monosat.h":
 
     int newTransition(SolverPtr S, FSMTheorySolverPtr fsmTheory, int fsmID, int _fromNode, int toNode, int inputLabel, int outputLabel)
 
-    int newString(SolverPtr S, FSMTheorySolverPtr fsmTheory, int64_t str, int len)
+    int newString(SolverPtr S, FSMTheorySolverPtr fsmTheory, int* str, int len)
 
     int fsmAcceptsString(SolverPtr S, FSMTheorySolverPtr fsmTheory, int fsmID, int startNode, int acceptNode, int stringID)
 
@@ -250,7 +250,7 @@ cdef extern from "monosat/api/Monosat.h":
 
     int getModel_Literal(SolverPtr S, int lit)
 
-    Weight getModel_BV(SolverPtr S, BVTheoryPtr bv, int bvID, bool getMaximumValue)
+    Weight getModel_BV(SolverPtr S, BVTheoryPtr bv, int bvID, bint getMaximumValue)
 
     Weight getModel_MaxFlow(SolverPtr S, GraphTheorySolver_long G, int maxflow_literal)
 
@@ -262,8 +262,8 @@ cdef extern from "monosat/api/Monosat.h":
 
     int getModel_Path_Nodes_Length(SolverPtr S, GraphTheorySolver_long G, int reach_or_distance_literal)
 
-    int getModel_Path_Nodes(SolverPtr S, GraphTheorySolver_long G, int reach_or_distance_literal, int store_length, int64_t store)
+    int getModel_Path_Nodes(SolverPtr S, GraphTheorySolver_long G, int reach_or_distance_literal, int store_length, int* store)
 
     int getModel_Path_EdgeLits_Length(SolverPtr S, GraphTheorySolver_long G, int reach_or_distance_literal)
 
-    int getModel_Path_EdgeLits(SolverPtr S, GraphTheorySolver_long G, int reach_or_distance_literal, int store_length, int64_t store)
+    int getModel_Path_EdgeLits(SolverPtr S, GraphTheorySolver_long G, int reach_or_distance_literal, int store_length, int* store)
