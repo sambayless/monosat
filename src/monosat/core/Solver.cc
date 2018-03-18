@@ -146,7 +146,11 @@ bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 	assert(decisionLevel() == 0);
 	if (!ok)
 		return false;
-	resetInitialPropagation();    //Ensure that super solver call propagate on this solver at least once.
+    for(Lit l:ps) {
+        if(hasTheory(l)) {
+            resetInitialPropagation();    //Ensure that super solver call propagate on this solver at least once.
+        }
+    }
 	// Check if clause is satisfied and remove false/duplicate literals:
 	sort(ps);
 	Lit p;
