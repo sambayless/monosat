@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
 set (PB_SUPPORT 1)
-set (JAVA_SUPPORT 1) #set to 1 to compile Java JNI support into the shared library (requires a JDK)
+set (JAVA_SUPPORT 0) #set to 1 to compile Java JNI support into the shared library (requires a JDK)
 set (JAVA_SOURCE_FILES "")
 if(NOT NO_GIT_VERSION)
     set (SHOW_GIT_VERSION 1)
@@ -26,11 +26,11 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} " (set with -DCMAKE_BUI
 
 message("* Adding build types...")
 SET(CMAKE_CXX_FLAGS_SANITIZE
-        "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
+        "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fsanitize=address -fsanitize=undefined"
         CACHE STRING "Flags used by the C++ compiler during address sanitize  builds."
         FORCE )
 SET(CMAKE_C_FLAGS_SANITIZE
-        "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined"
+        "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fsanitize=address -fsanitize=undefined"
         CACHE STRING "Flags used by the C compiler during address sanitize builds."
         FORCE )
 SET(CMAKE_EXE_LINKER_FLAGS_SANITIZE

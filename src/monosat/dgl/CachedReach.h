@@ -321,6 +321,9 @@ public:
     }
     int previous(int t) {
         assert(last_modification == g.modifications && ! needs_recompute);
+        if (previous_edge[t]<0){
+        	return -1;
+        }
         int edgeID = incomingEdge(t);
         assert(edgeID>=0);
         assert(g.edgeEnabled(edgeID));
