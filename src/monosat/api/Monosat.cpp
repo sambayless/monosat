@@ -389,6 +389,9 @@ inline void write_out(Monosat::SimpSolver * S, const char *fmt, ...) {
 	va_end(args);
 	fflush(d->outfile);
 }
+int varToLit(int var, bool negated){
+	return toInt(mkLit(var,negated));
+}
 
 void setOutputFile(Monosat::SimpSolver * S,const  char * output){
 	MonosatData * d = (MonosatData*) S->_external_data;
