@@ -523,6 +523,10 @@ def AssertImplies(a,b):
     _addSafeClause((~VAR(a),VAR(b)))  
     #return Not(VAR(a)).Or(  VAR(b)) #VAR(a).And( Not(b))
 
+def AssertEachImplies(pairs):
+    _monosat.addBinaryClauses([(x.getLit(),y.getLit()) for x,y in pairs])
+
+
 def AssertIff(a,b):
     AssertXnor((a,b))
 

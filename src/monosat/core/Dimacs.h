@@ -323,6 +323,12 @@ private:
 				var = mapVar(S,var);
 				int priority = parseInt(b);
 				S.setDecisionPriority(var, priority);
+			}else if (match(b,"decision")) {
+				int parsed_int = parseInt(b);
+				int var = abs(parsed_int)-1;
+				var = mapVar(S,var);
+				bool decision = parseInt(b);
+				S.setDecisionVar(var, decision);
 			}else if (match(b,"clear_opt")) {
 				objectives.clear();
 			}else if (match(b,"minimize bv")){

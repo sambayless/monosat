@@ -3029,10 +3029,41 @@ lbool Solver::solve_() {
 				throw std::runtime_error("Model is inconsistent with assumptions!");
 			}
 		}
+		if (opt_check_solution){
+			if(opt_verb>0){
+				printf("Checking witness...\n");
+			}
+			ClauseIterator it = clausesBegin();
+			bool any_undef_clauses=false;
+			while(it!=clausesEnd()){
+				const Clause & c = *it;
+				bool all_false = true;
+				bool any_true = false;
+				for(Lit l:c){
+					if(value(l)==l_True){
+						any_true=true;
+					}
+					if(value(l)!=l_False){
+						all_false=false;
+					}
+				}
+				if(all_false){
+					throw std::runtime_error("Unsatisfied clause");
+				}
+				if(!all_false && !any_true){
+					any_undef_clauses=true;
+				}
+				++it;
+			}
+			if(any_undef_clauses){
+				printf("Warning: Some clauses are neither SAT nor UNSAT (typically, this is due to variables that have been marked as not decidable)\n");
+			}
+		}
+
 
 		if (opt_check_solution && theories.size() && !disable_theories && !only_propagate_assumptions) {
 			if(opt_verb>0){
-				printf("Checking witnesses...\n");
+				printf("Checking theory witnesses...\n");
 			}
 			double check_start=rtime(1);
 			for(Theory * t:theories){

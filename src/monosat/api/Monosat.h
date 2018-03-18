@@ -141,7 +141,8 @@ typedef int64_t Weight;
   bool addUnitClause(SolverPtr S,int lit);
   bool addBinaryClause(SolverPtr S,int lit1, int lit2);
   bool addTertiaryClause(SolverPtr S,int lit1, int lit2, int lit3);
-
+  //Add n_pairs binary clauses: (first_args[0] OR second_args[0]) AND (first_args[1] OR second_args[1])...
+  void addBinaryClauses(SolverPtr S,int * first_args,int * second_args, int n_pairs);
   //remove any optimization objectives from the solver
   void clearOptimizationObjectives(SolverPtr S);
 

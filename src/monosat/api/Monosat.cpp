@@ -874,6 +874,7 @@ void disablePreprocessing(Monosat::SimpSolver * S){
 }
 
 void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable){
+	write_out(S,"decision %d %d\n",var+1,decidable);//add 1 for dimacs
 	S->setDecisionVar(var,decidable);
 }
 void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority){
@@ -939,6 +940,16 @@ bool addBinaryClause(Monosat::SimpSolver * S,int lit1, int lit2){
 	write_out(S,"%d %d 0\n",dimacs(toLit(lit1)), dimacs(toLit(lit2)));
 	return S->addClause(toLit(lit1),toLit(lit2));
 }
+
+void addBinaryClauses(Monosat::SimpSolver * S,int * first_args, int * second_args, int n_pairs){
+    assert(first_args);
+    assert(second_args);
+    assert(n_pairs>=0);
+    for(int i = 0;i<n_pairs;i++){
+        addBinaryClause(S,first_args[i],second_args[i]);
+    }
+}
+
 bool addTertiaryClause(Monosat::SimpSolver * S,int lit1, int lit2, int lit3){
 	write_out(S,"%d %d %d 0\n",dimacs(toLit(lit1)), dimacs(toLit(lit2)), dimacs(toLit(lit3)));
 	return S->addClause(toLit(lit1),toLit(lit2),toLit(lit3));

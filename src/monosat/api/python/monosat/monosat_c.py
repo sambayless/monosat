@@ -194,6 +194,9 @@ class Monosat(metaclass=Singleton):
         self.monosat_c.addBinaryClause.argtypes=[c_solver_p,c_literal,c_literal]
         self.monosat_c.addBinaryClause.restype=c_bool
 
+        self.monosat_c.addBinaryClauses.argtypes=[c_solver_p,c_int_p,c_int_p, c_int]
+
+
         self.monosat_c.addTertiaryClause.argtypes=[c_solver_p,c_literal,c_literal,c_literal]
         self.monosat_c.addTertiaryClause.restype=c_bool
         
@@ -613,7 +616,19 @@ class Monosat(metaclass=Singleton):
 
         if self.solver.output:       
             self._echoOutput(" ".join((str(dimacs(c)) for c in (l0,l1)))+" 0\n")    
-        self.monosat_c.addBinaryClause(self.solver._ptr,l0,l1)           
+        self.monosat_c.addBinaryClause(self.solver._ptr,l0,l1)
+
+    #clauses should be a list of pairs of literals, each of which will be added as a binary clause
+    def addBinaryClauses(self,clauses):
+
+        if len(clauses)==1:
+            self.addBinaryClause(clauses[0][0],clauses[0][1])
+        else:
+            firsts, seconds = zip(*clauses)
+
+            first_p = self.getIntArray(firsts)
+            second_p = self.getIntArray2(seconds)
+            self.monosat_c.addBinaryClauses(self.solver._ptr,first_p,second_p,len(clauses))
 
 
     def addTertiaryClause(self,l0,l1,l2):
@@ -673,7 +688,7 @@ class Monosat(metaclass=Singleton):
         lp2 = self.getIntArray2(weights)
         self.monosat_c.minimizeWeightedLits(self.solver._ptr, lp,lp2, len(lits))
 
-    #convenience code to and together to lits and return a new 
+    #convenience code to and together to lits and return a new
     def addAnd(self, lit1, lit2):
         out = self.newLit()
         self.addTertiaryClause(out, self.Not(lit1), self.Not(lit2))
@@ -793,7 +808,7 @@ class Monosat(metaclass=Singleton):
 
     #Convert any psuedo-boolean constraints into cnf in the solver (will be called automatically during solving)
     def flushPB(self):
-        self.monosat_c.flushPB()
+        self.monosat_c.flushPB(self.solver._ptr)
 
     #def preprocess(self,disable_future_preprocessing=False):
     #    self.monosat_c.preprocess(disable_future_preprocessing)
@@ -1107,7 +1122,7 @@ class Monosat(metaclass=Singleton):
         return self.monosat_c.nEdges(self.solver._ptr,graph)
 
     def newEdge(self, graph, u,v, weight):
-        self.backtrack()
+        #self.backtrack()
         l = self.monosat_c.newEdge(self.solver._ptr,graph,c_int(u),c_int(v),c_long(weight))
         if self.solver.output:
             self._echoOutput("edge " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " +  str(dimacs(l)) + " " + str((weight))  + "\n")
