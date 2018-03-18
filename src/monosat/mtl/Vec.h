@@ -171,7 +171,7 @@ public:
 	T* begin() const {
 		return &data[0];
 	}
-	
+
 	T* end() const {
 		return &data[sz];
 	}

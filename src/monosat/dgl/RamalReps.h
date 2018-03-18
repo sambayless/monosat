@@ -1392,7 +1392,20 @@ public:
 		dbg_delta_lite();
 #endif
 	}
-
+	bool dbg_queuesClear(){
+#ifdef DEBUG_RAMAL
+		assert(in_queue.size()==g.nodes());
+		assert(in_queue2.size()==g.nodes());
+		assert(q.size()==0);
+		for(bool b: in_queue){
+			assert(!b);
+		}
+		for(bool b: in_queue2){
+			assert(!b);
+		}
+#endif
+		return true;
+	}
 	void AddEdge(int edgeID) {
 		static int iter = 0;
 		++iter;
@@ -1425,10 +1438,18 @@ public:
 		delta[rv]++;
 		dist[rv] = altw;
 
+		for(int n:q){
+			assert(in_queue[n]);
+			in_queue[n]=false;
+		}
+		for(int n:q2){
+			assert(in_queue2[n]);
+			in_queue2[n]=false;
+		}
 		q.clear();
-		in_queue.clear();
-		in_queue.resize(g.nodes());
-		in_queue2.resize(g.nodes());
+		q2.clear();
+		assert(dbg_queuesClear());
+
 		q.push_back(rv);
 		in_queue[rv] = true;
 
@@ -1592,12 +1613,18 @@ public:
 		if (delta[rv] > 0)
 			return; //the shortest path hasn't changed in length, because there was an alternate route of the same length to this node.
 
-		in_queue.clear();
-		in_queue.resize(g.nodes());
-		in_queue2.clear();
-		in_queue2.resize(g.nodes());
+		for(int n:q){
+			assert(in_queue[n]);
+			in_queue[n]=false;
+		}
+		for(int n:q2){
+			assert(in_queue2[n]);
+			in_queue2[n]=false;
+		}
 		q.clear();
 		q2.clear();
+		assert(dbg_queuesClear());
+
 
 		changeset.clear();
 		changeset.push_back(rv);
@@ -1811,6 +1838,13 @@ public:
 					}
 				}
 			}
+			q.clear();
+			q2.clear();
+			in_queue.clear();
+			in_queue.resize(g.nodes());
+			in_queue2.clear();
+			in_queue2.resize(g.nodes());
+			assert(dbg_queuesClear());
 			last_history_clear=-1;
 			dist.resize(g.nodes(), INF);
 			dist[getSource()] = 0;
