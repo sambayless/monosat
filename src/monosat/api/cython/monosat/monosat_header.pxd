@@ -1,5 +1,5 @@
 
-from libc.stdint cimport  int64_t
+from libc.stdint cimport uint64_t, int64_t
 cdef extern from "monosat/api/Monosat.h":
 
     ctypedef void* SolverPtr

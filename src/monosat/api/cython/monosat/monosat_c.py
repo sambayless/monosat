@@ -21,48 +21,17 @@ from __future__ import print_function
 
 import os
 import platform
-from ctypes import *
+
 from monosat.singleton import Singleton
 from os import path
 from enum import Enum
-module_path = os.path.abspath(path.dirname(__file__))
-library_monosat = "libmonosat.so"
-if platform.system() == 'Windows':
-    library_monosat = "libmonosat.dll"
-elif platform.system() == 'Darwin':
-        library_monosat = "libmonosat.dylib"
-try:
-    try:
-        #First try loading monosat from the python library directory
-        _monosat_c= cdll.LoadLibrary(os.path.join(module_path, library_monosat))
-    except Exception as e:
-        #then fall back to loading from the system path 
-        _monosat_c= cdll.LoadLibrary(library_monosat)
-except Exception as e:
-    print ("Unable to load libmonosat dynamic library")
-    raise e
+#module_path = os.path.abspath(path.dirname(__file__))
 
-#Python interface to MonoSAT
-    
-#libc = CDLL('libc.so.6')
-null_ptr = POINTER(c_int)()
 
-c_uint_p = POINTER(c_int)
-c_int_p = POINTER(c_int)
-c_long_p = POINTER(c_long)
+import pyximport
+pyximport.install()
+import monosat.monosat_p
 
-c_solver_p = c_void_p
-c_graph_p = c_void_p
-c_bv_p = c_void_p
-c_fsm_theory_p = c_void_p
-c_fsm_p = c_void_p
-
-c_literal = c_int
-c_literal_p = c_int_p
-c_bvID=c_int
-c_bvID_p = c_int_p
-c_var = c_int
-c_var_p = c_int_p
 
 def dimacs(l):
     assert(isinstance(l,int))
@@ -87,16 +56,19 @@ class Solver():
             #split this up by whitespace
             arguments=arguments.split()  
         self.arguments=arguments 
-        arguments=["monosat"]+arguments
-        arr = (c_char_p*len(arguments))()     
-        for i,arg in enumerate(arguments):
-            arr[i]=c_char_p(bytes(arg, 'utf-8')) 
+        #arguments=["monosat"]+arguments
+        arr = "monosat " + " ".join(arguments)
+        #for i,arg in enumerate(arguments):
+        #    arr[i]=(bytes(arg, 'utf-8'))
 
         #In the future, allow multiple solvers to be instantiated...
         self.comments=[]
-        
-        self._ptr = monosat_c.newSolver_args(len(arguments),arr)
+        print("init")
+        self._ptr = monosat_c.newSolver_arg(bytes(arr, 'utf-8'))
+        print("ptr")
+
         self.bvtheory=  monosat_c.initBVTheory(self._ptr)
+        print("bv")
         self.output=None
         self.arguments=None
         self.symbolmap=dict()  
@@ -114,318 +86,8 @@ class Solver():
 class Monosat(metaclass=Singleton):       
     def __init__(self):
         self._managers=dict()
-        self.monosat_c=_monosat_c
+        self.monosat_c = monosat.monosat_p
         self.elapsed_time=0
-        self._int_array = (c_int * (1024))()
-        self._int_array2 = (c_int * (1024))()
-        self._long_array= (c_long * (1024))()
-        #Set the return types for each function
-
-        self.monosat_c.getVersion.argtypes=[]
-        self.monosat_c.getVersion.restype=c_char_p
-
-        self.monosat_c.newSolver.argtypes=[]
-        self.monosat_c.newSolver.restype=c_solver_p
-        
-        self.monosat_c.newSolver_arg.argtypes=[c_char_p]
-        self.monosat_c.newSolver_arg.restype=c_solver_p
-        
-        self.monosat_c.newSolver_args.argtypes=[c_int, POINTER(c_char_p)]
-        self.monosat_c.newSolver_args.restype=c_solver_p
-        
-        self.monosat_c.deleteSolver.argtypes=[c_solver_p]
-        
-        self.monosat_c.readGNF.argtypes=[c_solver_p, c_char_p]
-        
-        self.monosat_c.solve.argtypes=[c_solver_p]
-        self.monosat_c.solve.restype=c_bool
-        
-        self.monosat_c.solveAssumptions.argtypes=[c_solver_p,c_literal_p,c_int]
-        self.monosat_c.solveAssumptions.restype=c_bool       
-
-
-        self.monosat_c.solveLimited.argtypes=[c_solver_p]
-        self.monosat_c.solveLimited.restype=c_int       
-
-        self.monosat_c.solveAssumptionsLimited.argtypes=[c_solver_p,c_literal_p,c_int]
-        self.monosat_c.solveAssumptionsLimited.restype=c_int
-
-        self.monosat_c.lastSolutionWasOptimal.argtypes=[c_solver_p]
-        self.monosat_c.lastSolutionWasOptimal.restype=c_bool
-
-        self.monosat_c.getConflictClause.argtypes=[c_solver_p, c_int_p,c_int]
-        self.monosat_c.getConflictClause.restype=c_int 
-
-        self.monosat_c.setTimeLimit.argtypes=[c_solver_p,c_int]
-        self.monosat_c.setMemoryLimit.argtypes=[c_solver_p,c_int]
-        self.monosat_c.setConflictLimit.argtypes=[c_solver_p,c_int]
-        self.monosat_c.setPropagationLimit.argtypes=[c_solver_p,c_int]    
-        
-        self.monosat_c.backtrack.argtypes=[c_solver_p]
-        
-
-        self.monosat_c.newVar.argtypes=[c_solver_p]
-        self.monosat_c.newVar.restype=c_int
-
-        self.monosat_c.setDecisionVar.argtypes=[c_solver_p,c_var,c_bool]
-    
-        self.monosat_c.isDecisionVar.argtypes=[c_solver_p,c_var]
-        self.monosat_c.isDecisionVar.restype=c_bool
-        
-        self.monosat_c.setDecisionPriority.argtypes=[c_solver_p,c_var,c_int]
-   
-        self.monosat_c.getDecisionPriority.argtypes=[c_solver_p,c_var]
-        self.monosat_c.getDecisionPriority.restype=c_int
-
-        self.monosat_c.setDecisionPolarity.argtypes=[c_solver_p,c_var,c_bool]
-   
-        self.monosat_c.getDecisionPolarity.argtypes=[c_solver_p,c_var]
-        self.monosat_c.getDecisionPolarity.restype=c_bool
- 
-        self.monosat_c.disallowLiteralSimplification.argtypes=[c_solver_p,c_literal]
-        self.monosat_c.disallowLiteralSimplification.restype=c_bool
-        
-        self.monosat_c.addClause.argtypes=[c_solver_p,c_literal_p,c_int]
-        self.monosat_c.addClause.restype=c_bool
- 
-        self.monosat_c.addUnitClause.argtypes=[c_solver_p,c_literal]
-        self.monosat_c.addUnitClause.restype=c_bool
-
-        self.monosat_c.addBinaryClause.argtypes=[c_solver_p,c_literal,c_literal]
-        self.monosat_c.addBinaryClause.restype=c_bool
-
-        self.monosat_c.addBinaryClauses.argtypes=[c_solver_p,c_int_p,c_int_p, c_int]
-
-
-        self.monosat_c.addTertiaryClause.argtypes=[c_solver_p,c_literal,c_literal,c_literal]
-        self.monosat_c.addTertiaryClause.restype=c_bool
-        
-        self.monosat_c.true_lit.argtypes=[c_solver_p]
-        self.monosat_c.true_lit.restype=c_int
-
-        self.monosat_c.clearOptimizationObjectives.argtypes=[c_solver_p]
-        self.monosat_c.maximizeBV.argtypes=[c_solver_p,c_bv_p, c_int]
-        self.monosat_c.minimizeBV.argtypes=[c_solver_p,c_bv_p, c_int]
-        self.monosat_c.maximizeLits.argtypes=[c_solver_p,c_int_p, c_int]
-        self.monosat_c.minimizeLits.argtypes=[c_solver_p,c_int_p, c_int]
-        self.monosat_c.maximizeWeightedLits.argtypes=[c_solver_p,c_int_p,c_int_p, c_int]
-        self.monosat_c.minimizeWeightedLits.argtypes=[c_solver_p,c_int_p,c_int_p, c_int]
-
-
-        self.monosat_c.at_most_one.argtypes=[c_solver_p,c_var_p,c_int]
-        self.monosat_c.assertPB_lt.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
-        self.monosat_c.assertPB_leq.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
-        self.monosat_c.assertPB_eq.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
-        self.monosat_c.assertPB_geq.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
-        self.monosat_c.assertPB_gt.argtypes=[c_solver_p,c_int, c_int, c_int_p, c_int_p]
-        self.monosat_c.flushPB.argtypes=[c_solver_p]
-
-        self.monosat_c.initBVTheory.argtypes=[c_solver_p];
-        self.monosat_c.initBVTheory.restype=c_bv_p;
-                
-        self.monosat_c.newBitvector_anon.argtypes=[c_solver_p,c_bv_p, c_int]
-        self.monosat_c.newBitvector_anon.restype=c_bvID
-        
-        self.monosat_c.newBitvector_const.argtypes=[c_solver_p,c_bv_p, c_int, c_long]
-        self.monosat_c.newBitvector_const.restype=c_bvID
-        
-        self.monosat_c.newBitvector.argtypes=[c_solver_p,c_bv_p, c_var_p, c_int]
-        self.monosat_c.newBitvector.restype=c_bvID
-        
-        self.monosat_c.nBitvectors.argtypes=[c_solver_p,c_bv_p]
-        self.monosat_c.nBitvectors.restype=c_int
-        self.monosat_c.newBVComparison_const_lt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
-        self.monosat_c.newBVComparison_const_lt.restype=c_literal
-        
-        self.monosat_c.newBVComparison_bv_lt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
-        self.monosat_c.newBVComparison_bv_lt.restype=c_literal
-        
-        self.monosat_c.newBVComparison_const_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
-        self.monosat_c.newBVComparison_const_leq.restype=c_literal
-
-        self.monosat_c.newBVComparison_bv_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
-        self.monosat_c.newBVComparison_bv_leq.restype=c_literal
-        
-        self.monosat_c.newBVComparison_const_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
-        self.monosat_c.newBVComparison_const_gt.restype=c_literal
-
-        self.monosat_c.newBVComparison_bv_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
-        self.monosat_c.newBVComparison_bv_gt.restype=c_literal
-        
-        self.monosat_c.newBVComparison_const_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
-        self.monosat_c.newBVComparison_const_geq.restype=c_literal
-
-        self.monosat_c.newBVComparison_bv_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
-        self.monosat_c.newBVComparison_bv_geq.restype=c_literal
-        
-        self.monosat_c.bv_addition.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
-        self.monosat_c.bv_subtraction.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
-
-        self.monosat_c.bv_multiply.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
-        self.monosat_c.bv_divide.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID, c_bvID]
-
-        self.monosat_c.bv_ite.argtypes=[c_solver_p,c_bv_p,c_literal, c_bvID,c_bvID,c_bvID]
-
-        self.monosat_c.bv_min.argtypes=[c_solver_p,c_bv_p, c_bvID_p, c_int,c_bvID]
-        self.monosat_c.bv_max.argtypes=[c_solver_p,c_bv_p, c_bvID_p, c_int, c_bvID]
-        
-
-        self.monosat_c.bv_not.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID]
-        self.monosat_c.bv_and.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
-        self.monosat_c.bv_nand.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]    
-        self.monosat_c.bv_or.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]   
-        self.monosat_c.bv_nor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]        
-        self.monosat_c.bv_xor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]        
-        self.monosat_c.bv_xnor.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
-
-        self.monosat_c.bv_concat.argtypes=[c_solver_p,c_bv_p,c_bvID,c_bvID,c_bvID]
-        self.monosat_c.bv_popcount.argtypes=[c_solver_p,c_bv_p,c_literal_p,c_int ,c_bvID]
-        self.monosat_c.bv_unary.argtypes=[c_solver_p,c_bv_p,c_literal_p,c_int ,c_bvID]
-
-
-        self.monosat_c.bv_bitblast.argtypes=[c_solver_p,c_bv_p,c_bvID]
-
-
-
-        self.monosat_c.bv_slice.argtypes=[c_solver_p,c_bv_p,c_bvID,c_int,c_int,c_bvID]
-
-        self.monosat_c.newGraph.argtypes=[c_solver_p]
-        self.monosat_c.newGraph.restype=c_graph_p
-
-        self.monosat_c.newNode.argtypes=[c_solver_p,c_graph_p]
-        self.monosat_c.newNode.restype=c_int
-
-        self.monosat_c.nNodes.argtypes=[c_solver_p,c_graph_p]
-        self.monosat_c.nNodes.restype=c_int
-
-        self.monosat_c.nEdges.argtypes=[c_solver_p,c_graph_p]
-        self.monosat_c.nEdges.restype=c_int
-        
-        self.monosat_c.newEdge.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_long]
-        self.monosat_c.newEdge.restype=c_literal
-
-        
-        self.monosat_c.newEdge_double.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_double]
-        self.monosat_c.newEdge_double.restype=c_literal
-       
-        self.monosat_c.newEdge_bv.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_bvID]
-        self.monosat_c.newEdge_bv.restype=c_literal
-       
-        self.monosat_c.reaches.argtypes=[c_solver_p,c_graph_p, c_int, c_int]
-        self.monosat_c.reaches.restype=c_literal
-
-        self.monosat_c.shortestPathUnweighted_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
-        self.monosat_c.shortestPathUnweighted_lt_const.restype=c_literal
-
-        self.monosat_c.shortestPathUnweighted_leq_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
-        self.monosat_c.shortestPathUnweighted_leq_const.restype=c_literal
-
-
-        self.monosat_c.shortestPath_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
-        self.monosat_c.shortestPath_lt_const.restype=c_literal
-
-        self.monosat_c.shortestPath_leq_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
-        self.monosat_c.shortestPath_leq_const.restype=c_literal
-              
-
-        self.monosat_c.shortestPath_lt_bv.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_bvID]
-        self.monosat_c.shortestPath_lt_bv.restype=c_literal
-
-        self.monosat_c.shortestPath_leq_bv.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_bvID]
-        self.monosat_c.shortestPath_leq_bv.restype=c_literal        
-        
-        self.monosat_c.nVars.argtypes=[c_solver_p]
-        self.monosat_c.nVars.restype=c_int      
-
-        self.monosat_c.nClauses.argtypes=[c_solver_p]
-        self.monosat_c.nClauses.restype=c_int   
-
-        self.monosat_c.maximumFlow_geq.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
-        self.monosat_c.maximumFlow_geq.restype=c_literal               
-        
-        self.monosat_c.maximumFlow_gt.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
-        self.monosat_c.maximumFlow_gt.restype=c_literal      
-
-
-        self.monosat_c.maximumFlow_geq_bv.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_bvID]
-        self.monosat_c.maximumFlow_geq_bv.restype=c_literal   
-        
-        self.monosat_c.maximumFlow_gt_bv.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_bvID]
-        self.monosat_c.maximumFlow_gt_bv.restype=c_literal           
-        
-        self.monosat_c.minimumSpanningTree_leq.argtypes=[c_solver_p,c_graph_p, c_long]
-        self.monosat_c.minimumSpanningTree_leq.restype=c_literal    
-             
-        self.monosat_c.minimumSpanningTree_lt.argtypes=[c_solver_p,c_graph_p, c_long]
-        self.monosat_c.minimumSpanningTree_lt.restype=c_literal            
-
-        self.monosat_c.acyclic_undirected.argtypes=[c_solver_p,c_graph_p]
-        self.monosat_c.acyclic_undirected.restype=c_literal      
-        
-        self.monosat_c.acyclic_directed.argtypes=[c_solver_p,c_graph_p]
-        self.monosat_c.acyclic_directed.restype=c_literal
-
-        self.monosat_c.newEdgeSet.argtypes=[c_solver_p,c_graph_p,c_literal_p,c_int, c_bool]
-
-        self.monosat_c.initFSMTheory.argtypes =[c_solver_p]
-        self.monosat_c.initFSMTheory.restype=c_fsm_theory_p
-
-        self.monosat_c.newFSM.argtypes =[c_solver_p, c_fsm_theory_p,c_int,c_int]
-        self.monosat_c.newFSM.restype=c_int
-
-        self.monosat_c.newState.argtypes =[c_solver_p, c_fsm_theory_p,c_int]
-        self.monosat_c.newState.restype=c_int
-
-        self.monosat_c.newTransition.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int, c_int]
-        self.monosat_c.newTransition.restype=c_int
-
-        self.monosat_c.newString.argtypes =[c_solver_p, c_fsm_theory_p,c_int_p, c_int]
-        self.monosat_c.newString.restype=c_int
-
-        self.monosat_c.fsmAcceptsString.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int]
-        self.monosat_c.fsmAcceptsString.restype=c_int
-
-        self.monosat_c.fsmCompositionAccepts.argtypes =[c_solver_p, c_fsm_theory_p,c_int, c_int, c_int, c_int,c_int, c_int, c_int, c_int,c_int]
-        self.monosat_c.fsmCompositionAccepts.restype=c_int
-
-        self.monosat_c.getModel_Literal.argtypes=[c_solver_p,c_literal]
-        self.monosat_c.getModel_Literal.restype=c_int      
-
-        self.monosat_c.getModel_BV.argtypes=[c_solver_p,c_bv_p, c_bvID, c_bool]
-        self.monosat_c.getModel_BV.restype=c_long    
-
-        self.monosat_c.getModel_MaxFlow.argtypes=[c_solver_p,c_graph_p, c_literal]
-        self.monosat_c.getModel_MaxFlow.restype=c_long            
-
-        self.monosat_c.getModel_EdgeFlow.argtypes=[c_solver_p,c_graph_p, c_literal, c_literal]
-        self.monosat_c.getModel_EdgeFlow.restype=c_long        
-
-        self.monosat_c.getModel_AcyclicEdgeFlow.argtypes=[c_solver_p,c_graph_p, c_literal, c_literal]
-        self.monosat_c.getModel_AcyclicEdgeFlow.restype=c_long     
-
-        self.monosat_c.getModel_MinimumSpanningTreeWeight.argtypes=[c_solver_p,c_graph_p, c_literal]
-        self.monosat_c.getModel_MinimumSpanningTreeWeight.restype=c_long     
-    
-        self.monosat_c.getModel_Path_Nodes_Length.argtypes=[c_solver_p,c_graph_p, c_literal]
-        self.monosat_c.getModel_Path_Nodes_Length.restype=c_int    
-
-        self.monosat_c.getModel_Path_Nodes.argtypes=[c_solver_p,c_graph_p, c_literal, c_int, c_int_p]
-        self.monosat_c.getModel_Path_Nodes.restype=c_int 
-
-        self.monosat_c.getModel_Path_EdgeLits_Length.argtypes=[c_solver_p,c_graph_p, c_literal]
-        self.monosat_c.getModel_Path_EdgeLits_Length.restype=c_int    
-
-        self.monosat_c.getModel_Path_EdgeLits.argtypes=[c_solver_p,c_graph_p, c_literal, c_int, c_int_p]
-        self.monosat_c.getModel_Path_EdgeLits.restype=c_int
-
-        self.monosat_c.createFlowRouting.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_literal]
-        self.monosat_c.createFlowRouting.restype=c_void_p
-
-        self.monosat_c.addRoutingNet.argtypes=[c_solver_p,c_graph_p,c_void_p, c_literal,c_int, c_literal_p, c_literal_p]
-
-        self.monosat_c.graph_setAssignEdgesToWeight.argtypes=[c_solver_p,c_graph_p,c_long]
-
-
 
         self.newSolver()
         #For many (but not all) instances, the following settings may give good performance: 
@@ -464,13 +126,13 @@ class Monosat(metaclass=Singleton):
 
 
     def readGNF(self, filename):
-        self.monosat_c.readGNF(self.solver._ptr,c_char_p(filename.encode('ascii')))
+        self.monosat_c.readGNF(self.solver._ptr,filename.encode('ascii'))
     
     def getOutputFile(self):
         return self.solver.output
     
     def setOutputFile(self, filename):
-        self.monosat_c.setOutputFile(self.solver._ptr,c_char_p(filename.encode('ascii')))
+        self.monosat_c.setOutputFile(self.solver._ptr,(filename.encode('ascii')))
         # self.solver.output=file
         # if file is not None:#Otherwise, this unit clause will have been skipped in the output file
         #     if self.solver.arguments is not None:
