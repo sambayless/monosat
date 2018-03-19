@@ -146,20 +146,20 @@ from monosat_header cimport true_lit as _true_lit_monosat
 def acyclic_directed( S ,  G ):
     """Cython signature: int acyclic_directed(void* S, void* G)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
 
 
-    cdef int _r = _acyclic_directed_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G))
+    cdef int _r = _acyclic_directed_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
     py_result = <int>_r
     return py_result
 
 def acyclic_undirected( S ,  G ):
     """Cython signature: int acyclic_undirected(void* S, void* G)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
 
 
-    cdef int _r = _acyclic_undirected_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G))
+    cdef int _r = _acyclic_undirected_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
     py_result = <int>_r
     return py_result
 
@@ -199,7 +199,7 @@ def addClause( S ,  lits ,  n_lits ):
 def addRoutingNet( S ,  G ,  router ,  disabledEdge ,  n_members ,  edge_lits ,  reach_lits ):
     """Cython signature: void addRoutingNet(void* S, void* G, void* router, int disabledEdge, int n_members, int* edge_lits, int* reach_lits)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(router, (int, long)), 'arg router wrong type'
     assert isinstance(disabledEdge, (int, long)), 'arg disabledEdge wrong type'
     assert isinstance(n_members, (int, long)), 'arg n_members wrong type'
@@ -209,7 +209,7 @@ def addRoutingNet( S ,  G ,  router ,  disabledEdge ,  n_members ,  edge_lits , 
 
     cdef array.array a =  array.array('i', edge_lits)
     cdef array.array b =  array.array('i', reach_lits)
-    _addRoutingNet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<void*>router), (<int>disabledEdge), (<int>n_members), (<int*>a.data.as_ints), (<int*>b.data.as_ints))
+    _addRoutingNet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<void*>router), (<int>disabledEdge), (<int>n_members), (<int*>a.data.as_ints), (<int*>b.data.as_ints))
 
 def addTertiaryClause( S ,  lit1 ,  lit2 ,  lit3 ):
     """Cython signature: bint addTertiaryClause(void* S, int lit1, int lit2, int lit3)"""
@@ -316,7 +316,7 @@ def assertPB_lt( S ,  rhs ,  n_args ,  literals ,  coefficients ):
 def at_most_one( S ,  vars ,  n_vars ):
     """Cython signature: void at_most_one(void* S, int* vars, int n_vars)"""
 
-    assert isinstance(vars, (int, long)), 'arg vars wrong type'
+    assert isinstance(vars, list), 'arg vars wrong type'
     assert isinstance(n_vars, (int, long)), 'arg n_vars wrong type'
 
     cdef array.array a =  array.array('i', vars)
@@ -332,7 +332,7 @@ def backtrack( S ):
 def bv_addition( S ,  bv ,  bvID1 ,  bvID2 ,  resultID ):
     """Cython signature: void bv_addition(void* S, void* bv, int bvID1, int bvID2, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvID1, (int, long)), 'arg bvID1 wrong type'
     assert isinstance(bvID2, (int, long)), 'arg bvID2 wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -341,12 +341,12 @@ def bv_addition( S ,  bv ,  bvID1 ,  bvID2 ,  resultID ):
 
 
 
-    _bv_addition_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID1), (<int>bvID2), (<int>resultID))
+    _bv_addition_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID1), (<int>bvID2), (<int>resultID))
 
 def bv_and( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
     """Cython signature: void bv_and(void* S, void* bv, int bvaID, int bvbID, int bvResultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvaID, (int, long)), 'arg bvaID wrong type'
     assert isinstance(bvbID, (int, long)), 'arg bvbID wrong type'
     assert isinstance(bvResultID, (int, long)), 'arg bvResultID wrong type'
@@ -355,22 +355,22 @@ def bv_and( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
 
 
 
-    _bv_and_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
+    _bv_and_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
 
 def bv_bitblast( S ,  bv ,  bvID ):
     """Cython signature: void bv_bitblast(void* S, void* bv, int bvID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
 
 
 
-    _bv_bitblast_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID))
+    _bv_bitblast_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
 
 def bv_concat( S ,  bv ,  aID ,  bID ,  resultID ):
     """Cython signature: void bv_concat(void* S, void* bv, int aID, int bID, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(aID, (int, long)), 'arg aID wrong type'
     assert isinstance(bID, (int, long)), 'arg bID wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -379,12 +379,12 @@ def bv_concat( S ,  bv ,  aID ,  bID ,  resultID ):
 
 
 
-    _bv_concat_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>aID), (<int>bID), (<int>resultID))
+    _bv_concat_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>aID), (<int>bID), (<int>resultID))
 
 def bv_divide( S ,  bv ,  bvID1 ,  bvID2 ,  resultID ):
     """Cython signature: void bv_divide(void* S, void* bv, int bvID1, int bvID2, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvID1, (int, long)), 'arg bvID1 wrong type'
     assert isinstance(bvID2, (int, long)), 'arg bvID2 wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -393,12 +393,12 @@ def bv_divide( S ,  bv ,  bvID1 ,  bvID2 ,  resultID ):
 
 
 
-    _bv_divide_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID1), (<int>bvID2), (<int>resultID))
+    _bv_divide_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID1), (<int>bvID2), (<int>resultID))
 
 def bv_ite( S ,  bv ,  condition_lit ,  bvThenID ,  bvElseID ,  bvResultID ):
     """Cython signature: void bv_ite(void* S, void* bv, int condition_lit, int bvThenID, int bvElseID, int bvResultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(condition_lit, (int, long)), 'arg condition_lit wrong type'
     assert isinstance(bvThenID, (int, long)), 'arg bvThenID wrong type'
     assert isinstance(bvElseID, (int, long)), 'arg bvElseID wrong type'
@@ -409,12 +409,12 @@ def bv_ite( S ,  bv ,  condition_lit ,  bvThenID ,  bvElseID ,  bvResultID ):
 
 
 
-    _bv_ite_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>condition_lit), (<int>bvThenID), (<int>bvElseID), (<int>bvResultID))
+    _bv_ite_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>condition_lit), (<int>bvThenID), (<int>bvElseID), (<int>bvResultID))
 
 def bv_max( S ,  bv ,  args ,  n_args ,  resultID ):
     """Cython signature: void bv_max(void* S, void* bv, int* args, int n_args, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(args, (int, long)), 'arg args wrong type'
     assert isinstance(n_args, (int, long)), 'arg n_args wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -423,12 +423,12 @@ def bv_max( S ,  bv ,  args ,  n_args ,  resultID ):
     cdef array.array a =  array.array('i', args)
 
 
-    _bv_max_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv),(<int*>a.data.as_ints), (<int>n_args), (<int>resultID))
+    _bv_max_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)),(<int*>a.data.as_ints), (<int>n_args), (<int>resultID))
 
 def bv_min( S ,  bv ,  args ,  n_args ,  resultID ):
     """Cython signature: void bv_min(void* S, void* bv, int* args, int n_args, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(args, (int, long)), 'arg args wrong type'
     assert isinstance(n_args, (int, long)), 'arg n_args wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -437,12 +437,12 @@ def bv_min( S ,  bv ,  args ,  n_args ,  resultID ):
     cdef array.array a =  array.array('i', args)
 
 
-    _bv_min_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int*>a.data.as_ints), (<int>n_args), (<int>resultID))
+    _bv_min_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int*>a.data.as_ints), (<int>n_args), (<int>resultID))
 
 def bv_multiply( S ,  bv ,  bvID1 ,  bvID2 ,  resultID ):
     """Cython signature: void bv_multiply(void* S, void* bv, int bvID1, int bvID2, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvID1, (int, long)), 'arg bvID1 wrong type'
     assert isinstance(bvID2, (int, long)), 'arg bvID2 wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -451,12 +451,12 @@ def bv_multiply( S ,  bv ,  bvID1 ,  bvID2 ,  resultID ):
 
 
 
-    _bv_multiply_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID1), (<int>bvID2), (<int>resultID))
+    _bv_multiply_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID1), (<int>bvID2), (<int>resultID))
 
 def bv_nand( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
     """Cython signature: void bv_nand(void* S, void* bv, int bvaID, int bvbID, int bvResultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvaID, (int, long)), 'arg bvaID wrong type'
     assert isinstance(bvbID, (int, long)), 'arg bvbID wrong type'
     assert isinstance(bvResultID, (int, long)), 'arg bvResultID wrong type'
@@ -465,12 +465,12 @@ def bv_nand( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
 
 
 
-    _bv_nand_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
+    _bv_nand_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
 
 def bv_nor( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
     """Cython signature: void bv_nor(void* S, void* bv, int bvaID, int bvbID, int bvResultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvaID, (int, long)), 'arg bvaID wrong type'
     assert isinstance(bvbID, (int, long)), 'arg bvbID wrong type'
     assert isinstance(bvResultID, (int, long)), 'arg bvResultID wrong type'
@@ -479,24 +479,24 @@ def bv_nor( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
 
 
 
-    _bv_nor_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
+    _bv_nor_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
 
 def bv_not( S ,  bv ,  bvaID ,  bvResultID ):
     """Cython signature: void bv_not(void* S, void* bv, int bvaID, int bvResultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvaID, (int, long)), 'arg bvaID wrong type'
     assert isinstance(bvResultID, (int, long)), 'arg bvResultID wrong type'
 
 
 
 
-    _bv_not_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvaID), (<int>bvResultID))
+    _bv_not_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvaID), (<int>bvResultID))
 
 def bv_or( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
     """Cython signature: void bv_or(void* S, void* bv, int bvaID, int bvbID, int bvResultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvaID, (int, long)), 'arg bvaID wrong type'
     assert isinstance(bvbID, (int, long)), 'arg bvbID wrong type'
     assert isinstance(bvResultID, (int, long)), 'arg bvResultID wrong type'
@@ -505,12 +505,12 @@ def bv_or( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
 
 
 
-    _bv_or_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
+    _bv_or_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
 
 def bv_popcount( S ,  bv ,  args ,  n_args ,  resultID ):
     """Cython signature: void bv_popcount(void* S, void* bv, int* args, int n_args, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(args, (int, long)), 'arg args wrong type'
     assert isinstance(n_args, (int, long)), 'arg n_args wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -519,12 +519,12 @@ def bv_popcount( S ,  bv ,  args ,  n_args ,  resultID ):
     cdef array.array a =  array.array('i', args)
 
 
-    _bv_popcount_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv),(<int*>a.data.as_ints), (<int>n_args), (<int>resultID))
+    _bv_popcount_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)),(<int*>a.data.as_ints), (<int>n_args), (<int>resultID))
 
 def bv_slice( S ,  bv ,  aID ,  lower ,  upper ,  resultID ):
     """Cython signature: void bv_slice(void* S, void* bv, int aID, int lower, int upper, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(aID, (int, long)), 'arg aID wrong type'
     assert isinstance(lower, (int, long)), 'arg lower wrong type'
     assert isinstance(upper, (int, long)), 'arg upper wrong type'
@@ -535,12 +535,12 @@ def bv_slice( S ,  bv ,  aID ,  lower ,  upper ,  resultID ):
 
 
 
-    _bv_slice_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>aID), (<int>lower), (<int>upper), (<int>resultID))
+    _bv_slice_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>aID), (<int>lower), (<int>upper), (<int>resultID))
 
 def bv_subtraction( S ,  bv ,  bvID1 ,  bvID2 ,  resultID ):
     """Cython signature: void bv_subtraction(void* S, void* bv, int bvID1, int bvID2, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvID1, (int, long)), 'arg bvID1 wrong type'
     assert isinstance(bvID2, (int, long)), 'arg bvID2 wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -549,12 +549,12 @@ def bv_subtraction( S ,  bv ,  bvID1 ,  bvID2 ,  resultID ):
 
 
 
-    _bv_subtraction_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID1), (<int>bvID2), (<int>resultID))
+    _bv_subtraction_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID1), (<int>bvID2), (<int>resultID))
 
 def bv_unary( S ,  bv ,  args ,  n_args ,  resultID ):
     """Cython signature: void bv_unary(void* S, void* bv, int* args, int n_args, int resultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(args, (int, long)), 'arg args wrong type'
     assert isinstance(n_args, (int, long)), 'arg n_args wrong type'
     assert isinstance(resultID, (int, long)), 'arg resultID wrong type'
@@ -563,24 +563,24 @@ def bv_unary( S ,  bv ,  args ,  n_args ,  resultID ):
     cdef array.array a =  array.array('i', args)
 
 
-    _bv_unary_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int*>a.data.as_ints), (<int>n_args), (<int>resultID))
+    _bv_unary_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int*>a.data.as_ints), (<int>n_args), (<int>resultID))
 
 def bv_width( S ,  bv ,  bvID ):
     """Cython signature: int bv_width(void* S, void* bv, int bvID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
 
 
 
-    cdef int _r = _bv_width_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID))
+    cdef int _r = _bv_width_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
     py_result = <int>_r
     return py_result
 
 def bv_xnor( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
     """Cython signature: void bv_xnor(void* S, void* bv, int bvaID, int bvbID, int bvResultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvaID, (int, long)), 'arg bvaID wrong type'
     assert isinstance(bvbID, (int, long)), 'arg bvbID wrong type'
     assert isinstance(bvResultID, (int, long)), 'arg bvResultID wrong type'
@@ -589,12 +589,12 @@ def bv_xnor( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
 
 
 
-    _bv_xnor_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
+    _bv_xnor_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
 
 def bv_xor( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
     """Cython signature: void bv_xor(void* S, void* bv, int bvaID, int bvbID, int bvResultID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvaID, (int, long)), 'arg bvaID wrong type'
     assert isinstance(bvbID, (int, long)), 'arg bvbID wrong type'
     assert isinstance(bvResultID, (int, long)), 'arg bvResultID wrong type'
@@ -603,7 +603,7 @@ def bv_xor( S ,  bv ,  bvaID ,  bvbID ,  bvResultID ):
 
 
 
-    _bv_xor_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
+    _bv_xor_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvaID), (<int>bvbID), (<int>bvResultID))
 
 def clearOptimizationObjectives( S ):
     """Cython signature: void clearOptimizationObjectives(void* S)"""
@@ -614,7 +614,7 @@ def clearOptimizationObjectives( S ):
 def createFlowRouting( S ,  G ,  sourceNode ,  destNode ,  maxflowLit ):
     """Cython signature: void* createFlowRouting(void* S, void* G, int sourceNode, int destNode, int maxflowLit)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(sourceNode, (int, long)), 'arg sourceNode wrong type'
     assert isinstance(destNode, (int, long)), 'arg destNode wrong type'
     assert isinstance(maxflowLit, (int, long)), 'arg maxflowLit wrong type'
@@ -623,7 +623,7 @@ def createFlowRouting( S ,  G ,  sourceNode ,  destNode ,  maxflowLit ):
 
 
 
-    cdef void* _r = _createFlowRouting_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>sourceNode), (<int>destNode), (<int>maxflowLit))
+    cdef void* _r = _createFlowRouting_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>sourceNode), (<int>destNode), (<int>maxflowLit))
     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
     return py_result
 
@@ -659,7 +659,7 @@ def flushPB( S ):
 def getConflictClause( S ,  store_clause ,  max_store_size ):
     """Cython signature: int getConflictClause(void* S, int* store_clause, int max_store_size)"""
 
-    assert isinstance(store_clause, (int, long)), 'arg store_clause wrong type'
+    assert isinstance(store_clause, list), 'arg store_clause wrong type'
     assert isinstance(max_store_size, (int, long)), 'arg max_store_size wrong type'
 
     cdef array.array a =  array.array('i', store_clause)
@@ -691,42 +691,42 @@ def getDecisionPriority( S ,  var ):
 def getModel_AcyclicEdgeFlow( S ,  G ,  maxflow_literal ,  edgeLit ):
     """Cython signature: int64_t getModel_AcyclicEdgeFlow(void* S, void* G, int maxflow_literal, int edgeLit)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(maxflow_literal, (int, long)), 'arg maxflow_literal wrong type'
     assert isinstance(edgeLit, (int, long)), 'arg edgeLit wrong type'
 
 
 
 
-    cdef int64_t _r = _getModel_AcyclicEdgeFlow_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>maxflow_literal), (<int>edgeLit))
+    cdef int64_t _r = _getModel_AcyclicEdgeFlow_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>maxflow_literal), (<int>edgeLit))
     py_result = <int64_t>_r
     return py_result
 
 def getModel_BV( S ,  bv ,  bvID ,  getMaximumValue ):
     """Cython signature: int64_t getModel_BV(void* S, void* bv, int bvID, bint getMaximumValue)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(getMaximumValue, (int, long)), 'arg getMaximumValue wrong type'
 
 
 
 
-    cdef int64_t _r = _getModel_BV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<bint>getMaximumValue))
+    cdef int64_t _r = _getModel_BV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<bint>getMaximumValue))
     py_result = <int64_t>_r
     return py_result
 
 def getModel_EdgeFlow( S ,  G ,  maxflow_literal ,  edgeLit ):
     """Cython signature: int64_t getModel_EdgeFlow(void* S, void* G, int maxflow_literal, int edgeLit)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(maxflow_literal, (int, long)), 'arg maxflow_literal wrong type'
     assert isinstance(edgeLit, (int, long)), 'arg edgeLit wrong type'
 
 
 
 
-    cdef int64_t _r = _getModel_EdgeFlow_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>maxflow_literal), (<int>edgeLit))
+    cdef int64_t _r = _getModel_EdgeFlow_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>maxflow_literal), (<int>edgeLit))
     py_result = <int64_t>_r
     return py_result
 
@@ -743,80 +743,80 @@ def getModel_Literal( S ,  lit ):
 def getModel_MaxFlow( S ,  G ,  maxflow_literal ):
     """Cython signature: int64_t getModel_MaxFlow(void* S, void* G, int maxflow_literal)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(maxflow_literal, (int, long)), 'arg maxflow_literal wrong type'
 
 
 
-    cdef int64_t _r = _getModel_MaxFlow_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>maxflow_literal))
+    cdef int64_t _r = _getModel_MaxFlow_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>maxflow_literal))
     py_result = <int64_t>_r
     return py_result
 
 def getModel_MinimumSpanningTreeWeight( S ,  G ,  spanning_tree_literal ):
     """Cython signature: int64_t getModel_MinimumSpanningTreeWeight(void* S, void* G, int spanning_tree_literal)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(spanning_tree_literal, (int, long)), 'arg spanning_tree_literal wrong type'
 
 
 
-    cdef int64_t _r = _getModel_MinimumSpanningTreeWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>spanning_tree_literal))
+    cdef int64_t _r = _getModel_MinimumSpanningTreeWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>spanning_tree_literal))
     py_result = <int64_t>_r
     return py_result
 
 def getModel_Path_EdgeLits( S ,  G ,  reach_or_distance_literal ,  store_length ,  store ):
     """Cython signature: int getModel_Path_EdgeLits(void* S, void* G, int reach_or_distance_literal, int store_length, int* store)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
-    assert isinstance(store_length, (int, long)), 'arg store_length wrong type'
-    assert isinstance(store, (int, long)), 'arg store wrong type'
+    assert isinstance(store_length,(int,long)), 'arg store_length wrong type'
+    assert isinstance(store, list), 'arg store wrong type'
 
 
     cdef array.array a =  array.array('i', store)
 
 
-    cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+    cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
     py_result = <int>_r
     return py_result
 
 def getModel_Path_EdgeLits_Length( S ,  G ,  reach_or_distance_literal ):
     """Cython signature: int getModel_Path_EdgeLits_Length(void* S, void* G, int reach_or_distance_literal)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
 
 
 
-    cdef int _r = _getModel_Path_EdgeLits_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>reach_or_distance_literal))
+    cdef int _r = _getModel_Path_EdgeLits_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))
     py_result = <int>_r
     return py_result
 
 def getModel_Path_Nodes( S ,  G ,  reach_or_distance_literal ,  store_length ,  store ):
     """Cython signature: int getModel_Path_Nodes(void* S, void* G, int reach_or_distance_literal, int store_length, int* store)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
-    assert isinstance(store_length, (int, long)), 'arg store_length wrong type'
-    assert isinstance(store, (int, long)), 'arg store wrong type'
+    assert isinstance(store_length, (int,long)), 'arg store_length wrong type'
+    assert isinstance(store, list), 'arg store wrong type'
 
 
 
     cdef array.array a =  array.array('i', store)
 
-    cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
+    cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
     py_result = <int>_r
     return py_result
 
 def getModel_Path_Nodes_Length( S ,  G ,  reach_or_distance_literal ):
     """Cython signature: int getModel_Path_Nodes_Length(void* S, void* G, int reach_or_distance_literal)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
 
 
 
-    cdef int _r = _getModel_Path_Nodes_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>reach_or_distance_literal))
+    cdef int _r = _getModel_Path_Nodes_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))
     py_result = <int>_r
     return py_result
 
@@ -829,18 +829,18 @@ def getVersion():
 def graph_setAssignEdgesToWeight( S ,  G ,  weight ):
     """Cython signature: void graph_setAssignEdgesToWeight(void* S, void* G, int64_t weight)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
 
 
 
-    _graph_setAssignEdgesToWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int64_t>weight))
+    _graph_setAssignEdgesToWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))
 
 def initBVTheory( S ):
     """Cython signature: void* initBVTheory(void* S)"""
     #
 
-    print "{0:x}".format(<uintptr_t>(<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
+    #print "{0:x}".format(<uintptr_t>(<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
 
 
     cdef void* _r = _initBVTheory_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
@@ -869,12 +869,8 @@ def lastSolutionWasOptimal( S ):
 def maximizeBV( S ,  bv ,  bvID ):
     """Cython signature: void maximizeBV(void* S, void* bv, int bvID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
-
-
-
-    _maximizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID))
+   
+    _maximizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
 
 def maximizeLits( S ,  lits ,  n_lits ):
     """Cython signature: void maximizeLits(void* S, int* lits, int n_lits)"""
@@ -901,7 +897,7 @@ def maximizeWeightedLits( S ,  lits ,  weights ,  n_lits ):
 def maximumFlow_geq( S ,  G ,  source ,  sink ,  weight ):
     """Cython signature: int maximumFlow_geq(void* S, void* G, int source, int sink, int64_t weight)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(source, (int, long)), 'arg source wrong type'
     assert isinstance(sink, (int, long)), 'arg sink wrong type'
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
@@ -910,30 +906,30 @@ def maximumFlow_geq( S ,  G ,  source ,  sink ,  weight ):
 
 
 
-    cdef int _r = _maximumFlow_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>source), (<int>sink), (<int64_t>weight))
+    cdef int _r = _maximumFlow_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def maximumFlow_geq_bv( S ,  G ,  source ,  sink ,  bvID ):
     """Cython signature: int maximumFlow_geq_bv(void* S, void* G, int source, int sink, int bvID)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(source, (int, long)), 'arg source wrong type'
     assert isinstance(sink, (int, long)), 'arg sink wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
 
 
 
 
 
-    cdef int _r = _maximumFlow_geq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>source), (<int>sink), (<int>bvID))
+    cdef int _r = _maximumFlow_geq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int>bvID))
     py_result = <int>_r
     return py_result
 
 def maximumFlow_gt( S ,  G ,  source ,  sink ,  weight ):
     """Cython signature: int maximumFlow_gt(void* S, void* G, int source, int sink, int64_t weight)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(source, (int, long)), 'arg source wrong type'
     assert isinstance(sink, (int, long)), 'arg sink wrong type'
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
@@ -942,35 +938,35 @@ def maximumFlow_gt( S ,  G ,  source ,  sink ,  weight ):
 
 
 
-    cdef int _r = _maximumFlow_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>source), (<int>sink), (<int64_t>weight))
+    cdef int _r = _maximumFlow_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def maximumFlow_gt_bv( S ,  G ,  source ,  sink ,  bvID ):
     """Cython signature: int maximumFlow_gt_bv(void* S, void* G, int source, int sink, int bvID)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(source, (int, long)), 'arg source wrong type'
     assert isinstance(sink, (int, long)), 'arg sink wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
 
 
 
 
 
-    cdef int _r = _maximumFlow_gt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>source), (<int>sink), (<int>bvID))
+    cdef int _r = _maximumFlow_gt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int>bvID))
     py_result = <int>_r
     return py_result
 
 def minimizeBV( S ,  bv ,  bvID ):
     """Cython signature: void minimizeBV(void* S, void* bv, int bvID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
 
 
 
-    _minimizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID))
+    _minimizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
 
 def minimizeLits( S ,  lits ,  n_lits ):
     """Cython signature: void minimizeLits(void* S, int* lits, int n_lits)"""
@@ -999,19 +995,19 @@ def minimizeWeightedLits( S ,  lits ,  weights ,  n_lits ):
 def minimumSpanningTree_leq( S ,  G ,  weight ):
     """Cython signature: int minimumSpanningTree_leq(void* S, void* G, int64_t weight)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
 
 
 
-    cdef int _r = _minimumSpanningTree_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int64_t>weight))
+    cdef int _r = _minimumSpanningTree_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def minimumSpanningTree_lt( S ,  G ,  source ,  sink ,  weight ):
     """Cython signature: int minimumSpanningTree_lt(void* S, void* G, int source, int sink, int64_t weight)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(source, (int, long)), 'arg source wrong type'
     assert isinstance(sink, (int, long)), 'arg sink wrong type'
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
@@ -1020,17 +1016,17 @@ def minimumSpanningTree_lt( S ,  G ,  source ,  sink ,  weight ):
 
 
 
-    cdef int _r = _minimumSpanningTree_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>source), (<int>sink), (<int64_t>weight))
+    cdef int _r = _minimumSpanningTree_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def nBitvectors( S ,  bv ):
     """Cython signature: int nBitvectors(void* S, void* bv)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
 
 
-    cdef int _r = _nBitvectors_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv))
+    cdef int _r = _nBitvectors_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)))
     py_result = <int>_r
     return py_result
 
@@ -1045,20 +1041,20 @@ def nClauses( S ):
 def nEdges( S ,  G ):
     """Cython signature: int nEdges(void* S, void* G)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
 
 
-    cdef int _r = _nEdges_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G))
+    cdef int _r = _nEdges_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
     py_result = <int>_r
     return py_result
 
 def nNodes( S ,  G ):
     """Cython signature: int nNodes(void* S, void* G)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
 
 
-    cdef int _r = _nNodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G))
+    cdef int _r = _nNodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
     py_result = <int>_r
     return py_result
 
@@ -1073,159 +1069,159 @@ def nVars( S ):
 def newBVComparison_bv_geq( S ,  bv ,  bvID ,  compareID ):
     """Cython signature: int newBVComparison_bv_geq(void* S, void* bv, int bvID, int compareID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(compareID, (int, long)), 'arg compareID wrong type'
 
 
 
 
-    cdef int _r = _newBVComparison_bv_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<int>compareID))
+    cdef int _r = _newBVComparison_bv_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
     py_result = <int>_r
     return py_result
 
 def newBVComparison_bv_gt( S ,  bv ,  bvID ,  compareID ):
     """Cython signature: int newBVComparison_bv_gt(void* S, void* bv, int bvID, int compareID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(compareID, (int, long)), 'arg compareID wrong type'
 
 
 
 
-    cdef int _r = _newBVComparison_bv_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<int>compareID))
+    cdef int _r = _newBVComparison_bv_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
     py_result = <int>_r
     return py_result
 
 def newBVComparison_bv_leq( S ,  bv ,  bvID ,  compareID ):
     """Cython signature: int newBVComparison_bv_leq(void* S, void* bv, int bvID, int compareID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(compareID, (int, long)), 'arg compareID wrong type'
 
 
 
 
-    cdef int _r = _newBVComparison_bv_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<int>compareID))
+    cdef int _r = _newBVComparison_bv_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
     py_result = <int>_r
     return py_result
 
 def newBVComparison_bv_lt( S ,  bv ,  bvID ,  compareID ):
     """Cython signature: int newBVComparison_bv_lt(void* S, void* bv, int bvID, int compareID)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(compareID, (int, long)), 'arg compareID wrong type'
 
 
 
 
-    cdef int _r = _newBVComparison_bv_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<int>compareID))
+    cdef int _r = _newBVComparison_bv_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
     py_result = <int>_r
     return py_result
 
 def newBVComparison_const_geq( S ,  bv ,  bvID ,  weight ):
     """Cython signature: int newBVComparison_const_geq(void* S, void* bv, int bvID, int64_t weight)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
 
 
 
 
-    cdef int _r = _newBVComparison_const_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<int64_t>weight))
+    cdef int _r = _newBVComparison_const_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def newBVComparison_const_gt( S ,  bv ,  bvID ,  weight ):
     """Cython signature: int newBVComparison_const_gt(void* S, void* bv, int bvID, int64_t weight)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
 
 
 
 
-    cdef int _r = _newBVComparison_const_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<int64_t>weight))
+    cdef int _r = _newBVComparison_const_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def newBVComparison_const_leq( S ,  bv ,  bvID ,  weight ):
     """Cython signature: int newBVComparison_const_leq(void* S, void* bv, int bvID, int64_t weight)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
 
 
 
 
-    cdef int _r = _newBVComparison_const_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<int64_t>weight))
+    cdef int _r = _newBVComparison_const_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def newBVComparison_const_lt( S ,  bv ,  bvID ,  weight ):
     """Cython signature: int newBVComparison_const_lt(void* S, void* bv, int bvID, int64_t weight)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
+    
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
 
 
 
 
-    cdef int _r = _newBVComparison_const_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvID), (<int64_t>weight))
+    cdef int _r = _newBVComparison_const_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def newBitvector( S ,  bv ,  bits ,  n_bits ):
     """Cython signature: int newBitvector(void* S, void* bv, int* bits, int n_bits)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
-    assert isinstance(bits, (int, long)), 'arg bits wrong type'
+    
+    assert isinstance(bits, list), 'arg bits wrong type'
     assert isinstance(n_bits, (int, long)), 'arg n_bits wrong type'
 
 
     cdef array.array a =  array.array('i', bits)
 
-    cdef int _r = _newBitvector_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int*>a.data.as_ints), (<int>n_bits))
+    cdef int _r = _newBitvector_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int*>a.data.as_ints), (<int>n_bits))
     py_result = <int>_r
     return py_result
 
 def newBitvector_anon( S ,  bv ,  bvWidth ):
     """Cython signature: int newBitvector_anon(void* S, void* bv, int bvWidth)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvWidth, (int, long)), 'arg bvWidth wrong type'
 
 
 
-    cdef int _r = _newBitvector_anon_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvWidth))
+    cdef int _r = _newBitvector_anon_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvWidth))
     py_result = <int>_r
     return py_result
 
 def newBitvector_const( S ,  bv ,  bvWidth ,  constval ):
     """Cython signature: int newBitvector_const(void* S, void* bv, int bvWidth, int64_t constval)"""
 
-    assert isinstance(bv, (int, long)), 'arg bv wrong type'
+    
     assert isinstance(bvWidth, (int, long)), 'arg bvWidth wrong type'
     assert isinstance(constval, (int, long)), 'arg constval wrong type'
 
 
 
 
-    cdef int _r = _newBitvector_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>bv), (<int>bvWidth), (<int64_t>constval))
+    cdef int _r = _newBitvector_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvWidth), (<int64_t>constval))
     py_result = <int>_r
     return py_result
 
 def newEdge( S ,  G ,  _from ,  to ,  weight ):
     """Cython signature: int newEdge(void* S, void* G, int _from, int to, int64_t weight)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
     assert isinstance(weight, (int, long)), 'arg weight wrong type'
@@ -1234,35 +1230,35 @@ def newEdge( S ,  G ,  _from ,  to ,  weight ):
 
 
 
-    cdef int _r = _newEdge_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<int64_t>weight))
+    cdef int _r = _newEdge_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>weight))
     py_result = <int>_r
     return py_result
 
 def newEdgeSet( S ,  G ,  edges ,  n_edges ,  enforceEdgeAssignment ):
     """Cython signature: void newEdgeSet(void* S, void* G, int* edges, int n_edges, bint enforceEdgeAssignment)"""
     cdef array.array a =  array.array('i', edges)
-    _newEdgeSet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int*>a.data.as_ints), (<int>n_edges), (<bint>enforceEdgeAssignment))
+    _newEdgeSet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int*>a.data.as_ints), (<int>n_edges), (<bint>enforceEdgeAssignment))
 
 def newEdge_bv( S ,  G ,  _from ,  to ,  bvID ):
     """Cython signature: int newEdge_bv(void* S, void* G, int _from, int to, int bvID)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
 
 
 
 
 
-    cdef int _r = _newEdge_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<int>bvID))
+    cdef int _r = _newEdge_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
     py_result = <int>_r
     return py_result
 
 def newEdge_double( S ,  G ,  _from ,  to , double weight ):
     """Cython signature: int newEdge_double(void* S, void* G, int _from, int to, double weight)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
     assert isinstance(weight, float), 'arg weight wrong type'
@@ -1271,7 +1267,7 @@ def newEdge_double( S ,  G ,  _from ,  to , double weight ):
 
 
 
-    cdef int _r = _newEdge_double_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<double>weight))
+    cdef int _r = _newEdge_double_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<double>weight))
     py_result = <int>_r
     return py_result
 
@@ -1287,10 +1283,10 @@ def newGraph( S ):
 def newNode( S ,  G ):
     """Cython signature: int newNode(void* S, void* G)"""
 
-    assert isinstance(G, object), 'arg G wrong type'
+    
 
 
-    cdef int _r = _newNode_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G))
+    cdef int _r = _newNode_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
     py_result = <int>_r
     return py_result
 
@@ -1307,7 +1303,7 @@ def newSolver_arg(bytes argv ):
     assert isinstance(argv, bytes), 'arg argv wrong type'
 
     cdef void* _r = _newSolver_arg_monosat((<char *>argv))
-    print "{0:x}".format(<uintptr_t>(_r))
+    #print "{0:x}".format(<uintptr_t>(_r))
     if _r is NULL:
         raise MemoryError()
     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
@@ -1326,14 +1322,14 @@ def newVar( S ):
 def reaches( S ,  G ,  _from ,  to ):
     """Cython signature: int reaches(void* S, void* G, int _from, int to)"""
     
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
 
 
 
 
-    cdef int _r = _reaches_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to))
+    cdef int _r = _reaches_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to))
     py_result = <int>_r
     return py_result
 
@@ -1418,7 +1414,7 @@ def setTimeLimit( S ,  seconds ):
 def shortestPathUnweighted_leq_const( S ,  G ,  _from ,  to ,  steps ):
     """Cython signature: int shortestPathUnweighted_leq_const(void* S, void* G, int _from, int to, int steps)"""
     
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
     assert isinstance(steps, (int, long)), 'arg steps wrong type'
@@ -1427,14 +1423,14 @@ def shortestPathUnweighted_leq_const( S ,  G ,  _from ,  to ,  steps ):
 
 
 
-    cdef int _r = _shortestPathUnweighted_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<int>steps))
+    cdef int _r = _shortestPathUnweighted_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>steps))
     py_result = <int>_r
     return py_result
 
 def shortestPathUnweighted_lt_const( S ,  G ,  _from ,  to ,  steps ):
     """Cython signature: int shortestPathUnweighted_lt_const(void* S, void* G, int _from, int to, int steps)"""
     
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
     assert isinstance(steps, (int, long)), 'arg steps wrong type'
@@ -1443,30 +1439,30 @@ def shortestPathUnweighted_lt_const( S ,  G ,  _from ,  to ,  steps ):
 
 
 
-    cdef int _r = _shortestPathUnweighted_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<int>steps))
+    cdef int _r = _shortestPathUnweighted_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>steps))
     py_result = <int>_r
     return py_result
 
 def shortestPath_leq_bv( S ,  G ,  _from ,  to ,  bvID ):
     """Cython signature: int shortestPath_leq_bv(void* S, void* G, int _from, int to, int bvID)"""
     
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
 
 
 
 
 
-    cdef int _r = _shortestPath_leq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<int>bvID))
+    cdef int _r = _shortestPath_leq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
     py_result = <int>_r
     return py_result
 
 def shortestPath_leq_const( S ,  G ,  _from ,  to ,  dist ):
     """Cython signature: int shortestPath_leq_const(void* S, void* G, int _from, int to, int64_t dist)"""
     
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
     assert isinstance(dist, (int, long)), 'arg dist wrong type'
@@ -1475,30 +1471,30 @@ def shortestPath_leq_const( S ,  G ,  _from ,  to ,  dist ):
 
 
 
-    cdef int _r = _shortestPath_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<int64_t>dist))
+    cdef int _r = _shortestPath_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))
     py_result = <int>_r
     return py_result
 
 def shortestPath_lt_bv( S ,  G ,  _from ,  to ,  bvID ):
     """Cython signature: int shortestPath_lt_bv(void* S, void* G, int _from, int to, int bvID)"""
     
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
-    assert isinstance(bvID, (int, long)), 'arg bvID wrong type'
+    
 
 
 
 
 
-    cdef int _r = _shortestPath_lt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<int>bvID))
+    cdef int _r = _shortestPath_lt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
     py_result = <int>_r
     return py_result
 
 def shortestPath_lt_const( S ,  G ,  _from ,  to ,  dist ):
     """Cython signature: int shortestPath_lt_const(void* S, void* G, int _from, int to, int64_t dist)"""
     
-    assert isinstance(G, object), 'arg G wrong type'
+    
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
     assert isinstance(dist, (int, long)), 'arg dist wrong type'
@@ -1507,7 +1503,7 @@ def shortestPath_lt_const( S ,  G ,  _from ,  to ,  dist ):
 
 
 
-    cdef int _r = _shortestPath_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>G), (<int>_from), (<int>to), (<int64_t>dist))
+    cdef int _r = _shortestPath_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))
     py_result = <int>_r
     return py_result
 
@@ -1531,7 +1527,7 @@ def solveAssumptions( S ,  assumptions,  n_assumptions):
 def solveAssumptionsLimited( S ,  assumptions ,  n_assumptions ):
     """Cython signature: int solveAssumptionsLimited(void* S, int* assumptions, int n_assumptions)"""
     
-    assert isinstance(assumptions, (int, long)), 'arg assumptions wrong type'
+    assert isinstance(assumptions, list), 'arg assumptions wrong type'
     assert isinstance(n_assumptions, (int, long)), 'arg n_assumptions wrong type'
 
 
