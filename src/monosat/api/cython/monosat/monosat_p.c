@@ -903,6 +903,63 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg
 #define __Pyx_PyObject_Call(func, arg, kw) PyObject_Call(func, arg, kw)
 #endif
 
+/* PyCFunctionFastCall.proto */
+#if CYTHON_FAST_PYCCALL
+static CYTHON_INLINE PyObject *__Pyx_PyCFunction_FastCall(PyObject *func, PyObject **args, Py_ssize_t nargs);
+#else
+#define __Pyx_PyCFunction_FastCall(func, args, nargs)  (assert(0), NULL)
+#endif
+
+/* PyFunctionFastCall.proto */
+#if CYTHON_FAST_PYCALL
+#define __Pyx_PyFunction_FastCall(func, args, nargs)\
+    __Pyx_PyFunction_FastCallDict((func), (args), (nargs), NULL)
+#if 1 || PY_VERSION_HEX < 0x030600B1
+static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, int nargs, PyObject *kwargs);
+#else
+#define __Pyx_PyFunction_FastCallDict(func, args, nargs, kwargs) _PyFunction_FastCallDict(func, args, nargs, kwargs)
+#endif
+#endif
+
+/* PyObjectCallMethO.proto */
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
+#endif
+
+/* PyObjectCallOneArg.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
+
+/* PyObjectCallNoArg.proto */
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func);
+#else
+#define __Pyx_PyObject_CallNoArg(func) __Pyx_PyObject_Call(func, __pyx_empty_tuple, NULL)
+#endif
+
+/* ListAppend.proto */
+#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
+static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
+    PyListObject* L = (PyListObject*) list;
+    Py_ssize_t len = Py_SIZE(list);
+    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
+        Py_INCREF(x);
+        PyList_SET_ITEM(list, len, x);
+        Py_SIZE(list) = len+1;
+        return 0;
+    }
+    return PyList_Append(list, x);
+}
+#else
+#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
+#endif
+
+/* PyObjectCallMethod1.proto */
+static PyObject* __Pyx_PyObject_CallMethod1(PyObject* obj, PyObject* method_name, PyObject* arg);
+static PyObject* __Pyx__PyObject_CallMethod1(PyObject* method, PyObject* arg);
+
+/* append.proto */
+static CYTHON_INLINE int __Pyx_PyObject_Append(PyObject* L, PyObject* x);
+
 /* ArgTypeTest.proto */
 #define __Pyx_ArgTypeTest(obj, type, none_allowed, name, exact)\
     ((likely((Py_TYPE(obj) == type) | (none_allowed && (obj == Py_None)))) ? 1 :\
@@ -1241,6 +1298,7 @@ extern int __pyx_module_is_main_monosat__monosat_p;
 int __pyx_module_is_main_monosat__monosat_p = 0;
 
 /* Implementation of 'monosat.monosat_p' */
+static PyObject *__pyx_builtin_range;
 static PyObject *__pyx_builtin_MemoryError;
 static const char __pyx_k_G[] = "G";
 static const char __pyx_k_S[] = "S";
@@ -1268,6 +1326,7 @@ static const char __pyx_k_lit2[] = "lit2";
 static const char __pyx_k_lit3[] = "lit3";
 static const char __pyx_k_lits[] = "lits";
 static const char __pyx_k_main[] = "__main__";
+static const char __pyx_k_node[] = "node";
 static const char __pyx_k_sink[] = "sink";
 static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_vars[] = "vars";
@@ -1277,13 +1336,16 @@ static const char __pyx_k_bvID2[] = "bvID2";
 static const char __pyx_k_bv_or[] = "bv_or";
 static const char __pyx_k_bvaID[] = "bvaID";
 static const char __pyx_k_bvbID[] = "bvbID";
+static const char __pyx_k_clear[] = "clear";
 static const char __pyx_k_edges[] = "edges";
 static const char __pyx_k_lower[] = "lower";
 static const char __pyx_k_nVars[] = "nVars";
+static const char __pyx_k_range[] = "range";
 static const char __pyx_k_solve[] = "solve";
 static const char __pyx_k_steps[] = "steps";
 static const char __pyx_k_store[] = "store";
 static const char __pyx_k_upper[] = "upper";
+static const char __pyx_k_append[] = "append";
 static const char __pyx_k_bv_and[] = "bv_and";
 static const char __pyx_k_bv_ite[] = "bv_ite";
 static const char __pyx_k_bv_max[] = "bv_max";
@@ -1361,6 +1423,7 @@ static const char __pyx_k_bv_bitblast[] = "bv_bitblast";
 static const char __pyx_k_bv_multiply[] = "bv_multiply";
 static const char __pyx_k_bv_popcount[] = "bv_popcount";
 static const char __pyx_k_getModel_BV[] = "getModel_BV";
+static const char __pyx_k_initializer[] = "initializer";
 static const char __pyx_k_nBitvectors[] = "nBitvectors";
 static const char __pyx_k_second_args[] = "second_args";
 static const char __pyx_k_assertPB_geq[] = "assertPB_geq";
@@ -1534,6 +1597,7 @@ static PyObject *__pyx_n_s_addClause;
 static PyObject *__pyx_n_s_addRoutingNet;
 static PyObject *__pyx_n_s_addTertiaryClause;
 static PyObject *__pyx_n_s_addUnitClause;
+static PyObject *__pyx_n_s_append;
 static PyObject *__pyx_kp_s_arg__from_wrong_type;
 static PyObject *__pyx_kp_s_arg_aID_wrong_type;
 static PyObject *__pyx_kp_s_arg_args_wrong_type;
@@ -1648,6 +1712,7 @@ static PyObject *__pyx_n_s_bv_xnor;
 static PyObject *__pyx_n_s_bv_xor;
 static PyObject *__pyx_n_s_bvaID;
 static PyObject *__pyx_n_s_bvbID;
+static PyObject *__pyx_n_s_clear;
 static PyObject *__pyx_n_s_clearOptimizationObjectives;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_coefficients;
@@ -1689,6 +1754,7 @@ static PyObject *__pyx_n_s_graph_setAssignEdgesToWeight;
 static PyObject *__pyx_n_s_i;
 static PyObject *__pyx_n_s_import;
 static PyObject *__pyx_n_s_initBVTheory;
+static PyObject *__pyx_n_s_initializer;
 static PyObject *__pyx_n_s_isDecisionVar;
 static PyObject *__pyx_n_s_lastSolutionWasOptimal;
 static PyObject *__pyx_n_s_lit;
@@ -1750,12 +1816,14 @@ static PyObject *__pyx_n_s_newNode;
 static PyObject *__pyx_n_s_newSolver;
 static PyObject *__pyx_n_s_newSolver_arg;
 static PyObject *__pyx_n_s_newVar;
+static PyObject *__pyx_n_s_node;
 static PyObject *__pyx_n_s_num_conflicts;
 static PyObject *__pyx_n_s_num_propagations;
 static PyObject *__pyx_n_s_output;
 static PyObject *__pyx_n_s_priority;
 static PyObject *__pyx_n_s_py_result;
 static PyObject *__pyx_n_s_r;
+static PyObject *__pyx_n_s_range;
 static PyObject *__pyx_n_s_reach_lits;
 static PyObject *__pyx_n_s_reach_or_distance_literal;
 static PyObject *__pyx_n_s_reaches;
@@ -12602,8 +12670,10 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_101getModel_Path_EdgeLits(PyObject
 }
 
 static PyObject *__pyx_pf_7monosat_9monosat_p_100getModel_Path_EdgeLits(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_S, PyObject *__pyx_v_G, PyObject *__pyx_v_reach_or_distance_literal, PyObject *__pyx_v_store_length, PyObject *__pyx_v_store) {
+  PyObject *__pyx_v_initializer = NULL;
   arrayobject *__pyx_v_a = 0;
   int __pyx_v__r;
+  PyObject *__pyx_v_lit = NULL;
   int __pyx_v_py_result;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -12612,10 +12682,14 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_100getModel_Path_EdgeLits(CYTHON_U
   int __pyx_t_3;
   PyObject *__pyx_t_4 = NULL;
   PyObject *__pyx_t_5 = NULL;
-  void *__pyx_t_6;
+  Py_ssize_t __pyx_t_6;
   void *__pyx_t_7;
-  int __pyx_t_8;
+  void *__pyx_t_8;
   int __pyx_t_9;
+  int __pyx_t_10;
+  PyObject *__pyx_t_11 = NULL;
+  PyObject *(*__pyx_t_12)(PyObject *);
+  int __pyx_t_13;
   __Pyx_RefNannySetupContext("getModel_Path_EdgeLits", 0);
 
   /* "monosat/monosat_p.pyx":771
@@ -12692,58 +12766,216 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_100getModel_Path_EdgeLits(CYTHON_U
   /* "monosat/monosat_p.pyx":776
  * 
  * 
- *     cdef array.array a =  array.array('i', store)             # <<<<<<<<<<<<<<
- * 
- * 
+ *     initializer = list(range(store_length))             # <<<<<<<<<<<<<<
+ *     assert(len(initializer)==store_length)
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
  */
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 776, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_range, __pyx_v_store_length); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 776, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_5 = PySequence_List(__pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 776, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_v_initializer = ((PyObject*)__pyx_t_5);
+  __pyx_t_5 = 0;
+
+  /* "monosat/monosat_p.pyx":777
+ * 
+ *     initializer = list(range(store_length))
+ *     assert(len(initializer)==store_length)             # <<<<<<<<<<<<<<
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
+ *     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+ */
+  #ifndef CYTHON_WITHOUT_ASSERTIONS
+  if (unlikely(!Py_OptimizeFlag)) {
+    __pyx_t_6 = PyList_GET_SIZE(__pyx_v_initializer); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 777, __pyx_L1_error)
+    __pyx_t_5 = PyInt_FromSsize_t(__pyx_t_6); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 777, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_4 = PyObject_RichCompare(__pyx_t_5, __pyx_v_store_length, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 777, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 777, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    if (unlikely(!__pyx_t_1)) {
+      PyErr_SetNone(PyExc_AssertionError);
+      __PYX_ERR(0, 777, __pyx_L1_error)
+    }
+  }
+  #endif
+
+  /* "monosat/monosat_p.pyx":778
+ *     initializer = list(range(store_length))
+ *     assert(len(initializer)==store_length)
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?             # <<<<<<<<<<<<<<
+ *     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+ *     store.clear()
+ */
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 778, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_n_s_i);
-  __Pyx_INCREF(__pyx_v_store);
-  __Pyx_GIVEREF(__pyx_v_store);
-  PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_store);
-  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 776, __pyx_L1_error)
+  __Pyx_INCREF(__pyx_v_initializer);
+  __Pyx_GIVEREF(__pyx_v_initializer);
+  PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_initializer);
+  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 778, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
   /* "monosat/monosat_p.pyx":779
- * 
- * 
+ *     assert(len(initializer)==store_length)
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
  *     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))             # <<<<<<<<<<<<<<
+ *     store.clear()
+ *     for lit in a:
+ */
+  __pyx_t_7 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_7 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 779, __pyx_L1_error)
+  __pyx_t_8 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_8 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 779, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_As_int(__pyx_v_reach_or_distance_literal); if (unlikely((__pyx_t_9 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 779, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyInt_As_int(__pyx_v_store_length); if (unlikely((__pyx_t_10 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 779, __pyx_L1_error)
+  __pyx_v__r = getModel_Path_EdgeLits(((void *)__pyx_t_7), ((void *)__pyx_t_8), ((int)__pyx_t_9), ((int)__pyx_t_10), ((int *)__pyx_v_a->data.as_ints));
+
+  /* "monosat/monosat_p.pyx":780
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
+ *     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+ *     store.clear()             # <<<<<<<<<<<<<<
+ *     for lit in a:
+ *         store.append(lit)
+ */
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_store, __pyx_n_s_clear); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 780, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_11 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
+    __pyx_t_11 = PyMethod_GET_SELF(__pyx_t_4);
+    if (likely(__pyx_t_11)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_11);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_4, function);
+    }
+  }
+  if (__pyx_t_11) {
+    __pyx_t_5 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_11); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 780, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+  } else {
+    __pyx_t_5 = __Pyx_PyObject_CallNoArg(__pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 780, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+
+  /* "monosat/monosat_p.pyx":781
+ *     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+ *     store.clear()
+ *     for lit in a:             # <<<<<<<<<<<<<<
+ *         store.append(lit)
+ *     assert(len(store)==store_length)
+ */
+  if (likely(PyList_CheckExact(((PyObject *)__pyx_v_a))) || PyTuple_CheckExact(((PyObject *)__pyx_v_a))) {
+    __pyx_t_5 = ((PyObject *)__pyx_v_a); __Pyx_INCREF(__pyx_t_5); __pyx_t_6 = 0;
+    __pyx_t_12 = NULL;
+  } else {
+    __pyx_t_6 = -1; __pyx_t_5 = PyObject_GetIter(((PyObject *)__pyx_v_a)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 781, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_12 = Py_TYPE(__pyx_t_5)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 781, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_5))) {
+        if (__pyx_t_6 >= PyList_GET_SIZE(__pyx_t_5)) break;
+        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+        __pyx_t_4 = PyList_GET_ITEM(__pyx_t_5, __pyx_t_6); __Pyx_INCREF(__pyx_t_4); __pyx_t_6++; if (unlikely(0 < 0)) __PYX_ERR(0, 781, __pyx_L1_error)
+        #else
+        __pyx_t_4 = PySequence_ITEM(__pyx_t_5, __pyx_t_6); __pyx_t_6++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 781, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        #endif
+      } else {
+        if (__pyx_t_6 >= PyTuple_GET_SIZE(__pyx_t_5)) break;
+        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+        __pyx_t_4 = PyTuple_GET_ITEM(__pyx_t_5, __pyx_t_6); __Pyx_INCREF(__pyx_t_4); __pyx_t_6++; if (unlikely(0 < 0)) __PYX_ERR(0, 781, __pyx_L1_error)
+        #else
+        __pyx_t_4 = PySequence_ITEM(__pyx_t_5, __pyx_t_6); __pyx_t_6++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 781, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        #endif
+      }
+    } else {
+      __pyx_t_4 = __pyx_t_12(__pyx_t_5);
+      if (unlikely(!__pyx_t_4)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 781, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_4);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_lit, __pyx_t_4);
+    __pyx_t_4 = 0;
+
+    /* "monosat/monosat_p.pyx":782
+ *     store.clear()
+ *     for lit in a:
+ *         store.append(lit)             # <<<<<<<<<<<<<<
+ *     assert(len(store)==store_length)
+ *     py_result = <int>_r
+ */
+    __pyx_t_13 = __Pyx_PyObject_Append(__pyx_v_store, __pyx_v_lit); if (unlikely(__pyx_t_13 == ((int)-1))) __PYX_ERR(0, 782, __pyx_L1_error)
+
+    /* "monosat/monosat_p.pyx":781
+ *     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+ *     store.clear()
+ *     for lit in a:             # <<<<<<<<<<<<<<
+ *         store.append(lit)
+ *     assert(len(store)==store_length)
+ */
+  }
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+
+  /* "monosat/monosat_p.pyx":783
+ *     for lit in a:
+ *         store.append(lit)
+ *     assert(len(store)==store_length)             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 779, __pyx_L1_error)
-  __pyx_t_7 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_7 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 779, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_reach_or_distance_literal); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 779, __pyx_L1_error)
-  __pyx_t_9 = __Pyx_PyInt_As_int(__pyx_v_store_length); if (unlikely((__pyx_t_9 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 779, __pyx_L1_error)
-  __pyx_v__r = getModel_Path_EdgeLits(((void *)__pyx_t_6), ((void *)__pyx_t_7), ((int)__pyx_t_8), ((int)__pyx_t_9), ((int *)__pyx_v_a->data.as_ints));
+  #ifndef CYTHON_WITHOUT_ASSERTIONS
+  if (unlikely(!Py_OptimizeFlag)) {
+    __pyx_t_6 = PyObject_Length(__pyx_v_store); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 783, __pyx_L1_error)
+    __pyx_t_5 = PyInt_FromSsize_t(__pyx_t_6); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 783, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_4 = PyObject_RichCompare(__pyx_t_5, __pyx_v_store_length, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 783, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 783, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    if (unlikely(!__pyx_t_1)) {
+      PyErr_SetNone(PyExc_AssertionError);
+      __PYX_ERR(0, 783, __pyx_L1_error)
+    }
+  }
+  #endif
 
-  /* "monosat/monosat_p.pyx":780
- * 
- *     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+  /* "monosat/monosat_p.pyx":784
+ *         store.append(lit)
+ *     assert(len(store)==store_length)
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
  *     return py_result
  * 
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":781
- *     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+  /* "monosat/monosat_p.pyx":785
+ *     assert(len(store)==store_length)
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
  * 
  * def getModel_Path_EdgeLits_Length( S ,  G ,  reach_or_distance_literal ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 781, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_r = __pyx_t_5;
-  __pyx_t_5 = 0;
+  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 785, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_r = __pyx_t_4;
+  __pyx_t_4 = 0;
   goto __pyx_L0;
 
   /* "monosat/monosat_p.pyx":767
@@ -12758,16 +12990,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_100getModel_Path_EdgeLits(CYTHON_U
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_11);
   __Pyx_AddTraceback("monosat.monosat_p.getModel_Path_EdgeLits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_initializer);
   __Pyx_XDECREF((PyObject *)__pyx_v_a);
+  __Pyx_XDECREF(__pyx_v_lit);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":783
+/* "monosat/monosat_p.pyx":787
  *     return py_result
  * 
  * def getModel_Path_EdgeLits_Length( S ,  G ,  reach_or_distance_literal ):             # <<<<<<<<<<<<<<
@@ -12811,17 +13046,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_103getModel_Path_EdgeLits_Length(P
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("getModel_Path_EdgeLits_Length", 1, 3, 3, 1); __PYX_ERR(0, 783, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("getModel_Path_EdgeLits_Length", 1, 3, 3, 1); __PYX_ERR(0, 787, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_reach_or_distance_literal)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("getModel_Path_EdgeLits_Length", 1, 3, 3, 2); __PYX_ERR(0, 783, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("getModel_Path_EdgeLits_Length", 1, 3, 3, 2); __PYX_ERR(0, 787, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "getModel_Path_EdgeLits_Length") < 0)) __PYX_ERR(0, 783, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "getModel_Path_EdgeLits_Length") < 0)) __PYX_ERR(0, 787, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -12836,7 +13071,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_103getModel_Path_EdgeLits_Length(P
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("getModel_Path_EdgeLits_Length", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 783, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("getModel_Path_EdgeLits_Length", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 787, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.getModel_Path_EdgeLits_Length", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -12863,12 +13098,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_102getModel_Path_EdgeLits_Length(C
   PyObject *__pyx_t_7 = NULL;
   __Pyx_RefNannySetupContext("getModel_Path_EdgeLits_Length", 0);
 
-  /* "monosat/monosat_p.pyx":787
+  /* "monosat/monosat_p.pyx":791
  * 
  * 
  *     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'             # <<<<<<<<<<<<<<
- * 
- * 
+ *     cdef int _r = _getModel_Path_EdgeLits_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))
+ *     py_result = <int>_r
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
@@ -12885,25 +13120,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_102getModel_Path_EdgeLits_Length(C
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_reach_or_distance_literal_wr);
-      __PYX_ERR(0, 787, __pyx_L1_error)
+      __PYX_ERR(0, 791, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":791
+  /* "monosat/monosat_p.pyx":792
  * 
- * 
+ *     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
  *     cdef int _r = _getModel_Path_EdgeLits_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 791, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 791, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_reach_or_distance_literal); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 791, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 792, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 792, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_reach_or_distance_literal); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 792, __pyx_L1_error)
   __pyx_v__r = getModel_Path_EdgeLits_Length(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6));
 
-  /* "monosat/monosat_p.pyx":792
- * 
+  /* "monosat/monosat_p.pyx":793
+ *     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
  *     cdef int _r = _getModel_Path_EdgeLits_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
  *     return py_result
@@ -12911,7 +13146,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_102getModel_Path_EdgeLits_Length(C
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":793
+  /* "monosat/monosat_p.pyx":794
  *     cdef int _r = _getModel_Path_EdgeLits_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -12919,13 +13154,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_102getModel_Path_EdgeLits_Length(C
  * def getModel_Path_Nodes( S ,  G ,  reach_or_distance_literal ,  store_length ,  store ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 793, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 794, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_r = __pyx_t_7;
   __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":783
+  /* "monosat/monosat_p.pyx":787
  *     return py_result
  * 
  * def getModel_Path_EdgeLits_Length( S ,  G ,  reach_or_distance_literal ):             # <<<<<<<<<<<<<<
@@ -12944,7 +13179,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_102getModel_Path_EdgeLits_Length(C
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":795
+/* "monosat/monosat_p.pyx":796
  *     return py_result
  * 
  * def getModel_Path_Nodes( S ,  G ,  reach_or_distance_literal ,  store_length ,  store ):             # <<<<<<<<<<<<<<
@@ -12994,29 +13229,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_105getModel_Path_Nodes(PyObject *_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, 1); __PYX_ERR(0, 795, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, 1); __PYX_ERR(0, 796, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_reach_or_distance_literal)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, 2); __PYX_ERR(0, 795, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, 2); __PYX_ERR(0, 796, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_store_length)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, 3); __PYX_ERR(0, 795, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, 3); __PYX_ERR(0, 796, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_store)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, 4); __PYX_ERR(0, 795, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, 4); __PYX_ERR(0, 796, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "getModel_Path_Nodes") < 0)) __PYX_ERR(0, 795, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "getModel_Path_Nodes") < 0)) __PYX_ERR(0, 796, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -13035,7 +13270,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_105getModel_Path_Nodes(PyObject *_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 795, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 796, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.getModel_Path_Nodes", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -13049,8 +13284,10 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_105getModel_Path_Nodes(PyObject *_
 }
 
 static PyObject *__pyx_pf_7monosat_9monosat_p_104getModel_Path_Nodes(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_S, PyObject *__pyx_v_G, PyObject *__pyx_v_reach_or_distance_literal, PyObject *__pyx_v_store_length, PyObject *__pyx_v_store) {
+  PyObject *__pyx_v_initializer = NULL;
   arrayobject *__pyx_v_a = 0;
   int __pyx_v__r;
+  PyObject *__pyx_v_node = NULL;
   int __pyx_v_py_result;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -13059,13 +13296,17 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_104getModel_Path_Nodes(CYTHON_UNUS
   int __pyx_t_3;
   PyObject *__pyx_t_4 = NULL;
   PyObject *__pyx_t_5 = NULL;
-  void *__pyx_t_6;
+  Py_ssize_t __pyx_t_6;
   void *__pyx_t_7;
-  int __pyx_t_8;
+  void *__pyx_t_8;
   int __pyx_t_9;
+  int __pyx_t_10;
+  PyObject *__pyx_t_11 = NULL;
+  PyObject *(*__pyx_t_12)(PyObject *);
+  int __pyx_t_13;
   __Pyx_RefNannySetupContext("getModel_Path_Nodes", 0);
 
-  /* "monosat/monosat_p.pyx":799
+  /* "monosat/monosat_p.pyx":800
  * 
  * 
  *     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'             # <<<<<<<<<<<<<<
@@ -13087,12 +13328,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_104getModel_Path_Nodes(CYTHON_UNUS
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_reach_or_distance_literal_wr);
-      __PYX_ERR(0, 799, __pyx_L1_error)
+      __PYX_ERR(0, 800, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":800
+  /* "monosat/monosat_p.pyx":801
  * 
  *     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
  *     assert isinstance(store_length, (int,long)), 'arg store_length wrong type'             # <<<<<<<<<<<<<<
@@ -13114,12 +13355,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_104getModel_Path_Nodes(CYTHON_UNUS
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_store_length_wrong_type);
-      __PYX_ERR(0, 800, __pyx_L1_error)
+      __PYX_ERR(0, 801, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":801
+  /* "monosat/monosat_p.pyx":802
  *     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
  *     assert isinstance(store_length, (int,long)), 'arg store_length wrong type'
  *     assert isinstance(store, list), 'arg store wrong type'             # <<<<<<<<<<<<<<
@@ -13131,7 +13372,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_104getModel_Path_Nodes(CYTHON_UNUS
     __pyx_t_1 = PyList_Check(__pyx_v_store); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_store_wrong_type);
-      __PYX_ERR(0, 801, __pyx_L1_error)
+      __PYX_ERR(0, 802, __pyx_L1_error)
     }
   }
   #endif
@@ -13139,61 +13380,219 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_104getModel_Path_Nodes(CYTHON_UNUS
   /* "monosat/monosat_p.pyx":805
  * 
  * 
- *     cdef array.array a =  array.array('i', store)             # <<<<<<<<<<<<<<
+ *     initializer = list(range(store_length))             # <<<<<<<<<<<<<<
+ *     assert(len(initializer)==store_length)
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
+ */
+  __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_range, __pyx_v_store_length); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 805, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_5 = PySequence_List(__pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 805, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_v_initializer = ((PyObject*)__pyx_t_5);
+  __pyx_t_5 = 0;
+
+  /* "monosat/monosat_p.pyx":806
+ * 
+ *     initializer = list(range(store_length))
+ *     assert(len(initializer)==store_length)             # <<<<<<<<<<<<<<
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
+ * 
+ */
+  #ifndef CYTHON_WITHOUT_ASSERTIONS
+  if (unlikely(!Py_OptimizeFlag)) {
+    __pyx_t_6 = PyList_GET_SIZE(__pyx_v_initializer); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 806, __pyx_L1_error)
+    __pyx_t_5 = PyInt_FromSsize_t(__pyx_t_6); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 806, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_4 = PyObject_RichCompare(__pyx_t_5, __pyx_v_store_length, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 806, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 806, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    if (unlikely(!__pyx_t_1)) {
+      PyErr_SetNone(PyExc_AssertionError);
+      __PYX_ERR(0, 806, __pyx_L1_error)
+    }
+  }
+  #endif
+
+  /* "monosat/monosat_p.pyx":807
+ *     initializer = list(range(store_length))
+ *     assert(len(initializer)==store_length)
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?             # <<<<<<<<<<<<<<
  * 
  *     cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
  */
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 805, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 807, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_n_s_i);
-  __Pyx_INCREF(__pyx_v_store);
-  __Pyx_GIVEREF(__pyx_v_store);
-  PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_store);
-  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 805, __pyx_L1_error)
+  __Pyx_INCREF(__pyx_v_initializer);
+  __Pyx_GIVEREF(__pyx_v_initializer);
+  PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_initializer);
+  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 807, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "monosat/monosat_p.pyx":807
- *     cdef array.array a =  array.array('i', store)
+  /* "monosat/monosat_p.pyx":809
+ *     cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
  * 
  *     cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))             # <<<<<<<<<<<<<<
+ *     store.clear()
+ *     for node in a:
+ */
+  __pyx_t_7 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_7 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 809, __pyx_L1_error)
+  __pyx_t_8 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_8 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 809, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_As_int(__pyx_v_reach_or_distance_literal); if (unlikely((__pyx_t_9 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 809, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyInt_As_int(__pyx_v_store_length); if (unlikely((__pyx_t_10 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 809, __pyx_L1_error)
+  __pyx_v__r = getModel_Path_Nodes(((void *)__pyx_t_7), ((void *)__pyx_t_8), ((int)__pyx_t_9), ((int)__pyx_t_10), ((int *)__pyx_v_a->data.as_ints));
+
+  /* "monosat/monosat_p.pyx":810
+ * 
+ *     cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
+ *     store.clear()             # <<<<<<<<<<<<<<
+ *     for node in a:
+ *         store.append(node)
+ */
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_store, __pyx_n_s_clear); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 810, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_11 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
+    __pyx_t_11 = PyMethod_GET_SELF(__pyx_t_4);
+    if (likely(__pyx_t_11)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_11);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_4, function);
+    }
+  }
+  if (__pyx_t_11) {
+    __pyx_t_5 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_11); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 810, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+  } else {
+    __pyx_t_5 = __Pyx_PyObject_CallNoArg(__pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 810, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+
+  /* "monosat/monosat_p.pyx":811
+ *     cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
+ *     store.clear()
+ *     for node in a:             # <<<<<<<<<<<<<<
+ *         store.append(node)
+ *     assert(len(store)==store_length)
+ */
+  if (likely(PyList_CheckExact(((PyObject *)__pyx_v_a))) || PyTuple_CheckExact(((PyObject *)__pyx_v_a))) {
+    __pyx_t_5 = ((PyObject *)__pyx_v_a); __Pyx_INCREF(__pyx_t_5); __pyx_t_6 = 0;
+    __pyx_t_12 = NULL;
+  } else {
+    __pyx_t_6 = -1; __pyx_t_5 = PyObject_GetIter(((PyObject *)__pyx_v_a)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 811, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_12 = Py_TYPE(__pyx_t_5)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 811, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_5))) {
+        if (__pyx_t_6 >= PyList_GET_SIZE(__pyx_t_5)) break;
+        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+        __pyx_t_4 = PyList_GET_ITEM(__pyx_t_5, __pyx_t_6); __Pyx_INCREF(__pyx_t_4); __pyx_t_6++; if (unlikely(0 < 0)) __PYX_ERR(0, 811, __pyx_L1_error)
+        #else
+        __pyx_t_4 = PySequence_ITEM(__pyx_t_5, __pyx_t_6); __pyx_t_6++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 811, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        #endif
+      } else {
+        if (__pyx_t_6 >= PyTuple_GET_SIZE(__pyx_t_5)) break;
+        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+        __pyx_t_4 = PyTuple_GET_ITEM(__pyx_t_5, __pyx_t_6); __Pyx_INCREF(__pyx_t_4); __pyx_t_6++; if (unlikely(0 < 0)) __PYX_ERR(0, 811, __pyx_L1_error)
+        #else
+        __pyx_t_4 = PySequence_ITEM(__pyx_t_5, __pyx_t_6); __pyx_t_6++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 811, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        #endif
+      }
+    } else {
+      __pyx_t_4 = __pyx_t_12(__pyx_t_5);
+      if (unlikely(!__pyx_t_4)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 811, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_4);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_node, __pyx_t_4);
+    __pyx_t_4 = 0;
+
+    /* "monosat/monosat_p.pyx":812
+ *     store.clear()
+ *     for node in a:
+ *         store.append(node)             # <<<<<<<<<<<<<<
+ *     assert(len(store)==store_length)
+ *     py_result = <int>_r
+ */
+    __pyx_t_13 = __Pyx_PyObject_Append(__pyx_v_store, __pyx_v_node); if (unlikely(__pyx_t_13 == ((int)-1))) __PYX_ERR(0, 812, __pyx_L1_error)
+
+    /* "monosat/monosat_p.pyx":811
+ *     cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
+ *     store.clear()
+ *     for node in a:             # <<<<<<<<<<<<<<
+ *         store.append(node)
+ *     assert(len(store)==store_length)
+ */
+  }
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+
+  /* "monosat/monosat_p.pyx":813
+ *     for node in a:
+ *         store.append(node)
+ *     assert(len(store)==store_length)             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 807, __pyx_L1_error)
-  __pyx_t_7 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_7 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 807, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_reach_or_distance_literal); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 807, __pyx_L1_error)
-  __pyx_t_9 = __Pyx_PyInt_As_int(__pyx_v_store_length); if (unlikely((__pyx_t_9 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 807, __pyx_L1_error)
-  __pyx_v__r = getModel_Path_Nodes(((void *)__pyx_t_6), ((void *)__pyx_t_7), ((int)__pyx_t_8), ((int)__pyx_t_9), ((int *)__pyx_v_a->data.as_ints));
+  #ifndef CYTHON_WITHOUT_ASSERTIONS
+  if (unlikely(!Py_OptimizeFlag)) {
+    __pyx_t_6 = PyObject_Length(__pyx_v_store); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 813, __pyx_L1_error)
+    __pyx_t_5 = PyInt_FromSsize_t(__pyx_t_6); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 813, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_4 = PyObject_RichCompare(__pyx_t_5, __pyx_v_store_length, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 813, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 813, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    if (unlikely(!__pyx_t_1)) {
+      PyErr_SetNone(PyExc_AssertionError);
+      __PYX_ERR(0, 813, __pyx_L1_error)
+    }
+  }
+  #endif
 
-  /* "monosat/monosat_p.pyx":808
- * 
- *     cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
+  /* "monosat/monosat_p.pyx":814
+ *         store.append(node)
+ *     assert(len(store)==store_length)
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
  *     return py_result
  * 
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":809
- *     cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
+  /* "monosat/monosat_p.pyx":815
+ *     assert(len(store)==store_length)
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
  * 
  * def getModel_Path_Nodes_Length( S ,  G ,  reach_or_distance_literal ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 809, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_r = __pyx_t_5;
-  __pyx_t_5 = 0;
+  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 815, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_r = __pyx_t_4;
+  __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":795
+  /* "monosat/monosat_p.pyx":796
  *     return py_result
  * 
  * def getModel_Path_Nodes( S ,  G ,  reach_or_distance_literal ,  store_length ,  store ):             # <<<<<<<<<<<<<<
@@ -13205,16 +13604,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_104getModel_Path_Nodes(CYTHON_UNUS
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_11);
   __Pyx_AddTraceback("monosat.monosat_p.getModel_Path_Nodes", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_initializer);
   __Pyx_XDECREF((PyObject *)__pyx_v_a);
+  __Pyx_XDECREF(__pyx_v_node);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":811
+/* "monosat/monosat_p.pyx":817
  *     return py_result
  * 
  * def getModel_Path_Nodes_Length( S ,  G ,  reach_or_distance_literal ):             # <<<<<<<<<<<<<<
@@ -13258,17 +13660,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_107getModel_Path_Nodes_Length(PyOb
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes_Length", 1, 3, 3, 1); __PYX_ERR(0, 811, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes_Length", 1, 3, 3, 1); __PYX_ERR(0, 817, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_reach_or_distance_literal)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes_Length", 1, 3, 3, 2); __PYX_ERR(0, 811, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes_Length", 1, 3, 3, 2); __PYX_ERR(0, 817, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "getModel_Path_Nodes_Length") < 0)) __PYX_ERR(0, 811, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "getModel_Path_Nodes_Length") < 0)) __PYX_ERR(0, 817, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -13283,7 +13685,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_107getModel_Path_Nodes_Length(PyOb
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes_Length", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 811, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("getModel_Path_Nodes_Length", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 817, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.getModel_Path_Nodes_Length", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -13310,7 +13712,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_106getModel_Path_Nodes_Length(CYTH
   PyObject *__pyx_t_7 = NULL;
   __Pyx_RefNannySetupContext("getModel_Path_Nodes_Length", 0);
 
-  /* "monosat/monosat_p.pyx":815
+  /* "monosat/monosat_p.pyx":821
  * 
  * 
  *     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'             # <<<<<<<<<<<<<<
@@ -13332,24 +13734,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_106getModel_Path_Nodes_Length(CYTH
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_reach_or_distance_literal_wr);
-      __PYX_ERR(0, 815, __pyx_L1_error)
+      __PYX_ERR(0, 821, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":819
+  /* "monosat/monosat_p.pyx":825
  * 
  * 
  *     cdef int _r = _getModel_Path_Nodes_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 819, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 819, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_reach_or_distance_literal); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 819, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 825, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 825, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_reach_or_distance_literal); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 825, __pyx_L1_error)
   __pyx_v__r = getModel_Path_Nodes_Length(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6));
 
-  /* "monosat/monosat_p.pyx":820
+  /* "monosat/monosat_p.pyx":826
  * 
  *     cdef int _r = _getModel_Path_Nodes_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -13358,7 +13760,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_106getModel_Path_Nodes_Length(CYTH
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":821
+  /* "monosat/monosat_p.pyx":827
  *     cdef int _r = _getModel_Path_Nodes_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -13366,13 +13768,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_106getModel_Path_Nodes_Length(CYTH
  * def getVersion():
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 821, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 827, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_r = __pyx_t_7;
   __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":811
+  /* "monosat/monosat_p.pyx":817
  *     return py_result
  * 
  * def getModel_Path_Nodes_Length( S ,  G ,  reach_or_distance_literal ):             # <<<<<<<<<<<<<<
@@ -13391,7 +13793,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_106getModel_Path_Nodes_Length(CYTH
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":823
+/* "monosat/monosat_p.pyx":829
  *     return py_result
  * 
  * def getVersion():             # <<<<<<<<<<<<<<
@@ -13422,7 +13824,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_108getVersion(CYTHON_UNUSED PyObje
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("getVersion", 0);
 
-  /* "monosat/monosat_p.pyx":825
+  /* "monosat/monosat_p.pyx":831
  * def getVersion():
  *     """Cython signature: char * getVersion()"""
  *     cdef char  * _r = <char *>_getVersion_monosat()             # <<<<<<<<<<<<<<
@@ -13431,7 +13833,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_108getVersion(CYTHON_UNUSED PyObje
  */
   __pyx_v__r = ((char *)getVersion());
 
-  /* "monosat/monosat_p.pyx":826
+  /* "monosat/monosat_p.pyx":832
  *     """Cython signature: char * getVersion()"""
  *     cdef char  * _r = <char *>_getVersion_monosat()
  *     py_result = <char *>(_r)             # <<<<<<<<<<<<<<
@@ -13440,7 +13842,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_108getVersion(CYTHON_UNUSED PyObje
  */
   __pyx_v_py_result = ((char *)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":827
+  /* "monosat/monosat_p.pyx":833
  *     cdef char  * _r = <char *>_getVersion_monosat()
  *     py_result = <char *>(_r)
  *     return py_result             # <<<<<<<<<<<<<<
@@ -13448,13 +13850,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_108getVersion(CYTHON_UNUSED PyObje
  * def graph_setAssignEdgesToWeight( S ,  G ,  weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyBytes_FromString(__pyx_v_py_result); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 827, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyBytes_FromString(__pyx_v_py_result); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 833, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":823
+  /* "monosat/monosat_p.pyx":829
  *     return py_result
  * 
  * def getVersion():             # <<<<<<<<<<<<<<
@@ -13473,7 +13875,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_108getVersion(CYTHON_UNUSED PyObje
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":829
+/* "monosat/monosat_p.pyx":835
  *     return py_result
  * 
  * def graph_setAssignEdgesToWeight( S ,  G ,  weight ):             # <<<<<<<<<<<<<<
@@ -13517,17 +13919,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_111graph_setAssignEdgesToWeight(Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("graph_setAssignEdgesToWeight", 1, 3, 3, 1); __PYX_ERR(0, 829, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("graph_setAssignEdgesToWeight", 1, 3, 3, 1); __PYX_ERR(0, 835, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("graph_setAssignEdgesToWeight", 1, 3, 3, 2); __PYX_ERR(0, 829, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("graph_setAssignEdgesToWeight", 1, 3, 3, 2); __PYX_ERR(0, 835, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "graph_setAssignEdgesToWeight") < 0)) __PYX_ERR(0, 829, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "graph_setAssignEdgesToWeight") < 0)) __PYX_ERR(0, 835, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -13542,7 +13944,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_111graph_setAssignEdgesToWeight(Py
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("graph_setAssignEdgesToWeight", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 829, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("graph_setAssignEdgesToWeight", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 835, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.graph_setAssignEdgesToWeight", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -13566,7 +13968,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_110graph_setAssignEdgesToWeight(CY
   int64_t __pyx_t_6;
   __Pyx_RefNannySetupContext("graph_setAssignEdgesToWeight", 0);
 
-  /* "monosat/monosat_p.pyx":833
+  /* "monosat/monosat_p.pyx":839
  * 
  * 
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -13588,24 +13990,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_110graph_setAssignEdgesToWeight(CY
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 833, __pyx_L1_error)
+      __PYX_ERR(0, 839, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":837
+  /* "monosat/monosat_p.pyx":843
  * 
  * 
  *     _graph_setAssignEdgesToWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))             # <<<<<<<<<<<<<<
  * 
  * def initBVTheory( S ):
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 837, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 837, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_6 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 837, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 843, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 843, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_6 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 843, __pyx_L1_error)
   graph_setAssignEdgesToWeight(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int64_t)__pyx_t_6));
 
-  /* "monosat/monosat_p.pyx":829
+  /* "monosat/monosat_p.pyx":835
  *     return py_result
  * 
  * def graph_setAssignEdgesToWeight( S ,  G ,  weight ):             # <<<<<<<<<<<<<<
@@ -13625,7 +14027,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_110graph_setAssignEdgesToWeight(CY
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":839
+/* "monosat/monosat_p.pyx":845
  *     _graph_setAssignEdgesToWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))
  * 
  * def initBVTheory( S ):             # <<<<<<<<<<<<<<
@@ -13657,29 +14059,29 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_112initBVTheory(CYTHON_UNUSED PyOb
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("initBVTheory", 0);
 
-  /* "monosat/monosat_p.pyx":846
+  /* "monosat/monosat_p.pyx":852
  * 
  * 
  *     cdef void* _r = _initBVTheory_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 846, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 852, __pyx_L1_error)
   __pyx_v__r = initBVTheory(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":847
+  /* "monosat/monosat_p.pyx":853
  * 
  *     cdef void* _r = _initBVTheory_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)             # <<<<<<<<<<<<<<
  *     return py_result
  * 
  */
-  __pyx_t_2 = PyCapsule_New(__pyx_v__r, NULL, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 847, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_New(__pyx_v__r, NULL, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 853, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_v_py_result = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "monosat/monosat_p.pyx":848
+  /* "monosat/monosat_p.pyx":854
  *     cdef void* _r = _initBVTheory_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
  *     return py_result             # <<<<<<<<<<<<<<
@@ -13691,7 +14093,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_112initBVTheory(CYTHON_UNUSED PyOb
   __pyx_r = __pyx_v_py_result;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":839
+  /* "monosat/monosat_p.pyx":845
  *     _graph_setAssignEdgesToWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))
  * 
  * def initBVTheory( S ):             # <<<<<<<<<<<<<<
@@ -13711,7 +14113,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_112initBVTheory(CYTHON_UNUSED PyOb
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":851
+/* "monosat/monosat_p.pyx":857
  * 
  * 
  * def isDecisionVar( S ,  var ):             # <<<<<<<<<<<<<<
@@ -13752,11 +14154,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_115isDecisionVar(PyObject *__pyx_s
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_var)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("isDecisionVar", 1, 2, 2, 1); __PYX_ERR(0, 851, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("isDecisionVar", 1, 2, 2, 1); __PYX_ERR(0, 857, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "isDecisionVar") < 0)) __PYX_ERR(0, 851, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "isDecisionVar") < 0)) __PYX_ERR(0, 857, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -13769,7 +14171,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_115isDecisionVar(PyObject *__pyx_s
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("isDecisionVar", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 851, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("isDecisionVar", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 857, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.isDecisionVar", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -13795,7 +14197,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_114isDecisionVar(CYTHON_UNUSED PyO
   PyObject *__pyx_t_6 = NULL;
   __Pyx_RefNannySetupContext("isDecisionVar", 0);
 
-  /* "monosat/monosat_p.pyx":854
+  /* "monosat/monosat_p.pyx":860
  *     """Cython signature: bint isDecisionVar(void* S, int var)"""
  * 
  *     assert isinstance(var, (int, long)), 'arg var wrong type'             # <<<<<<<<<<<<<<
@@ -13817,23 +14219,23 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_114isDecisionVar(CYTHON_UNUSED PyO
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_var_wrong_type);
-      __PYX_ERR(0, 854, __pyx_L1_error)
+      __PYX_ERR(0, 860, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":857
+  /* "monosat/monosat_p.pyx":863
  * 
  * 
  *     cdef bint _r = _isDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var))             # <<<<<<<<<<<<<<
  *     py_result = <bint>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 857, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_var); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 857, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 863, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_var); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 863, __pyx_L1_error)
   __pyx_v__r = isDecisionVar(((void *)__pyx_t_4), ((int)__pyx_t_5));
 
-  /* "monosat/monosat_p.pyx":858
+  /* "monosat/monosat_p.pyx":864
  * 
  *     cdef bint _r = _isDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var))
  *     py_result = <bint>_r             # <<<<<<<<<<<<<<
@@ -13842,7 +14244,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_114isDecisionVar(CYTHON_UNUSED PyO
  */
   __pyx_v_py_result = (__pyx_v__r != 0);
 
-  /* "monosat/monosat_p.pyx":859
+  /* "monosat/monosat_p.pyx":865
  *     cdef bint _r = _isDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var))
  *     py_result = <bint>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -13850,13 +14252,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_114isDecisionVar(CYTHON_UNUSED PyO
  * def lastSolutionWasOptimal( S ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_6 = __Pyx_PyBool_FromLong(__pyx_v_py_result); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 859, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyBool_FromLong(__pyx_v_py_result); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 865, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __pyx_r = __pyx_t_6;
   __pyx_t_6 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":851
+  /* "monosat/monosat_p.pyx":857
  * 
  * 
  * def isDecisionVar( S ,  var ):             # <<<<<<<<<<<<<<
@@ -13875,7 +14277,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_114isDecisionVar(CYTHON_UNUSED PyO
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":861
+/* "monosat/monosat_p.pyx":867
  *     return py_result
  * 
  * def lastSolutionWasOptimal( S ):             # <<<<<<<<<<<<<<
@@ -13907,17 +14309,17 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_116lastSolutionWasOptimal(CYTHON_U
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("lastSolutionWasOptimal", 0);
 
-  /* "monosat/monosat_p.pyx":865
+  /* "monosat/monosat_p.pyx":871
  * 
  * 
  *     cdef bint _r = _lastSolutionWasOptimal_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <bint>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 865, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 871, __pyx_L1_error)
   __pyx_v__r = lastSolutionWasOptimal(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":866
+  /* "monosat/monosat_p.pyx":872
  * 
  *     cdef bint _r = _lastSolutionWasOptimal_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <bint>_r             # <<<<<<<<<<<<<<
@@ -13926,7 +14328,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_116lastSolutionWasOptimal(CYTHON_U
  */
   __pyx_v_py_result = (__pyx_v__r != 0);
 
-  /* "monosat/monosat_p.pyx":867
+  /* "monosat/monosat_p.pyx":873
  *     cdef bint _r = _lastSolutionWasOptimal_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <bint>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -13934,13 +14336,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_116lastSolutionWasOptimal(CYTHON_U
  * def maximizeBV( S ,  bv ,  bvID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyBool_FromLong(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 867, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBool_FromLong(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 873, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":861
+  /* "monosat/monosat_p.pyx":867
  *     return py_result
  * 
  * def lastSolutionWasOptimal( S ):             # <<<<<<<<<<<<<<
@@ -13959,7 +14361,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_116lastSolutionWasOptimal(CYTHON_U
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":869
+/* "monosat/monosat_p.pyx":875
  *     return py_result
  * 
  * def maximizeBV( S ,  bv ,  bvID ):             # <<<<<<<<<<<<<<
@@ -14003,17 +14405,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_119maximizeBV(PyObject *__pyx_self
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximizeBV", 1, 3, 3, 1); __PYX_ERR(0, 869, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximizeBV", 1, 3, 3, 1); __PYX_ERR(0, 875, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximizeBV", 1, 3, 3, 2); __PYX_ERR(0, 869, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximizeBV", 1, 3, 3, 2); __PYX_ERR(0, 875, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximizeBV") < 0)) __PYX_ERR(0, 869, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximizeBV") < 0)) __PYX_ERR(0, 875, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -14028,7 +14430,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_119maximizeBV(PyObject *__pyx_self
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("maximizeBV", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 869, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("maximizeBV", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 875, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.maximizeBV", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -14049,19 +14451,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_118maximizeBV(CYTHON_UNUSED PyObje
   int __pyx_t_3;
   __Pyx_RefNannySetupContext("maximizeBV", 0);
 
-  /* "monosat/monosat_p.pyx":873
+  /* "monosat/monosat_p.pyx":879
  * 
  * 
  *     _maximizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))             # <<<<<<<<<<<<<<
  * 
  * def maximizeLits( S ,  lits ,  n_lits ):
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 873, __pyx_L1_error)
-  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 873, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 873, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 879, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 879, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 879, __pyx_L1_error)
   maximizeBV(((void *)__pyx_t_1), ((void *)__pyx_t_2), ((int)__pyx_t_3));
 
-  /* "monosat/monosat_p.pyx":869
+  /* "monosat/monosat_p.pyx":875
  *     return py_result
  * 
  * def maximizeBV( S ,  bv ,  bvID ):             # <<<<<<<<<<<<<<
@@ -14081,7 +14483,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_118maximizeBV(CYTHON_UNUSED PyObje
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":875
+/* "monosat/monosat_p.pyx":881
  *     _maximizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
  * 
  * def maximizeLits( S ,  lits ,  n_lits ):             # <<<<<<<<<<<<<<
@@ -14125,17 +14527,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_121maximizeLits(PyObject *__pyx_se
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_lits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximizeLits", 1, 3, 3, 1); __PYX_ERR(0, 875, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximizeLits", 1, 3, 3, 1); __PYX_ERR(0, 881, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_lits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximizeLits", 1, 3, 3, 2); __PYX_ERR(0, 875, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximizeLits", 1, 3, 3, 2); __PYX_ERR(0, 881, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximizeLits") < 0)) __PYX_ERR(0, 875, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximizeLits") < 0)) __PYX_ERR(0, 881, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -14150,7 +14552,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_121maximizeLits(PyObject *__pyx_se
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("maximizeLits", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 875, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("maximizeLits", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 881, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.maximizeLits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -14176,7 +14578,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_120maximizeLits(CYTHON_UNUSED PyOb
   int __pyx_t_7;
   __Pyx_RefNannySetupContext("maximizeLits", 0);
 
-  /* "monosat/monosat_p.pyx":878
+  /* "monosat/monosat_p.pyx":884
  *     """Cython signature: void maximizeLits(void* S, int* lits, int n_lits)"""
  * 
  *     assert isinstance(lits, list), 'arg lits wrong type'             # <<<<<<<<<<<<<<
@@ -14188,12 +14590,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_120maximizeLits(CYTHON_UNUSED PyOb
     __pyx_t_1 = PyList_Check(__pyx_v_lits); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_lits_wrong_type);
-      __PYX_ERR(0, 878, __pyx_L1_error)
+      __PYX_ERR(0, 884, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":879
+  /* "monosat/monosat_p.pyx":885
  * 
  *     assert isinstance(lits, list), 'arg lits wrong type'
  *     assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'             # <<<<<<<<<<<<<<
@@ -14215,19 +14617,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_120maximizeLits(CYTHON_UNUSED PyOb
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_n_lits_wrong_type);
-      __PYX_ERR(0, 879, __pyx_L1_error)
+      __PYX_ERR(0, 885, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":881
+  /* "monosat/monosat_p.pyx":887
  *     assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'
  * 
  *     cdef array.array a =  array.array('i', lits)             # <<<<<<<<<<<<<<
  * 
  *     _maximizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  */
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 881, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 887, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -14235,24 +14637,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_120maximizeLits(CYTHON_UNUSED PyOb
   __Pyx_INCREF(__pyx_v_lits);
   __Pyx_GIVEREF(__pyx_v_lits);
   PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_lits);
-  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 881, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 887, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "monosat/monosat_p.pyx":883
+  /* "monosat/monosat_p.pyx":889
  *     cdef array.array a =  array.array('i', lits)
  * 
  *     _maximizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))             # <<<<<<<<<<<<<<
  * 
  * def maximizeWeightedLits( S ,  lits ,  weights ,  n_lits ):
  */
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 883, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_lits); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 883, __pyx_L1_error)
+  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 889, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_lits); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 889, __pyx_L1_error)
   maximizeLits(((void *)__pyx_t_6), ((int *)__pyx_v_a->data.as_ints), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":875
+  /* "monosat/monosat_p.pyx":881
  *     _maximizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
  * 
  * def maximizeLits( S ,  lits ,  n_lits ):             # <<<<<<<<<<<<<<
@@ -14275,7 +14677,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_120maximizeLits(CYTHON_UNUSED PyOb
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":885
+/* "monosat/monosat_p.pyx":891
  *     _maximizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  * 
  * def maximizeWeightedLits( S ,  lits ,  weights ,  n_lits ):             # <<<<<<<<<<<<<<
@@ -14322,23 +14724,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_123maximizeWeightedLits(PyObject *
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_lits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximizeWeightedLits", 1, 4, 4, 1); __PYX_ERR(0, 885, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximizeWeightedLits", 1, 4, 4, 1); __PYX_ERR(0, 891, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weights)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximizeWeightedLits", 1, 4, 4, 2); __PYX_ERR(0, 885, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximizeWeightedLits", 1, 4, 4, 2); __PYX_ERR(0, 891, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_lits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximizeWeightedLits", 1, 4, 4, 3); __PYX_ERR(0, 885, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximizeWeightedLits", 1, 4, 4, 3); __PYX_ERR(0, 891, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximizeWeightedLits") < 0)) __PYX_ERR(0, 885, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximizeWeightedLits") < 0)) __PYX_ERR(0, 891, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -14355,7 +14757,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_123maximizeWeightedLits(PyObject *
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("maximizeWeightedLits", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 885, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("maximizeWeightedLits", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 891, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.maximizeWeightedLits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -14382,7 +14784,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_122maximizeWeightedLits(CYTHON_UNU
   int __pyx_t_7;
   __Pyx_RefNannySetupContext("maximizeWeightedLits", 0);
 
-  /* "monosat/monosat_p.pyx":888
+  /* "monosat/monosat_p.pyx":894
  *     """Cython signature: void maximizeWeightedLits(void* S, int* lits, int* weights, int n_lits)"""
  * 
  *     assert isinstance(lits, list), 'arg lits wrong type'             # <<<<<<<<<<<<<<
@@ -14394,12 +14796,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_122maximizeWeightedLits(CYTHON_UNU
     __pyx_t_1 = PyList_Check(__pyx_v_lits); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_lits_wrong_type);
-      __PYX_ERR(0, 888, __pyx_L1_error)
+      __PYX_ERR(0, 894, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":889
+  /* "monosat/monosat_p.pyx":895
  * 
  *     assert isinstance(lits, list), 'arg lits wrong type'
  *     assert isinstance(weights, (int, long)), 'arg weights wrong type'             # <<<<<<<<<<<<<<
@@ -14421,12 +14823,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_122maximizeWeightedLits(CYTHON_UNU
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weights_wrong_type);
-      __PYX_ERR(0, 889, __pyx_L1_error)
+      __PYX_ERR(0, 895, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":890
+  /* "monosat/monosat_p.pyx":896
  *     assert isinstance(lits, list), 'arg lits wrong type'
  *     assert isinstance(weights, (int, long)), 'arg weights wrong type'
  *     assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'             # <<<<<<<<<<<<<<
@@ -14448,19 +14850,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_122maximizeWeightedLits(CYTHON_UNU
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_n_lits_wrong_type);
-      __PYX_ERR(0, 890, __pyx_L1_error)
+      __PYX_ERR(0, 896, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":892
+  /* "monosat/monosat_p.pyx":898
  *     assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'
  * 
  *     cdef array.array a =  array.array('i', lits)             # <<<<<<<<<<<<<<
  *     cdef array.array b =  array.array('i', weights)
  * 
  */
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 892, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 898, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -14468,20 +14870,20 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_122maximizeWeightedLits(CYTHON_UNU
   __Pyx_INCREF(__pyx_v_lits);
   __Pyx_GIVEREF(__pyx_v_lits);
   PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_lits);
-  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 892, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 898, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "monosat/monosat_p.pyx":893
+  /* "monosat/monosat_p.pyx":899
  * 
  *     cdef array.array a =  array.array('i', lits)
  *     cdef array.array b =  array.array('i', weights)             # <<<<<<<<<<<<<<
  * 
  *     _maximizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  */
-  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 893, __pyx_L1_error)
+  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 899, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -14489,24 +14891,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_122maximizeWeightedLits(CYTHON_UNU
   __Pyx_INCREF(__pyx_v_weights);
   __Pyx_GIVEREF(__pyx_v_weights);
   PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_v_weights);
-  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 893, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 899, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_v_b = ((arrayobject *)__pyx_t_4);
   __pyx_t_4 = 0;
 
-  /* "monosat/monosat_p.pyx":895
+  /* "monosat/monosat_p.pyx":901
  *     cdef array.array b =  array.array('i', weights)
  * 
  *     _maximizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))             # <<<<<<<<<<<<<<
  * 
  * def maximumFlow_geq( S ,  G ,  source ,  sink ,  weight ):
  */
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 895, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_lits); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 895, __pyx_L1_error)
+  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 901, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_lits); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 901, __pyx_L1_error)
   maximizeWeightedLits(((void *)__pyx_t_6), ((int *)__pyx_v_a->data.as_ints), ((int *)__pyx_v_b->data.as_ints), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":885
+  /* "monosat/monosat_p.pyx":891
  *     _maximizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  * 
  * def maximizeWeightedLits( S ,  lits ,  weights ,  n_lits ):             # <<<<<<<<<<<<<<
@@ -14530,7 +14932,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_122maximizeWeightedLits(CYTHON_UNU
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":897
+/* "monosat/monosat_p.pyx":903
  *     _maximizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  * 
  * def maximumFlow_geq( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
@@ -14580,29 +14982,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_125maximumFlow_geq(PyObject *__pyx
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, 1); __PYX_ERR(0, 897, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, 1); __PYX_ERR(0, 903, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_source)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, 2); __PYX_ERR(0, 897, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, 2); __PYX_ERR(0, 903, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sink)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, 3); __PYX_ERR(0, 897, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, 3); __PYX_ERR(0, 903, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, 4); __PYX_ERR(0, 897, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, 4); __PYX_ERR(0, 903, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximumFlow_geq") < 0)) __PYX_ERR(0, 897, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximumFlow_geq") < 0)) __PYX_ERR(0, 903, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -14621,7 +15023,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_125maximumFlow_geq(PyObject *__pyx
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 897, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("maximumFlow_geq", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 903, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.maximumFlow_geq", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -14650,7 +15052,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_124maximumFlow_geq(CYTHON_UNUSED P
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("maximumFlow_geq", 0);
 
-  /* "monosat/monosat_p.pyx":901
+  /* "monosat/monosat_p.pyx":907
  * 
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'             # <<<<<<<<<<<<<<
@@ -14672,12 +15074,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_124maximumFlow_geq(CYTHON_UNUSED P
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_source_wrong_type);
-      __PYX_ERR(0, 901, __pyx_L1_error)
+      __PYX_ERR(0, 907, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":902
+  /* "monosat/monosat_p.pyx":908
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'
  *     assert isinstance(sink, (int, long)), 'arg sink wrong type'             # <<<<<<<<<<<<<<
@@ -14699,12 +15101,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_124maximumFlow_geq(CYTHON_UNUSED P
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_sink_wrong_type);
-      __PYX_ERR(0, 902, __pyx_L1_error)
+      __PYX_ERR(0, 908, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":903
+  /* "monosat/monosat_p.pyx":909
  *     assert isinstance(source, (int, long)), 'arg source wrong type'
  *     assert isinstance(sink, (int, long)), 'arg sink wrong type'
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -14726,26 +15128,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_124maximumFlow_geq(CYTHON_UNUSED P
     __pyx_L7_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 903, __pyx_L1_error)
+      __PYX_ERR(0, 909, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":909
+  /* "monosat/monosat_p.pyx":915
  * 
  * 
  *     cdef int _r = _maximumFlow_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 909, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 909, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 909, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 909, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 909, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 915, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 915, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 915, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 915, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 915, __pyx_L1_error)
   __pyx_v__r = maximumFlow_geq(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int64_t)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":910
+  /* "monosat/monosat_p.pyx":916
  * 
  *     cdef int _r = _maximumFlow_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -14754,7 +15156,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_124maximumFlow_geq(CYTHON_UNUSED P
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":911
+  /* "monosat/monosat_p.pyx":917
  *     cdef int _r = _maximumFlow_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -14762,13 +15164,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_124maximumFlow_geq(CYTHON_UNUSED P
  * def maximumFlow_geq_bv( S ,  G ,  source ,  sink ,  bvID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 911, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 917, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":897
+  /* "monosat/monosat_p.pyx":903
  *     _maximizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  * 
  * def maximumFlow_geq( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
@@ -14787,7 +15189,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_124maximumFlow_geq(CYTHON_UNUSED P
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":913
+/* "monosat/monosat_p.pyx":919
  *     return py_result
  * 
  * def maximumFlow_geq_bv( S ,  G ,  source ,  sink ,  bvID ):             # <<<<<<<<<<<<<<
@@ -14837,29 +15239,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_127maximumFlow_geq_bv(PyObject *__
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, 1); __PYX_ERR(0, 913, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, 1); __PYX_ERR(0, 919, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_source)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, 2); __PYX_ERR(0, 913, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, 2); __PYX_ERR(0, 919, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sink)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, 3); __PYX_ERR(0, 913, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, 3); __PYX_ERR(0, 919, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, 4); __PYX_ERR(0, 913, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, 4); __PYX_ERR(0, 919, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximumFlow_geq_bv") < 0)) __PYX_ERR(0, 913, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximumFlow_geq_bv") < 0)) __PYX_ERR(0, 919, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -14878,7 +15280,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_127maximumFlow_geq_bv(PyObject *__
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 913, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("maximumFlow_geq_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 919, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.maximumFlow_geq_bv", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -14907,7 +15309,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_126maximumFlow_geq_bv(CYTHON_UNUSE
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("maximumFlow_geq_bv", 0);
 
-  /* "monosat/monosat_p.pyx":917
+  /* "monosat/monosat_p.pyx":923
  * 
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'             # <<<<<<<<<<<<<<
@@ -14929,12 +15331,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_126maximumFlow_geq_bv(CYTHON_UNUSE
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_source_wrong_type);
-      __PYX_ERR(0, 917, __pyx_L1_error)
+      __PYX_ERR(0, 923, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":918
+  /* "monosat/monosat_p.pyx":924
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'
  *     assert isinstance(sink, (int, long)), 'arg sink wrong type'             # <<<<<<<<<<<<<<
@@ -14956,26 +15358,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_126maximumFlow_geq_bv(CYTHON_UNUSE
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_sink_wrong_type);
-      __PYX_ERR(0, 918, __pyx_L1_error)
+      __PYX_ERR(0, 924, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":925
+  /* "monosat/monosat_p.pyx":931
  * 
  * 
  *     cdef int _r = _maximumFlow_geq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int>bvID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 925, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 925, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 925, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 925, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 925, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 931, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 931, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 931, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 931, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 931, __pyx_L1_error)
   __pyx_v__r = maximumFlow_geq_bv(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":926
+  /* "monosat/monosat_p.pyx":932
  * 
  *     cdef int _r = _maximumFlow_geq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int>bvID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -14984,7 +15386,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_126maximumFlow_geq_bv(CYTHON_UNUSE
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":927
+  /* "monosat/monosat_p.pyx":933
  *     cdef int _r = _maximumFlow_geq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int>bvID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -14992,13 +15394,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_126maximumFlow_geq_bv(CYTHON_UNUSE
  * def maximumFlow_gt( S ,  G ,  source ,  sink ,  weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 927, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 933, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":913
+  /* "monosat/monosat_p.pyx":919
  *     return py_result
  * 
  * def maximumFlow_geq_bv( S ,  G ,  source ,  sink ,  bvID ):             # <<<<<<<<<<<<<<
@@ -15017,7 +15419,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_126maximumFlow_geq_bv(CYTHON_UNUSE
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":929
+/* "monosat/monosat_p.pyx":935
  *     return py_result
  * 
  * def maximumFlow_gt( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
@@ -15067,29 +15469,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_129maximumFlow_gt(PyObject *__pyx_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, 1); __PYX_ERR(0, 929, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, 1); __PYX_ERR(0, 935, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_source)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, 2); __PYX_ERR(0, 929, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, 2); __PYX_ERR(0, 935, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sink)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, 3); __PYX_ERR(0, 929, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, 3); __PYX_ERR(0, 935, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, 4); __PYX_ERR(0, 929, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, 4); __PYX_ERR(0, 935, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximumFlow_gt") < 0)) __PYX_ERR(0, 929, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximumFlow_gt") < 0)) __PYX_ERR(0, 935, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -15108,7 +15510,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_129maximumFlow_gt(PyObject *__pyx_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 929, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("maximumFlow_gt", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 935, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.maximumFlow_gt", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -15137,7 +15539,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_128maximumFlow_gt(CYTHON_UNUSED Py
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("maximumFlow_gt", 0);
 
-  /* "monosat/monosat_p.pyx":933
+  /* "monosat/monosat_p.pyx":939
  * 
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'             # <<<<<<<<<<<<<<
@@ -15159,12 +15561,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_128maximumFlow_gt(CYTHON_UNUSED Py
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_source_wrong_type);
-      __PYX_ERR(0, 933, __pyx_L1_error)
+      __PYX_ERR(0, 939, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":934
+  /* "monosat/monosat_p.pyx":940
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'
  *     assert isinstance(sink, (int, long)), 'arg sink wrong type'             # <<<<<<<<<<<<<<
@@ -15186,12 +15588,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_128maximumFlow_gt(CYTHON_UNUSED Py
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_sink_wrong_type);
-      __PYX_ERR(0, 934, __pyx_L1_error)
+      __PYX_ERR(0, 940, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":935
+  /* "monosat/monosat_p.pyx":941
  *     assert isinstance(source, (int, long)), 'arg source wrong type'
  *     assert isinstance(sink, (int, long)), 'arg sink wrong type'
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -15213,26 +15615,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_128maximumFlow_gt(CYTHON_UNUSED Py
     __pyx_L7_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 935, __pyx_L1_error)
+      __PYX_ERR(0, 941, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":941
+  /* "monosat/monosat_p.pyx":947
  * 
  * 
  *     cdef int _r = _maximumFlow_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 941, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 941, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 941, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 941, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 941, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 947, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 947, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 947, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 947, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 947, __pyx_L1_error)
   __pyx_v__r = maximumFlow_gt(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int64_t)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":942
+  /* "monosat/monosat_p.pyx":948
  * 
  *     cdef int _r = _maximumFlow_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -15241,7 +15643,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_128maximumFlow_gt(CYTHON_UNUSED Py
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":943
+  /* "monosat/monosat_p.pyx":949
  *     cdef int _r = _maximumFlow_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -15249,13 +15651,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_128maximumFlow_gt(CYTHON_UNUSED Py
  * def maximumFlow_gt_bv( S ,  G ,  source ,  sink ,  bvID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 943, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 949, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":929
+  /* "monosat/monosat_p.pyx":935
  *     return py_result
  * 
  * def maximumFlow_gt( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
@@ -15274,7 +15676,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_128maximumFlow_gt(CYTHON_UNUSED Py
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":945
+/* "monosat/monosat_p.pyx":951
  *     return py_result
  * 
  * def maximumFlow_gt_bv( S ,  G ,  source ,  sink ,  bvID ):             # <<<<<<<<<<<<<<
@@ -15324,29 +15726,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_131maximumFlow_gt_bv(PyObject *__p
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, 1); __PYX_ERR(0, 945, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, 1); __PYX_ERR(0, 951, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_source)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, 2); __PYX_ERR(0, 945, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, 2); __PYX_ERR(0, 951, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sink)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, 3); __PYX_ERR(0, 945, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, 3); __PYX_ERR(0, 951, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, 4); __PYX_ERR(0, 945, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, 4); __PYX_ERR(0, 951, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximumFlow_gt_bv") < 0)) __PYX_ERR(0, 945, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "maximumFlow_gt_bv") < 0)) __PYX_ERR(0, 951, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -15365,7 +15767,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_131maximumFlow_gt_bv(PyObject *__p
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 945, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("maximumFlow_gt_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 951, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.maximumFlow_gt_bv", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -15394,7 +15796,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_130maximumFlow_gt_bv(CYTHON_UNUSED
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("maximumFlow_gt_bv", 0);
 
-  /* "monosat/monosat_p.pyx":949
+  /* "monosat/monosat_p.pyx":955
  * 
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'             # <<<<<<<<<<<<<<
@@ -15416,12 +15818,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_130maximumFlow_gt_bv(CYTHON_UNUSED
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_source_wrong_type);
-      __PYX_ERR(0, 949, __pyx_L1_error)
+      __PYX_ERR(0, 955, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":950
+  /* "monosat/monosat_p.pyx":956
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'
  *     assert isinstance(sink, (int, long)), 'arg sink wrong type'             # <<<<<<<<<<<<<<
@@ -15443,26 +15845,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_130maximumFlow_gt_bv(CYTHON_UNUSED
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_sink_wrong_type);
-      __PYX_ERR(0, 950, __pyx_L1_error)
+      __PYX_ERR(0, 956, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":957
+  /* "monosat/monosat_p.pyx":963
  * 
  * 
  *     cdef int _r = _maximumFlow_gt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int>bvID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 957, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 957, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 957, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 957, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 957, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 963, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 963, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 963, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 963, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 963, __pyx_L1_error)
   __pyx_v__r = maximumFlow_gt_bv(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":958
+  /* "monosat/monosat_p.pyx":964
  * 
  *     cdef int _r = _maximumFlow_gt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int>bvID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -15471,7 +15873,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_130maximumFlow_gt_bv(CYTHON_UNUSED
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":959
+  /* "monosat/monosat_p.pyx":965
  *     cdef int _r = _maximumFlow_gt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int>bvID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -15479,13 +15881,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_130maximumFlow_gt_bv(CYTHON_UNUSED
  * def minimizeBV( S ,  bv ,  bvID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 959, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 965, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":945
+  /* "monosat/monosat_p.pyx":951
  *     return py_result
  * 
  * def maximumFlow_gt_bv( S ,  G ,  source ,  sink ,  bvID ):             # <<<<<<<<<<<<<<
@@ -15504,7 +15906,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_130maximumFlow_gt_bv(CYTHON_UNUSED
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":961
+/* "monosat/monosat_p.pyx":967
  *     return py_result
  * 
  * def minimizeBV( S ,  bv ,  bvID ):             # <<<<<<<<<<<<<<
@@ -15548,17 +15950,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_133minimizeBV(PyObject *__pyx_self
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimizeBV", 1, 3, 3, 1); __PYX_ERR(0, 961, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimizeBV", 1, 3, 3, 1); __PYX_ERR(0, 967, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimizeBV", 1, 3, 3, 2); __PYX_ERR(0, 961, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimizeBV", 1, 3, 3, 2); __PYX_ERR(0, 967, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimizeBV") < 0)) __PYX_ERR(0, 961, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimizeBV") < 0)) __PYX_ERR(0, 967, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -15573,7 +15975,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_133minimizeBV(PyObject *__pyx_self
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("minimizeBV", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 961, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("minimizeBV", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 967, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.minimizeBV", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -15594,19 +15996,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_132minimizeBV(CYTHON_UNUSED PyObje
   int __pyx_t_3;
   __Pyx_RefNannySetupContext("minimizeBV", 0);
 
-  /* "monosat/monosat_p.pyx":969
+  /* "monosat/monosat_p.pyx":975
  * 
  * 
  *     _minimizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))             # <<<<<<<<<<<<<<
  * 
  * def minimizeLits( S ,  lits ,  n_lits ):
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 969, __pyx_L1_error)
-  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 969, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 969, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 975, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 975, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 975, __pyx_L1_error)
   minimizeBV(((void *)__pyx_t_1), ((void *)__pyx_t_2), ((int)__pyx_t_3));
 
-  /* "monosat/monosat_p.pyx":961
+  /* "monosat/monosat_p.pyx":967
  *     return py_result
  * 
  * def minimizeBV( S ,  bv ,  bvID ):             # <<<<<<<<<<<<<<
@@ -15626,7 +16028,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_132minimizeBV(CYTHON_UNUSED PyObje
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":971
+/* "monosat/monosat_p.pyx":977
  *     _minimizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
  * 
  * def minimizeLits( S ,  lits ,  n_lits ):             # <<<<<<<<<<<<<<
@@ -15670,17 +16072,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_135minimizeLits(PyObject *__pyx_se
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_lits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimizeLits", 1, 3, 3, 1); __PYX_ERR(0, 971, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimizeLits", 1, 3, 3, 1); __PYX_ERR(0, 977, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_lits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimizeLits", 1, 3, 3, 2); __PYX_ERR(0, 971, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimizeLits", 1, 3, 3, 2); __PYX_ERR(0, 977, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimizeLits") < 0)) __PYX_ERR(0, 971, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimizeLits") < 0)) __PYX_ERR(0, 977, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -15695,7 +16097,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_135minimizeLits(PyObject *__pyx_se
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("minimizeLits", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 971, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("minimizeLits", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 977, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.minimizeLits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -15721,7 +16123,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_134minimizeLits(CYTHON_UNUSED PyOb
   int __pyx_t_7;
   __Pyx_RefNannySetupContext("minimizeLits", 0);
 
-  /* "monosat/monosat_p.pyx":974
+  /* "monosat/monosat_p.pyx":980
  *     """Cython signature: void minimizeLits(void* S, int* lits, int n_lits)"""
  * 
  *     assert isinstance(lits, list), 'arg lits wrong type'             # <<<<<<<<<<<<<<
@@ -15733,12 +16135,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_134minimizeLits(CYTHON_UNUSED PyOb
     __pyx_t_1 = PyList_Check(__pyx_v_lits); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_lits_wrong_type);
-      __PYX_ERR(0, 974, __pyx_L1_error)
+      __PYX_ERR(0, 980, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":975
+  /* "monosat/monosat_p.pyx":981
  * 
  *     assert isinstance(lits, list), 'arg lits wrong type'
  *     assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'             # <<<<<<<<<<<<<<
@@ -15760,19 +16162,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_134minimizeLits(CYTHON_UNUSED PyOb
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_n_lits_wrong_type);
-      __PYX_ERR(0, 975, __pyx_L1_error)
+      __PYX_ERR(0, 981, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":977
+  /* "monosat/monosat_p.pyx":983
  *     assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'
  * 
  *     cdef array.array a =  array.array('i', lits)             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 977, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 983, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -15780,24 +16182,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_134minimizeLits(CYTHON_UNUSED PyOb
   __Pyx_INCREF(__pyx_v_lits);
   __Pyx_GIVEREF(__pyx_v_lits);
   PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_lits);
-  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 977, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 983, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "monosat/monosat_p.pyx":980
+  /* "monosat/monosat_p.pyx":986
  * 
  * 
  *     _minimizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))             # <<<<<<<<<<<<<<
  * 
  * def minimizeWeightedLits( S ,  lits ,  weights ,  n_lits ):
  */
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 980, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_lits); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 980, __pyx_L1_error)
+  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 986, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_lits); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 986, __pyx_L1_error)
   minimizeLits(((void *)__pyx_t_6), ((int *)__pyx_v_a->data.as_ints), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":971
+  /* "monosat/monosat_p.pyx":977
  *     _minimizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
  * 
  * def minimizeLits( S ,  lits ,  n_lits ):             # <<<<<<<<<<<<<<
@@ -15820,7 +16222,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_134minimizeLits(CYTHON_UNUSED PyOb
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":982
+/* "monosat/monosat_p.pyx":988
  *     _minimizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  * 
  * def minimizeWeightedLits( S ,  lits ,  weights ,  n_lits ):             # <<<<<<<<<<<<<<
@@ -15867,23 +16269,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_137minimizeWeightedLits(PyObject *
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_lits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimizeWeightedLits", 1, 4, 4, 1); __PYX_ERR(0, 982, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimizeWeightedLits", 1, 4, 4, 1); __PYX_ERR(0, 988, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weights)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimizeWeightedLits", 1, 4, 4, 2); __PYX_ERR(0, 982, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimizeWeightedLits", 1, 4, 4, 2); __PYX_ERR(0, 988, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_lits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimizeWeightedLits", 1, 4, 4, 3); __PYX_ERR(0, 982, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimizeWeightedLits", 1, 4, 4, 3); __PYX_ERR(0, 988, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimizeWeightedLits") < 0)) __PYX_ERR(0, 982, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimizeWeightedLits") < 0)) __PYX_ERR(0, 988, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -15900,7 +16302,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_137minimizeWeightedLits(PyObject *
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("minimizeWeightedLits", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 982, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("minimizeWeightedLits", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 988, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.minimizeWeightedLits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -15927,7 +16329,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_136minimizeWeightedLits(CYTHON_UNU
   int __pyx_t_7;
   __Pyx_RefNannySetupContext("minimizeWeightedLits", 0);
 
-  /* "monosat/monosat_p.pyx":985
+  /* "monosat/monosat_p.pyx":991
  *     """Cython signature: void minimizeWeightedLits(void* S, int* lits, int* weights, int n_lits)"""
  * 
  *     assert isinstance(lits, list), 'arg lits wrong type'             # <<<<<<<<<<<<<<
@@ -15939,12 +16341,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_136minimizeWeightedLits(CYTHON_UNU
     __pyx_t_1 = PyList_Check(__pyx_v_lits); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_lits_wrong_type);
-      __PYX_ERR(0, 985, __pyx_L1_error)
+      __PYX_ERR(0, 991, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":986
+  /* "monosat/monosat_p.pyx":992
  * 
  *     assert isinstance(lits, list), 'arg lits wrong type'
  *     assert isinstance(weights, (int, long)), 'arg weights wrong type'             # <<<<<<<<<<<<<<
@@ -15966,12 +16368,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_136minimizeWeightedLits(CYTHON_UNU
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weights_wrong_type);
-      __PYX_ERR(0, 986, __pyx_L1_error)
+      __PYX_ERR(0, 992, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":987
+  /* "monosat/monosat_p.pyx":993
  *     assert isinstance(lits, list), 'arg lits wrong type'
  *     assert isinstance(weights, (int, long)), 'arg weights wrong type'
  *     assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'             # <<<<<<<<<<<<<<
@@ -15993,19 +16395,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_136minimizeWeightedLits(CYTHON_UNU
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_n_lits_wrong_type);
-      __PYX_ERR(0, 987, __pyx_L1_error)
+      __PYX_ERR(0, 993, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":989
+  /* "monosat/monosat_p.pyx":995
  *     assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'
  * 
  *     cdef array.array a =  array.array('i', lits)             # <<<<<<<<<<<<<<
  *     cdef array.array b =  array.array('i', weights)
  * 
  */
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 989, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 995, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -16013,20 +16415,20 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_136minimizeWeightedLits(CYTHON_UNU
   __Pyx_INCREF(__pyx_v_lits);
   __Pyx_GIVEREF(__pyx_v_lits);
   PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_lits);
-  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 989, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 995, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "monosat/monosat_p.pyx":990
+  /* "monosat/monosat_p.pyx":996
  * 
  *     cdef array.array a =  array.array('i', lits)
  *     cdef array.array b =  array.array('i', weights)             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 990, __pyx_L1_error)
+  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 996, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -16034,24 +16436,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_136minimizeWeightedLits(CYTHON_UNU
   __Pyx_INCREF(__pyx_v_weights);
   __Pyx_GIVEREF(__pyx_v_weights);
   PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_v_weights);
-  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 990, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 996, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_v_b = ((arrayobject *)__pyx_t_4);
   __pyx_t_4 = 0;
 
-  /* "monosat/monosat_p.pyx":993
+  /* "monosat/monosat_p.pyx":999
  * 
  * 
  *     _minimizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))             # <<<<<<<<<<<<<<
  * 
  * def minimumSpanningTree_leq( S ,  G ,  weight ):
  */
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 993, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_lits); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 993, __pyx_L1_error)
+  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 999, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_lits); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 999, __pyx_L1_error)
   minimizeWeightedLits(((void *)__pyx_t_6), ((int *)__pyx_v_a->data.as_ints), ((int *)__pyx_v_b->data.as_ints), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":982
+  /* "monosat/monosat_p.pyx":988
  *     _minimizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  * 
  * def minimizeWeightedLits( S ,  lits ,  weights ,  n_lits ):             # <<<<<<<<<<<<<<
@@ -16075,7 +16477,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_136minimizeWeightedLits(CYTHON_UNU
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":995
+/* "monosat/monosat_p.pyx":1001
  *     _minimizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  * 
  * def minimumSpanningTree_leq( S ,  G ,  weight ):             # <<<<<<<<<<<<<<
@@ -16119,17 +16521,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_139minimumSpanningTree_leq(PyObjec
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_leq", 1, 3, 3, 1); __PYX_ERR(0, 995, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_leq", 1, 3, 3, 1); __PYX_ERR(0, 1001, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_leq", 1, 3, 3, 2); __PYX_ERR(0, 995, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_leq", 1, 3, 3, 2); __PYX_ERR(0, 1001, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimumSpanningTree_leq") < 0)) __PYX_ERR(0, 995, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimumSpanningTree_leq") < 0)) __PYX_ERR(0, 1001, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -16144,7 +16546,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_139minimumSpanningTree_leq(PyObjec
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_leq", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 995, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_leq", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1001, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.minimumSpanningTree_leq", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -16171,7 +16573,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_138minimumSpanningTree_leq(CYTHON_
   PyObject *__pyx_t_7 = NULL;
   __Pyx_RefNannySetupContext("minimumSpanningTree_leq", 0);
 
-  /* "monosat/monosat_p.pyx":999
+  /* "monosat/monosat_p.pyx":1005
  * 
  * 
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -16193,24 +16595,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_138minimumSpanningTree_leq(CYTHON_
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 999, __pyx_L1_error)
+      __PYX_ERR(0, 1005, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1003
+  /* "monosat/monosat_p.pyx":1009
  * 
  * 
  *     cdef int _r = _minimumSpanningTree_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1003, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1003, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_6 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1003, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1009, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1009, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_6 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1009, __pyx_L1_error)
   __pyx_v__r = minimumSpanningTree_leq(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int64_t)__pyx_t_6));
 
-  /* "monosat/monosat_p.pyx":1004
+  /* "monosat/monosat_p.pyx":1010
  * 
  *     cdef int _r = _minimumSpanningTree_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -16219,7 +16621,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_138minimumSpanningTree_leq(CYTHON_
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1005
+  /* "monosat/monosat_p.pyx":1011
  *     cdef int _r = _minimumSpanningTree_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -16227,13 +16629,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_138minimumSpanningTree_leq(CYTHON_
  * def minimumSpanningTree_lt( S ,  G ,  source ,  sink ,  weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 1005, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 1011, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_r = __pyx_t_7;
   __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":995
+  /* "monosat/monosat_p.pyx":1001
  *     _minimizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  * 
  * def minimumSpanningTree_leq( S ,  G ,  weight ):             # <<<<<<<<<<<<<<
@@ -16252,7 +16654,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_138minimumSpanningTree_leq(CYTHON_
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1007
+/* "monosat/monosat_p.pyx":1013
  *     return py_result
  * 
  * def minimumSpanningTree_lt( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
@@ -16302,29 +16704,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_141minimumSpanningTree_lt(PyObject
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, 1); __PYX_ERR(0, 1007, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, 1); __PYX_ERR(0, 1013, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_source)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, 2); __PYX_ERR(0, 1007, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, 2); __PYX_ERR(0, 1013, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_sink)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, 3); __PYX_ERR(0, 1007, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, 3); __PYX_ERR(0, 1013, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, 4); __PYX_ERR(0, 1007, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, 4); __PYX_ERR(0, 1013, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimumSpanningTree_lt") < 0)) __PYX_ERR(0, 1007, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "minimumSpanningTree_lt") < 0)) __PYX_ERR(0, 1013, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -16343,7 +16745,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_141minimumSpanningTree_lt(PyObject
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1007, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("minimumSpanningTree_lt", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1013, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.minimumSpanningTree_lt", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -16372,7 +16774,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_140minimumSpanningTree_lt(CYTHON_U
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("minimumSpanningTree_lt", 0);
 
-  /* "monosat/monosat_p.pyx":1011
+  /* "monosat/monosat_p.pyx":1017
  * 
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'             # <<<<<<<<<<<<<<
@@ -16394,12 +16796,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_140minimumSpanningTree_lt(CYTHON_U
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_source_wrong_type);
-      __PYX_ERR(0, 1011, __pyx_L1_error)
+      __PYX_ERR(0, 1017, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1012
+  /* "monosat/monosat_p.pyx":1018
  * 
  *     assert isinstance(source, (int, long)), 'arg source wrong type'
  *     assert isinstance(sink, (int, long)), 'arg sink wrong type'             # <<<<<<<<<<<<<<
@@ -16421,12 +16823,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_140minimumSpanningTree_lt(CYTHON_U
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_sink_wrong_type);
-      __PYX_ERR(0, 1012, __pyx_L1_error)
+      __PYX_ERR(0, 1018, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1013
+  /* "monosat/monosat_p.pyx":1019
  *     assert isinstance(source, (int, long)), 'arg source wrong type'
  *     assert isinstance(sink, (int, long)), 'arg sink wrong type'
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -16448,26 +16850,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_140minimumSpanningTree_lt(CYTHON_U
     __pyx_L7_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 1013, __pyx_L1_error)
+      __PYX_ERR(0, 1019, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1019
+  /* "monosat/monosat_p.pyx":1025
  * 
  * 
  *     cdef int _r = _minimumSpanningTree_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1019, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1019, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1019, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1019, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1019, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1025, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1025, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_source); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1025, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_sink); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1025, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1025, __pyx_L1_error)
   __pyx_v__r = minimumSpanningTree_lt(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int64_t)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1020
+  /* "monosat/monosat_p.pyx":1026
  * 
  *     cdef int _r = _minimumSpanningTree_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -16476,7 +16878,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_140minimumSpanningTree_lt(CYTHON_U
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1021
+  /* "monosat/monosat_p.pyx":1027
  *     cdef int _r = _minimumSpanningTree_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>source), (<int>sink), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -16484,13 +16886,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_140minimumSpanningTree_lt(CYTHON_U
  * def nBitvectors( S ,  bv ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1021, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1027, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1007
+  /* "monosat/monosat_p.pyx":1013
  *     return py_result
  * 
  * def minimumSpanningTree_lt( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
@@ -16509,7 +16911,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_140minimumSpanningTree_lt(CYTHON_U
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1023
+/* "monosat/monosat_p.pyx":1029
  *     return py_result
  * 
  * def nBitvectors( S ,  bv ):             # <<<<<<<<<<<<<<
@@ -16550,11 +16952,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_143nBitvectors(PyObject *__pyx_sel
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("nBitvectors", 1, 2, 2, 1); __PYX_ERR(0, 1023, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("nBitvectors", 1, 2, 2, 1); __PYX_ERR(0, 1029, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "nBitvectors") < 0)) __PYX_ERR(0, 1023, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "nBitvectors") < 0)) __PYX_ERR(0, 1029, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -16567,7 +16969,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_143nBitvectors(PyObject *__pyx_sel
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("nBitvectors", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1023, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("nBitvectors", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1029, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.nBitvectors", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -16590,18 +16992,18 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_142nBitvectors(CYTHON_UNUSED PyObj
   PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("nBitvectors", 0);
 
-  /* "monosat/monosat_p.pyx":1029
+  /* "monosat/monosat_p.pyx":1035
  * 
  * 
  *     cdef int _r = _nBitvectors_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1029, __pyx_L1_error)
-  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1029, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1035, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1035, __pyx_L1_error)
   __pyx_v__r = nBitvectors(((void *)__pyx_t_1), ((void *)__pyx_t_2));
 
-  /* "monosat/monosat_p.pyx":1030
+  /* "monosat/monosat_p.pyx":1036
  * 
  *     cdef int _r = _nBitvectors_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -16610,7 +17012,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_142nBitvectors(CYTHON_UNUSED PyObj
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1031
+  /* "monosat/monosat_p.pyx":1037
  *     cdef int _r = _nBitvectors_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -16618,13 +17020,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_142nBitvectors(CYTHON_UNUSED PyObj
  * def nClauses( S ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1031, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1037, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1023
+  /* "monosat/monosat_p.pyx":1029
  *     return py_result
  * 
  * def nBitvectors( S ,  bv ):             # <<<<<<<<<<<<<<
@@ -16643,7 +17045,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_142nBitvectors(CYTHON_UNUSED PyObj
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1033
+/* "monosat/monosat_p.pyx":1039
  *     return py_result
  * 
  * def nClauses( S ):             # <<<<<<<<<<<<<<
@@ -16675,17 +17077,17 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_144nClauses(CYTHON_UNUSED PyObject
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("nClauses", 0);
 
-  /* "monosat/monosat_p.pyx":1037
+  /* "monosat/monosat_p.pyx":1043
  * 
  * 
  *     cdef int _r = _nClauses_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1037, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1043, __pyx_L1_error)
   __pyx_v__r = nClauses(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":1038
+  /* "monosat/monosat_p.pyx":1044
  * 
  *     cdef int _r = _nClauses_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -16694,7 +17096,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_144nClauses(CYTHON_UNUSED PyObject
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1039
+  /* "monosat/monosat_p.pyx":1045
  *     cdef int _r = _nClauses_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -16702,13 +17104,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_144nClauses(CYTHON_UNUSED PyObject
  * def nEdges( S ,  G ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1039, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1045, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1033
+  /* "monosat/monosat_p.pyx":1039
  *     return py_result
  * 
  * def nClauses( S ):             # <<<<<<<<<<<<<<
@@ -16727,7 +17129,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_144nClauses(CYTHON_UNUSED PyObject
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1041
+/* "monosat/monosat_p.pyx":1047
  *     return py_result
  * 
  * def nEdges( S ,  G ):             # <<<<<<<<<<<<<<
@@ -16768,11 +17170,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_147nEdges(PyObject *__pyx_self, Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("nEdges", 1, 2, 2, 1); __PYX_ERR(0, 1041, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("nEdges", 1, 2, 2, 1); __PYX_ERR(0, 1047, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "nEdges") < 0)) __PYX_ERR(0, 1041, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "nEdges") < 0)) __PYX_ERR(0, 1047, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -16785,7 +17187,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_147nEdges(PyObject *__pyx_self, Py
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("nEdges", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1041, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("nEdges", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1047, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.nEdges", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -16808,18 +17210,18 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_146nEdges(CYTHON_UNUSED PyObject *
   PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("nEdges", 0);
 
-  /* "monosat/monosat_p.pyx":1047
+  /* "monosat/monosat_p.pyx":1053
  * 
  * 
  *     cdef int _r = _nEdges_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1047, __pyx_L1_error)
-  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1047, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1053, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1053, __pyx_L1_error)
   __pyx_v__r = nEdges(((void *)__pyx_t_1), ((void *)__pyx_t_2));
 
-  /* "monosat/monosat_p.pyx":1048
+  /* "monosat/monosat_p.pyx":1054
  * 
  *     cdef int _r = _nEdges_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -16828,7 +17230,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_146nEdges(CYTHON_UNUSED PyObject *
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1049
+  /* "monosat/monosat_p.pyx":1055
  *     cdef int _r = _nEdges_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -16836,13 +17238,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_146nEdges(CYTHON_UNUSED PyObject *
  * def nNodes( S ,  G ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1049, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1055, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1041
+  /* "monosat/monosat_p.pyx":1047
  *     return py_result
  * 
  * def nEdges( S ,  G ):             # <<<<<<<<<<<<<<
@@ -16861,7 +17263,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_146nEdges(CYTHON_UNUSED PyObject *
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1051
+/* "monosat/monosat_p.pyx":1057
  *     return py_result
  * 
  * def nNodes( S ,  G ):             # <<<<<<<<<<<<<<
@@ -16902,11 +17304,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_149nNodes(PyObject *__pyx_self, Py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("nNodes", 1, 2, 2, 1); __PYX_ERR(0, 1051, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("nNodes", 1, 2, 2, 1); __PYX_ERR(0, 1057, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "nNodes") < 0)) __PYX_ERR(0, 1051, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "nNodes") < 0)) __PYX_ERR(0, 1057, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -16919,7 +17321,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_149nNodes(PyObject *__pyx_self, Py
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("nNodes", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1051, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("nNodes", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1057, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.nNodes", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -16942,18 +17344,18 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_148nNodes(CYTHON_UNUSED PyObject *
   PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("nNodes", 0);
 
-  /* "monosat/monosat_p.pyx":1057
+  /* "monosat/monosat_p.pyx":1063
  * 
  * 
  *     cdef int _r = _nNodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1057, __pyx_L1_error)
-  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1057, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1063, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1063, __pyx_L1_error)
   __pyx_v__r = nNodes(((void *)__pyx_t_1), ((void *)__pyx_t_2));
 
-  /* "monosat/monosat_p.pyx":1058
+  /* "monosat/monosat_p.pyx":1064
  * 
  *     cdef int _r = _nNodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -16962,7 +17364,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_148nNodes(CYTHON_UNUSED PyObject *
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1059
+  /* "monosat/monosat_p.pyx":1065
  *     cdef int _r = _nNodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -16970,13 +17372,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_148nNodes(CYTHON_UNUSED PyObject *
  * def nVars( S ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1059, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1065, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1051
+  /* "monosat/monosat_p.pyx":1057
  *     return py_result
  * 
  * def nNodes( S ,  G ):             # <<<<<<<<<<<<<<
@@ -16995,7 +17397,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_148nNodes(CYTHON_UNUSED PyObject *
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1061
+/* "monosat/monosat_p.pyx":1067
  *     return py_result
  * 
  * def nVars( S ):             # <<<<<<<<<<<<<<
@@ -17027,17 +17429,17 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_150nVars(CYTHON_UNUSED PyObject *_
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("nVars", 0);
 
-  /* "monosat/monosat_p.pyx":1065
+  /* "monosat/monosat_p.pyx":1071
  * 
  * 
  *     cdef int _r = _nVars_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1065, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1071, __pyx_L1_error)
   __pyx_v__r = nVars(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":1066
+  /* "monosat/monosat_p.pyx":1072
  * 
  *     cdef int _r = _nVars_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -17046,7 +17448,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_150nVars(CYTHON_UNUSED PyObject *_
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1067
+  /* "monosat/monosat_p.pyx":1073
  *     cdef int _r = _nVars_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -17054,13 +17456,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_150nVars(CYTHON_UNUSED PyObject *_
  * def newBVComparison_bv_geq( S ,  bv ,  bvID ,  compareID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1067, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1073, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1061
+  /* "monosat/monosat_p.pyx":1067
  *     return py_result
  * 
  * def nVars( S ):             # <<<<<<<<<<<<<<
@@ -17079,7 +17481,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_150nVars(CYTHON_UNUSED PyObject *_
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1069
+/* "monosat/monosat_p.pyx":1075
  *     return py_result
  * 
  * def newBVComparison_bv_geq( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
@@ -17126,23 +17528,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_153newBVComparison_bv_geq(PyObject
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_geq", 1, 4, 4, 1); __PYX_ERR(0, 1069, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_geq", 1, 4, 4, 1); __PYX_ERR(0, 1075, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_geq", 1, 4, 4, 2); __PYX_ERR(0, 1069, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_geq", 1, 4, 4, 2); __PYX_ERR(0, 1075, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_compareID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_geq", 1, 4, 4, 3); __PYX_ERR(0, 1069, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_geq", 1, 4, 4, 3); __PYX_ERR(0, 1075, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_bv_geq") < 0)) __PYX_ERR(0, 1069, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_bv_geq") < 0)) __PYX_ERR(0, 1075, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -17159,7 +17561,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_153newBVComparison_bv_geq(PyObject
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_geq", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1069, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_geq", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1075, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBVComparison_bv_geq", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -17187,7 +17589,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_152newBVComparison_bv_geq(CYTHON_U
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBVComparison_bv_geq", 0);
 
-  /* "monosat/monosat_p.pyx":1074
+  /* "monosat/monosat_p.pyx":1080
  * 
  * 
  *     assert isinstance(compareID, (int, long)), 'arg compareID wrong type'             # <<<<<<<<<<<<<<
@@ -17209,25 +17611,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_152newBVComparison_bv_geq(CYTHON_U
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_compareID_wrong_type);
-      __PYX_ERR(0, 1074, __pyx_L1_error)
+      __PYX_ERR(0, 1080, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1079
+  /* "monosat/monosat_p.pyx":1085
  * 
  * 
  *     cdef int _r = _newBVComparison_bv_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1079, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1079, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1079, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_compareID); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1079, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1085, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1085, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1085, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_compareID); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1085, __pyx_L1_error)
   __pyx_v__r = newBVComparison_bv_geq(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1080
+  /* "monosat/monosat_p.pyx":1086
  * 
  *     cdef int _r = _newBVComparison_bv_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -17236,7 +17638,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_152newBVComparison_bv_geq(CYTHON_U
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1081
+  /* "monosat/monosat_p.pyx":1087
  *     cdef int _r = _newBVComparison_bv_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -17244,13 +17646,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_152newBVComparison_bv_geq(CYTHON_U
  * def newBVComparison_bv_gt( S ,  bv ,  bvID ,  compareID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1081, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1087, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1069
+  /* "monosat/monosat_p.pyx":1075
  *     return py_result
  * 
  * def newBVComparison_bv_geq( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
@@ -17269,7 +17671,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_152newBVComparison_bv_geq(CYTHON_U
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1083
+/* "monosat/monosat_p.pyx":1089
  *     return py_result
  * 
  * def newBVComparison_bv_gt( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
@@ -17316,23 +17718,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_155newBVComparison_bv_gt(PyObject 
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_gt", 1, 4, 4, 1); __PYX_ERR(0, 1083, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_gt", 1, 4, 4, 1); __PYX_ERR(0, 1089, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_gt", 1, 4, 4, 2); __PYX_ERR(0, 1083, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_gt", 1, 4, 4, 2); __PYX_ERR(0, 1089, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_compareID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_gt", 1, 4, 4, 3); __PYX_ERR(0, 1083, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_gt", 1, 4, 4, 3); __PYX_ERR(0, 1089, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_bv_gt") < 0)) __PYX_ERR(0, 1083, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_bv_gt") < 0)) __PYX_ERR(0, 1089, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -17349,7 +17751,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_155newBVComparison_bv_gt(PyObject 
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_gt", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1083, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_gt", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1089, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBVComparison_bv_gt", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -17377,7 +17779,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_154newBVComparison_bv_gt(CYTHON_UN
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBVComparison_bv_gt", 0);
 
-  /* "monosat/monosat_p.pyx":1088
+  /* "monosat/monosat_p.pyx":1094
  * 
  * 
  *     assert isinstance(compareID, (int, long)), 'arg compareID wrong type'             # <<<<<<<<<<<<<<
@@ -17399,25 +17801,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_154newBVComparison_bv_gt(CYTHON_UN
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_compareID_wrong_type);
-      __PYX_ERR(0, 1088, __pyx_L1_error)
+      __PYX_ERR(0, 1094, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1093
+  /* "monosat/monosat_p.pyx":1099
  * 
  * 
  *     cdef int _r = _newBVComparison_bv_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1093, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1093, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1093, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_compareID); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1093, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1099, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1099, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1099, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_compareID); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1099, __pyx_L1_error)
   __pyx_v__r = newBVComparison_bv_gt(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1094
+  /* "monosat/monosat_p.pyx":1100
  * 
  *     cdef int _r = _newBVComparison_bv_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -17426,7 +17828,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_154newBVComparison_bv_gt(CYTHON_UN
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1095
+  /* "monosat/monosat_p.pyx":1101
  *     cdef int _r = _newBVComparison_bv_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -17434,13 +17836,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_154newBVComparison_bv_gt(CYTHON_UN
  * def newBVComparison_bv_leq( S ,  bv ,  bvID ,  compareID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1095, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1101, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1083
+  /* "monosat/monosat_p.pyx":1089
  *     return py_result
  * 
  * def newBVComparison_bv_gt( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
@@ -17459,7 +17861,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_154newBVComparison_bv_gt(CYTHON_UN
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1097
+/* "monosat/monosat_p.pyx":1103
  *     return py_result
  * 
  * def newBVComparison_bv_leq( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
@@ -17506,23 +17908,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_157newBVComparison_bv_leq(PyObject
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_leq", 1, 4, 4, 1); __PYX_ERR(0, 1097, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_leq", 1, 4, 4, 1); __PYX_ERR(0, 1103, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_leq", 1, 4, 4, 2); __PYX_ERR(0, 1097, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_leq", 1, 4, 4, 2); __PYX_ERR(0, 1103, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_compareID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_leq", 1, 4, 4, 3); __PYX_ERR(0, 1097, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_leq", 1, 4, 4, 3); __PYX_ERR(0, 1103, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_bv_leq") < 0)) __PYX_ERR(0, 1097, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_bv_leq") < 0)) __PYX_ERR(0, 1103, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -17539,7 +17941,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_157newBVComparison_bv_leq(PyObject
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_leq", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1097, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_leq", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1103, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBVComparison_bv_leq", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -17567,7 +17969,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_156newBVComparison_bv_leq(CYTHON_U
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBVComparison_bv_leq", 0);
 
-  /* "monosat/monosat_p.pyx":1102
+  /* "monosat/monosat_p.pyx":1108
  * 
  * 
  *     assert isinstance(compareID, (int, long)), 'arg compareID wrong type'             # <<<<<<<<<<<<<<
@@ -17589,25 +17991,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_156newBVComparison_bv_leq(CYTHON_U
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_compareID_wrong_type);
-      __PYX_ERR(0, 1102, __pyx_L1_error)
+      __PYX_ERR(0, 1108, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1107
+  /* "monosat/monosat_p.pyx":1113
  * 
  * 
  *     cdef int _r = _newBVComparison_bv_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1107, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1107, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1107, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_compareID); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1107, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1113, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1113, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1113, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_compareID); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1113, __pyx_L1_error)
   __pyx_v__r = newBVComparison_bv_leq(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1108
+  /* "monosat/monosat_p.pyx":1114
  * 
  *     cdef int _r = _newBVComparison_bv_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -17616,7 +18018,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_156newBVComparison_bv_leq(CYTHON_U
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1109
+  /* "monosat/monosat_p.pyx":1115
  *     cdef int _r = _newBVComparison_bv_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -17624,13 +18026,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_156newBVComparison_bv_leq(CYTHON_U
  * def newBVComparison_bv_lt( S ,  bv ,  bvID ,  compareID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1109, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1097
+  /* "monosat/monosat_p.pyx":1103
  *     return py_result
  * 
  * def newBVComparison_bv_leq( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
@@ -17649,7 +18051,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_156newBVComparison_bv_leq(CYTHON_U
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1111
+/* "monosat/monosat_p.pyx":1117
  *     return py_result
  * 
  * def newBVComparison_bv_lt( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
@@ -17696,23 +18098,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_159newBVComparison_bv_lt(PyObject 
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_lt", 1, 4, 4, 1); __PYX_ERR(0, 1111, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_lt", 1, 4, 4, 1); __PYX_ERR(0, 1117, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_lt", 1, 4, 4, 2); __PYX_ERR(0, 1111, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_lt", 1, 4, 4, 2); __PYX_ERR(0, 1117, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_compareID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_lt", 1, 4, 4, 3); __PYX_ERR(0, 1111, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_lt", 1, 4, 4, 3); __PYX_ERR(0, 1117, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_bv_lt") < 0)) __PYX_ERR(0, 1111, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_bv_lt") < 0)) __PYX_ERR(0, 1117, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -17729,7 +18131,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_159newBVComparison_bv_lt(PyObject 
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_lt", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1111, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBVComparison_bv_lt", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1117, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBVComparison_bv_lt", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -17757,7 +18159,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_158newBVComparison_bv_lt(CYTHON_UN
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBVComparison_bv_lt", 0);
 
-  /* "monosat/monosat_p.pyx":1116
+  /* "monosat/monosat_p.pyx":1122
  * 
  * 
  *     assert isinstance(compareID, (int, long)), 'arg compareID wrong type'             # <<<<<<<<<<<<<<
@@ -17779,25 +18181,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_158newBVComparison_bv_lt(CYTHON_UN
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_compareID_wrong_type);
-      __PYX_ERR(0, 1116, __pyx_L1_error)
+      __PYX_ERR(0, 1122, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1121
+  /* "monosat/monosat_p.pyx":1127
  * 
  * 
  *     cdef int _r = _newBVComparison_bv_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1121, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1121, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1121, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_compareID); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1121, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1127, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1127, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1127, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_compareID); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1127, __pyx_L1_error)
   __pyx_v__r = newBVComparison_bv_lt(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1122
+  /* "monosat/monosat_p.pyx":1128
  * 
  *     cdef int _r = _newBVComparison_bv_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -17806,7 +18208,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_158newBVComparison_bv_lt(CYTHON_UN
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1123
+  /* "monosat/monosat_p.pyx":1129
  *     cdef int _r = _newBVComparison_bv_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int>compareID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -17814,13 +18216,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_158newBVComparison_bv_lt(CYTHON_UN
  * def newBVComparison_const_geq( S ,  bv ,  bvID ,  weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1123, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1129, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1111
+  /* "monosat/monosat_p.pyx":1117
  *     return py_result
  * 
  * def newBVComparison_bv_lt( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
@@ -17839,7 +18241,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_158newBVComparison_bv_lt(CYTHON_UN
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1125
+/* "monosat/monosat_p.pyx":1131
  *     return py_result
  * 
  * def newBVComparison_const_geq( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
@@ -17886,23 +18288,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_161newBVComparison_const_geq(PyObj
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_geq", 1, 4, 4, 1); __PYX_ERR(0, 1125, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_geq", 1, 4, 4, 1); __PYX_ERR(0, 1131, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_geq", 1, 4, 4, 2); __PYX_ERR(0, 1125, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_geq", 1, 4, 4, 2); __PYX_ERR(0, 1131, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_geq", 1, 4, 4, 3); __PYX_ERR(0, 1125, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_geq", 1, 4, 4, 3); __PYX_ERR(0, 1131, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_const_geq") < 0)) __PYX_ERR(0, 1125, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_const_geq") < 0)) __PYX_ERR(0, 1131, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -17919,7 +18321,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_161newBVComparison_const_geq(PyObj
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBVComparison_const_geq", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1125, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBVComparison_const_geq", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1131, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBVComparison_const_geq", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -17947,7 +18349,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_160newBVComparison_const_geq(CYTHO
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBVComparison_const_geq", 0);
 
-  /* "monosat/monosat_p.pyx":1130
+  /* "monosat/monosat_p.pyx":1136
  * 
  * 
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -17969,25 +18371,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_160newBVComparison_const_geq(CYTHO
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 1130, __pyx_L1_error)
+      __PYX_ERR(0, 1136, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1135
+  /* "monosat/monosat_p.pyx":1141
  * 
  * 
  *     cdef int _r = _newBVComparison_const_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1135, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1135, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1135, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1135, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1141, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1141, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1141, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1141, __pyx_L1_error)
   __pyx_v__r = newBVComparison_const_geq(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int64_t)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1136
+  /* "monosat/monosat_p.pyx":1142
  * 
  *     cdef int _r = _newBVComparison_const_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -17996,7 +18398,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_160newBVComparison_const_geq(CYTHO
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1137
+  /* "monosat/monosat_p.pyx":1143
  *     cdef int _r = _newBVComparison_const_geq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -18004,13 +18406,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_160newBVComparison_const_geq(CYTHO
  * def newBVComparison_const_gt( S ,  bv ,  bvID ,  weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1137, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1143, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1125
+  /* "monosat/monosat_p.pyx":1131
  *     return py_result
  * 
  * def newBVComparison_const_geq( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
@@ -18029,7 +18431,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_160newBVComparison_const_geq(CYTHO
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1139
+/* "monosat/monosat_p.pyx":1145
  *     return py_result
  * 
  * def newBVComparison_const_gt( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
@@ -18076,23 +18478,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_163newBVComparison_const_gt(PyObje
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_gt", 1, 4, 4, 1); __PYX_ERR(0, 1139, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_gt", 1, 4, 4, 1); __PYX_ERR(0, 1145, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_gt", 1, 4, 4, 2); __PYX_ERR(0, 1139, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_gt", 1, 4, 4, 2); __PYX_ERR(0, 1145, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_gt", 1, 4, 4, 3); __PYX_ERR(0, 1139, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_gt", 1, 4, 4, 3); __PYX_ERR(0, 1145, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_const_gt") < 0)) __PYX_ERR(0, 1139, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_const_gt") < 0)) __PYX_ERR(0, 1145, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -18109,7 +18511,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_163newBVComparison_const_gt(PyObje
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBVComparison_const_gt", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1139, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBVComparison_const_gt", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1145, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBVComparison_const_gt", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -18137,7 +18539,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_162newBVComparison_const_gt(CYTHON
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBVComparison_const_gt", 0);
 
-  /* "monosat/monosat_p.pyx":1144
+  /* "monosat/monosat_p.pyx":1150
  * 
  * 
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -18159,25 +18561,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_162newBVComparison_const_gt(CYTHON
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 1144, __pyx_L1_error)
+      __PYX_ERR(0, 1150, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1149
+  /* "monosat/monosat_p.pyx":1155
  * 
  * 
  *     cdef int _r = _newBVComparison_const_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1149, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1149, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1149, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1149, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1155, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1155, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1155, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1155, __pyx_L1_error)
   __pyx_v__r = newBVComparison_const_gt(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int64_t)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1150
+  /* "monosat/monosat_p.pyx":1156
  * 
  *     cdef int _r = _newBVComparison_const_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -18186,7 +18588,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_162newBVComparison_const_gt(CYTHON
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1151
+  /* "monosat/monosat_p.pyx":1157
  *     cdef int _r = _newBVComparison_const_gt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -18194,13 +18596,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_162newBVComparison_const_gt(CYTHON
  * def newBVComparison_const_leq( S ,  bv ,  bvID ,  weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1151, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1157, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1139
+  /* "monosat/monosat_p.pyx":1145
  *     return py_result
  * 
  * def newBVComparison_const_gt( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
@@ -18219,7 +18621,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_162newBVComparison_const_gt(CYTHON
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1153
+/* "monosat/monosat_p.pyx":1159
  *     return py_result
  * 
  * def newBVComparison_const_leq( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
@@ -18266,23 +18668,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_165newBVComparison_const_leq(PyObj
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_leq", 1, 4, 4, 1); __PYX_ERR(0, 1153, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_leq", 1, 4, 4, 1); __PYX_ERR(0, 1159, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_leq", 1, 4, 4, 2); __PYX_ERR(0, 1153, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_leq", 1, 4, 4, 2); __PYX_ERR(0, 1159, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_leq", 1, 4, 4, 3); __PYX_ERR(0, 1153, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_leq", 1, 4, 4, 3); __PYX_ERR(0, 1159, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_const_leq") < 0)) __PYX_ERR(0, 1153, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_const_leq") < 0)) __PYX_ERR(0, 1159, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -18299,7 +18701,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_165newBVComparison_const_leq(PyObj
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBVComparison_const_leq", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1153, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBVComparison_const_leq", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1159, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBVComparison_const_leq", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -18327,7 +18729,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_164newBVComparison_const_leq(CYTHO
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBVComparison_const_leq", 0);
 
-  /* "monosat/monosat_p.pyx":1158
+  /* "monosat/monosat_p.pyx":1164
  * 
  * 
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -18349,25 +18751,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_164newBVComparison_const_leq(CYTHO
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 1158, __pyx_L1_error)
+      __PYX_ERR(0, 1164, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1163
+  /* "monosat/monosat_p.pyx":1169
  * 
  * 
  *     cdef int _r = _newBVComparison_const_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1163, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1163, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1163, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1163, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1169, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1169, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1169, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1169, __pyx_L1_error)
   __pyx_v__r = newBVComparison_const_leq(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int64_t)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1164
+  /* "monosat/monosat_p.pyx":1170
  * 
  *     cdef int _r = _newBVComparison_const_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -18376,7 +18778,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_164newBVComparison_const_leq(CYTHO
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1165
+  /* "monosat/monosat_p.pyx":1171
  *     cdef int _r = _newBVComparison_const_leq_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -18384,13 +18786,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_164newBVComparison_const_leq(CYTHO
  * def newBVComparison_const_lt( S ,  bv ,  bvID ,  weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1165, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1171, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1153
+  /* "monosat/monosat_p.pyx":1159
  *     return py_result
  * 
  * def newBVComparison_const_leq( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
@@ -18409,7 +18811,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_164newBVComparison_const_leq(CYTHO
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1167
+/* "monosat/monosat_p.pyx":1173
  *     return py_result
  * 
  * def newBVComparison_const_lt( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
@@ -18456,23 +18858,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_167newBVComparison_const_lt(PyObje
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_lt", 1, 4, 4, 1); __PYX_ERR(0, 1167, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_lt", 1, 4, 4, 1); __PYX_ERR(0, 1173, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_lt", 1, 4, 4, 2); __PYX_ERR(0, 1167, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_lt", 1, 4, 4, 2); __PYX_ERR(0, 1173, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_lt", 1, 4, 4, 3); __PYX_ERR(0, 1167, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBVComparison_const_lt", 1, 4, 4, 3); __PYX_ERR(0, 1173, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_const_lt") < 0)) __PYX_ERR(0, 1167, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBVComparison_const_lt") < 0)) __PYX_ERR(0, 1173, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -18489,7 +18891,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_167newBVComparison_const_lt(PyObje
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBVComparison_const_lt", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1167, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBVComparison_const_lt", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1173, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBVComparison_const_lt", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -18517,7 +18919,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_166newBVComparison_const_lt(CYTHON
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBVComparison_const_lt", 0);
 
-  /* "monosat/monosat_p.pyx":1172
+  /* "monosat/monosat_p.pyx":1178
  * 
  * 
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -18539,25 +18941,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_166newBVComparison_const_lt(CYTHON
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 1172, __pyx_L1_error)
+      __PYX_ERR(0, 1178, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1177
+  /* "monosat/monosat_p.pyx":1183
  * 
  * 
  *     cdef int _r = _newBVComparison_const_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1177, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1177, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1177, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1177, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1183, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1183, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1183, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1183, __pyx_L1_error)
   __pyx_v__r = newBVComparison_const_lt(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int64_t)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1178
+  /* "monosat/monosat_p.pyx":1184
  * 
  *     cdef int _r = _newBVComparison_const_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -18566,7 +18968,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_166newBVComparison_const_lt(CYTHON
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1179
+  /* "monosat/monosat_p.pyx":1185
  *     cdef int _r = _newBVComparison_const_lt_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -18574,13 +18976,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_166newBVComparison_const_lt(CYTHON
  * def newBitvector( S ,  bv ,  bits ,  n_bits ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1179, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1185, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1167
+  /* "monosat/monosat_p.pyx":1173
  *     return py_result
  * 
  * def newBVComparison_const_lt( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
@@ -18599,7 +19001,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_166newBVComparison_const_lt(CYTHON
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1181
+/* "monosat/monosat_p.pyx":1187
  *     return py_result
  * 
  * def newBitvector( S ,  bv ,  bits ,  n_bits ):             # <<<<<<<<<<<<<<
@@ -18646,23 +19048,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_169newBitvector(PyObject *__pyx_se
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBitvector", 1, 4, 4, 1); __PYX_ERR(0, 1181, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBitvector", 1, 4, 4, 1); __PYX_ERR(0, 1187, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBitvector", 1, 4, 4, 2); __PYX_ERR(0, 1181, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBitvector", 1, 4, 4, 2); __PYX_ERR(0, 1187, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_bits)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBitvector", 1, 4, 4, 3); __PYX_ERR(0, 1181, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBitvector", 1, 4, 4, 3); __PYX_ERR(0, 1187, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBitvector") < 0)) __PYX_ERR(0, 1181, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBitvector") < 0)) __PYX_ERR(0, 1187, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -18679,7 +19081,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_169newBitvector(PyObject *__pyx_se
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBitvector", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1181, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBitvector", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1187, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBitvector", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -18708,7 +19110,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_168newBitvector(CYTHON_UNUSED PyOb
   int __pyx_t_8;
   __Pyx_RefNannySetupContext("newBitvector", 0);
 
-  /* "monosat/monosat_p.pyx":1185
+  /* "monosat/monosat_p.pyx":1191
  * 
  * 
  *     assert isinstance(bits, list), 'arg bits wrong type'             # <<<<<<<<<<<<<<
@@ -18720,12 +19122,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_168newBitvector(CYTHON_UNUSED PyOb
     __pyx_t_1 = PyList_Check(__pyx_v_bits); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_bits_wrong_type);
-      __PYX_ERR(0, 1185, __pyx_L1_error)
+      __PYX_ERR(0, 1191, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1186
+  /* "monosat/monosat_p.pyx":1192
  * 
  *     assert isinstance(bits, list), 'arg bits wrong type'
  *     assert isinstance(n_bits, (int, long)), 'arg n_bits wrong type'             # <<<<<<<<<<<<<<
@@ -18747,19 +19149,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_168newBitvector(CYTHON_UNUSED PyOb
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_n_bits_wrong_type);
-      __PYX_ERR(0, 1186, __pyx_L1_error)
+      __PYX_ERR(0, 1192, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1189
+  /* "monosat/monosat_p.pyx":1195
  * 
  * 
  *     cdef array.array a =  array.array('i', bits)             # <<<<<<<<<<<<<<
  * 
  *     cdef int _r = _newBitvector_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int*>a.data.as_ints), (<int>n_bits))
  */
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1189, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1195, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -18767,25 +19169,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_168newBitvector(CYTHON_UNUSED PyOb
   __Pyx_INCREF(__pyx_v_bits);
   __Pyx_GIVEREF(__pyx_v_bits);
   PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_bits);
-  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1189, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1195, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "monosat/monosat_p.pyx":1191
+  /* "monosat/monosat_p.pyx":1197
  *     cdef array.array a =  array.array('i', bits)
  * 
  *     cdef int _r = _newBitvector_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int*>a.data.as_ints), (<int>n_bits))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1191, __pyx_L1_error)
-  __pyx_t_7 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_7 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1191, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_n_bits); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1191, __pyx_L1_error)
+  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1197, __pyx_L1_error)
+  __pyx_t_7 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_7 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1197, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_n_bits); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1197, __pyx_L1_error)
   __pyx_v__r = newBitvector(((void *)__pyx_t_6), ((void *)__pyx_t_7), ((int *)__pyx_v_a->data.as_ints), ((int)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1192
+  /* "monosat/monosat_p.pyx":1198
  * 
  *     cdef int _r = _newBitvector_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int*>a.data.as_ints), (<int>n_bits))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -18794,7 +19196,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_168newBitvector(CYTHON_UNUSED PyOb
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1193
+  /* "monosat/monosat_p.pyx":1199
  *     cdef int _r = _newBitvector_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int*>a.data.as_ints), (<int>n_bits))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -18802,13 +19204,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_168newBitvector(CYTHON_UNUSED PyOb
  * def newBitvector_anon( S ,  bv ,  bvWidth ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1193, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1199, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __pyx_r = __pyx_t_5;
   __pyx_t_5 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1181
+  /* "monosat/monosat_p.pyx":1187
  *     return py_result
  * 
  * def newBitvector( S ,  bv ,  bits ,  n_bits ):             # <<<<<<<<<<<<<<
@@ -18829,7 +19231,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_168newBitvector(CYTHON_UNUSED PyOb
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1195
+/* "monosat/monosat_p.pyx":1201
  *     return py_result
  * 
  * def newBitvector_anon( S ,  bv ,  bvWidth ):             # <<<<<<<<<<<<<<
@@ -18873,17 +19275,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_171newBitvector_anon(PyObject *__p
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBitvector_anon", 1, 3, 3, 1); __PYX_ERR(0, 1195, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBitvector_anon", 1, 3, 3, 1); __PYX_ERR(0, 1201, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvWidth)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBitvector_anon", 1, 3, 3, 2); __PYX_ERR(0, 1195, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBitvector_anon", 1, 3, 3, 2); __PYX_ERR(0, 1201, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBitvector_anon") < 0)) __PYX_ERR(0, 1195, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBitvector_anon") < 0)) __PYX_ERR(0, 1201, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -18898,7 +19300,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_171newBitvector_anon(PyObject *__p
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBitvector_anon", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1195, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBitvector_anon", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1201, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBitvector_anon", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -18925,7 +19327,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_170newBitvector_anon(CYTHON_UNUSED
   PyObject *__pyx_t_7 = NULL;
   __Pyx_RefNannySetupContext("newBitvector_anon", 0);
 
-  /* "monosat/monosat_p.pyx":1199
+  /* "monosat/monosat_p.pyx":1205
  * 
  * 
  *     assert isinstance(bvWidth, (int, long)), 'arg bvWidth wrong type'             # <<<<<<<<<<<<<<
@@ -18947,24 +19349,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_170newBitvector_anon(CYTHON_UNUSED
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_bvWidth_wrong_type);
-      __PYX_ERR(0, 1199, __pyx_L1_error)
+      __PYX_ERR(0, 1205, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1203
+  /* "monosat/monosat_p.pyx":1209
  * 
  * 
  *     cdef int _r = _newBitvector_anon_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvWidth))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1203, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1203, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvWidth); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1203, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1209, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1209, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvWidth); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1209, __pyx_L1_error)
   __pyx_v__r = newBitvector_anon(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6));
 
-  /* "monosat/monosat_p.pyx":1204
+  /* "monosat/monosat_p.pyx":1210
  * 
  *     cdef int _r = _newBitvector_anon_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvWidth))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -18973,7 +19375,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_170newBitvector_anon(CYTHON_UNUSED
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1205
+  /* "monosat/monosat_p.pyx":1211
  *     cdef int _r = _newBitvector_anon_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvWidth))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -18981,13 +19383,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_170newBitvector_anon(CYTHON_UNUSED
  * def newBitvector_const( S ,  bv ,  bvWidth ,  constval ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 1205, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 1211, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_r = __pyx_t_7;
   __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1195
+  /* "monosat/monosat_p.pyx":1201
  *     return py_result
  * 
  * def newBitvector_anon( S ,  bv ,  bvWidth ):             # <<<<<<<<<<<<<<
@@ -19006,7 +19408,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_170newBitvector_anon(CYTHON_UNUSED
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1207
+/* "monosat/monosat_p.pyx":1213
  *     return py_result
  * 
  * def newBitvector_const( S ,  bv ,  bvWidth ,  constval ):             # <<<<<<<<<<<<<<
@@ -19053,23 +19455,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_173newBitvector_const(PyObject *__
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bv)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBitvector_const", 1, 4, 4, 1); __PYX_ERR(0, 1207, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBitvector_const", 1, 4, 4, 1); __PYX_ERR(0, 1213, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvWidth)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBitvector_const", 1, 4, 4, 2); __PYX_ERR(0, 1207, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBitvector_const", 1, 4, 4, 2); __PYX_ERR(0, 1213, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_constval)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newBitvector_const", 1, 4, 4, 3); __PYX_ERR(0, 1207, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newBitvector_const", 1, 4, 4, 3); __PYX_ERR(0, 1213, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBitvector_const") < 0)) __PYX_ERR(0, 1207, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newBitvector_const") < 0)) __PYX_ERR(0, 1213, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -19086,7 +19488,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_173newBitvector_const(PyObject *__
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newBitvector_const", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1207, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newBitvector_const", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1213, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newBitvector_const", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -19114,7 +19516,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_172newBitvector_const(CYTHON_UNUSE
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("newBitvector_const", 0);
 
-  /* "monosat/monosat_p.pyx":1211
+  /* "monosat/monosat_p.pyx":1217
  * 
  * 
  *     assert isinstance(bvWidth, (int, long)), 'arg bvWidth wrong type'             # <<<<<<<<<<<<<<
@@ -19136,12 +19538,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_172newBitvector_const(CYTHON_UNUSE
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_bvWidth_wrong_type);
-      __PYX_ERR(0, 1211, __pyx_L1_error)
+      __PYX_ERR(0, 1217, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1212
+  /* "monosat/monosat_p.pyx":1218
  * 
  *     assert isinstance(bvWidth, (int, long)), 'arg bvWidth wrong type'
  *     assert isinstance(constval, (int, long)), 'arg constval wrong type'             # <<<<<<<<<<<<<<
@@ -19163,25 +19565,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_172newBitvector_const(CYTHON_UNUSE
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_constval_wrong_type);
-      __PYX_ERR(0, 1212, __pyx_L1_error)
+      __PYX_ERR(0, 1218, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1217
+  /* "monosat/monosat_p.pyx":1223
  * 
  * 
  *     cdef int _r = _newBitvector_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvWidth), (<int64_t>constval))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1217, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1217, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvWidth); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1217, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_constval); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1217, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1223, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_bv, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1223, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_bvWidth); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1223, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int64_t(__pyx_v_constval); if (unlikely((__pyx_t_7 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1223, __pyx_L1_error)
   __pyx_v__r = newBitvector_const(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int64_t)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1218
+  /* "monosat/monosat_p.pyx":1224
  * 
  *     cdef int _r = _newBitvector_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvWidth), (<int64_t>constval))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -19190,7 +19592,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_172newBitvector_const(CYTHON_UNUSE
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1219
+  /* "monosat/monosat_p.pyx":1225
  *     cdef int _r = _newBitvector_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvWidth), (<int64_t>constval))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -19198,13 +19600,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_172newBitvector_const(CYTHON_UNUSE
  * def newEdge( S ,  G ,  _from ,  to ,  weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1219, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1225, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1207
+  /* "monosat/monosat_p.pyx":1213
  *     return py_result
  * 
  * def newBitvector_const( S ,  bv ,  bvWidth ,  constval ):             # <<<<<<<<<<<<<<
@@ -19223,7 +19625,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_172newBitvector_const(CYTHON_UNUSE
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1221
+/* "monosat/monosat_p.pyx":1227
  *     return py_result
  * 
  * def newEdge( S ,  G ,  _from ,  to ,  weight ):             # <<<<<<<<<<<<<<
@@ -19273,29 +19675,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_175newEdge(PyObject *__pyx_self, P
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, 1); __PYX_ERR(0, 1221, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, 1); __PYX_ERR(0, 1227, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, 2); __PYX_ERR(0, 1221, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, 2); __PYX_ERR(0, 1227, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, 3); __PYX_ERR(0, 1221, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, 3); __PYX_ERR(0, 1227, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, 4); __PYX_ERR(0, 1221, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, 4); __PYX_ERR(0, 1227, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newEdge") < 0)) __PYX_ERR(0, 1221, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newEdge") < 0)) __PYX_ERR(0, 1227, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -19314,7 +19716,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_175newEdge(PyObject *__pyx_self, P
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1221, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newEdge", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1227, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newEdge", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -19343,7 +19745,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_174newEdge(CYTHON_UNUSED PyObject 
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("newEdge", 0);
 
-  /* "monosat/monosat_p.pyx":1225
+  /* "monosat/monosat_p.pyx":1231
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -19365,12 +19767,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_174newEdge(CYTHON_UNUSED PyObject 
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1225, __pyx_L1_error)
+      __PYX_ERR(0, 1231, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1226
+  /* "monosat/monosat_p.pyx":1232
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -19392,12 +19794,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_174newEdge(CYTHON_UNUSED PyObject 
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1226, __pyx_L1_error)
+      __PYX_ERR(0, 1232, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1227
+  /* "monosat/monosat_p.pyx":1233
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'
  *     assert isinstance(weight, (int, long)), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -19419,26 +19821,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_174newEdge(CYTHON_UNUSED PyObject 
     __pyx_L7_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 1227, __pyx_L1_error)
+      __PYX_ERR(0, 1233, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1233
+  /* "monosat/monosat_p.pyx":1239
  * 
  * 
  *     cdef int _r = _newEdge_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1233, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1233, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1233, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1233, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1233, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1239, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1239, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1239, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1239, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_weight); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1239, __pyx_L1_error)
   __pyx_v__r = newEdge(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int64_t)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1234
+  /* "monosat/monosat_p.pyx":1240
  * 
  *     cdef int _r = _newEdge_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -19447,7 +19849,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_174newEdge(CYTHON_UNUSED PyObject 
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1235
+  /* "monosat/monosat_p.pyx":1241
  *     cdef int _r = _newEdge_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -19455,13 +19857,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_174newEdge(CYTHON_UNUSED PyObject 
  * def newEdgeSet( S ,  G ,  edges ,  n_edges ,  enforceEdgeAssignment ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1235, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1241, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1221
+  /* "monosat/monosat_p.pyx":1227
  *     return py_result
  * 
  * def newEdge( S ,  G ,  _from ,  to ,  weight ):             # <<<<<<<<<<<<<<
@@ -19480,7 +19882,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_174newEdge(CYTHON_UNUSED PyObject 
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1237
+/* "monosat/monosat_p.pyx":1243
  *     return py_result
  * 
  * def newEdgeSet( S ,  G ,  edges ,  n_edges ,  enforceEdgeAssignment ):             # <<<<<<<<<<<<<<
@@ -19530,29 +19932,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_177newEdgeSet(PyObject *__pyx_self
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, 1); __PYX_ERR(0, 1237, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, 1); __PYX_ERR(0, 1243, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_edges)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, 2); __PYX_ERR(0, 1237, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, 2); __PYX_ERR(0, 1243, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_edges)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, 3); __PYX_ERR(0, 1237, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, 3); __PYX_ERR(0, 1243, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_enforceEdgeAssignment)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, 4); __PYX_ERR(0, 1237, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, 4); __PYX_ERR(0, 1243, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newEdgeSet") < 0)) __PYX_ERR(0, 1237, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newEdgeSet") < 0)) __PYX_ERR(0, 1243, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -19571,7 +19973,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_177newEdgeSet(PyObject *__pyx_self
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1237, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newEdgeSet", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1243, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newEdgeSet", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -19596,14 +19998,14 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_176newEdgeSet(CYTHON_UNUSED PyObje
   int __pyx_t_6;
   __Pyx_RefNannySetupContext("newEdgeSet", 0);
 
-  /* "monosat/monosat_p.pyx":1239
+  /* "monosat/monosat_p.pyx":1245
  * def newEdgeSet( S ,  G ,  edges ,  n_edges ,  enforceEdgeAssignment ):
  *     """Cython signature: void newEdgeSet(void* S, void* G, int* edges, int n_edges, bint enforceEdgeAssignment)"""
  *     cdef array.array a =  array.array('i', edges)             # <<<<<<<<<<<<<<
  *     _newEdgeSet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int*>a.data.as_ints), (<int>n_edges), (<bint>enforceEdgeAssignment))
  * 
  */
-  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1239, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1245, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -19611,26 +20013,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_176newEdgeSet(CYTHON_UNUSED PyObje
   __Pyx_INCREF(__pyx_v_edges);
   __Pyx_GIVEREF(__pyx_v_edges);
   PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_edges);
-  __pyx_t_2 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1239, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1245, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "monosat/monosat_p.pyx":1240
+  /* "monosat/monosat_p.pyx":1246
  *     """Cython signature: void newEdgeSet(void* S, void* G, int* edges, int n_edges, bint enforceEdgeAssignment)"""
  *     cdef array.array a =  array.array('i', edges)
  *     _newEdgeSet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int*>a.data.as_ints), (<int>n_edges), (<bint>enforceEdgeAssignment))             # <<<<<<<<<<<<<<
  * 
  * def newEdge_bv( S ,  G ,  _from ,  to ,  bvID ):
  */
-  __pyx_t_3 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_3 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1240, __pyx_L1_error)
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1240, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_n_edges); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1240, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_v_enforceEdgeAssignment); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 1240, __pyx_L1_error)
+  __pyx_t_3 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_3 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1246, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1246, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_n_edges); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1246, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_v_enforceEdgeAssignment); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(0, 1246, __pyx_L1_error)
   newEdgeSet(((void *)__pyx_t_3), ((void *)__pyx_t_4), ((int *)__pyx_v_a->data.as_ints), ((int)__pyx_t_5), __pyx_t_6);
 
-  /* "monosat/monosat_p.pyx":1237
+  /* "monosat/monosat_p.pyx":1243
  *     return py_result
  * 
  * def newEdgeSet( S ,  G ,  edges ,  n_edges ,  enforceEdgeAssignment ):             # <<<<<<<<<<<<<<
@@ -19653,7 +20055,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_176newEdgeSet(CYTHON_UNUSED PyObje
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1242
+/* "monosat/monosat_p.pyx":1248
  *     _newEdgeSet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int*>a.data.as_ints), (<int>n_edges), (<bint>enforceEdgeAssignment))
  * 
  * def newEdge_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
@@ -19703,29 +20105,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_179newEdge_bv(PyObject *__pyx_self
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, 1); __PYX_ERR(0, 1242, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, 1); __PYX_ERR(0, 1248, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, 2); __PYX_ERR(0, 1242, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, 2); __PYX_ERR(0, 1248, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, 3); __PYX_ERR(0, 1242, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, 3); __PYX_ERR(0, 1248, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, 4); __PYX_ERR(0, 1242, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, 4); __PYX_ERR(0, 1248, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newEdge_bv") < 0)) __PYX_ERR(0, 1242, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newEdge_bv") < 0)) __PYX_ERR(0, 1248, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -19744,7 +20146,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_179newEdge_bv(PyObject *__pyx_self
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1242, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newEdge_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1248, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newEdge_bv", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -19773,7 +20175,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_178newEdge_bv(CYTHON_UNUSED PyObje
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("newEdge_bv", 0);
 
-  /* "monosat/monosat_p.pyx":1246
+  /* "monosat/monosat_p.pyx":1252
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -19795,12 +20197,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_178newEdge_bv(CYTHON_UNUSED PyObje
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1246, __pyx_L1_error)
+      __PYX_ERR(0, 1252, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1247
+  /* "monosat/monosat_p.pyx":1253
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -19822,26 +20224,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_178newEdge_bv(CYTHON_UNUSED PyObje
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1247, __pyx_L1_error)
+      __PYX_ERR(0, 1253, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1254
+  /* "monosat/monosat_p.pyx":1260
  * 
  * 
  *     cdef int _r = _newEdge_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1254, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1254, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1254, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1254, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1254, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1260, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1260, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1260, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1260, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1260, __pyx_L1_error)
   __pyx_v__r = newEdge_bv(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1255
+  /* "monosat/monosat_p.pyx":1261
  * 
  *     cdef int _r = _newEdge_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -19850,7 +20252,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_178newEdge_bv(CYTHON_UNUSED PyObje
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1256
+  /* "monosat/monosat_p.pyx":1262
  *     cdef int _r = _newEdge_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -19858,13 +20260,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_178newEdge_bv(CYTHON_UNUSED PyObje
  * def newEdge_double( S ,  G ,  _from ,  to , double weight ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1256, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1262, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1242
+  /* "monosat/monosat_p.pyx":1248
  *     _newEdgeSet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int*>a.data.as_ints), (<int>n_edges), (<bint>enforceEdgeAssignment))
  * 
  * def newEdge_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
@@ -19883,7 +20285,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_178newEdge_bv(CYTHON_UNUSED PyObje
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1258
+/* "monosat/monosat_p.pyx":1264
  *     return py_result
  * 
  * def newEdge_double( S ,  G ,  _from ,  to , double weight ):             # <<<<<<<<<<<<<<
@@ -19933,29 +20335,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_181newEdge_double(PyObject *__pyx_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, 1); __PYX_ERR(0, 1258, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, 1); __PYX_ERR(0, 1264, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, 2); __PYX_ERR(0, 1258, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, 2); __PYX_ERR(0, 1264, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, 3); __PYX_ERR(0, 1258, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, 3); __PYX_ERR(0, 1264, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weight)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, 4); __PYX_ERR(0, 1258, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, 4); __PYX_ERR(0, 1264, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newEdge_double") < 0)) __PYX_ERR(0, 1258, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newEdge_double") < 0)) __PYX_ERR(0, 1264, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -19970,11 +20372,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_181newEdge_double(PyObject *__pyx_
     __pyx_v_G = values[1];
     __pyx_v__from = values[2];
     __pyx_v_to = values[3];
-    __pyx_v_weight = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_weight == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 1258, __pyx_L3_error)
+    __pyx_v_weight = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_weight == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 1264, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1258, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newEdge_double", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1264, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newEdge_double", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -20002,7 +20404,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_180newEdge_double(CYTHON_UNUSED Py
   int __pyx_t_8;
   __Pyx_RefNannySetupContext("newEdge_double", 0);
 
-  /* "monosat/monosat_p.pyx":1262
+  /* "monosat/monosat_p.pyx":1268
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -20024,12 +20426,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_180newEdge_double(CYTHON_UNUSED Py
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1262, __pyx_L1_error)
+      __PYX_ERR(0, 1268, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1263
+  /* "monosat/monosat_p.pyx":1269
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -20051,12 +20453,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_180newEdge_double(CYTHON_UNUSED Py
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1263, __pyx_L1_error)
+      __PYX_ERR(0, 1269, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1264
+  /* "monosat/monosat_p.pyx":1270
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'
  *     assert isinstance(weight, float), 'arg weight wrong type'             # <<<<<<<<<<<<<<
@@ -20065,31 +20467,31 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_180newEdge_double(CYTHON_UNUSED Py
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
-    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_weight); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1264, __pyx_L1_error)
+    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_weight); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1270, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __pyx_t_1 = PyFloat_Check(__pyx_t_4); 
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_weight_wrong_type);
-      __PYX_ERR(0, 1264, __pyx_L1_error)
+      __PYX_ERR(0, 1270, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1270
+  /* "monosat/monosat_p.pyx":1276
  * 
  * 
  *     cdef int _r = _newEdge_double_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<double>weight))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1270, __pyx_L1_error)
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1270, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1270, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1270, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1276, __pyx_L1_error)
+  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1276, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1276, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1276, __pyx_L1_error)
   __pyx_v__r = newEdge_double(((void *)__pyx_t_5), ((void *)__pyx_t_6), ((int)__pyx_t_7), ((int)__pyx_t_8), ((double)__pyx_v_weight));
 
-  /* "monosat/monosat_p.pyx":1271
+  /* "monosat/monosat_p.pyx":1277
  * 
  *     cdef int _r = _newEdge_double_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<double>weight))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -20098,7 +20500,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_180newEdge_double(CYTHON_UNUSED Py
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1272
+  /* "monosat/monosat_p.pyx":1278
  *     cdef int _r = _newEdge_double_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<double>weight))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -20106,13 +20508,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_180newEdge_double(CYTHON_UNUSED Py
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1272, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1278, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_r = __pyx_t_4;
   __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1258
+  /* "monosat/monosat_p.pyx":1264
  *     return py_result
  * 
  * def newEdge_double( S ,  G ,  _from ,  to , double weight ):             # <<<<<<<<<<<<<<
@@ -20131,7 +20533,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_180newEdge_double(CYTHON_UNUSED Py
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1275
+/* "monosat/monosat_p.pyx":1281
  * 
  * 
  * def newGraph( S ):             # <<<<<<<<<<<<<<
@@ -20163,29 +20565,29 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_182newGraph(CYTHON_UNUSED PyObject
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("newGraph", 0);
 
-  /* "monosat/monosat_p.pyx":1279
+  /* "monosat/monosat_p.pyx":1285
  * 
  * 
  *     cdef void* _r = _newGraph_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1279, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1285, __pyx_L1_error)
   __pyx_v__r = newGraph(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":1280
+  /* "monosat/monosat_p.pyx":1286
  * 
  *     cdef void* _r = _newGraph_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)             # <<<<<<<<<<<<<<
  *     return py_result
  * 
  */
-  __pyx_t_2 = PyCapsule_New(__pyx_v__r, NULL, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1280, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_New(__pyx_v__r, NULL, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1286, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_v_py_result = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "monosat/monosat_p.pyx":1281
+  /* "monosat/monosat_p.pyx":1287
  *     cdef void* _r = _newGraph_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
  *     return py_result             # <<<<<<<<<<<<<<
@@ -20197,7 +20599,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_182newGraph(CYTHON_UNUSED PyObject
   __pyx_r = __pyx_v_py_result;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1275
+  /* "monosat/monosat_p.pyx":1281
  * 
  * 
  * def newGraph( S ):             # <<<<<<<<<<<<<<
@@ -20217,7 +20619,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_182newGraph(CYTHON_UNUSED PyObject
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1283
+/* "monosat/monosat_p.pyx":1289
  *     return py_result
  * 
  * def newNode( S ,  G ):             # <<<<<<<<<<<<<<
@@ -20258,11 +20660,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_185newNode(PyObject *__pyx_self, P
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("newNode", 1, 2, 2, 1); __PYX_ERR(0, 1283, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("newNode", 1, 2, 2, 1); __PYX_ERR(0, 1289, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newNode") < 0)) __PYX_ERR(0, 1283, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "newNode") < 0)) __PYX_ERR(0, 1289, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -20275,7 +20677,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_185newNode(PyObject *__pyx_self, P
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("newNode", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1283, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("newNode", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1289, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.newNode", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -20298,18 +20700,18 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_184newNode(CYTHON_UNUSED PyObject 
   PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("newNode", 0);
 
-  /* "monosat/monosat_p.pyx":1289
+  /* "monosat/monosat_p.pyx":1295
  * 
  * 
  *     cdef int _r = _newNode_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1289, __pyx_L1_error)
-  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1289, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1295, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1295, __pyx_L1_error)
   __pyx_v__r = newNode(((void *)__pyx_t_1), ((void *)__pyx_t_2));
 
-  /* "monosat/monosat_p.pyx":1290
+  /* "monosat/monosat_p.pyx":1296
  * 
  *     cdef int _r = _newNode_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -20318,7 +20720,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_184newNode(CYTHON_UNUSED PyObject 
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1291
+  /* "monosat/monosat_p.pyx":1297
  *     cdef int _r = _newNode_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -20326,13 +20728,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_184newNode(CYTHON_UNUSED PyObject 
  * def newSolver():
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1291, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1297, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1283
+  /* "monosat/monosat_p.pyx":1289
  *     return py_result
  * 
  * def newNode( S ,  G ):             # <<<<<<<<<<<<<<
@@ -20351,7 +20753,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_184newNode(CYTHON_UNUSED PyObject 
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1293
+/* "monosat/monosat_p.pyx":1299
  *     return py_result
  * 
  * def newSolver():             # <<<<<<<<<<<<<<
@@ -20383,7 +20785,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_186newSolver(CYTHON_UNUSED PyObjec
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("newSolver", 0);
 
-  /* "monosat/monosat_p.pyx":1295
+  /* "monosat/monosat_p.pyx":1301
  * def newSolver():
  *     """Cython signature: void* newSolver()"""
  *     cdef void* _r = _newSolver_monosat()             # <<<<<<<<<<<<<<
@@ -20392,7 +20794,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_186newSolver(CYTHON_UNUSED PyObjec
  */
   __pyx_v__r = newSolver();
 
-  /* "monosat/monosat_p.pyx":1296
+  /* "monosat/monosat_p.pyx":1302
  *     """Cython signature: void* newSolver()"""
  *     cdef void* _r = _newSolver_monosat()
  *     if _r is NULL:             # <<<<<<<<<<<<<<
@@ -20402,16 +20804,16 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_186newSolver(CYTHON_UNUSED PyObjec
   __pyx_t_1 = ((__pyx_v__r == NULL) != 0);
   if (unlikely(__pyx_t_1)) {
 
-    /* "monosat/monosat_p.pyx":1297
+    /* "monosat/monosat_p.pyx":1303
  *     cdef void* _r = _newSolver_monosat()
  *     if _r is NULL:
  *         raise MemoryError()             # <<<<<<<<<<<<<<
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
  *     return py_result
  */
-    PyErr_NoMemory(); __PYX_ERR(0, 1297, __pyx_L1_error)
+    PyErr_NoMemory(); __PYX_ERR(0, 1303, __pyx_L1_error)
 
-    /* "monosat/monosat_p.pyx":1296
+    /* "monosat/monosat_p.pyx":1302
  *     """Cython signature: void* newSolver()"""
  *     cdef void* _r = _newSolver_monosat()
  *     if _r is NULL:             # <<<<<<<<<<<<<<
@@ -20420,19 +20822,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_186newSolver(CYTHON_UNUSED PyObjec
  */
   }
 
-  /* "monosat/monosat_p.pyx":1298
+  /* "monosat/monosat_p.pyx":1304
  *     if _r is NULL:
  *         raise MemoryError()
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)             # <<<<<<<<<<<<<<
  *     return py_result
  * 
  */
-  __pyx_t_2 = PyCapsule_New(__pyx_v__r, NULL, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1298, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_New(__pyx_v__r, NULL, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1304, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_v_py_result = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "monosat/monosat_p.pyx":1299
+  /* "monosat/monosat_p.pyx":1305
  *         raise MemoryError()
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
  *     return py_result             # <<<<<<<<<<<<<<
@@ -20444,7 +20846,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_186newSolver(CYTHON_UNUSED PyObjec
   __pyx_r = __pyx_v_py_result;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1293
+  /* "monosat/monosat_p.pyx":1299
  *     return py_result
  * 
  * def newSolver():             # <<<<<<<<<<<<<<
@@ -20464,7 +20866,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_186newSolver(CYTHON_UNUSED PyObjec
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1301
+/* "monosat/monosat_p.pyx":1307
  *     return py_result
  * 
  * def newSolver_arg(bytes argv ):             # <<<<<<<<<<<<<<
@@ -20480,7 +20882,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_189newSolver_arg(PyObject *__pyx_s
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("newSolver_arg (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_argv), (&PyBytes_Type), 1, "argv", 1))) __PYX_ERR(0, 1301, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_argv), (&PyBytes_Type), 1, "argv", 1))) __PYX_ERR(0, 1307, __pyx_L1_error)
   __pyx_r = __pyx_pf_7monosat_9monosat_p_188newSolver_arg(__pyx_self, ((PyObject*)__pyx_v_argv));
 
   /* function exit code */
@@ -20502,7 +20904,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_188newSolver_arg(CYTHON_UNUSED PyO
   PyObject *__pyx_t_3 = NULL;
   __Pyx_RefNannySetupContext("newSolver_arg", 0);
 
-  /* "monosat/monosat_p.pyx":1303
+  /* "monosat/monosat_p.pyx":1309
  * def newSolver_arg(bytes argv ):
  *     """Cython signature: void* newSolver_arg(char * argv)"""
  *     assert isinstance(argv, bytes), 'arg argv wrong type'             # <<<<<<<<<<<<<<
@@ -20514,12 +20916,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_188newSolver_arg(CYTHON_UNUSED PyO
     __pyx_t_1 = PyBytes_Check(__pyx_v_argv); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_argv_wrong_type);
-      __PYX_ERR(0, 1303, __pyx_L1_error)
+      __PYX_ERR(0, 1309, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1305
+  /* "monosat/monosat_p.pyx":1311
  *     assert isinstance(argv, bytes), 'arg argv wrong type'
  * 
  *     cdef void* _r = _newSolver_arg_monosat((<char *>argv))             # <<<<<<<<<<<<<<
@@ -20528,12 +20930,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_188newSolver_arg(CYTHON_UNUSED PyO
  */
   if (unlikely(__pyx_v_argv == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
-    __PYX_ERR(0, 1305, __pyx_L1_error)
+    __PYX_ERR(0, 1311, __pyx_L1_error)
   }
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_argv); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1305, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_argv); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 1311, __pyx_L1_error)
   __pyx_v__r = newSolver_arg(((char *)__pyx_t_2));
 
-  /* "monosat/monosat_p.pyx":1307
+  /* "monosat/monosat_p.pyx":1313
  *     cdef void* _r = _newSolver_arg_monosat((<char *>argv))
  *     #print "{0:x}".format(<uintptr_t>(_r))
  *     if _r is NULL:             # <<<<<<<<<<<<<<
@@ -20543,16 +20945,16 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_188newSolver_arg(CYTHON_UNUSED PyO
   __pyx_t_1 = ((__pyx_v__r == NULL) != 0);
   if (unlikely(__pyx_t_1)) {
 
-    /* "monosat/monosat_p.pyx":1308
+    /* "monosat/monosat_p.pyx":1314
  *     #print "{0:x}".format(<uintptr_t>(_r))
  *     if _r is NULL:
  *         raise MemoryError()             # <<<<<<<<<<<<<<
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
  * 
  */
-    PyErr_NoMemory(); __PYX_ERR(0, 1308, __pyx_L1_error)
+    PyErr_NoMemory(); __PYX_ERR(0, 1314, __pyx_L1_error)
 
-    /* "monosat/monosat_p.pyx":1307
+    /* "monosat/monosat_p.pyx":1313
  *     cdef void* _r = _newSolver_arg_monosat((<char *>argv))
  *     #print "{0:x}".format(<uintptr_t>(_r))
  *     if _r is NULL:             # <<<<<<<<<<<<<<
@@ -20561,19 +20963,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_188newSolver_arg(CYTHON_UNUSED PyO
  */
   }
 
-  /* "monosat/monosat_p.pyx":1309
+  /* "monosat/monosat_p.pyx":1315
  *     if _r is NULL:
  *         raise MemoryError()
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)             # <<<<<<<<<<<<<<
  * 
  *     return py_result
  */
-  __pyx_t_3 = PyCapsule_New(__pyx_v__r, NULL, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1309, __pyx_L1_error)
+  __pyx_t_3 = PyCapsule_New(__pyx_v__r, NULL, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1315, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_v_py_result = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "monosat/monosat_p.pyx":1311
+  /* "monosat/monosat_p.pyx":1317
  *     py_result =   pycapsule.PyCapsule_New(_r, NULL, NULL)
  * 
  *     return py_result             # <<<<<<<<<<<<<<
@@ -20585,7 +20987,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_188newSolver_arg(CYTHON_UNUSED PyO
   __pyx_r = __pyx_v_py_result;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1301
+  /* "monosat/monosat_p.pyx":1307
  *     return py_result
  * 
  * def newSolver_arg(bytes argv ):             # <<<<<<<<<<<<<<
@@ -20605,7 +21007,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_188newSolver_arg(CYTHON_UNUSED PyO
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1314
+/* "monosat/monosat_p.pyx":1320
  * 
  * 
  * def newVar( S ):             # <<<<<<<<<<<<<<
@@ -20637,17 +21039,17 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_190newVar(CYTHON_UNUSED PyObject *
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("newVar", 0);
 
-  /* "monosat/monosat_p.pyx":1318
+  /* "monosat/monosat_p.pyx":1324
  * 
  * 
  *     cdef int _r = _newVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1318, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1324, __pyx_L1_error)
   __pyx_v__r = newVar(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":1319
+  /* "monosat/monosat_p.pyx":1325
  * 
  *     cdef int _r = _newVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -20656,7 +21058,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_190newVar(CYTHON_UNUSED PyObject *
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1320
+  /* "monosat/monosat_p.pyx":1326
  *     cdef int _r = _newVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -20664,13 +21066,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_190newVar(CYTHON_UNUSED PyObject *
  * def reaches( S ,  G ,  _from ,  to ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1320, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1326, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1314
+  /* "monosat/monosat_p.pyx":1320
  * 
  * 
  * def newVar( S ):             # <<<<<<<<<<<<<<
@@ -20689,7 +21091,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_190newVar(CYTHON_UNUSED PyObject *
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1322
+/* "monosat/monosat_p.pyx":1328
  *     return py_result
  * 
  * def reaches( S ,  G ,  _from ,  to ):             # <<<<<<<<<<<<<<
@@ -20736,23 +21138,23 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_193reaches(PyObject *__pyx_self, P
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("reaches", 1, 4, 4, 1); __PYX_ERR(0, 1322, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("reaches", 1, 4, 4, 1); __PYX_ERR(0, 1328, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("reaches", 1, 4, 4, 2); __PYX_ERR(0, 1322, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("reaches", 1, 4, 4, 2); __PYX_ERR(0, 1328, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("reaches", 1, 4, 4, 3); __PYX_ERR(0, 1322, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("reaches", 1, 4, 4, 3); __PYX_ERR(0, 1328, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "reaches") < 0)) __PYX_ERR(0, 1322, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "reaches") < 0)) __PYX_ERR(0, 1328, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -20769,7 +21171,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_193reaches(PyObject *__pyx_self, P
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("reaches", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1322, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("reaches", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1328, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.reaches", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -20797,7 +21199,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_192reaches(CYTHON_UNUSED PyObject 
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("reaches", 0);
 
-  /* "monosat/monosat_p.pyx":1326
+  /* "monosat/monosat_p.pyx":1332
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -20819,12 +21221,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_192reaches(CYTHON_UNUSED PyObject 
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1326, __pyx_L1_error)
+      __PYX_ERR(0, 1332, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1327
+  /* "monosat/monosat_p.pyx":1333
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -20846,25 +21248,25 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_192reaches(CYTHON_UNUSED PyObject 
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1327, __pyx_L1_error)
+      __PYX_ERR(0, 1333, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1332
+  /* "monosat/monosat_p.pyx":1338
  * 
  * 
  *     cdef int _r = _reaches_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1332, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1332, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1332, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1332, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1338, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1338, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1338, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1338, __pyx_L1_error)
   __pyx_v__r = reaches(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1333
+  /* "monosat/monosat_p.pyx":1339
  * 
  *     cdef int _r = _reaches_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -20873,7 +21275,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_192reaches(CYTHON_UNUSED PyObject 
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1334
+  /* "monosat/monosat_p.pyx":1340
  *     cdef int _r = _reaches_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -20881,13 +21283,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_192reaches(CYTHON_UNUSED PyObject 
  * def readGNF( S , bytes filename ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1334, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 1340, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_r = __pyx_t_8;
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1322
+  /* "monosat/monosat_p.pyx":1328
  *     return py_result
  * 
  * def reaches( S ,  G ,  _from ,  to ):             # <<<<<<<<<<<<<<
@@ -20906,7 +21308,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_192reaches(CYTHON_UNUSED PyObject 
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1336
+/* "monosat/monosat_p.pyx":1342
  *     return py_result
  * 
  * def readGNF( S , bytes filename ):             # <<<<<<<<<<<<<<
@@ -20947,11 +21349,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_195readGNF(PyObject *__pyx_self, P
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_filename)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("readGNF", 1, 2, 2, 1); __PYX_ERR(0, 1336, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("readGNF", 1, 2, 2, 1); __PYX_ERR(0, 1342, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "readGNF") < 0)) __PYX_ERR(0, 1336, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "readGNF") < 0)) __PYX_ERR(0, 1342, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -20964,13 +21366,13 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_195readGNF(PyObject *__pyx_self, P
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("readGNF", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1336, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("readGNF", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1342, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.readGNF", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_filename), (&PyBytes_Type), 1, "filename", 1))) __PYX_ERR(0, 1336, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_filename), (&PyBytes_Type), 1, "filename", 1))) __PYX_ERR(0, 1342, __pyx_L1_error)
   __pyx_r = __pyx_pf_7monosat_9monosat_p_194readGNF(__pyx_self, __pyx_v_S, __pyx_v_filename);
 
   /* function exit code */
@@ -20990,7 +21392,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_194readGNF(CYTHON_UNUSED PyObject 
   char *__pyx_t_3;
   __Pyx_RefNannySetupContext("readGNF", 0);
 
-  /* "monosat/monosat_p.pyx":1339
+  /* "monosat/monosat_p.pyx":1345
  *     """Cython signature: void readGNF(void* S, char * filename)"""
  * 
  *     assert isinstance(filename, bytes), 'arg filename wrong type'             # <<<<<<<<<<<<<<
@@ -21002,27 +21404,27 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_194readGNF(CYTHON_UNUSED PyObject 
     __pyx_t_1 = PyBytes_Check(__pyx_v_filename); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_filename_wrong_type);
-      __PYX_ERR(0, 1339, __pyx_L1_error)
+      __PYX_ERR(0, 1345, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1342
+  /* "monosat/monosat_p.pyx":1348
  * 
  * 
  *     _readGNF_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>filename))             # <<<<<<<<<<<<<<
  * 
  * def setConflictLimit( S ,  num_conflicts ):
  */
-  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1342, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1348, __pyx_L1_error)
   if (unlikely(__pyx_v_filename == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
-    __PYX_ERR(0, 1342, __pyx_L1_error)
+    __PYX_ERR(0, 1348, __pyx_L1_error)
   }
-  __pyx_t_3 = __Pyx_PyBytes_AsWritableString(__pyx_v_filename); if (unlikely((!__pyx_t_3) && PyErr_Occurred())) __PYX_ERR(0, 1342, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyBytes_AsWritableString(__pyx_v_filename); if (unlikely((!__pyx_t_3) && PyErr_Occurred())) __PYX_ERR(0, 1348, __pyx_L1_error)
   readGNF(((void *)__pyx_t_2), ((char *)__pyx_t_3));
 
-  /* "monosat/monosat_p.pyx":1336
+  /* "monosat/monosat_p.pyx":1342
  *     return py_result
  * 
  * def readGNF( S , bytes filename ):             # <<<<<<<<<<<<<<
@@ -21042,7 +21444,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_194readGNF(CYTHON_UNUSED PyObject 
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1344
+/* "monosat/monosat_p.pyx":1350
  *     _readGNF_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>filename))
  * 
  * def setConflictLimit( S ,  num_conflicts ):             # <<<<<<<<<<<<<<
@@ -21083,11 +21485,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_197setConflictLimit(PyObject *__py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_num_conflicts)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setConflictLimit", 1, 2, 2, 1); __PYX_ERR(0, 1344, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setConflictLimit", 1, 2, 2, 1); __PYX_ERR(0, 1350, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setConflictLimit") < 0)) __PYX_ERR(0, 1344, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setConflictLimit") < 0)) __PYX_ERR(0, 1350, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -21100,7 +21502,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_197setConflictLimit(PyObject *__py
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("setConflictLimit", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1344, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("setConflictLimit", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1350, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.setConflictLimit", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -21123,7 +21525,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_196setConflictLimit(CYTHON_UNUSED 
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("setConflictLimit", 0);
 
-  /* "monosat/monosat_p.pyx":1347
+  /* "monosat/monosat_p.pyx":1353
  *     """Cython signature: void setConflictLimit(void* S, int num_conflicts)"""
  * 
  *     assert isinstance(num_conflicts, (int, long)), 'arg num_conflicts wrong type'             # <<<<<<<<<<<<<<
@@ -21145,23 +21547,23 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_196setConflictLimit(CYTHON_UNUSED 
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_num_conflicts_wrong_type);
-      __PYX_ERR(0, 1347, __pyx_L1_error)
+      __PYX_ERR(0, 1353, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1350
+  /* "monosat/monosat_p.pyx":1356
  * 
  * 
  *     _setConflictLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_conflicts))             # <<<<<<<<<<<<<<
  * 
  * def setDecisionPolarity( S ,  v ,  b ):
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1350, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_num_conflicts); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1350, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1356, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_num_conflicts); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1356, __pyx_L1_error)
   setConflictLimit(((void *)__pyx_t_4), ((int)__pyx_t_5));
 
-  /* "monosat/monosat_p.pyx":1344
+  /* "monosat/monosat_p.pyx":1350
  *     _readGNF_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>filename))
  * 
  * def setConflictLimit( S ,  num_conflicts ):             # <<<<<<<<<<<<<<
@@ -21181,7 +21583,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_196setConflictLimit(CYTHON_UNUSED 
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1352
+/* "monosat/monosat_p.pyx":1358
  *     _setConflictLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_conflicts))
  * 
  * def setDecisionPolarity( S ,  v ,  b ):             # <<<<<<<<<<<<<<
@@ -21225,17 +21627,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_199setDecisionPolarity(PyObject *_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_v)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setDecisionPolarity", 1, 3, 3, 1); __PYX_ERR(0, 1352, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setDecisionPolarity", 1, 3, 3, 1); __PYX_ERR(0, 1358, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_b)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setDecisionPolarity", 1, 3, 3, 2); __PYX_ERR(0, 1352, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setDecisionPolarity", 1, 3, 3, 2); __PYX_ERR(0, 1358, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setDecisionPolarity") < 0)) __PYX_ERR(0, 1352, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setDecisionPolarity") < 0)) __PYX_ERR(0, 1358, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -21250,7 +21652,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_199setDecisionPolarity(PyObject *_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("setDecisionPolarity", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1352, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("setDecisionPolarity", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1358, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.setDecisionPolarity", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -21273,7 +21675,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_198setDecisionPolarity(CYTHON_UNUS
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("setDecisionPolarity", 0);
 
-  /* "monosat/monosat_p.pyx":1355
+  /* "monosat/monosat_p.pyx":1361
  *     """Cython signature: void setDecisionPolarity(void* S, int v, bint b)"""
  * 
  *     assert isinstance(v, (int, long)), 'arg v wrong type'             # <<<<<<<<<<<<<<
@@ -21295,12 +21697,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_198setDecisionPolarity(CYTHON_UNUS
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_v_wrong_type);
-      __PYX_ERR(0, 1355, __pyx_L1_error)
+      __PYX_ERR(0, 1361, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1356
+  /* "monosat/monosat_p.pyx":1362
  * 
  *     assert isinstance(v, (int, long)), 'arg v wrong type'
  *     assert isinstance(b, (int, long)), 'arg b wrong type'             # <<<<<<<<<<<<<<
@@ -21322,24 +21724,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_198setDecisionPolarity(CYTHON_UNUS
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_b_wrong_type);
-      __PYX_ERR(0, 1356, __pyx_L1_error)
+      __PYX_ERR(0, 1362, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1360
+  /* "monosat/monosat_p.pyx":1366
  * 
  * 
  *     _setDecisionPolarity_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>v), (<bint>b))             # <<<<<<<<<<<<<<
  * 
  * def setDecisionPriority( S ,  var ,  priority ):
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1360, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_v); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1360, __pyx_L1_error)
-  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_b); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 1360, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1366, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_v); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1366, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_b); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 1366, __pyx_L1_error)
   setDecisionPolarity(((void *)__pyx_t_4), ((int)__pyx_t_5), __pyx_t_1);
 
-  /* "monosat/monosat_p.pyx":1352
+  /* "monosat/monosat_p.pyx":1358
  *     _setConflictLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_conflicts))
  * 
  * def setDecisionPolarity( S ,  v ,  b ):             # <<<<<<<<<<<<<<
@@ -21359,7 +21761,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_198setDecisionPolarity(CYTHON_UNUS
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1362
+/* "monosat/monosat_p.pyx":1368
  *     _setDecisionPolarity_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>v), (<bint>b))
  * 
  * def setDecisionPriority( S ,  var ,  priority ):             # <<<<<<<<<<<<<<
@@ -21403,17 +21805,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_201setDecisionPriority(PyObject *_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_var)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setDecisionPriority", 1, 3, 3, 1); __PYX_ERR(0, 1362, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setDecisionPriority", 1, 3, 3, 1); __PYX_ERR(0, 1368, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_priority)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setDecisionPriority", 1, 3, 3, 2); __PYX_ERR(0, 1362, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setDecisionPriority", 1, 3, 3, 2); __PYX_ERR(0, 1368, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setDecisionPriority") < 0)) __PYX_ERR(0, 1362, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setDecisionPriority") < 0)) __PYX_ERR(0, 1368, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -21428,7 +21830,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_201setDecisionPriority(PyObject *_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("setDecisionPriority", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1362, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("setDecisionPriority", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1368, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.setDecisionPriority", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -21452,7 +21854,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_200setDecisionPriority(CYTHON_UNUS
   int __pyx_t_6;
   __Pyx_RefNannySetupContext("setDecisionPriority", 0);
 
-  /* "monosat/monosat_p.pyx":1365
+  /* "monosat/monosat_p.pyx":1371
  *     """Cython signature: void setDecisionPriority(void* S, int var, int priority)"""
  * 
  *     assert isinstance(var, (int, long)), 'arg var wrong type'             # <<<<<<<<<<<<<<
@@ -21474,12 +21876,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_200setDecisionPriority(CYTHON_UNUS
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_var_wrong_type);
-      __PYX_ERR(0, 1365, __pyx_L1_error)
+      __PYX_ERR(0, 1371, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1366
+  /* "monosat/monosat_p.pyx":1372
  * 
  *     assert isinstance(var, (int, long)), 'arg var wrong type'
  *     assert isinstance(priority, (int, long)), 'arg priority wrong type'             # <<<<<<<<<<<<<<
@@ -21501,24 +21903,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_200setDecisionPriority(CYTHON_UNUS
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_priority_wrong_type);
-      __PYX_ERR(0, 1366, __pyx_L1_error)
+      __PYX_ERR(0, 1372, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1370
+  /* "monosat/monosat_p.pyx":1376
  * 
  * 
  *     _setDecisionPriority_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<int>priority))             # <<<<<<<<<<<<<<
  * 
  * def setDecisionVar( S ,  var ,  decidable ):
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1370, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_var); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1370, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_priority); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1370, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1376, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_var); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1376, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_priority); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1376, __pyx_L1_error)
   setDecisionPriority(((void *)__pyx_t_4), ((int)__pyx_t_5), ((int)__pyx_t_6));
 
-  /* "monosat/monosat_p.pyx":1362
+  /* "monosat/monosat_p.pyx":1368
  *     _setDecisionPolarity_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>v), (<bint>b))
  * 
  * def setDecisionPriority( S ,  var ,  priority ):             # <<<<<<<<<<<<<<
@@ -21538,7 +21940,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_200setDecisionPriority(CYTHON_UNUS
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1372
+/* "monosat/monosat_p.pyx":1378
  *     _setDecisionPriority_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<int>priority))
  * 
  * def setDecisionVar( S ,  var ,  decidable ):             # <<<<<<<<<<<<<<
@@ -21582,17 +21984,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_203setDecisionVar(PyObject *__pyx_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_var)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setDecisionVar", 1, 3, 3, 1); __PYX_ERR(0, 1372, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setDecisionVar", 1, 3, 3, 1); __PYX_ERR(0, 1378, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_decidable)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setDecisionVar", 1, 3, 3, 2); __PYX_ERR(0, 1372, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setDecisionVar", 1, 3, 3, 2); __PYX_ERR(0, 1378, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setDecisionVar") < 0)) __PYX_ERR(0, 1372, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setDecisionVar") < 0)) __PYX_ERR(0, 1378, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -21607,7 +22009,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_203setDecisionVar(PyObject *__pyx_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("setDecisionVar", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1372, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("setDecisionVar", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1378, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.setDecisionVar", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -21630,7 +22032,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_202setDecisionVar(CYTHON_UNUSED Py
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("setDecisionVar", 0);
 
-  /* "monosat/monosat_p.pyx":1375
+  /* "monosat/monosat_p.pyx":1381
  *     """Cython signature: void setDecisionVar(void* S, int var, bint decidable)"""
  * 
  *     assert isinstance(var, (int, long)), 'arg var wrong type'             # <<<<<<<<<<<<<<
@@ -21652,12 +22054,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_202setDecisionVar(CYTHON_UNUSED Py
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_var_wrong_type);
-      __PYX_ERR(0, 1375, __pyx_L1_error)
+      __PYX_ERR(0, 1381, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1376
+  /* "monosat/monosat_p.pyx":1382
  * 
  *     assert isinstance(var, (int, long)), 'arg var wrong type'
  *     assert isinstance(decidable, (int, long)), 'arg decidable wrong type'             # <<<<<<<<<<<<<<
@@ -21679,24 +22081,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_202setDecisionVar(CYTHON_UNUSED Py
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_decidable_wrong_type);
-      __PYX_ERR(0, 1376, __pyx_L1_error)
+      __PYX_ERR(0, 1382, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1380
+  /* "monosat/monosat_p.pyx":1386
  * 
  * 
  *     _setDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<bint>decidable))             # <<<<<<<<<<<<<<
  * 
  * def setMemoryLimit( S ,  mb ):
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1380, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_var); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1380, __pyx_L1_error)
-  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_decidable); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 1380, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1386, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_var); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1386, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_decidable); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 1386, __pyx_L1_error)
   setDecisionVar(((void *)__pyx_t_4), ((int)__pyx_t_5), __pyx_t_1);
 
-  /* "monosat/monosat_p.pyx":1372
+  /* "monosat/monosat_p.pyx":1378
  *     _setDecisionPriority_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<int>priority))
  * 
  * def setDecisionVar( S ,  var ,  decidable ):             # <<<<<<<<<<<<<<
@@ -21716,7 +22118,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_202setDecisionVar(CYTHON_UNUSED Py
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1382
+/* "monosat/monosat_p.pyx":1388
  *     _setDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<bint>decidable))
  * 
  * def setMemoryLimit( S ,  mb ):             # <<<<<<<<<<<<<<
@@ -21757,11 +22159,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_205setMemoryLimit(PyObject *__pyx_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_mb)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setMemoryLimit", 1, 2, 2, 1); __PYX_ERR(0, 1382, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setMemoryLimit", 1, 2, 2, 1); __PYX_ERR(0, 1388, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setMemoryLimit") < 0)) __PYX_ERR(0, 1382, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setMemoryLimit") < 0)) __PYX_ERR(0, 1388, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -21774,7 +22176,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_205setMemoryLimit(PyObject *__pyx_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("setMemoryLimit", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1382, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("setMemoryLimit", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1388, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.setMemoryLimit", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -21797,7 +22199,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_204setMemoryLimit(CYTHON_UNUSED Py
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("setMemoryLimit", 0);
 
-  /* "monosat/monosat_p.pyx":1385
+  /* "monosat/monosat_p.pyx":1391
  *     """Cython signature: void setMemoryLimit(void* S, int mb)"""
  * 
  *     assert isinstance(mb, (int, long)), 'arg mb wrong type'             # <<<<<<<<<<<<<<
@@ -21819,23 +22221,23 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_204setMemoryLimit(CYTHON_UNUSED Py
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_mb_wrong_type);
-      __PYX_ERR(0, 1385, __pyx_L1_error)
+      __PYX_ERR(0, 1391, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1388
+  /* "monosat/monosat_p.pyx":1394
  * 
  * 
  *     _setMemoryLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>mb))             # <<<<<<<<<<<<<<
  * 
  * def setOutputFile( S , bytes output ):
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1388, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_mb); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1388, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1394, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_mb); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1394, __pyx_L1_error)
   setMemoryLimit(((void *)__pyx_t_4), ((int)__pyx_t_5));
 
-  /* "monosat/monosat_p.pyx":1382
+  /* "monosat/monosat_p.pyx":1388
  *     _setDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<bint>decidable))
  * 
  * def setMemoryLimit( S ,  mb ):             # <<<<<<<<<<<<<<
@@ -21855,7 +22257,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_204setMemoryLimit(CYTHON_UNUSED Py
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1390
+/* "monosat/monosat_p.pyx":1396
  *     _setMemoryLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>mb))
  * 
  * def setOutputFile( S , bytes output ):             # <<<<<<<<<<<<<<
@@ -21896,11 +22298,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_207setOutputFile(PyObject *__pyx_s
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_output)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setOutputFile", 1, 2, 2, 1); __PYX_ERR(0, 1390, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setOutputFile", 1, 2, 2, 1); __PYX_ERR(0, 1396, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setOutputFile") < 0)) __PYX_ERR(0, 1390, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setOutputFile") < 0)) __PYX_ERR(0, 1396, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -21913,13 +22315,13 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_207setOutputFile(PyObject *__pyx_s
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("setOutputFile", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1390, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("setOutputFile", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1396, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.setOutputFile", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output), (&PyBytes_Type), 1, "output", 1))) __PYX_ERR(0, 1390, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_output), (&PyBytes_Type), 1, "output", 1))) __PYX_ERR(0, 1396, __pyx_L1_error)
   __pyx_r = __pyx_pf_7monosat_9monosat_p_206setOutputFile(__pyx_self, __pyx_v_S, __pyx_v_output);
 
   /* function exit code */
@@ -21939,7 +22341,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_206setOutputFile(CYTHON_UNUSED PyO
   char *__pyx_t_3;
   __Pyx_RefNannySetupContext("setOutputFile", 0);
 
-  /* "monosat/monosat_p.pyx":1393
+  /* "monosat/monosat_p.pyx":1399
  *     """Cython signature: void setOutputFile(void* S, char * output)"""
  * 
  *     assert isinstance(output, bytes), 'arg output wrong type'             # <<<<<<<<<<<<<<
@@ -21951,27 +22353,27 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_206setOutputFile(CYTHON_UNUSED PyO
     __pyx_t_1 = PyBytes_Check(__pyx_v_output); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_output_wrong_type);
-      __PYX_ERR(0, 1393, __pyx_L1_error)
+      __PYX_ERR(0, 1399, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1396
+  /* "monosat/monosat_p.pyx":1402
  * 
  * 
  *     _setOutputFile_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>output))             # <<<<<<<<<<<<<<
  * 
  * def setPropagationLimit( S ,  num_propagations ):
  */
-  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1396, __pyx_L1_error)
+  __pyx_t_2 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_2 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1402, __pyx_L1_error)
   if (unlikely(__pyx_v_output == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
-    __PYX_ERR(0, 1396, __pyx_L1_error)
+    __PYX_ERR(0, 1402, __pyx_L1_error)
   }
-  __pyx_t_3 = __Pyx_PyBytes_AsWritableString(__pyx_v_output); if (unlikely((!__pyx_t_3) && PyErr_Occurred())) __PYX_ERR(0, 1396, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyBytes_AsWritableString(__pyx_v_output); if (unlikely((!__pyx_t_3) && PyErr_Occurred())) __PYX_ERR(0, 1402, __pyx_L1_error)
   setOutputFile(((void *)__pyx_t_2), ((char *)__pyx_t_3));
 
-  /* "monosat/monosat_p.pyx":1390
+  /* "monosat/monosat_p.pyx":1396
  *     _setMemoryLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>mb))
  * 
  * def setOutputFile( S , bytes output ):             # <<<<<<<<<<<<<<
@@ -21991,7 +22393,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_206setOutputFile(CYTHON_UNUSED PyO
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1398
+/* "monosat/monosat_p.pyx":1404
  *     _setOutputFile_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>output))
  * 
  * def setPropagationLimit( S ,  num_propagations ):             # <<<<<<<<<<<<<<
@@ -22032,11 +22434,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_209setPropagationLimit(PyObject *_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_num_propagations)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setPropagationLimit", 1, 2, 2, 1); __PYX_ERR(0, 1398, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setPropagationLimit", 1, 2, 2, 1); __PYX_ERR(0, 1404, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setPropagationLimit") < 0)) __PYX_ERR(0, 1398, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setPropagationLimit") < 0)) __PYX_ERR(0, 1404, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -22049,7 +22451,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_209setPropagationLimit(PyObject *_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("setPropagationLimit", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1398, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("setPropagationLimit", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1404, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.setPropagationLimit", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -22072,7 +22474,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_208setPropagationLimit(CYTHON_UNUS
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("setPropagationLimit", 0);
 
-  /* "monosat/monosat_p.pyx":1401
+  /* "monosat/monosat_p.pyx":1407
  *     """Cython signature: void setPropagationLimit(void* S, int num_propagations)"""
  * 
  *     assert isinstance(num_propagations, (int, long)), 'arg num_propagations wrong type'             # <<<<<<<<<<<<<<
@@ -22094,23 +22496,23 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_208setPropagationLimit(CYTHON_UNUS
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_num_propagations_wrong_type);
-      __PYX_ERR(0, 1401, __pyx_L1_error)
+      __PYX_ERR(0, 1407, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1404
+  /* "monosat/monosat_p.pyx":1410
  * 
  * 
  *     _setPropagationLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_propagations))             # <<<<<<<<<<<<<<
  * 
  * def setTimeLimit( S ,  seconds ):
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1404, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_num_propagations); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1404, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1410, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_num_propagations); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1410, __pyx_L1_error)
   setPropagationLimit(((void *)__pyx_t_4), ((int)__pyx_t_5));
 
-  /* "monosat/monosat_p.pyx":1398
+  /* "monosat/monosat_p.pyx":1404
  *     _setOutputFile_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>output))
  * 
  * def setPropagationLimit( S ,  num_propagations ):             # <<<<<<<<<<<<<<
@@ -22130,7 +22532,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_208setPropagationLimit(CYTHON_UNUS
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1406
+/* "monosat/monosat_p.pyx":1412
  *     _setPropagationLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_propagations))
  * 
  * def setTimeLimit( S ,  seconds ):             # <<<<<<<<<<<<<<
@@ -22171,11 +22573,11 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_211setTimeLimit(PyObject *__pyx_se
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_seconds)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("setTimeLimit", 1, 2, 2, 1); __PYX_ERR(0, 1406, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("setTimeLimit", 1, 2, 2, 1); __PYX_ERR(0, 1412, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setTimeLimit") < 0)) __PYX_ERR(0, 1406, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "setTimeLimit") < 0)) __PYX_ERR(0, 1412, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -22188,7 +22590,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_211setTimeLimit(PyObject *__pyx_se
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("setTimeLimit", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1406, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("setTimeLimit", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1412, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.setTimeLimit", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -22211,7 +22613,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_210setTimeLimit(CYTHON_UNUSED PyOb
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("setTimeLimit", 0);
 
-  /* "monosat/monosat_p.pyx":1409
+  /* "monosat/monosat_p.pyx":1415
  *     """Cython signature: void setTimeLimit(void* S, int seconds)"""
  * 
  *     assert isinstance(seconds, (int, long)), 'arg seconds wrong type'             # <<<<<<<<<<<<<<
@@ -22233,23 +22635,23 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_210setTimeLimit(CYTHON_UNUSED PyOb
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_seconds_wrong_type);
-      __PYX_ERR(0, 1409, __pyx_L1_error)
+      __PYX_ERR(0, 1415, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1412
+  /* "monosat/monosat_p.pyx":1418
  * 
  * 
  *     _setTimeLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>seconds))             # <<<<<<<<<<<<<<
  * 
  * def shortestPathUnweighted_leq_const( S ,  G ,  _from ,  to ,  steps ):
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1412, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_seconds); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1412, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1418, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_v_seconds); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1418, __pyx_L1_error)
   setTimeLimit(((void *)__pyx_t_4), ((int)__pyx_t_5));
 
-  /* "monosat/monosat_p.pyx":1406
+  /* "monosat/monosat_p.pyx":1412
  *     _setPropagationLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_propagations))
  * 
  * def setTimeLimit( S ,  seconds ):             # <<<<<<<<<<<<<<
@@ -22269,7 +22671,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_210setTimeLimit(CYTHON_UNUSED PyOb
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1414
+/* "monosat/monosat_p.pyx":1420
  *     _setTimeLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>seconds))
  * 
  * def shortestPathUnweighted_leq_const( S ,  G ,  _from ,  to ,  steps ):             # <<<<<<<<<<<<<<
@@ -22319,29 +22721,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_213shortestPathUnweighted_leq_cons
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, 1); __PYX_ERR(0, 1414, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, 1); __PYX_ERR(0, 1420, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, 2); __PYX_ERR(0, 1414, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, 2); __PYX_ERR(0, 1420, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, 3); __PYX_ERR(0, 1414, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, 3); __PYX_ERR(0, 1420, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_steps)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, 4); __PYX_ERR(0, 1414, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, 4); __PYX_ERR(0, 1420, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPathUnweighted_leq_const") < 0)) __PYX_ERR(0, 1414, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPathUnweighted_leq_const") < 0)) __PYX_ERR(0, 1420, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -22360,7 +22762,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_213shortestPathUnweighted_leq_cons
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1414, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_leq_const", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1420, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.shortestPathUnweighted_leq_const", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -22389,7 +22791,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_212shortestPathUnweighted_leq_cons
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("shortestPathUnweighted_leq_const", 0);
 
-  /* "monosat/monosat_p.pyx":1418
+  /* "monosat/monosat_p.pyx":1424
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -22411,12 +22813,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_212shortestPathUnweighted_leq_cons
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1418, __pyx_L1_error)
+      __PYX_ERR(0, 1424, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1419
+  /* "monosat/monosat_p.pyx":1425
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -22438,12 +22840,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_212shortestPathUnweighted_leq_cons
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1419, __pyx_L1_error)
+      __PYX_ERR(0, 1425, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1420
+  /* "monosat/monosat_p.pyx":1426
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'
  *     assert isinstance(steps, (int, long)), 'arg steps wrong type'             # <<<<<<<<<<<<<<
@@ -22465,26 +22867,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_212shortestPathUnweighted_leq_cons
     __pyx_L7_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_steps_wrong_type);
-      __PYX_ERR(0, 1420, __pyx_L1_error)
+      __PYX_ERR(0, 1426, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1426
+  /* "monosat/monosat_p.pyx":1432
  * 
  * 
  *     cdef int _r = _shortestPathUnweighted_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>steps))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1426, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1426, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1426, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1426, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_steps); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1426, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1432, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1432, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1432, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1432, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_steps); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1432, __pyx_L1_error)
   __pyx_v__r = shortestPathUnweighted_leq_const(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1427
+  /* "monosat/monosat_p.pyx":1433
  * 
  *     cdef int _r = _shortestPathUnweighted_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>steps))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -22493,7 +22895,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_212shortestPathUnweighted_leq_cons
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1428
+  /* "monosat/monosat_p.pyx":1434
  *     cdef int _r = _shortestPathUnweighted_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>steps))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -22501,13 +22903,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_212shortestPathUnweighted_leq_cons
  * def shortestPathUnweighted_lt_const( S ,  G ,  _from ,  to ,  steps ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1428, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1434, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1414
+  /* "monosat/monosat_p.pyx":1420
  *     _setTimeLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>seconds))
  * 
  * def shortestPathUnweighted_leq_const( S ,  G ,  _from ,  to ,  steps ):             # <<<<<<<<<<<<<<
@@ -22526,7 +22928,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_212shortestPathUnweighted_leq_cons
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1430
+/* "monosat/monosat_p.pyx":1436
  *     return py_result
  * 
  * def shortestPathUnweighted_lt_const( S ,  G ,  _from ,  to ,  steps ):             # <<<<<<<<<<<<<<
@@ -22576,29 +22978,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_215shortestPathUnweighted_lt_const
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, 1); __PYX_ERR(0, 1430, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, 1); __PYX_ERR(0, 1436, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, 2); __PYX_ERR(0, 1430, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, 2); __PYX_ERR(0, 1436, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, 3); __PYX_ERR(0, 1430, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, 3); __PYX_ERR(0, 1436, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_steps)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, 4); __PYX_ERR(0, 1430, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, 4); __PYX_ERR(0, 1436, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPathUnweighted_lt_const") < 0)) __PYX_ERR(0, 1430, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPathUnweighted_lt_const") < 0)) __PYX_ERR(0, 1436, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -22617,7 +23019,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_215shortestPathUnweighted_lt_const
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1430, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("shortestPathUnweighted_lt_const", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1436, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.shortestPathUnweighted_lt_const", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -22646,7 +23048,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_214shortestPathUnweighted_lt_const
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("shortestPathUnweighted_lt_const", 0);
 
-  /* "monosat/monosat_p.pyx":1434
+  /* "monosat/monosat_p.pyx":1440
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -22668,12 +23070,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_214shortestPathUnweighted_lt_const
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1434, __pyx_L1_error)
+      __PYX_ERR(0, 1440, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1435
+  /* "monosat/monosat_p.pyx":1441
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -22695,12 +23097,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_214shortestPathUnweighted_lt_const
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1435, __pyx_L1_error)
+      __PYX_ERR(0, 1441, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1436
+  /* "monosat/monosat_p.pyx":1442
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'
  *     assert isinstance(steps, (int, long)), 'arg steps wrong type'             # <<<<<<<<<<<<<<
@@ -22722,26 +23124,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_214shortestPathUnweighted_lt_const
     __pyx_L7_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_steps_wrong_type);
-      __PYX_ERR(0, 1436, __pyx_L1_error)
+      __PYX_ERR(0, 1442, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1442
+  /* "monosat/monosat_p.pyx":1448
  * 
  * 
  *     cdef int _r = _shortestPathUnweighted_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>steps))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1442, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1442, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1442, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1442, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_steps); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1442, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1448, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1448, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1448, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1448, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_steps); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1448, __pyx_L1_error)
   __pyx_v__r = shortestPathUnweighted_lt_const(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1443
+  /* "monosat/monosat_p.pyx":1449
  * 
  *     cdef int _r = _shortestPathUnweighted_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>steps))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -22750,7 +23152,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_214shortestPathUnweighted_lt_const
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1444
+  /* "monosat/monosat_p.pyx":1450
  *     cdef int _r = _shortestPathUnweighted_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>steps))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -22758,13 +23160,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_214shortestPathUnweighted_lt_const
  * def shortestPath_leq_bv( S ,  G ,  _from ,  to ,  bvID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1444, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1450, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1430
+  /* "monosat/monosat_p.pyx":1436
  *     return py_result
  * 
  * def shortestPathUnweighted_lt_const( S ,  G ,  _from ,  to ,  steps ):             # <<<<<<<<<<<<<<
@@ -22783,7 +23185,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_214shortestPathUnweighted_lt_const
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1446
+/* "monosat/monosat_p.pyx":1452
  *     return py_result
  * 
  * def shortestPath_leq_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
@@ -22833,29 +23235,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_217shortestPath_leq_bv(PyObject *_
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, 1); __PYX_ERR(0, 1446, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, 1); __PYX_ERR(0, 1452, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, 2); __PYX_ERR(0, 1446, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, 2); __PYX_ERR(0, 1452, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, 3); __PYX_ERR(0, 1446, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, 3); __PYX_ERR(0, 1452, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, 4); __PYX_ERR(0, 1446, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, 4); __PYX_ERR(0, 1452, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPath_leq_bv") < 0)) __PYX_ERR(0, 1446, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPath_leq_bv") < 0)) __PYX_ERR(0, 1452, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -22874,7 +23276,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_217shortestPath_leq_bv(PyObject *_
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1446, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("shortestPath_leq_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1452, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.shortestPath_leq_bv", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -22903,7 +23305,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_216shortestPath_leq_bv(CYTHON_UNUS
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("shortestPath_leq_bv", 0);
 
-  /* "monosat/monosat_p.pyx":1450
+  /* "monosat/monosat_p.pyx":1456
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -22925,12 +23327,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_216shortestPath_leq_bv(CYTHON_UNUS
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1450, __pyx_L1_error)
+      __PYX_ERR(0, 1456, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1451
+  /* "monosat/monosat_p.pyx":1457
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -22952,26 +23354,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_216shortestPath_leq_bv(CYTHON_UNUS
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1451, __pyx_L1_error)
+      __PYX_ERR(0, 1457, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1458
+  /* "monosat/monosat_p.pyx":1464
  * 
  * 
  *     cdef int _r = _shortestPath_leq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1458, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1458, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1458, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1458, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1458, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1464, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1464, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1464, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1464, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1464, __pyx_L1_error)
   __pyx_v__r = shortestPath_leq_bv(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1459
+  /* "monosat/monosat_p.pyx":1465
  * 
  *     cdef int _r = _shortestPath_leq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -22980,7 +23382,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_216shortestPath_leq_bv(CYTHON_UNUS
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1460
+  /* "monosat/monosat_p.pyx":1466
  *     cdef int _r = _shortestPath_leq_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -22988,13 +23390,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_216shortestPath_leq_bv(CYTHON_UNUS
  * def shortestPath_leq_const( S ,  G ,  _from ,  to ,  dist ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1460, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1466, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1446
+  /* "monosat/monosat_p.pyx":1452
  *     return py_result
  * 
  * def shortestPath_leq_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
@@ -23013,7 +23415,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_216shortestPath_leq_bv(CYTHON_UNUS
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1462
+/* "monosat/monosat_p.pyx":1468
  *     return py_result
  * 
  * def shortestPath_leq_const( S ,  G ,  _from ,  to ,  dist ):             # <<<<<<<<<<<<<<
@@ -23063,29 +23465,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_219shortestPath_leq_const(PyObject
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, 1); __PYX_ERR(0, 1462, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, 1); __PYX_ERR(0, 1468, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, 2); __PYX_ERR(0, 1462, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, 2); __PYX_ERR(0, 1468, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, 3); __PYX_ERR(0, 1462, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, 3); __PYX_ERR(0, 1468, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_dist)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, 4); __PYX_ERR(0, 1462, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, 4); __PYX_ERR(0, 1468, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPath_leq_const") < 0)) __PYX_ERR(0, 1462, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPath_leq_const") < 0)) __PYX_ERR(0, 1468, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -23104,7 +23506,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_219shortestPath_leq_const(PyObject
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1462, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("shortestPath_leq_const", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1468, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.shortestPath_leq_const", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -23133,7 +23535,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_218shortestPath_leq_const(CYTHON_U
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("shortestPath_leq_const", 0);
 
-  /* "monosat/monosat_p.pyx":1466
+  /* "monosat/monosat_p.pyx":1472
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -23155,12 +23557,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_218shortestPath_leq_const(CYTHON_U
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1466, __pyx_L1_error)
+      __PYX_ERR(0, 1472, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1467
+  /* "monosat/monosat_p.pyx":1473
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -23182,12 +23584,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_218shortestPath_leq_const(CYTHON_U
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1467, __pyx_L1_error)
+      __PYX_ERR(0, 1473, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1468
+  /* "monosat/monosat_p.pyx":1474
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'
  *     assert isinstance(dist, (int, long)), 'arg dist wrong type'             # <<<<<<<<<<<<<<
@@ -23209,26 +23611,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_218shortestPath_leq_const(CYTHON_U
     __pyx_L7_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_dist_wrong_type);
-      __PYX_ERR(0, 1468, __pyx_L1_error)
+      __PYX_ERR(0, 1474, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1474
+  /* "monosat/monosat_p.pyx":1480
  * 
  * 
  *     cdef int _r = _shortestPath_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1474, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1474, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1474, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1474, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_dist); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1474, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1480, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1480, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1480, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1480, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_dist); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1480, __pyx_L1_error)
   __pyx_v__r = shortestPath_leq_const(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int64_t)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1475
+  /* "monosat/monosat_p.pyx":1481
  * 
  *     cdef int _r = _shortestPath_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -23237,7 +23639,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_218shortestPath_leq_const(CYTHON_U
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1476
+  /* "monosat/monosat_p.pyx":1482
  *     cdef int _r = _shortestPath_leq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -23245,13 +23647,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_218shortestPath_leq_const(CYTHON_U
  * def shortestPath_lt_bv( S ,  G ,  _from ,  to ,  bvID ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1476, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1482, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1462
+  /* "monosat/monosat_p.pyx":1468
  *     return py_result
  * 
  * def shortestPath_leq_const( S ,  G ,  _from ,  to ,  dist ):             # <<<<<<<<<<<<<<
@@ -23270,7 +23672,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_218shortestPath_leq_const(CYTHON_U
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1478
+/* "monosat/monosat_p.pyx":1484
  *     return py_result
  * 
  * def shortestPath_lt_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
@@ -23320,29 +23722,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_221shortestPath_lt_bv(PyObject *__
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, 1); __PYX_ERR(0, 1478, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, 1); __PYX_ERR(0, 1484, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, 2); __PYX_ERR(0, 1478, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, 2); __PYX_ERR(0, 1484, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, 3); __PYX_ERR(0, 1478, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, 3); __PYX_ERR(0, 1484, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_bvID)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, 4); __PYX_ERR(0, 1478, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, 4); __PYX_ERR(0, 1484, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPath_lt_bv") < 0)) __PYX_ERR(0, 1478, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPath_lt_bv") < 0)) __PYX_ERR(0, 1484, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -23361,7 +23763,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_221shortestPath_lt_bv(PyObject *__
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1478, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("shortestPath_lt_bv", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1484, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.shortestPath_lt_bv", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -23390,7 +23792,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_220shortestPath_lt_bv(CYTHON_UNUSE
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("shortestPath_lt_bv", 0);
 
-  /* "monosat/monosat_p.pyx":1482
+  /* "monosat/monosat_p.pyx":1488
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -23412,12 +23814,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_220shortestPath_lt_bv(CYTHON_UNUSE
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1482, __pyx_L1_error)
+      __PYX_ERR(0, 1488, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1483
+  /* "monosat/monosat_p.pyx":1489
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -23439,26 +23841,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_220shortestPath_lt_bv(CYTHON_UNUSE
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1483, __pyx_L1_error)
+      __PYX_ERR(0, 1489, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1490
+  /* "monosat/monosat_p.pyx":1496
  * 
  * 
  *     cdef int _r = _shortestPath_lt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1490, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1490, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1490, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1490, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1490, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1496, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1496, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1496, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1496, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_v_bvID); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1496, __pyx_L1_error)
   __pyx_v__r = shortestPath_lt_bv(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1491
+  /* "monosat/monosat_p.pyx":1497
  * 
  *     cdef int _r = _shortestPath_lt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -23467,7 +23869,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_220shortestPath_lt_bv(CYTHON_UNUSE
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1492
+  /* "monosat/monosat_p.pyx":1498
  *     cdef int _r = _shortestPath_lt_bv_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>bvID))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -23475,13 +23877,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_220shortestPath_lt_bv(CYTHON_UNUSE
  * def shortestPath_lt_const( S ,  G ,  _from ,  to ,  dist ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1492, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1498, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1478
+  /* "monosat/monosat_p.pyx":1484
  *     return py_result
  * 
  * def shortestPath_lt_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
@@ -23500,7 +23902,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_220shortestPath_lt_bv(CYTHON_UNUSE
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1494
+/* "monosat/monosat_p.pyx":1500
  *     return py_result
  * 
  * def shortestPath_lt_const( S ,  G ,  _from ,  to ,  dist ):             # <<<<<<<<<<<<<<
@@ -23550,29 +23952,29 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_223shortestPath_lt_const(PyObject 
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_G)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, 1); __PYX_ERR(0, 1494, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, 1); __PYX_ERR(0, 1500, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_from)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, 2); __PYX_ERR(0, 1494, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, 2); __PYX_ERR(0, 1500, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_to)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, 3); __PYX_ERR(0, 1494, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, 3); __PYX_ERR(0, 1500, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_dist)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, 4); __PYX_ERR(0, 1494, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, 4); __PYX_ERR(0, 1500, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPath_lt_const") < 0)) __PYX_ERR(0, 1494, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shortestPath_lt_const") < 0)) __PYX_ERR(0, 1500, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -23591,7 +23993,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_223shortestPath_lt_const(PyObject 
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1494, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("shortestPath_lt_const", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1500, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.shortestPath_lt_const", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -23620,7 +24022,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_222shortestPath_lt_const(CYTHON_UN
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("shortestPath_lt_const", 0);
 
-  /* "monosat/monosat_p.pyx":1498
+  /* "monosat/monosat_p.pyx":1504
  * 
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'             # <<<<<<<<<<<<<<
@@ -23642,12 +24044,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_222shortestPath_lt_const(CYTHON_UN
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg__from_wrong_type);
-      __PYX_ERR(0, 1498, __pyx_L1_error)
+      __PYX_ERR(0, 1504, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1499
+  /* "monosat/monosat_p.pyx":1505
  * 
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'             # <<<<<<<<<<<<<<
@@ -23669,12 +24071,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_222shortestPath_lt_const(CYTHON_UN
     __pyx_L5_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_to_wrong_type);
-      __PYX_ERR(0, 1499, __pyx_L1_error)
+      __PYX_ERR(0, 1505, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1500
+  /* "monosat/monosat_p.pyx":1506
  *     assert isinstance(_from, (int, long)), 'arg _from wrong type'
  *     assert isinstance(to, (int, long)), 'arg to wrong type'
  *     assert isinstance(dist, (int, long)), 'arg dist wrong type'             # <<<<<<<<<<<<<<
@@ -23696,26 +24098,26 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_222shortestPath_lt_const(CYTHON_UN
     __pyx_L7_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_dist_wrong_type);
-      __PYX_ERR(0, 1500, __pyx_L1_error)
+      __PYX_ERR(0, 1506, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1506
+  /* "monosat/monosat_p.pyx":1512
  * 
  * 
  *     cdef int _r = _shortestPath_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1506, __pyx_L1_error)
-  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1506, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1506, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1506, __pyx_L1_error)
-  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_dist); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1506, __pyx_L1_error)
+  __pyx_t_4 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_4 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1512, __pyx_L1_error)
+  __pyx_t_5 = PyCapsule_GetPointer(__pyx_v_G, NULL); if (unlikely(__pyx_t_5 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1512, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v__from); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1512, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_to); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1512, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int64_t(__pyx_v_dist); if (unlikely((__pyx_t_8 == ((int64_t)-1)) && PyErr_Occurred())) __PYX_ERR(0, 1512, __pyx_L1_error)
   __pyx_v__r = shortestPath_lt_const(((void *)__pyx_t_4), ((void *)__pyx_t_5), ((int)__pyx_t_6), ((int)__pyx_t_7), ((int64_t)__pyx_t_8));
 
-  /* "monosat/monosat_p.pyx":1507
+  /* "monosat/monosat_p.pyx":1513
  * 
  *     cdef int _r = _shortestPath_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -23724,7 +24126,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_222shortestPath_lt_const(CYTHON_UN
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1508
+  /* "monosat/monosat_p.pyx":1514
  *     cdef int _r = _shortestPath_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -23732,13 +24134,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_222shortestPath_lt_const(CYTHON_UN
  * def solve( S ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1508, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 1514, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __pyx_r = __pyx_t_9;
   __pyx_t_9 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1494
+  /* "monosat/monosat_p.pyx":1500
  *     return py_result
  * 
  * def shortestPath_lt_const( S ,  G ,  _from ,  to ,  dist ):             # <<<<<<<<<<<<<<
@@ -23757,7 +24159,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_222shortestPath_lt_const(CYTHON_UN
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1510
+/* "monosat/monosat_p.pyx":1516
  *     return py_result
  * 
  * def solve( S ):             # <<<<<<<<<<<<<<
@@ -23789,17 +24191,17 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_224solve(CYTHON_UNUSED PyObject *_
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("solve", 0);
 
-  /* "monosat/monosat_p.pyx":1514
+  /* "monosat/monosat_p.pyx":1520
  * 
  * 
  *     cdef bint _r = _solve_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <bint>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1514, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1520, __pyx_L1_error)
   __pyx_v__r = solve(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":1515
+  /* "monosat/monosat_p.pyx":1521
  * 
  *     cdef bint _r = _solve_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <bint>_r             # <<<<<<<<<<<<<<
@@ -23808,7 +24210,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_224solve(CYTHON_UNUSED PyObject *_
  */
   __pyx_v_py_result = (__pyx_v__r != 0);
 
-  /* "monosat/monosat_p.pyx":1516
+  /* "monosat/monosat_p.pyx":1522
  *     cdef bint _r = _solve_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <bint>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -23816,13 +24218,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_224solve(CYTHON_UNUSED PyObject *_
  * def solveAssumptions( S ,  assumptions,  n_assumptions):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyBool_FromLong(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1516, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBool_FromLong(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1522, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1510
+  /* "monosat/monosat_p.pyx":1516
  *     return py_result
  * 
  * def solve( S ):             # <<<<<<<<<<<<<<
@@ -23841,7 +24243,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_224solve(CYTHON_UNUSED PyObject *_
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1518
+/* "monosat/monosat_p.pyx":1524
  *     return py_result
  * 
  * def solveAssumptions( S ,  assumptions,  n_assumptions):             # <<<<<<<<<<<<<<
@@ -23885,17 +24287,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_227solveAssumptions(PyObject *__py
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_assumptions)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("solveAssumptions", 1, 3, 3, 1); __PYX_ERR(0, 1518, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("solveAssumptions", 1, 3, 3, 1); __PYX_ERR(0, 1524, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_assumptions)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("solveAssumptions", 1, 3, 3, 2); __PYX_ERR(0, 1518, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("solveAssumptions", 1, 3, 3, 2); __PYX_ERR(0, 1524, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "solveAssumptions") < 0)) __PYX_ERR(0, 1518, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "solveAssumptions") < 0)) __PYX_ERR(0, 1524, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -23910,7 +24312,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_227solveAssumptions(PyObject *__py
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("solveAssumptions", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1518, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("solveAssumptions", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1524, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.solveAssumptions", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -23935,14 +24337,14 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_226solveAssumptions(CYTHON_UNUSED 
   int __pyx_t_4;
   __Pyx_RefNannySetupContext("solveAssumptions", 0);
 
-  /* "monosat/monosat_p.pyx":1522
+  /* "monosat/monosat_p.pyx":1528
  * 
  * 
  *     cdef array.array a =  array.array('i', assumptions)             # <<<<<<<<<<<<<<
  *     cdef bint _r = _solveAssumptions_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), <int*>a.data.as_ints, (<int>n_assumptions))
  *     py_result = <bint>_r
  */
-  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1522, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1528, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -23950,24 +24352,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_226solveAssumptions(CYTHON_UNUSED 
   __Pyx_INCREF(__pyx_v_assumptions);
   __Pyx_GIVEREF(__pyx_v_assumptions);
   PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_assumptions);
-  __pyx_t_2 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1522, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1528, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "monosat/monosat_p.pyx":1523
+  /* "monosat/monosat_p.pyx":1529
  * 
  *     cdef array.array a =  array.array('i', assumptions)
  *     cdef bint _r = _solveAssumptions_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), <int*>a.data.as_ints, (<int>n_assumptions))             # <<<<<<<<<<<<<<
  *     py_result = <bint>_r
  *     return py_result
  */
-  __pyx_t_3 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_3 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1523, __pyx_L1_error)
-  __pyx_t_4 = __Pyx_PyInt_As_int(__pyx_v_n_assumptions); if (unlikely((__pyx_t_4 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1523, __pyx_L1_error)
+  __pyx_t_3 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_3 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1529, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyInt_As_int(__pyx_v_n_assumptions); if (unlikely((__pyx_t_4 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1529, __pyx_L1_error)
   __pyx_v__r = solveAssumptions(((void *)__pyx_t_3), ((int *)__pyx_v_a->data.as_ints), ((int)__pyx_t_4));
 
-  /* "monosat/monosat_p.pyx":1524
+  /* "monosat/monosat_p.pyx":1530
  *     cdef array.array a =  array.array('i', assumptions)
  *     cdef bint _r = _solveAssumptions_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), <int*>a.data.as_ints, (<int>n_assumptions))
  *     py_result = <bint>_r             # <<<<<<<<<<<<<<
@@ -23976,7 +24378,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_226solveAssumptions(CYTHON_UNUSED 
  */
   __pyx_v_py_result = (__pyx_v__r != 0);
 
-  /* "monosat/monosat_p.pyx":1525
+  /* "monosat/monosat_p.pyx":1531
  *     cdef bint _r = _solveAssumptions_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), <int*>a.data.as_ints, (<int>n_assumptions))
  *     py_result = <bint>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -23984,13 +24386,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_226solveAssumptions(CYTHON_UNUSED 
  * def solveAssumptionsLimited( S ,  assumptions ,  n_assumptions ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyBool_FromLong(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1525, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBool_FromLong(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1531, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1518
+  /* "monosat/monosat_p.pyx":1524
  *     return py_result
  * 
  * def solveAssumptions( S ,  assumptions,  n_assumptions):             # <<<<<<<<<<<<<<
@@ -24011,7 +24413,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_226solveAssumptions(CYTHON_UNUSED 
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1527
+/* "monosat/monosat_p.pyx":1533
  *     return py_result
  * 
  * def solveAssumptionsLimited( S ,  assumptions ,  n_assumptions ):             # <<<<<<<<<<<<<<
@@ -24055,17 +24457,17 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_229solveAssumptionsLimited(PyObjec
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_assumptions)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("solveAssumptionsLimited", 1, 3, 3, 1); __PYX_ERR(0, 1527, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("solveAssumptionsLimited", 1, 3, 3, 1); __PYX_ERR(0, 1533, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_n_assumptions)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("solveAssumptionsLimited", 1, 3, 3, 2); __PYX_ERR(0, 1527, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("solveAssumptionsLimited", 1, 3, 3, 2); __PYX_ERR(0, 1533, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "solveAssumptionsLimited") < 0)) __PYX_ERR(0, 1527, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "solveAssumptionsLimited") < 0)) __PYX_ERR(0, 1533, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -24080,7 +24482,7 @@ static PyObject *__pyx_pw_7monosat_9monosat_p_229solveAssumptionsLimited(PyObjec
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("solveAssumptionsLimited", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1527, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("solveAssumptionsLimited", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 1533, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("monosat.monosat_p.solveAssumptionsLimited", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -24108,7 +24510,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_228solveAssumptionsLimited(CYTHON_
   int __pyx_t_7;
   __Pyx_RefNannySetupContext("solveAssumptionsLimited", 0);
 
-  /* "monosat/monosat_p.pyx":1530
+  /* "monosat/monosat_p.pyx":1536
  *     """Cython signature: int solveAssumptionsLimited(void* S, int* assumptions, int n_assumptions)"""
  * 
  *     assert isinstance(assumptions, list), 'arg assumptions wrong type'             # <<<<<<<<<<<<<<
@@ -24120,12 +24522,12 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_228solveAssumptionsLimited(CYTHON_
     __pyx_t_1 = PyList_Check(__pyx_v_assumptions); 
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_assumptions_wrong_type);
-      __PYX_ERR(0, 1530, __pyx_L1_error)
+      __PYX_ERR(0, 1536, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1531
+  /* "monosat/monosat_p.pyx":1537
  * 
  *     assert isinstance(assumptions, list), 'arg assumptions wrong type'
  *     assert isinstance(n_assumptions, (int, long)), 'arg n_assumptions wrong type'             # <<<<<<<<<<<<<<
@@ -24147,19 +24549,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_228solveAssumptionsLimited(CYTHON_
     __pyx_L3_bool_binop_done:;
     if (unlikely(!(__pyx_t_1 != 0))) {
       PyErr_SetObject(PyExc_AssertionError, __pyx_kp_s_arg_n_assumptions_wrong_type);
-      __PYX_ERR(0, 1531, __pyx_L1_error)
+      __PYX_ERR(0, 1537, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "monosat/monosat_p.pyx":1534
+  /* "monosat/monosat_p.pyx":1540
  * 
  * 
  *     cdef array.array a =  array.array('i', assumptions)             # <<<<<<<<<<<<<<
  *     cdef int _r = _solveAssumptionsLimited_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_assumptions))
  *     py_result = <int>_r
  */
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1534, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 1540, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_n_s_i);
   __Pyx_GIVEREF(__pyx_n_s_i);
@@ -24167,24 +24569,24 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_228solveAssumptionsLimited(CYTHON_
   __Pyx_INCREF(__pyx_v_assumptions);
   __Pyx_GIVEREF(__pyx_v_assumptions);
   PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_assumptions);
-  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1534, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_7cpython_5array_array), __pyx_t_4, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1540, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_a = ((arrayobject *)__pyx_t_5);
   __pyx_t_5 = 0;
 
-  /* "monosat/monosat_p.pyx":1535
+  /* "monosat/monosat_p.pyx":1541
  * 
  *     cdef array.array a =  array.array('i', assumptions)
  *     cdef int _r = _solveAssumptionsLimited_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_assumptions))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1535, __pyx_L1_error)
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_assumptions); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1535, __pyx_L1_error)
+  __pyx_t_6 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_6 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1541, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_v_n_assumptions); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 1541, __pyx_L1_error)
   __pyx_v__r = solveAssumptionsLimited(((void *)__pyx_t_6), ((int *)__pyx_v_a->data.as_ints), ((int)__pyx_t_7));
 
-  /* "monosat/monosat_p.pyx":1536
+  /* "monosat/monosat_p.pyx":1542
  *     cdef array.array a =  array.array('i', assumptions)
  *     cdef int _r = _solveAssumptionsLimited_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_assumptions))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -24193,7 +24595,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_228solveAssumptionsLimited(CYTHON_
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1537
+  /* "monosat/monosat_p.pyx":1543
  *     cdef int _r = _solveAssumptionsLimited_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_assumptions))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -24201,13 +24603,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_228solveAssumptionsLimited(CYTHON_
  * def solveLimited( S ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1537, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 1543, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __pyx_r = __pyx_t_5;
   __pyx_t_5 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1527
+  /* "monosat/monosat_p.pyx":1533
  *     return py_result
  * 
  * def solveAssumptionsLimited( S ,  assumptions ,  n_assumptions ):             # <<<<<<<<<<<<<<
@@ -24228,7 +24630,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_228solveAssumptionsLimited(CYTHON_
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1539
+/* "monosat/monosat_p.pyx":1545
  *     return py_result
  * 
  * def solveLimited( S ):             # <<<<<<<<<<<<<<
@@ -24260,17 +24662,17 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_230solveLimited(CYTHON_UNUSED PyOb
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("solveLimited", 0);
 
-  /* "monosat/monosat_p.pyx":1543
+  /* "monosat/monosat_p.pyx":1549
  * 
  * 
  *     cdef int _r = _solveLimited_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1543, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1549, __pyx_L1_error)
   __pyx_v__r = solveLimited(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":1544
+  /* "monosat/monosat_p.pyx":1550
  * 
  *     cdef int _r = _solveLimited_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -24279,7 +24681,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_230solveLimited(CYTHON_UNUSED PyOb
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1545
+  /* "monosat/monosat_p.pyx":1551
  *     cdef int _r = _solveLimited_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
@@ -24287,13 +24689,13 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_230solveLimited(CYTHON_UNUSED PyOb
  * def true_lit( S ):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1545, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1551, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1539
+  /* "monosat/monosat_p.pyx":1545
  *     return py_result
  * 
  * def solveLimited( S ):             # <<<<<<<<<<<<<<
@@ -24312,7 +24714,7 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_230solveLimited(CYTHON_UNUSED PyOb
   return __pyx_r;
 }
 
-/* "monosat/monosat_p.pyx":1547
+/* "monosat/monosat_p.pyx":1553
  *     return py_result
  * 
  * def true_lit( S ):             # <<<<<<<<<<<<<<
@@ -24344,17 +24746,17 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_232true_lit(CYTHON_UNUSED PyObject
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("true_lit", 0);
 
-  /* "monosat/monosat_p.pyx":1551
+  /* "monosat/monosat_p.pyx":1557
  * 
  * 
  *     cdef int _r = _true_lit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))             # <<<<<<<<<<<<<<
  *     py_result = <int>_r
  *     return py_result
  */
-  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1551, __pyx_L1_error)
+  __pyx_t_1 = PyCapsule_GetPointer(__pyx_v_S, NULL); if (unlikely(__pyx_t_1 == ((void *)NULL) && PyErr_Occurred())) __PYX_ERR(0, 1557, __pyx_L1_error)
   __pyx_v__r = true_lit(((void *)__pyx_t_1));
 
-  /* "monosat/monosat_p.pyx":1552
+  /* "monosat/monosat_p.pyx":1558
  * 
  *     cdef int _r = _true_lit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r             # <<<<<<<<<<<<<<
@@ -24362,19 +24764,19 @@ static PyObject *__pyx_pf_7monosat_9monosat_p_232true_lit(CYTHON_UNUSED PyObject
  */
   __pyx_v_py_result = ((int)__pyx_v__r);
 
-  /* "monosat/monosat_p.pyx":1553
+  /* "monosat/monosat_p.pyx":1559
  *     cdef int _r = _true_lit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)))
  *     py_result = <int>_r
  *     return py_result             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1553, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_py_result); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 1559, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "monosat/monosat_p.pyx":1547
+  /* "monosat/monosat_p.pyx":1553
  *     return py_result
  * 
  * def true_lit( S ):             # <<<<<<<<<<<<<<
@@ -25079,6 +25481,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_addRoutingNet, __pyx_k_addRoutingNet, sizeof(__pyx_k_addRoutingNet), 0, 0, 1, 1},
   {&__pyx_n_s_addTertiaryClause, __pyx_k_addTertiaryClause, sizeof(__pyx_k_addTertiaryClause), 0, 0, 1, 1},
   {&__pyx_n_s_addUnitClause, __pyx_k_addUnitClause, sizeof(__pyx_k_addUnitClause), 0, 0, 1, 1},
+  {&__pyx_n_s_append, __pyx_k_append, sizeof(__pyx_k_append), 0, 0, 1, 1},
   {&__pyx_kp_s_arg__from_wrong_type, __pyx_k_arg__from_wrong_type, sizeof(__pyx_k_arg__from_wrong_type), 0, 0, 1, 0},
   {&__pyx_kp_s_arg_aID_wrong_type, __pyx_k_arg_aID_wrong_type, sizeof(__pyx_k_arg_aID_wrong_type), 0, 0, 1, 0},
   {&__pyx_kp_s_arg_args_wrong_type, __pyx_k_arg_args_wrong_type, sizeof(__pyx_k_arg_args_wrong_type), 0, 0, 1, 0},
@@ -25193,6 +25596,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_bv_xor, __pyx_k_bv_xor, sizeof(__pyx_k_bv_xor), 0, 0, 1, 1},
   {&__pyx_n_s_bvaID, __pyx_k_bvaID, sizeof(__pyx_k_bvaID), 0, 0, 1, 1},
   {&__pyx_n_s_bvbID, __pyx_k_bvbID, sizeof(__pyx_k_bvbID), 0, 0, 1, 1},
+  {&__pyx_n_s_clear, __pyx_k_clear, sizeof(__pyx_k_clear), 0, 0, 1, 1},
   {&__pyx_n_s_clearOptimizationObjectives, __pyx_k_clearOptimizationObjectives, sizeof(__pyx_k_clearOptimizationObjectives), 0, 0, 1, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_coefficients, __pyx_k_coefficients, sizeof(__pyx_k_coefficients), 0, 0, 1, 1},
@@ -25234,6 +25638,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_i, __pyx_k_i, sizeof(__pyx_k_i), 0, 0, 1, 1},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
   {&__pyx_n_s_initBVTheory, __pyx_k_initBVTheory, sizeof(__pyx_k_initBVTheory), 0, 0, 1, 1},
+  {&__pyx_n_s_initializer, __pyx_k_initializer, sizeof(__pyx_k_initializer), 0, 0, 1, 1},
   {&__pyx_n_s_isDecisionVar, __pyx_k_isDecisionVar, sizeof(__pyx_k_isDecisionVar), 0, 0, 1, 1},
   {&__pyx_n_s_lastSolutionWasOptimal, __pyx_k_lastSolutionWasOptimal, sizeof(__pyx_k_lastSolutionWasOptimal), 0, 0, 1, 1},
   {&__pyx_n_s_lit, __pyx_k_lit, sizeof(__pyx_k_lit), 0, 0, 1, 1},
@@ -25295,12 +25700,14 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_newSolver, __pyx_k_newSolver, sizeof(__pyx_k_newSolver), 0, 0, 1, 1},
   {&__pyx_n_s_newSolver_arg, __pyx_k_newSolver_arg, sizeof(__pyx_k_newSolver_arg), 0, 0, 1, 1},
   {&__pyx_n_s_newVar, __pyx_k_newVar, sizeof(__pyx_k_newVar), 0, 0, 1, 1},
+  {&__pyx_n_s_node, __pyx_k_node, sizeof(__pyx_k_node), 0, 0, 1, 1},
   {&__pyx_n_s_num_conflicts, __pyx_k_num_conflicts, sizeof(__pyx_k_num_conflicts), 0, 0, 1, 1},
   {&__pyx_n_s_num_propagations, __pyx_k_num_propagations, sizeof(__pyx_k_num_propagations), 0, 0, 1, 1},
   {&__pyx_n_s_output, __pyx_k_output, sizeof(__pyx_k_output), 0, 0, 1, 1},
   {&__pyx_n_s_priority, __pyx_k_priority, sizeof(__pyx_k_priority), 0, 0, 1, 1},
   {&__pyx_n_s_py_result, __pyx_k_py_result, sizeof(__pyx_k_py_result), 0, 0, 1, 1},
   {&__pyx_n_s_r, __pyx_k_r, sizeof(__pyx_k_r), 0, 0, 1, 1},
+  {&__pyx_n_s_range, __pyx_k_range, sizeof(__pyx_k_range), 0, 0, 1, 1},
   {&__pyx_n_s_reach_lits, __pyx_k_reach_lits, sizeof(__pyx_k_reach_lits), 0, 0, 1, 1},
   {&__pyx_n_s_reach_or_distance_literal, __pyx_k_reach_or_distance_literal, sizeof(__pyx_k_reach_or_distance_literal), 0, 0, 1, 1},
   {&__pyx_n_s_reaches, __pyx_k_reaches, sizeof(__pyx_k_reaches), 0, 0, 1, 1},
@@ -25348,7 +25755,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) __PYX_ERR(0, 1297, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 776, __pyx_L1_error)
+  __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) __PYX_ERR(0, 1303, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -25965,802 +26373,802 @@ static int __Pyx_InitCachedConstants(void) {
  *     """Cython signature: int getModel_Path_EdgeLits(void* S, void* G, int reach_or_distance_literal, int store_length, int* store)"""
  * 
  */
-  __pyx_tuple__101 = PyTuple_Pack(8, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_reach_or_distance_literal, __pyx_n_s_store_length, __pyx_n_s_store, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__101)) __PYX_ERR(0, 767, __pyx_L1_error)
+  __pyx_tuple__101 = PyTuple_Pack(10, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_reach_or_distance_literal, __pyx_n_s_store_length, __pyx_n_s_store, __pyx_n_s_initializer, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_lit, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__101)) __PYX_ERR(0, 767, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__101);
   __Pyx_GIVEREF(__pyx_tuple__101);
-  __pyx_codeobj__102 = (PyObject*)__Pyx_PyCode_New(5, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__101, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getModel_Path_EdgeLits, 767, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__102)) __PYX_ERR(0, 767, __pyx_L1_error)
+  __pyx_codeobj__102 = (PyObject*)__Pyx_PyCode_New(5, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__101, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getModel_Path_EdgeLits, 767, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__102)) __PYX_ERR(0, 767, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":783
+  /* "monosat/monosat_p.pyx":787
  *     return py_result
  * 
  * def getModel_Path_EdgeLits_Length( S ,  G ,  reach_or_distance_literal ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int getModel_Path_EdgeLits_Length(void* S, void* G, int reach_or_distance_literal)"""
  * 
  */
-  __pyx_tuple__103 = PyTuple_Pack(5, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_reach_or_distance_literal, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__103)) __PYX_ERR(0, 783, __pyx_L1_error)
+  __pyx_tuple__103 = PyTuple_Pack(5, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_reach_or_distance_literal, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__103)) __PYX_ERR(0, 787, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__103);
   __Pyx_GIVEREF(__pyx_tuple__103);
-  __pyx_codeobj__104 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__103, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getModel_Path_EdgeLits_Length, 783, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__104)) __PYX_ERR(0, 783, __pyx_L1_error)
+  __pyx_codeobj__104 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__103, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getModel_Path_EdgeLits_Length, 787, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__104)) __PYX_ERR(0, 787, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":795
+  /* "monosat/monosat_p.pyx":796
  *     return py_result
  * 
  * def getModel_Path_Nodes( S ,  G ,  reach_or_distance_literal ,  store_length ,  store ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int getModel_Path_Nodes(void* S, void* G, int reach_or_distance_literal, int store_length, int* store)"""
  * 
  */
-  __pyx_tuple__105 = PyTuple_Pack(8, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_reach_or_distance_literal, __pyx_n_s_store_length, __pyx_n_s_store, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__105)) __PYX_ERR(0, 795, __pyx_L1_error)
+  __pyx_tuple__105 = PyTuple_Pack(10, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_reach_or_distance_literal, __pyx_n_s_store_length, __pyx_n_s_store, __pyx_n_s_initializer, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_node, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__105)) __PYX_ERR(0, 796, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__105);
   __Pyx_GIVEREF(__pyx_tuple__105);
-  __pyx_codeobj__106 = (PyObject*)__Pyx_PyCode_New(5, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__105, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getModel_Path_Nodes, 795, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__106)) __PYX_ERR(0, 795, __pyx_L1_error)
+  __pyx_codeobj__106 = (PyObject*)__Pyx_PyCode_New(5, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__105, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getModel_Path_Nodes, 796, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__106)) __PYX_ERR(0, 796, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":811
+  /* "monosat/monosat_p.pyx":817
  *     return py_result
  * 
  * def getModel_Path_Nodes_Length( S ,  G ,  reach_or_distance_literal ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int getModel_Path_Nodes_Length(void* S, void* G, int reach_or_distance_literal)"""
  * 
  */
-  __pyx_tuple__107 = PyTuple_Pack(5, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_reach_or_distance_literal, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__107)) __PYX_ERR(0, 811, __pyx_L1_error)
+  __pyx_tuple__107 = PyTuple_Pack(5, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_reach_or_distance_literal, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__107)) __PYX_ERR(0, 817, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__107);
   __Pyx_GIVEREF(__pyx_tuple__107);
-  __pyx_codeobj__108 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__107, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getModel_Path_Nodes_Length, 811, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__108)) __PYX_ERR(0, 811, __pyx_L1_error)
+  __pyx_codeobj__108 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__107, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getModel_Path_Nodes_Length, 817, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__108)) __PYX_ERR(0, 817, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":823
+  /* "monosat/monosat_p.pyx":829
  *     return py_result
  * 
  * def getVersion():             # <<<<<<<<<<<<<<
  *     """Cython signature: char * getVersion()"""
  *     cdef char  * _r = <char *>_getVersion_monosat()
  */
-  __pyx_tuple__109 = PyTuple_Pack(2, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__109)) __PYX_ERR(0, 823, __pyx_L1_error)
+  __pyx_tuple__109 = PyTuple_Pack(2, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__109)) __PYX_ERR(0, 829, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__109);
   __Pyx_GIVEREF(__pyx_tuple__109);
-  __pyx_codeobj__110 = (PyObject*)__Pyx_PyCode_New(0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__109, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getVersion, 823, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__110)) __PYX_ERR(0, 823, __pyx_L1_error)
+  __pyx_codeobj__110 = (PyObject*)__Pyx_PyCode_New(0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__109, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_getVersion, 829, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__110)) __PYX_ERR(0, 829, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":829
+  /* "monosat/monosat_p.pyx":835
  *     return py_result
  * 
  * def graph_setAssignEdgesToWeight( S ,  G ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void graph_setAssignEdgesToWeight(void* S, void* G, int64_t weight)"""
  * 
  */
-  __pyx_tuple__111 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_weight); if (unlikely(!__pyx_tuple__111)) __PYX_ERR(0, 829, __pyx_L1_error)
+  __pyx_tuple__111 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_weight); if (unlikely(!__pyx_tuple__111)) __PYX_ERR(0, 835, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__111);
   __Pyx_GIVEREF(__pyx_tuple__111);
-  __pyx_codeobj__112 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__111, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_graph_setAssignEdgesToWeight, 829, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__112)) __PYX_ERR(0, 829, __pyx_L1_error)
+  __pyx_codeobj__112 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__111, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_graph_setAssignEdgesToWeight, 835, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__112)) __PYX_ERR(0, 835, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":839
+  /* "monosat/monosat_p.pyx":845
  *     _graph_setAssignEdgesToWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))
  * 
  * def initBVTheory( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void* initBVTheory(void* S)"""
  *     #
  */
-  __pyx_tuple__113 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__113)) __PYX_ERR(0, 839, __pyx_L1_error)
+  __pyx_tuple__113 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__113)) __PYX_ERR(0, 845, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__113);
   __Pyx_GIVEREF(__pyx_tuple__113);
-  __pyx_codeobj__114 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__113, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_initBVTheory, 839, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__114)) __PYX_ERR(0, 839, __pyx_L1_error)
+  __pyx_codeobj__114 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__113, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_initBVTheory, 845, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__114)) __PYX_ERR(0, 845, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":851
+  /* "monosat/monosat_p.pyx":857
  * 
  * 
  * def isDecisionVar( S ,  var ):             # <<<<<<<<<<<<<<
  *     """Cython signature: bint isDecisionVar(void* S, int var)"""
  * 
  */
-  __pyx_tuple__115 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_var, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__115)) __PYX_ERR(0, 851, __pyx_L1_error)
+  __pyx_tuple__115 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_var, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__115)) __PYX_ERR(0, 857, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__115);
   __Pyx_GIVEREF(__pyx_tuple__115);
-  __pyx_codeobj__116 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__115, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_isDecisionVar, 851, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__116)) __PYX_ERR(0, 851, __pyx_L1_error)
+  __pyx_codeobj__116 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__115, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_isDecisionVar, 857, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__116)) __PYX_ERR(0, 857, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":861
+  /* "monosat/monosat_p.pyx":867
  *     return py_result
  * 
  * def lastSolutionWasOptimal( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: bint lastSolutionWasOptimal(void* S)"""
  * 
  */
-  __pyx_tuple__117 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__117)) __PYX_ERR(0, 861, __pyx_L1_error)
+  __pyx_tuple__117 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__117)) __PYX_ERR(0, 867, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__117);
   __Pyx_GIVEREF(__pyx_tuple__117);
-  __pyx_codeobj__118 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__117, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_lastSolutionWasOptimal, 861, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__118)) __PYX_ERR(0, 861, __pyx_L1_error)
+  __pyx_codeobj__118 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__117, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_lastSolutionWasOptimal, 867, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__118)) __PYX_ERR(0, 867, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":869
+  /* "monosat/monosat_p.pyx":875
  *     return py_result
  * 
  * def maximizeBV( S ,  bv ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void maximizeBV(void* S, void* bv, int bvID)"""
  * 
  */
-  __pyx_tuple__119 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID); if (unlikely(!__pyx_tuple__119)) __PYX_ERR(0, 869, __pyx_L1_error)
+  __pyx_tuple__119 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID); if (unlikely(!__pyx_tuple__119)) __PYX_ERR(0, 875, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__119);
   __Pyx_GIVEREF(__pyx_tuple__119);
-  __pyx_codeobj__120 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__119, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximizeBV, 869, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__120)) __PYX_ERR(0, 869, __pyx_L1_error)
+  __pyx_codeobj__120 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__119, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximizeBV, 875, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__120)) __PYX_ERR(0, 875, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":875
+  /* "monosat/monosat_p.pyx":881
  *     _maximizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
  * 
  * def maximizeLits( S ,  lits ,  n_lits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void maximizeLits(void* S, int* lits, int n_lits)"""
  * 
  */
-  __pyx_tuple__121 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_lits, __pyx_n_s_n_lits, __pyx_n_s_a); if (unlikely(!__pyx_tuple__121)) __PYX_ERR(0, 875, __pyx_L1_error)
+  __pyx_tuple__121 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_lits, __pyx_n_s_n_lits, __pyx_n_s_a); if (unlikely(!__pyx_tuple__121)) __PYX_ERR(0, 881, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__121);
   __Pyx_GIVEREF(__pyx_tuple__121);
-  __pyx_codeobj__122 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__121, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximizeLits, 875, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__122)) __PYX_ERR(0, 875, __pyx_L1_error)
+  __pyx_codeobj__122 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__121, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximizeLits, 881, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__122)) __PYX_ERR(0, 881, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":885
+  /* "monosat/monosat_p.pyx":891
  *     _maximizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  * 
  * def maximizeWeightedLits( S ,  lits ,  weights ,  n_lits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void maximizeWeightedLits(void* S, int* lits, int* weights, int n_lits)"""
  * 
  */
-  __pyx_tuple__123 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_lits, __pyx_n_s_weights, __pyx_n_s_n_lits, __pyx_n_s_a, __pyx_n_s_b); if (unlikely(!__pyx_tuple__123)) __PYX_ERR(0, 885, __pyx_L1_error)
+  __pyx_tuple__123 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_lits, __pyx_n_s_weights, __pyx_n_s_n_lits, __pyx_n_s_a, __pyx_n_s_b); if (unlikely(!__pyx_tuple__123)) __PYX_ERR(0, 891, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__123);
   __Pyx_GIVEREF(__pyx_tuple__123);
-  __pyx_codeobj__124 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__123, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximizeWeightedLits, 885, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__124)) __PYX_ERR(0, 885, __pyx_L1_error)
+  __pyx_codeobj__124 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__123, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximizeWeightedLits, 891, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__124)) __PYX_ERR(0, 891, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":897
+  /* "monosat/monosat_p.pyx":903
  *     _maximizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  * 
  * def maximumFlow_geq( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int maximumFlow_geq(void* S, void* G, int source, int sink, int64_t weight)"""
  * 
  */
-  __pyx_tuple__125 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__125)) __PYX_ERR(0, 897, __pyx_L1_error)
+  __pyx_tuple__125 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__125)) __PYX_ERR(0, 903, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__125);
   __Pyx_GIVEREF(__pyx_tuple__125);
-  __pyx_codeobj__126 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__125, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximumFlow_geq, 897, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__126)) __PYX_ERR(0, 897, __pyx_L1_error)
+  __pyx_codeobj__126 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__125, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximumFlow_geq, 903, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__126)) __PYX_ERR(0, 903, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":913
+  /* "monosat/monosat_p.pyx":919
  *     return py_result
  * 
  * def maximumFlow_geq_bv( S ,  G ,  source ,  sink ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int maximumFlow_geq_bv(void* S, void* G, int source, int sink, int bvID)"""
  * 
  */
-  __pyx_tuple__127 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__127)) __PYX_ERR(0, 913, __pyx_L1_error)
+  __pyx_tuple__127 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__127)) __PYX_ERR(0, 919, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__127);
   __Pyx_GIVEREF(__pyx_tuple__127);
-  __pyx_codeobj__128 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__127, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximumFlow_geq_bv, 913, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__128)) __PYX_ERR(0, 913, __pyx_L1_error)
+  __pyx_codeobj__128 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__127, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximumFlow_geq_bv, 919, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__128)) __PYX_ERR(0, 919, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":929
+  /* "monosat/monosat_p.pyx":935
  *     return py_result
  * 
  * def maximumFlow_gt( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int maximumFlow_gt(void* S, void* G, int source, int sink, int64_t weight)"""
  * 
  */
-  __pyx_tuple__129 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__129)) __PYX_ERR(0, 929, __pyx_L1_error)
+  __pyx_tuple__129 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__129)) __PYX_ERR(0, 935, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__129);
   __Pyx_GIVEREF(__pyx_tuple__129);
-  __pyx_codeobj__130 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__129, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximumFlow_gt, 929, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__130)) __PYX_ERR(0, 929, __pyx_L1_error)
+  __pyx_codeobj__130 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__129, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximumFlow_gt, 935, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__130)) __PYX_ERR(0, 935, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":945
+  /* "monosat/monosat_p.pyx":951
  *     return py_result
  * 
  * def maximumFlow_gt_bv( S ,  G ,  source ,  sink ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int maximumFlow_gt_bv(void* S, void* G, int source, int sink, int bvID)"""
  * 
  */
-  __pyx_tuple__131 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__131)) __PYX_ERR(0, 945, __pyx_L1_error)
+  __pyx_tuple__131 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__131)) __PYX_ERR(0, 951, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__131);
   __Pyx_GIVEREF(__pyx_tuple__131);
-  __pyx_codeobj__132 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__131, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximumFlow_gt_bv, 945, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__132)) __PYX_ERR(0, 945, __pyx_L1_error)
+  __pyx_codeobj__132 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__131, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_maximumFlow_gt_bv, 951, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__132)) __PYX_ERR(0, 951, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":961
+  /* "monosat/monosat_p.pyx":967
  *     return py_result
  * 
  * def minimizeBV( S ,  bv ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void minimizeBV(void* S, void* bv, int bvID)"""
  * 
  */
-  __pyx_tuple__133 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID); if (unlikely(!__pyx_tuple__133)) __PYX_ERR(0, 961, __pyx_L1_error)
+  __pyx_tuple__133 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID); if (unlikely(!__pyx_tuple__133)) __PYX_ERR(0, 967, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__133);
   __Pyx_GIVEREF(__pyx_tuple__133);
-  __pyx_codeobj__134 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__133, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimizeBV, 961, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__134)) __PYX_ERR(0, 961, __pyx_L1_error)
+  __pyx_codeobj__134 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__133, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimizeBV, 967, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__134)) __PYX_ERR(0, 967, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":971
+  /* "monosat/monosat_p.pyx":977
  *     _minimizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
  * 
  * def minimizeLits( S ,  lits ,  n_lits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void minimizeLits(void* S, int* lits, int n_lits)"""
  * 
  */
-  __pyx_tuple__135 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_lits, __pyx_n_s_n_lits, __pyx_n_s_a); if (unlikely(!__pyx_tuple__135)) __PYX_ERR(0, 971, __pyx_L1_error)
+  __pyx_tuple__135 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_lits, __pyx_n_s_n_lits, __pyx_n_s_a); if (unlikely(!__pyx_tuple__135)) __PYX_ERR(0, 977, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__135);
   __Pyx_GIVEREF(__pyx_tuple__135);
-  __pyx_codeobj__136 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__135, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimizeLits, 971, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__136)) __PYX_ERR(0, 971, __pyx_L1_error)
+  __pyx_codeobj__136 = (PyObject*)__Pyx_PyCode_New(3, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__135, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimizeLits, 977, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__136)) __PYX_ERR(0, 977, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":982
+  /* "monosat/monosat_p.pyx":988
  *     _minimizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  * 
  * def minimizeWeightedLits( S ,  lits ,  weights ,  n_lits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void minimizeWeightedLits(void* S, int* lits, int* weights, int n_lits)"""
  * 
  */
-  __pyx_tuple__137 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_lits, __pyx_n_s_weights, __pyx_n_s_n_lits, __pyx_n_s_a, __pyx_n_s_b); if (unlikely(!__pyx_tuple__137)) __PYX_ERR(0, 982, __pyx_L1_error)
+  __pyx_tuple__137 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_lits, __pyx_n_s_weights, __pyx_n_s_n_lits, __pyx_n_s_a, __pyx_n_s_b); if (unlikely(!__pyx_tuple__137)) __PYX_ERR(0, 988, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__137);
   __Pyx_GIVEREF(__pyx_tuple__137);
-  __pyx_codeobj__138 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__137, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimizeWeightedLits, 982, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__138)) __PYX_ERR(0, 982, __pyx_L1_error)
+  __pyx_codeobj__138 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__137, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimizeWeightedLits, 988, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__138)) __PYX_ERR(0, 988, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":995
+  /* "monosat/monosat_p.pyx":1001
  *     _minimizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  * 
  * def minimumSpanningTree_leq( S ,  G ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int minimumSpanningTree_leq(void* S, void* G, int64_t weight)"""
  * 
  */
-  __pyx_tuple__139 = PyTuple_Pack(5, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__139)) __PYX_ERR(0, 995, __pyx_L1_error)
+  __pyx_tuple__139 = PyTuple_Pack(5, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__139)) __PYX_ERR(0, 1001, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__139);
   __Pyx_GIVEREF(__pyx_tuple__139);
-  __pyx_codeobj__140 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__139, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimumSpanningTree_leq, 995, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__140)) __PYX_ERR(0, 995, __pyx_L1_error)
+  __pyx_codeobj__140 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__139, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimumSpanningTree_leq, 1001, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__140)) __PYX_ERR(0, 1001, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1007
+  /* "monosat/monosat_p.pyx":1013
  *     return py_result
  * 
  * def minimumSpanningTree_lt( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int minimumSpanningTree_lt(void* S, void* G, int source, int sink, int64_t weight)"""
  * 
  */
-  __pyx_tuple__141 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__141)) __PYX_ERR(0, 1007, __pyx_L1_error)
+  __pyx_tuple__141 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_source, __pyx_n_s_sink, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__141)) __PYX_ERR(0, 1013, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__141);
   __Pyx_GIVEREF(__pyx_tuple__141);
-  __pyx_codeobj__142 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__141, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimumSpanningTree_lt, 1007, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__142)) __PYX_ERR(0, 1007, __pyx_L1_error)
+  __pyx_codeobj__142 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__141, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_minimumSpanningTree_lt, 1013, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__142)) __PYX_ERR(0, 1013, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1023
+  /* "monosat/monosat_p.pyx":1029
  *     return py_result
  * 
  * def nBitvectors( S ,  bv ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nBitvectors(void* S, void* bv)"""
  * 
  */
-  __pyx_tuple__143 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__143)) __PYX_ERR(0, 1023, __pyx_L1_error)
+  __pyx_tuple__143 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__143)) __PYX_ERR(0, 1029, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__143);
   __Pyx_GIVEREF(__pyx_tuple__143);
-  __pyx_codeobj__144 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__143, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nBitvectors, 1023, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__144)) __PYX_ERR(0, 1023, __pyx_L1_error)
+  __pyx_codeobj__144 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__143, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nBitvectors, 1029, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__144)) __PYX_ERR(0, 1029, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1033
+  /* "monosat/monosat_p.pyx":1039
  *     return py_result
  * 
  * def nClauses( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nClauses(void* S)"""
  * 
  */
-  __pyx_tuple__145 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__145)) __PYX_ERR(0, 1033, __pyx_L1_error)
+  __pyx_tuple__145 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__145)) __PYX_ERR(0, 1039, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__145);
   __Pyx_GIVEREF(__pyx_tuple__145);
-  __pyx_codeobj__146 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__145, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nClauses, 1033, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__146)) __PYX_ERR(0, 1033, __pyx_L1_error)
+  __pyx_codeobj__146 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__145, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nClauses, 1039, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__146)) __PYX_ERR(0, 1039, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1041
+  /* "monosat/monosat_p.pyx":1047
  *     return py_result
  * 
  * def nEdges( S ,  G ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nEdges(void* S, void* G)"""
  * 
  */
-  __pyx_tuple__147 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__147)) __PYX_ERR(0, 1041, __pyx_L1_error)
+  __pyx_tuple__147 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__147)) __PYX_ERR(0, 1047, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__147);
   __Pyx_GIVEREF(__pyx_tuple__147);
-  __pyx_codeobj__148 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__147, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nEdges, 1041, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__148)) __PYX_ERR(0, 1041, __pyx_L1_error)
+  __pyx_codeobj__148 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__147, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nEdges, 1047, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__148)) __PYX_ERR(0, 1047, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1051
+  /* "monosat/monosat_p.pyx":1057
  *     return py_result
  * 
  * def nNodes( S ,  G ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nNodes(void* S, void* G)"""
  * 
  */
-  __pyx_tuple__149 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__149)) __PYX_ERR(0, 1051, __pyx_L1_error)
+  __pyx_tuple__149 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__149)) __PYX_ERR(0, 1057, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__149);
   __Pyx_GIVEREF(__pyx_tuple__149);
-  __pyx_codeobj__150 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__149, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nNodes, 1051, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__150)) __PYX_ERR(0, 1051, __pyx_L1_error)
+  __pyx_codeobj__150 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__149, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nNodes, 1057, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__150)) __PYX_ERR(0, 1057, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1061
+  /* "monosat/monosat_p.pyx":1067
  *     return py_result
  * 
  * def nVars( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nVars(void* S)"""
  * 
  */
-  __pyx_tuple__151 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__151)) __PYX_ERR(0, 1061, __pyx_L1_error)
+  __pyx_tuple__151 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__151)) __PYX_ERR(0, 1067, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__151);
   __Pyx_GIVEREF(__pyx_tuple__151);
-  __pyx_codeobj__152 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__151, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nVars, 1061, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__152)) __PYX_ERR(0, 1061, __pyx_L1_error)
+  __pyx_codeobj__152 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__151, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_nVars, 1067, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__152)) __PYX_ERR(0, 1067, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1069
+  /* "monosat/monosat_p.pyx":1075
  *     return py_result
  * 
  * def newBVComparison_bv_geq( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_bv_geq(void* S, void* bv, int bvID, int compareID)"""
  * 
  */
-  __pyx_tuple__153 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_compareID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__153)) __PYX_ERR(0, 1069, __pyx_L1_error)
+  __pyx_tuple__153 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_compareID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__153)) __PYX_ERR(0, 1075, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__153);
   __Pyx_GIVEREF(__pyx_tuple__153);
-  __pyx_codeobj__154 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__153, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_bv_geq, 1069, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__154)) __PYX_ERR(0, 1069, __pyx_L1_error)
+  __pyx_codeobj__154 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__153, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_bv_geq, 1075, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__154)) __PYX_ERR(0, 1075, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1083
+  /* "monosat/monosat_p.pyx":1089
  *     return py_result
  * 
  * def newBVComparison_bv_gt( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_bv_gt(void* S, void* bv, int bvID, int compareID)"""
  * 
  */
-  __pyx_tuple__155 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_compareID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__155)) __PYX_ERR(0, 1083, __pyx_L1_error)
+  __pyx_tuple__155 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_compareID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__155)) __PYX_ERR(0, 1089, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__155);
   __Pyx_GIVEREF(__pyx_tuple__155);
-  __pyx_codeobj__156 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__155, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_bv_gt, 1083, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__156)) __PYX_ERR(0, 1083, __pyx_L1_error)
+  __pyx_codeobj__156 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__155, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_bv_gt, 1089, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__156)) __PYX_ERR(0, 1089, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1097
+  /* "monosat/monosat_p.pyx":1103
  *     return py_result
  * 
  * def newBVComparison_bv_leq( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_bv_leq(void* S, void* bv, int bvID, int compareID)"""
  * 
  */
-  __pyx_tuple__157 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_compareID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__157)) __PYX_ERR(0, 1097, __pyx_L1_error)
+  __pyx_tuple__157 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_compareID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__157)) __PYX_ERR(0, 1103, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__157);
   __Pyx_GIVEREF(__pyx_tuple__157);
-  __pyx_codeobj__158 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__157, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_bv_leq, 1097, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__158)) __PYX_ERR(0, 1097, __pyx_L1_error)
+  __pyx_codeobj__158 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__157, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_bv_leq, 1103, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__158)) __PYX_ERR(0, 1103, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1111
+  /* "monosat/monosat_p.pyx":1117
  *     return py_result
  * 
  * def newBVComparison_bv_lt( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_bv_lt(void* S, void* bv, int bvID, int compareID)"""
  * 
  */
-  __pyx_tuple__159 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_compareID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__159)) __PYX_ERR(0, 1111, __pyx_L1_error)
+  __pyx_tuple__159 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_compareID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__159)) __PYX_ERR(0, 1117, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__159);
   __Pyx_GIVEREF(__pyx_tuple__159);
-  __pyx_codeobj__160 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__159, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_bv_lt, 1111, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__160)) __PYX_ERR(0, 1111, __pyx_L1_error)
+  __pyx_codeobj__160 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__159, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_bv_lt, 1117, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__160)) __PYX_ERR(0, 1117, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1125
+  /* "monosat/monosat_p.pyx":1131
  *     return py_result
  * 
  * def newBVComparison_const_geq( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_const_geq(void* S, void* bv, int bvID, int64_t weight)"""
  * 
  */
-  __pyx_tuple__161 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__161)) __PYX_ERR(0, 1125, __pyx_L1_error)
+  __pyx_tuple__161 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__161)) __PYX_ERR(0, 1131, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__161);
   __Pyx_GIVEREF(__pyx_tuple__161);
-  __pyx_codeobj__162 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__161, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_const_geq, 1125, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__162)) __PYX_ERR(0, 1125, __pyx_L1_error)
+  __pyx_codeobj__162 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__161, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_const_geq, 1131, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__162)) __PYX_ERR(0, 1131, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1139
+  /* "monosat/monosat_p.pyx":1145
  *     return py_result
  * 
  * def newBVComparison_const_gt( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_const_gt(void* S, void* bv, int bvID, int64_t weight)"""
  * 
  */
-  __pyx_tuple__163 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__163)) __PYX_ERR(0, 1139, __pyx_L1_error)
+  __pyx_tuple__163 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__163)) __PYX_ERR(0, 1145, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__163);
   __Pyx_GIVEREF(__pyx_tuple__163);
-  __pyx_codeobj__164 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__163, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_const_gt, 1139, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__164)) __PYX_ERR(0, 1139, __pyx_L1_error)
+  __pyx_codeobj__164 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__163, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_const_gt, 1145, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__164)) __PYX_ERR(0, 1145, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1153
+  /* "monosat/monosat_p.pyx":1159
  *     return py_result
  * 
  * def newBVComparison_const_leq( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_const_leq(void* S, void* bv, int bvID, int64_t weight)"""
  * 
  */
-  __pyx_tuple__165 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__165)) __PYX_ERR(0, 1153, __pyx_L1_error)
+  __pyx_tuple__165 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__165)) __PYX_ERR(0, 1159, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__165);
   __Pyx_GIVEREF(__pyx_tuple__165);
-  __pyx_codeobj__166 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__165, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_const_leq, 1153, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__166)) __PYX_ERR(0, 1153, __pyx_L1_error)
+  __pyx_codeobj__166 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__165, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_const_leq, 1159, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__166)) __PYX_ERR(0, 1159, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1167
+  /* "monosat/monosat_p.pyx":1173
  *     return py_result
  * 
  * def newBVComparison_const_lt( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_const_lt(void* S, void* bv, int bvID, int64_t weight)"""
  * 
  */
-  __pyx_tuple__167 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__167)) __PYX_ERR(0, 1167, __pyx_L1_error)
+  __pyx_tuple__167 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvID, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__167)) __PYX_ERR(0, 1173, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__167);
   __Pyx_GIVEREF(__pyx_tuple__167);
-  __pyx_codeobj__168 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__167, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_const_lt, 1167, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__168)) __PYX_ERR(0, 1167, __pyx_L1_error)
+  __pyx_codeobj__168 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__167, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBVComparison_const_lt, 1173, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__168)) __PYX_ERR(0, 1173, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1181
+  /* "monosat/monosat_p.pyx":1187
  *     return py_result
  * 
  * def newBitvector( S ,  bv ,  bits ,  n_bits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBitvector(void* S, void* bv, int* bits, int n_bits)"""
  * 
  */
-  __pyx_tuple__169 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bits, __pyx_n_s_n_bits, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__169)) __PYX_ERR(0, 1181, __pyx_L1_error)
+  __pyx_tuple__169 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bits, __pyx_n_s_n_bits, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__169)) __PYX_ERR(0, 1187, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__169);
   __Pyx_GIVEREF(__pyx_tuple__169);
-  __pyx_codeobj__170 = (PyObject*)__Pyx_PyCode_New(4, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__169, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBitvector, 1181, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__170)) __PYX_ERR(0, 1181, __pyx_L1_error)
+  __pyx_codeobj__170 = (PyObject*)__Pyx_PyCode_New(4, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__169, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBitvector, 1187, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__170)) __PYX_ERR(0, 1187, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1195
+  /* "monosat/monosat_p.pyx":1201
  *     return py_result
  * 
  * def newBitvector_anon( S ,  bv ,  bvWidth ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBitvector_anon(void* S, void* bv, int bvWidth)"""
  * 
  */
-  __pyx_tuple__171 = PyTuple_Pack(5, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvWidth, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__171)) __PYX_ERR(0, 1195, __pyx_L1_error)
+  __pyx_tuple__171 = PyTuple_Pack(5, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvWidth, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__171)) __PYX_ERR(0, 1201, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__171);
   __Pyx_GIVEREF(__pyx_tuple__171);
-  __pyx_codeobj__172 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__171, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBitvector_anon, 1195, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__172)) __PYX_ERR(0, 1195, __pyx_L1_error)
+  __pyx_codeobj__172 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__171, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBitvector_anon, 1201, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__172)) __PYX_ERR(0, 1201, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1207
+  /* "monosat/monosat_p.pyx":1213
  *     return py_result
  * 
  * def newBitvector_const( S ,  bv ,  bvWidth ,  constval ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBitvector_const(void* S, void* bv, int bvWidth, int64_t constval)"""
  * 
  */
-  __pyx_tuple__173 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvWidth, __pyx_n_s_constval, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__173)) __PYX_ERR(0, 1207, __pyx_L1_error)
+  __pyx_tuple__173 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_bv, __pyx_n_s_bvWidth, __pyx_n_s_constval, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__173)) __PYX_ERR(0, 1213, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__173);
   __Pyx_GIVEREF(__pyx_tuple__173);
-  __pyx_codeobj__174 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__173, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBitvector_const, 1207, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__174)) __PYX_ERR(0, 1207, __pyx_L1_error)
+  __pyx_codeobj__174 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__173, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newBitvector_const, 1213, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__174)) __PYX_ERR(0, 1213, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1221
+  /* "monosat/monosat_p.pyx":1227
  *     return py_result
  * 
  * def newEdge( S ,  G ,  _from ,  to ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newEdge(void* S, void* G, int _from, int to, int64_t weight)"""
  * 
  */
-  __pyx_tuple__175 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__175)) __PYX_ERR(0, 1221, __pyx_L1_error)
+  __pyx_tuple__175 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__175)) __PYX_ERR(0, 1227, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__175);
   __Pyx_GIVEREF(__pyx_tuple__175);
-  __pyx_codeobj__176 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__175, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newEdge, 1221, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__176)) __PYX_ERR(0, 1221, __pyx_L1_error)
+  __pyx_codeobj__176 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__175, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newEdge, 1227, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__176)) __PYX_ERR(0, 1227, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1237
+  /* "monosat/monosat_p.pyx":1243
  *     return py_result
  * 
  * def newEdgeSet( S ,  G ,  edges ,  n_edges ,  enforceEdgeAssignment ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void newEdgeSet(void* S, void* G, int* edges, int n_edges, bint enforceEdgeAssignment)"""
  *     cdef array.array a =  array.array('i', edges)
  */
-  __pyx_tuple__177 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_edges, __pyx_n_s_n_edges, __pyx_n_s_enforceEdgeAssignment, __pyx_n_s_a); if (unlikely(!__pyx_tuple__177)) __PYX_ERR(0, 1237, __pyx_L1_error)
+  __pyx_tuple__177 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_edges, __pyx_n_s_n_edges, __pyx_n_s_enforceEdgeAssignment, __pyx_n_s_a); if (unlikely(!__pyx_tuple__177)) __PYX_ERR(0, 1243, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__177);
   __Pyx_GIVEREF(__pyx_tuple__177);
-  __pyx_codeobj__178 = (PyObject*)__Pyx_PyCode_New(5, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__177, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newEdgeSet, 1237, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__178)) __PYX_ERR(0, 1237, __pyx_L1_error)
+  __pyx_codeobj__178 = (PyObject*)__Pyx_PyCode_New(5, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__177, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newEdgeSet, 1243, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__178)) __PYX_ERR(0, 1243, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1242
+  /* "monosat/monosat_p.pyx":1248
  *     _newEdgeSet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int*>a.data.as_ints), (<int>n_edges), (<bint>enforceEdgeAssignment))
  * 
  * def newEdge_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newEdge_bv(void* S, void* G, int _from, int to, int bvID)"""
  * 
  */
-  __pyx_tuple__179 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__179)) __PYX_ERR(0, 1242, __pyx_L1_error)
+  __pyx_tuple__179 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__179)) __PYX_ERR(0, 1248, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__179);
   __Pyx_GIVEREF(__pyx_tuple__179);
-  __pyx_codeobj__180 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__179, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newEdge_bv, 1242, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__180)) __PYX_ERR(0, 1242, __pyx_L1_error)
+  __pyx_codeobj__180 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__179, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newEdge_bv, 1248, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__180)) __PYX_ERR(0, 1248, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1258
+  /* "monosat/monosat_p.pyx":1264
  *     return py_result
  * 
  * def newEdge_double( S ,  G ,  _from ,  to , double weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newEdge_double(void* S, void* G, int _from, int to, double weight)"""
  * 
  */
-  __pyx_tuple__181 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__181)) __PYX_ERR(0, 1258, __pyx_L1_error)
+  __pyx_tuple__181 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_weight, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__181)) __PYX_ERR(0, 1264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__181);
   __Pyx_GIVEREF(__pyx_tuple__181);
-  __pyx_codeobj__182 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__181, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newEdge_double, 1258, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__182)) __PYX_ERR(0, 1258, __pyx_L1_error)
+  __pyx_codeobj__182 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__181, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newEdge_double, 1264, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__182)) __PYX_ERR(0, 1264, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1275
+  /* "monosat/monosat_p.pyx":1281
  * 
  * 
  * def newGraph( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void* newGraph(void* S)"""
  * 
  */
-  __pyx_tuple__183 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__183)) __PYX_ERR(0, 1275, __pyx_L1_error)
+  __pyx_tuple__183 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__183)) __PYX_ERR(0, 1281, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__183);
   __Pyx_GIVEREF(__pyx_tuple__183);
-  __pyx_codeobj__184 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__183, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newGraph, 1275, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__184)) __PYX_ERR(0, 1275, __pyx_L1_error)
+  __pyx_codeobj__184 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__183, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newGraph, 1281, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__184)) __PYX_ERR(0, 1281, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1283
+  /* "monosat/monosat_p.pyx":1289
  *     return py_result
  * 
  * def newNode( S ,  G ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newNode(void* S, void* G)"""
  * 
  */
-  __pyx_tuple__185 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__185)) __PYX_ERR(0, 1283, __pyx_L1_error)
+  __pyx_tuple__185 = PyTuple_Pack(4, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__185)) __PYX_ERR(0, 1289, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__185);
   __Pyx_GIVEREF(__pyx_tuple__185);
-  __pyx_codeobj__186 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__185, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newNode, 1283, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__186)) __PYX_ERR(0, 1283, __pyx_L1_error)
+  __pyx_codeobj__186 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__185, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newNode, 1289, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__186)) __PYX_ERR(0, 1289, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1293
+  /* "monosat/monosat_p.pyx":1299
  *     return py_result
  * 
  * def newSolver():             # <<<<<<<<<<<<<<
  *     """Cython signature: void* newSolver()"""
  *     cdef void* _r = _newSolver_monosat()
  */
-  __pyx_tuple__187 = PyTuple_Pack(2, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__187)) __PYX_ERR(0, 1293, __pyx_L1_error)
+  __pyx_tuple__187 = PyTuple_Pack(2, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__187)) __PYX_ERR(0, 1299, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__187);
   __Pyx_GIVEREF(__pyx_tuple__187);
-  __pyx_codeobj__188 = (PyObject*)__Pyx_PyCode_New(0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__187, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newSolver, 1293, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__188)) __PYX_ERR(0, 1293, __pyx_L1_error)
+  __pyx_codeobj__188 = (PyObject*)__Pyx_PyCode_New(0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__187, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newSolver, 1299, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__188)) __PYX_ERR(0, 1299, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1301
+  /* "monosat/monosat_p.pyx":1307
  *     return py_result
  * 
  * def newSolver_arg(bytes argv ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void* newSolver_arg(char * argv)"""
  *     assert isinstance(argv, bytes), 'arg argv wrong type'
  */
-  __pyx_tuple__189 = PyTuple_Pack(3, __pyx_n_s_argv, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__189)) __PYX_ERR(0, 1301, __pyx_L1_error)
+  __pyx_tuple__189 = PyTuple_Pack(3, __pyx_n_s_argv, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__189)) __PYX_ERR(0, 1307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__189);
   __Pyx_GIVEREF(__pyx_tuple__189);
-  __pyx_codeobj__190 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__189, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newSolver_arg, 1301, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__190)) __PYX_ERR(0, 1301, __pyx_L1_error)
+  __pyx_codeobj__190 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__189, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newSolver_arg, 1307, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__190)) __PYX_ERR(0, 1307, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1314
+  /* "monosat/monosat_p.pyx":1320
  * 
  * 
  * def newVar( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newVar(void* S)"""
  * 
  */
-  __pyx_tuple__191 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__191)) __PYX_ERR(0, 1314, __pyx_L1_error)
+  __pyx_tuple__191 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__191)) __PYX_ERR(0, 1320, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__191);
   __Pyx_GIVEREF(__pyx_tuple__191);
-  __pyx_codeobj__192 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__191, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newVar, 1314, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__192)) __PYX_ERR(0, 1314, __pyx_L1_error)
+  __pyx_codeobj__192 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__191, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_newVar, 1320, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__192)) __PYX_ERR(0, 1320, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1322
+  /* "monosat/monosat_p.pyx":1328
  *     return py_result
  * 
  * def reaches( S ,  G ,  _from ,  to ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int reaches(void* S, void* G, int _from, int to)"""
  * 
  */
-  __pyx_tuple__193 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__193)) __PYX_ERR(0, 1322, __pyx_L1_error)
+  __pyx_tuple__193 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__193)) __PYX_ERR(0, 1328, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__193);
   __Pyx_GIVEREF(__pyx_tuple__193);
-  __pyx_codeobj__194 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__193, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_reaches, 1322, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__194)) __PYX_ERR(0, 1322, __pyx_L1_error)
+  __pyx_codeobj__194 = (PyObject*)__Pyx_PyCode_New(4, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__193, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_reaches, 1328, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__194)) __PYX_ERR(0, 1328, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1336
+  /* "monosat/monosat_p.pyx":1342
  *     return py_result
  * 
  * def readGNF( S , bytes filename ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void readGNF(void* S, char * filename)"""
  * 
  */
-  __pyx_tuple__195 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_filename); if (unlikely(!__pyx_tuple__195)) __PYX_ERR(0, 1336, __pyx_L1_error)
+  __pyx_tuple__195 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_filename); if (unlikely(!__pyx_tuple__195)) __PYX_ERR(0, 1342, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__195);
   __Pyx_GIVEREF(__pyx_tuple__195);
-  __pyx_codeobj__196 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__195, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_readGNF, 1336, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__196)) __PYX_ERR(0, 1336, __pyx_L1_error)
+  __pyx_codeobj__196 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__195, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_readGNF, 1342, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__196)) __PYX_ERR(0, 1342, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1344
+  /* "monosat/monosat_p.pyx":1350
  *     _readGNF_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>filename))
  * 
  * def setConflictLimit( S ,  num_conflicts ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setConflictLimit(void* S, int num_conflicts)"""
  * 
  */
-  __pyx_tuple__197 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_num_conflicts); if (unlikely(!__pyx_tuple__197)) __PYX_ERR(0, 1344, __pyx_L1_error)
+  __pyx_tuple__197 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_num_conflicts); if (unlikely(!__pyx_tuple__197)) __PYX_ERR(0, 1350, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__197);
   __Pyx_GIVEREF(__pyx_tuple__197);
-  __pyx_codeobj__198 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__197, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setConflictLimit, 1344, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__198)) __PYX_ERR(0, 1344, __pyx_L1_error)
+  __pyx_codeobj__198 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__197, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setConflictLimit, 1350, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__198)) __PYX_ERR(0, 1350, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1352
+  /* "monosat/monosat_p.pyx":1358
  *     _setConflictLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_conflicts))
  * 
  * def setDecisionPolarity( S ,  v ,  b ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setDecisionPolarity(void* S, int v, bint b)"""
  * 
  */
-  __pyx_tuple__199 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_v, __pyx_n_s_b); if (unlikely(!__pyx_tuple__199)) __PYX_ERR(0, 1352, __pyx_L1_error)
+  __pyx_tuple__199 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_v, __pyx_n_s_b); if (unlikely(!__pyx_tuple__199)) __PYX_ERR(0, 1358, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__199);
   __Pyx_GIVEREF(__pyx_tuple__199);
-  __pyx_codeobj__200 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__199, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setDecisionPolarity, 1352, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__200)) __PYX_ERR(0, 1352, __pyx_L1_error)
+  __pyx_codeobj__200 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__199, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setDecisionPolarity, 1358, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__200)) __PYX_ERR(0, 1358, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1362
+  /* "monosat/monosat_p.pyx":1368
  *     _setDecisionPolarity_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>v), (<bint>b))
  * 
  * def setDecisionPriority( S ,  var ,  priority ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setDecisionPriority(void* S, int var, int priority)"""
  * 
  */
-  __pyx_tuple__201 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_var, __pyx_n_s_priority); if (unlikely(!__pyx_tuple__201)) __PYX_ERR(0, 1362, __pyx_L1_error)
+  __pyx_tuple__201 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_var, __pyx_n_s_priority); if (unlikely(!__pyx_tuple__201)) __PYX_ERR(0, 1368, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__201);
   __Pyx_GIVEREF(__pyx_tuple__201);
-  __pyx_codeobj__202 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__201, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setDecisionPriority, 1362, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__202)) __PYX_ERR(0, 1362, __pyx_L1_error)
+  __pyx_codeobj__202 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__201, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setDecisionPriority, 1368, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__202)) __PYX_ERR(0, 1368, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1372
+  /* "monosat/monosat_p.pyx":1378
  *     _setDecisionPriority_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<int>priority))
  * 
  * def setDecisionVar( S ,  var ,  decidable ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setDecisionVar(void* S, int var, bint decidable)"""
  * 
  */
-  __pyx_tuple__203 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_var, __pyx_n_s_decidable); if (unlikely(!__pyx_tuple__203)) __PYX_ERR(0, 1372, __pyx_L1_error)
+  __pyx_tuple__203 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_var, __pyx_n_s_decidable); if (unlikely(!__pyx_tuple__203)) __PYX_ERR(0, 1378, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__203);
   __Pyx_GIVEREF(__pyx_tuple__203);
-  __pyx_codeobj__204 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__203, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setDecisionVar, 1372, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__204)) __PYX_ERR(0, 1372, __pyx_L1_error)
+  __pyx_codeobj__204 = (PyObject*)__Pyx_PyCode_New(3, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__203, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setDecisionVar, 1378, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__204)) __PYX_ERR(0, 1378, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1382
+  /* "monosat/monosat_p.pyx":1388
  *     _setDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<bint>decidable))
  * 
  * def setMemoryLimit( S ,  mb ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setMemoryLimit(void* S, int mb)"""
  * 
  */
-  __pyx_tuple__205 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_mb); if (unlikely(!__pyx_tuple__205)) __PYX_ERR(0, 1382, __pyx_L1_error)
+  __pyx_tuple__205 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_mb); if (unlikely(!__pyx_tuple__205)) __PYX_ERR(0, 1388, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__205);
   __Pyx_GIVEREF(__pyx_tuple__205);
-  __pyx_codeobj__206 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__205, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setMemoryLimit, 1382, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__206)) __PYX_ERR(0, 1382, __pyx_L1_error)
+  __pyx_codeobj__206 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__205, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setMemoryLimit, 1388, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__206)) __PYX_ERR(0, 1388, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1390
+  /* "monosat/monosat_p.pyx":1396
  *     _setMemoryLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>mb))
  * 
  * def setOutputFile( S , bytes output ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setOutputFile(void* S, char * output)"""
  * 
  */
-  __pyx_tuple__207 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_output); if (unlikely(!__pyx_tuple__207)) __PYX_ERR(0, 1390, __pyx_L1_error)
+  __pyx_tuple__207 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_output); if (unlikely(!__pyx_tuple__207)) __PYX_ERR(0, 1396, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__207);
   __Pyx_GIVEREF(__pyx_tuple__207);
-  __pyx_codeobj__208 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__207, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setOutputFile, 1390, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__208)) __PYX_ERR(0, 1390, __pyx_L1_error)
+  __pyx_codeobj__208 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__207, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setOutputFile, 1396, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__208)) __PYX_ERR(0, 1396, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1398
+  /* "monosat/monosat_p.pyx":1404
  *     _setOutputFile_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>output))
  * 
  * def setPropagationLimit( S ,  num_propagations ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setPropagationLimit(void* S, int num_propagations)"""
  * 
  */
-  __pyx_tuple__209 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_num_propagations); if (unlikely(!__pyx_tuple__209)) __PYX_ERR(0, 1398, __pyx_L1_error)
+  __pyx_tuple__209 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_num_propagations); if (unlikely(!__pyx_tuple__209)) __PYX_ERR(0, 1404, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__209);
   __Pyx_GIVEREF(__pyx_tuple__209);
-  __pyx_codeobj__210 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__209, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setPropagationLimit, 1398, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__210)) __PYX_ERR(0, 1398, __pyx_L1_error)
+  __pyx_codeobj__210 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__209, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setPropagationLimit, 1404, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__210)) __PYX_ERR(0, 1404, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1406
+  /* "monosat/monosat_p.pyx":1412
  *     _setPropagationLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_propagations))
  * 
  * def setTimeLimit( S ,  seconds ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setTimeLimit(void* S, int seconds)"""
  * 
  */
-  __pyx_tuple__211 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_seconds); if (unlikely(!__pyx_tuple__211)) __PYX_ERR(0, 1406, __pyx_L1_error)
+  __pyx_tuple__211 = PyTuple_Pack(2, __pyx_n_s_S, __pyx_n_s_seconds); if (unlikely(!__pyx_tuple__211)) __PYX_ERR(0, 1412, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__211);
   __Pyx_GIVEREF(__pyx_tuple__211);
-  __pyx_codeobj__212 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__211, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setTimeLimit, 1406, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__212)) __PYX_ERR(0, 1406, __pyx_L1_error)
+  __pyx_codeobj__212 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__211, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_setTimeLimit, 1412, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__212)) __PYX_ERR(0, 1412, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1414
+  /* "monosat/monosat_p.pyx":1420
  *     _setTimeLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>seconds))
  * 
  * def shortestPathUnweighted_leq_const( S ,  G ,  _from ,  to ,  steps ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPathUnweighted_leq_const(void* S, void* G, int _from, int to, int steps)"""
  * 
  */
-  __pyx_tuple__213 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_steps, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__213)) __PYX_ERR(0, 1414, __pyx_L1_error)
+  __pyx_tuple__213 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_steps, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__213)) __PYX_ERR(0, 1420, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__213);
   __Pyx_GIVEREF(__pyx_tuple__213);
-  __pyx_codeobj__214 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__213, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPathUnweighted_leq_const, 1414, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__214)) __PYX_ERR(0, 1414, __pyx_L1_error)
+  __pyx_codeobj__214 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__213, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPathUnweighted_leq_const, 1420, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__214)) __PYX_ERR(0, 1420, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1430
+  /* "monosat/monosat_p.pyx":1436
  *     return py_result
  * 
  * def shortestPathUnweighted_lt_const( S ,  G ,  _from ,  to ,  steps ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPathUnweighted_lt_const(void* S, void* G, int _from, int to, int steps)"""
  * 
  */
-  __pyx_tuple__215 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_steps, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__215)) __PYX_ERR(0, 1430, __pyx_L1_error)
+  __pyx_tuple__215 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_steps, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__215)) __PYX_ERR(0, 1436, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__215);
   __Pyx_GIVEREF(__pyx_tuple__215);
-  __pyx_codeobj__216 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__215, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPathUnweighted_lt_const, 1430, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__216)) __PYX_ERR(0, 1430, __pyx_L1_error)
+  __pyx_codeobj__216 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__215, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPathUnweighted_lt_const, 1436, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__216)) __PYX_ERR(0, 1436, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1446
+  /* "monosat/monosat_p.pyx":1452
  *     return py_result
  * 
  * def shortestPath_leq_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPath_leq_bv(void* S, void* G, int _from, int to, int bvID)"""
  * 
  */
-  __pyx_tuple__217 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__217)) __PYX_ERR(0, 1446, __pyx_L1_error)
+  __pyx_tuple__217 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__217)) __PYX_ERR(0, 1452, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__217);
   __Pyx_GIVEREF(__pyx_tuple__217);
-  __pyx_codeobj__218 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__217, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPath_leq_bv, 1446, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__218)) __PYX_ERR(0, 1446, __pyx_L1_error)
+  __pyx_codeobj__218 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__217, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPath_leq_bv, 1452, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__218)) __PYX_ERR(0, 1452, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1462
+  /* "monosat/monosat_p.pyx":1468
  *     return py_result
  * 
  * def shortestPath_leq_const( S ,  G ,  _from ,  to ,  dist ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPath_leq_const(void* S, void* G, int _from, int to, int64_t dist)"""
  * 
  */
-  __pyx_tuple__219 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_dist, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__219)) __PYX_ERR(0, 1462, __pyx_L1_error)
+  __pyx_tuple__219 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_dist, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__219)) __PYX_ERR(0, 1468, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__219);
   __Pyx_GIVEREF(__pyx_tuple__219);
-  __pyx_codeobj__220 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__219, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPath_leq_const, 1462, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__220)) __PYX_ERR(0, 1462, __pyx_L1_error)
+  __pyx_codeobj__220 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__219, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPath_leq_const, 1468, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__220)) __PYX_ERR(0, 1468, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1478
+  /* "monosat/monosat_p.pyx":1484
  *     return py_result
  * 
  * def shortestPath_lt_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPath_lt_bv(void* S, void* G, int _from, int to, int bvID)"""
  * 
  */
-  __pyx_tuple__221 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__221)) __PYX_ERR(0, 1478, __pyx_L1_error)
+  __pyx_tuple__221 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_bvID, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__221)) __PYX_ERR(0, 1484, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__221);
   __Pyx_GIVEREF(__pyx_tuple__221);
-  __pyx_codeobj__222 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__221, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPath_lt_bv, 1478, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__222)) __PYX_ERR(0, 1478, __pyx_L1_error)
+  __pyx_codeobj__222 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__221, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPath_lt_bv, 1484, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__222)) __PYX_ERR(0, 1484, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1494
+  /* "monosat/monosat_p.pyx":1500
  *     return py_result
  * 
  * def shortestPath_lt_const( S ,  G ,  _from ,  to ,  dist ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPath_lt_const(void* S, void* G, int _from, int to, int64_t dist)"""
  * 
  */
-  __pyx_tuple__223 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_dist, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__223)) __PYX_ERR(0, 1494, __pyx_L1_error)
+  __pyx_tuple__223 = PyTuple_Pack(7, __pyx_n_s_S, __pyx_n_s_G, __pyx_n_s_from, __pyx_n_s_to, __pyx_n_s_dist, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__223)) __PYX_ERR(0, 1500, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__223);
   __Pyx_GIVEREF(__pyx_tuple__223);
-  __pyx_codeobj__224 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__223, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPath_lt_const, 1494, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__224)) __PYX_ERR(0, 1494, __pyx_L1_error)
+  __pyx_codeobj__224 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__223, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_shortestPath_lt_const, 1500, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__224)) __PYX_ERR(0, 1500, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1510
+  /* "monosat/monosat_p.pyx":1516
  *     return py_result
  * 
  * def solve( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: bint solve(void* S)"""
  * 
  */
-  __pyx_tuple__225 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__225)) __PYX_ERR(0, 1510, __pyx_L1_error)
+  __pyx_tuple__225 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__225)) __PYX_ERR(0, 1516, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__225);
   __Pyx_GIVEREF(__pyx_tuple__225);
-  __pyx_codeobj__226 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__225, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_solve, 1510, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__226)) __PYX_ERR(0, 1510, __pyx_L1_error)
+  __pyx_codeobj__226 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__225, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_solve, 1516, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__226)) __PYX_ERR(0, 1516, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1518
+  /* "monosat/monosat_p.pyx":1524
  *     return py_result
  * 
  * def solveAssumptions( S ,  assumptions,  n_assumptions):             # <<<<<<<<<<<<<<
  *     """Cython signature: bint solveAssumptions(void* S, int* assumptions, int n_assumptions)"""
  * 
  */
-  __pyx_tuple__227 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_assumptions, __pyx_n_s_n_assumptions, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__227)) __PYX_ERR(0, 1518, __pyx_L1_error)
+  __pyx_tuple__227 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_assumptions, __pyx_n_s_n_assumptions, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__227)) __PYX_ERR(0, 1524, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__227);
   __Pyx_GIVEREF(__pyx_tuple__227);
-  __pyx_codeobj__228 = (PyObject*)__Pyx_PyCode_New(3, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__227, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_solveAssumptions, 1518, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__228)) __PYX_ERR(0, 1518, __pyx_L1_error)
+  __pyx_codeobj__228 = (PyObject*)__Pyx_PyCode_New(3, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__227, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_solveAssumptions, 1524, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__228)) __PYX_ERR(0, 1524, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1527
+  /* "monosat/monosat_p.pyx":1533
  *     return py_result
  * 
  * def solveAssumptionsLimited( S ,  assumptions ,  n_assumptions ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int solveAssumptionsLimited(void* S, int* assumptions, int n_assumptions)"""
  * 
  */
-  __pyx_tuple__229 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_assumptions, __pyx_n_s_n_assumptions, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__229)) __PYX_ERR(0, 1527, __pyx_L1_error)
+  __pyx_tuple__229 = PyTuple_Pack(6, __pyx_n_s_S, __pyx_n_s_assumptions, __pyx_n_s_n_assumptions, __pyx_n_s_a, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__229)) __PYX_ERR(0, 1533, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__229);
   __Pyx_GIVEREF(__pyx_tuple__229);
-  __pyx_codeobj__230 = (PyObject*)__Pyx_PyCode_New(3, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__229, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_solveAssumptionsLimited, 1527, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__230)) __PYX_ERR(0, 1527, __pyx_L1_error)
+  __pyx_codeobj__230 = (PyObject*)__Pyx_PyCode_New(3, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__229, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_solveAssumptionsLimited, 1533, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__230)) __PYX_ERR(0, 1533, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1539
+  /* "monosat/monosat_p.pyx":1545
  *     return py_result
  * 
  * def solveLimited( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int solveLimited(void* S)"""
  * 
  */
-  __pyx_tuple__231 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__231)) __PYX_ERR(0, 1539, __pyx_L1_error)
+  __pyx_tuple__231 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__231)) __PYX_ERR(0, 1545, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__231);
   __Pyx_GIVEREF(__pyx_tuple__231);
-  __pyx_codeobj__232 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__231, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_solveLimited, 1539, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__232)) __PYX_ERR(0, 1539, __pyx_L1_error)
+  __pyx_codeobj__232 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__231, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_solveLimited, 1545, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__232)) __PYX_ERR(0, 1545, __pyx_L1_error)
 
-  /* "monosat/monosat_p.pyx":1547
+  /* "monosat/monosat_p.pyx":1553
  *     return py_result
  * 
  * def true_lit( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int true_lit(void* S)"""
  * 
  */
-  __pyx_tuple__233 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__233)) __PYX_ERR(0, 1547, __pyx_L1_error)
+  __pyx_tuple__233 = PyTuple_Pack(3, __pyx_n_s_S, __pyx_n_s_r, __pyx_n_s_py_result); if (unlikely(!__pyx_tuple__233)) __PYX_ERR(0, 1553, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__233);
   __Pyx_GIVEREF(__pyx_tuple__233);
-  __pyx_codeobj__234 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__233, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_true_lit, 1547, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__234)) __PYX_ERR(0, 1547, __pyx_L1_error)
+  __pyx_codeobj__234 = (PyObject*)__Pyx_PyCode_New(1, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__233, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_monosat_monosat_p_pyx, __pyx_n_s_true_lit, 1553, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__234)) __PYX_ERR(0, 1553, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -27649,796 +28057,796 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_getModel_Path_EdgeLits, __pyx_t_1) < 0) __PYX_ERR(0, 767, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":783
+  /* "monosat/monosat_p.pyx":787
  *     return py_result
  * 
  * def getModel_Path_EdgeLits_Length( S ,  G ,  reach_or_distance_literal ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int getModel_Path_EdgeLits_Length(void* S, void* G, int reach_or_distance_literal)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_103getModel_Path_EdgeLits_Length, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 783, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_103getModel_Path_EdgeLits_Length, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 787, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getModel_Path_EdgeLits_Length, __pyx_t_1) < 0) __PYX_ERR(0, 783, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getModel_Path_EdgeLits_Length, __pyx_t_1) < 0) __PYX_ERR(0, 787, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":795
+  /* "monosat/monosat_p.pyx":796
  *     return py_result
  * 
  * def getModel_Path_Nodes( S ,  G ,  reach_or_distance_literal ,  store_length ,  store ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int getModel_Path_Nodes(void* S, void* G, int reach_or_distance_literal, int store_length, int* store)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_105getModel_Path_Nodes, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 795, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_105getModel_Path_Nodes, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 796, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getModel_Path_Nodes, __pyx_t_1) < 0) __PYX_ERR(0, 795, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getModel_Path_Nodes, __pyx_t_1) < 0) __PYX_ERR(0, 796, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":811
+  /* "monosat/monosat_p.pyx":817
  *     return py_result
  * 
  * def getModel_Path_Nodes_Length( S ,  G ,  reach_or_distance_literal ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int getModel_Path_Nodes_Length(void* S, void* G, int reach_or_distance_literal)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_107getModel_Path_Nodes_Length, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 811, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_107getModel_Path_Nodes_Length, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 817, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getModel_Path_Nodes_Length, __pyx_t_1) < 0) __PYX_ERR(0, 811, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getModel_Path_Nodes_Length, __pyx_t_1) < 0) __PYX_ERR(0, 817, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":823
+  /* "monosat/monosat_p.pyx":829
  *     return py_result
  * 
  * def getVersion():             # <<<<<<<<<<<<<<
  *     """Cython signature: char * getVersion()"""
  *     cdef char  * _r = <char *>_getVersion_monosat()
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_109getVersion, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 823, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_109getVersion, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 829, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getVersion, __pyx_t_1) < 0) __PYX_ERR(0, 823, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_getVersion, __pyx_t_1) < 0) __PYX_ERR(0, 829, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":829
+  /* "monosat/monosat_p.pyx":835
  *     return py_result
  * 
  * def graph_setAssignEdgesToWeight( S ,  G ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void graph_setAssignEdgesToWeight(void* S, void* G, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_111graph_setAssignEdgesToWeight, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 829, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_111graph_setAssignEdgesToWeight, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 835, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_graph_setAssignEdgesToWeight, __pyx_t_1) < 0) __PYX_ERR(0, 829, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_graph_setAssignEdgesToWeight, __pyx_t_1) < 0) __PYX_ERR(0, 835, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":839
+  /* "monosat/monosat_p.pyx":845
  *     _graph_setAssignEdgesToWeight_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int64_t>weight))
  * 
  * def initBVTheory( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void* initBVTheory(void* S)"""
  *     #
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_113initBVTheory, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 839, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_113initBVTheory, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 845, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_initBVTheory, __pyx_t_1) < 0) __PYX_ERR(0, 839, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_initBVTheory, __pyx_t_1) < 0) __PYX_ERR(0, 845, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":851
+  /* "monosat/monosat_p.pyx":857
  * 
  * 
  * def isDecisionVar( S ,  var ):             # <<<<<<<<<<<<<<
  *     """Cython signature: bint isDecisionVar(void* S, int var)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_115isDecisionVar, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 851, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_115isDecisionVar, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 857, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_isDecisionVar, __pyx_t_1) < 0) __PYX_ERR(0, 851, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_isDecisionVar, __pyx_t_1) < 0) __PYX_ERR(0, 857, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":861
+  /* "monosat/monosat_p.pyx":867
  *     return py_result
  * 
  * def lastSolutionWasOptimal( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: bint lastSolutionWasOptimal(void* S)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_117lastSolutionWasOptimal, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 861, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_117lastSolutionWasOptimal, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 867, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_lastSolutionWasOptimal, __pyx_t_1) < 0) __PYX_ERR(0, 861, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_lastSolutionWasOptimal, __pyx_t_1) < 0) __PYX_ERR(0, 867, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":869
+  /* "monosat/monosat_p.pyx":875
  *     return py_result
  * 
  * def maximizeBV( S ,  bv ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void maximizeBV(void* S, void* bv, int bvID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_119maximizeBV, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 869, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_119maximizeBV, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 875, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximizeBV, __pyx_t_1) < 0) __PYX_ERR(0, 869, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximizeBV, __pyx_t_1) < 0) __PYX_ERR(0, 875, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":875
+  /* "monosat/monosat_p.pyx":881
  *     _maximizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
  * 
  * def maximizeLits( S ,  lits ,  n_lits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void maximizeLits(void* S, int* lits, int n_lits)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_121maximizeLits, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 875, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_121maximizeLits, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 881, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximizeLits, __pyx_t_1) < 0) __PYX_ERR(0, 875, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximizeLits, __pyx_t_1) < 0) __PYX_ERR(0, 881, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":885
+  /* "monosat/monosat_p.pyx":891
  *     _maximizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  * 
  * def maximizeWeightedLits( S ,  lits ,  weights ,  n_lits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void maximizeWeightedLits(void* S, int* lits, int* weights, int n_lits)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_123maximizeWeightedLits, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 885, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_123maximizeWeightedLits, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 891, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximizeWeightedLits, __pyx_t_1) < 0) __PYX_ERR(0, 885, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximizeWeightedLits, __pyx_t_1) < 0) __PYX_ERR(0, 891, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":897
+  /* "monosat/monosat_p.pyx":903
  *     _maximizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  * 
  * def maximumFlow_geq( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int maximumFlow_geq(void* S, void* G, int source, int sink, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_125maximumFlow_geq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 897, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_125maximumFlow_geq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 903, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximumFlow_geq, __pyx_t_1) < 0) __PYX_ERR(0, 897, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximumFlow_geq, __pyx_t_1) < 0) __PYX_ERR(0, 903, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":913
+  /* "monosat/monosat_p.pyx":919
  *     return py_result
  * 
  * def maximumFlow_geq_bv( S ,  G ,  source ,  sink ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int maximumFlow_geq_bv(void* S, void* G, int source, int sink, int bvID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_127maximumFlow_geq_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 913, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_127maximumFlow_geq_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 919, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximumFlow_geq_bv, __pyx_t_1) < 0) __PYX_ERR(0, 913, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximumFlow_geq_bv, __pyx_t_1) < 0) __PYX_ERR(0, 919, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":929
+  /* "monosat/monosat_p.pyx":935
  *     return py_result
  * 
  * def maximumFlow_gt( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int maximumFlow_gt(void* S, void* G, int source, int sink, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_129maximumFlow_gt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 929, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_129maximumFlow_gt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 935, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximumFlow_gt, __pyx_t_1) < 0) __PYX_ERR(0, 929, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximumFlow_gt, __pyx_t_1) < 0) __PYX_ERR(0, 935, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":945
+  /* "monosat/monosat_p.pyx":951
  *     return py_result
  * 
  * def maximumFlow_gt_bv( S ,  G ,  source ,  sink ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int maximumFlow_gt_bv(void* S, void* G, int source, int sink, int bvID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_131maximumFlow_gt_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 945, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_131maximumFlow_gt_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 951, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximumFlow_gt_bv, __pyx_t_1) < 0) __PYX_ERR(0, 945, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_maximumFlow_gt_bv, __pyx_t_1) < 0) __PYX_ERR(0, 951, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":961
+  /* "monosat/monosat_p.pyx":967
  *     return py_result
  * 
  * def minimizeBV( S ,  bv ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void minimizeBV(void* S, void* bv, int bvID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_133minimizeBV, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 961, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_133minimizeBV, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 967, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimizeBV, __pyx_t_1) < 0) __PYX_ERR(0, 961, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimizeBV, __pyx_t_1) < 0) __PYX_ERR(0, 967, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":971
+  /* "monosat/monosat_p.pyx":977
  *     _minimizeBV_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(bv,NULL)), (<int>bvID))
  * 
  * def minimizeLits( S ,  lits ,  n_lits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void minimizeLits(void* S, int* lits, int n_lits)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_135minimizeLits, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 971, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_135minimizeLits, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 977, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimizeLits, __pyx_t_1) < 0) __PYX_ERR(0, 971, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimizeLits, __pyx_t_1) < 0) __PYX_ERR(0, 977, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":982
+  /* "monosat/monosat_p.pyx":988
  *     _minimizeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int>n_lits))
  * 
  * def minimizeWeightedLits( S ,  lits ,  weights ,  n_lits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void minimizeWeightedLits(void* S, int* lits, int* weights, int n_lits)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_137minimizeWeightedLits, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 982, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_137minimizeWeightedLits, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 988, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimizeWeightedLits, __pyx_t_1) < 0) __PYX_ERR(0, 982, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimizeWeightedLits, __pyx_t_1) < 0) __PYX_ERR(0, 988, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":995
+  /* "monosat/monosat_p.pyx":1001
  *     _minimizeWeightedLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int*>a.data.as_ints), (<int*>b.data.as_ints), (<int>n_lits))
  * 
  * def minimumSpanningTree_leq( S ,  G ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int minimumSpanningTree_leq(void* S, void* G, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_139minimumSpanningTree_leq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 995, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_139minimumSpanningTree_leq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1001, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimumSpanningTree_leq, __pyx_t_1) < 0) __PYX_ERR(0, 995, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimumSpanningTree_leq, __pyx_t_1) < 0) __PYX_ERR(0, 1001, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1007
+  /* "monosat/monosat_p.pyx":1013
  *     return py_result
  * 
  * def minimumSpanningTree_lt( S ,  G ,  source ,  sink ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int minimumSpanningTree_lt(void* S, void* G, int source, int sink, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_141minimumSpanningTree_lt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1007, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_141minimumSpanningTree_lt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1013, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimumSpanningTree_lt, __pyx_t_1) < 0) __PYX_ERR(0, 1007, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_minimumSpanningTree_lt, __pyx_t_1) < 0) __PYX_ERR(0, 1013, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1023
+  /* "monosat/monosat_p.pyx":1029
  *     return py_result
  * 
  * def nBitvectors( S ,  bv ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nBitvectors(void* S, void* bv)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_143nBitvectors, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1023, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_143nBitvectors, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1029, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nBitvectors, __pyx_t_1) < 0) __PYX_ERR(0, 1023, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nBitvectors, __pyx_t_1) < 0) __PYX_ERR(0, 1029, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1033
+  /* "monosat/monosat_p.pyx":1039
  *     return py_result
  * 
  * def nClauses( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nClauses(void* S)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_145nClauses, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1033, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_145nClauses, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1039, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nClauses, __pyx_t_1) < 0) __PYX_ERR(0, 1033, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nClauses, __pyx_t_1) < 0) __PYX_ERR(0, 1039, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1041
+  /* "monosat/monosat_p.pyx":1047
  *     return py_result
  * 
  * def nEdges( S ,  G ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nEdges(void* S, void* G)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_147nEdges, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1041, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_147nEdges, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1047, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nEdges, __pyx_t_1) < 0) __PYX_ERR(0, 1041, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nEdges, __pyx_t_1) < 0) __PYX_ERR(0, 1047, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1051
+  /* "monosat/monosat_p.pyx":1057
  *     return py_result
  * 
  * def nNodes( S ,  G ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nNodes(void* S, void* G)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_149nNodes, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1051, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_149nNodes, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1057, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nNodes, __pyx_t_1) < 0) __PYX_ERR(0, 1051, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nNodes, __pyx_t_1) < 0) __PYX_ERR(0, 1057, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1061
+  /* "monosat/monosat_p.pyx":1067
  *     return py_result
  * 
  * def nVars( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int nVars(void* S)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_151nVars, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1061, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_151nVars, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1067, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nVars, __pyx_t_1) < 0) __PYX_ERR(0, 1061, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_nVars, __pyx_t_1) < 0) __PYX_ERR(0, 1067, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1069
+  /* "monosat/monosat_p.pyx":1075
  *     return py_result
  * 
  * def newBVComparison_bv_geq( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_bv_geq(void* S, void* bv, int bvID, int compareID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_153newBVComparison_bv_geq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1069, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_153newBVComparison_bv_geq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1075, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_bv_geq, __pyx_t_1) < 0) __PYX_ERR(0, 1069, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_bv_geq, __pyx_t_1) < 0) __PYX_ERR(0, 1075, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1083
+  /* "monosat/monosat_p.pyx":1089
  *     return py_result
  * 
  * def newBVComparison_bv_gt( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_bv_gt(void* S, void* bv, int bvID, int compareID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_155newBVComparison_bv_gt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1083, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_155newBVComparison_bv_gt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1089, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_bv_gt, __pyx_t_1) < 0) __PYX_ERR(0, 1083, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_bv_gt, __pyx_t_1) < 0) __PYX_ERR(0, 1089, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1097
+  /* "monosat/monosat_p.pyx":1103
  *     return py_result
  * 
  * def newBVComparison_bv_leq( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_bv_leq(void* S, void* bv, int bvID, int compareID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_157newBVComparison_bv_leq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1097, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_157newBVComparison_bv_leq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1103, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_bv_leq, __pyx_t_1) < 0) __PYX_ERR(0, 1097, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_bv_leq, __pyx_t_1) < 0) __PYX_ERR(0, 1103, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1111
+  /* "monosat/monosat_p.pyx":1117
  *     return py_result
  * 
  * def newBVComparison_bv_lt( S ,  bv ,  bvID ,  compareID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_bv_lt(void* S, void* bv, int bvID, int compareID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_159newBVComparison_bv_lt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1111, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_159newBVComparison_bv_lt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1117, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_bv_lt, __pyx_t_1) < 0) __PYX_ERR(0, 1111, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_bv_lt, __pyx_t_1) < 0) __PYX_ERR(0, 1117, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1125
+  /* "monosat/monosat_p.pyx":1131
  *     return py_result
  * 
  * def newBVComparison_const_geq( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_const_geq(void* S, void* bv, int bvID, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_161newBVComparison_const_geq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1125, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_161newBVComparison_const_geq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1131, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_const_geq, __pyx_t_1) < 0) __PYX_ERR(0, 1125, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_const_geq, __pyx_t_1) < 0) __PYX_ERR(0, 1131, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1139
+  /* "monosat/monosat_p.pyx":1145
  *     return py_result
  * 
  * def newBVComparison_const_gt( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_const_gt(void* S, void* bv, int bvID, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_163newBVComparison_const_gt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1139, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_163newBVComparison_const_gt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1145, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_const_gt, __pyx_t_1) < 0) __PYX_ERR(0, 1139, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_const_gt, __pyx_t_1) < 0) __PYX_ERR(0, 1145, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1153
+  /* "monosat/monosat_p.pyx":1159
  *     return py_result
  * 
  * def newBVComparison_const_leq( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_const_leq(void* S, void* bv, int bvID, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_165newBVComparison_const_leq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1153, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_165newBVComparison_const_leq, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1159, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_const_leq, __pyx_t_1) < 0) __PYX_ERR(0, 1153, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_const_leq, __pyx_t_1) < 0) __PYX_ERR(0, 1159, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1167
+  /* "monosat/monosat_p.pyx":1173
  *     return py_result
  * 
  * def newBVComparison_const_lt( S ,  bv ,  bvID ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBVComparison_const_lt(void* S, void* bv, int bvID, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_167newBVComparison_const_lt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1167, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_167newBVComparison_const_lt, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1173, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_const_lt, __pyx_t_1) < 0) __PYX_ERR(0, 1167, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBVComparison_const_lt, __pyx_t_1) < 0) __PYX_ERR(0, 1173, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1181
+  /* "monosat/monosat_p.pyx":1187
  *     return py_result
  * 
  * def newBitvector( S ,  bv ,  bits ,  n_bits ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBitvector(void* S, void* bv, int* bits, int n_bits)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_169newBitvector, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1181, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_169newBitvector, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1187, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBitvector, __pyx_t_1) < 0) __PYX_ERR(0, 1181, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBitvector, __pyx_t_1) < 0) __PYX_ERR(0, 1187, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1195
+  /* "monosat/monosat_p.pyx":1201
  *     return py_result
  * 
  * def newBitvector_anon( S ,  bv ,  bvWidth ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBitvector_anon(void* S, void* bv, int bvWidth)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_171newBitvector_anon, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1195, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_171newBitvector_anon, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1201, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBitvector_anon, __pyx_t_1) < 0) __PYX_ERR(0, 1195, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBitvector_anon, __pyx_t_1) < 0) __PYX_ERR(0, 1201, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1207
+  /* "monosat/monosat_p.pyx":1213
  *     return py_result
  * 
  * def newBitvector_const( S ,  bv ,  bvWidth ,  constval ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newBitvector_const(void* S, void* bv, int bvWidth, int64_t constval)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_173newBitvector_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1207, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_173newBitvector_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1213, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBitvector_const, __pyx_t_1) < 0) __PYX_ERR(0, 1207, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newBitvector_const, __pyx_t_1) < 0) __PYX_ERR(0, 1213, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1221
+  /* "monosat/monosat_p.pyx":1227
  *     return py_result
  * 
  * def newEdge( S ,  G ,  _from ,  to ,  weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newEdge(void* S, void* G, int _from, int to, int64_t weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_175newEdge, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1221, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_175newEdge, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1227, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newEdge, __pyx_t_1) < 0) __PYX_ERR(0, 1221, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newEdge, __pyx_t_1) < 0) __PYX_ERR(0, 1227, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1237
+  /* "monosat/monosat_p.pyx":1243
  *     return py_result
  * 
  * def newEdgeSet( S ,  G ,  edges ,  n_edges ,  enforceEdgeAssignment ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void newEdgeSet(void* S, void* G, int* edges, int n_edges, bint enforceEdgeAssignment)"""
  *     cdef array.array a =  array.array('i', edges)
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_177newEdgeSet, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1237, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_177newEdgeSet, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1243, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newEdgeSet, __pyx_t_1) < 0) __PYX_ERR(0, 1237, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newEdgeSet, __pyx_t_1) < 0) __PYX_ERR(0, 1243, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1242
+  /* "monosat/monosat_p.pyx":1248
  *     _newEdgeSet_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int*>a.data.as_ints), (<int>n_edges), (<bint>enforceEdgeAssignment))
  * 
  * def newEdge_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newEdge_bv(void* S, void* G, int _from, int to, int bvID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_179newEdge_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1242, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_179newEdge_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1248, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newEdge_bv, __pyx_t_1) < 0) __PYX_ERR(0, 1242, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newEdge_bv, __pyx_t_1) < 0) __PYX_ERR(0, 1248, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1258
+  /* "monosat/monosat_p.pyx":1264
  *     return py_result
  * 
  * def newEdge_double( S ,  G ,  _from ,  to , double weight ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newEdge_double(void* S, void* G, int _from, int to, double weight)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_181newEdge_double, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1258, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_181newEdge_double, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newEdge_double, __pyx_t_1) < 0) __PYX_ERR(0, 1258, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newEdge_double, __pyx_t_1) < 0) __PYX_ERR(0, 1264, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1275
+  /* "monosat/monosat_p.pyx":1281
  * 
  * 
  * def newGraph( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void* newGraph(void* S)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_183newGraph, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1275, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_183newGraph, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1281, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newGraph, __pyx_t_1) < 0) __PYX_ERR(0, 1275, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newGraph, __pyx_t_1) < 0) __PYX_ERR(0, 1281, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1283
+  /* "monosat/monosat_p.pyx":1289
  *     return py_result
  * 
  * def newNode( S ,  G ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newNode(void* S, void* G)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_185newNode, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1283, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_185newNode, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1289, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newNode, __pyx_t_1) < 0) __PYX_ERR(0, 1283, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newNode, __pyx_t_1) < 0) __PYX_ERR(0, 1289, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1293
+  /* "monosat/monosat_p.pyx":1299
  *     return py_result
  * 
  * def newSolver():             # <<<<<<<<<<<<<<
  *     """Cython signature: void* newSolver()"""
  *     cdef void* _r = _newSolver_monosat()
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_187newSolver, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1293, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_187newSolver, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1299, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newSolver, __pyx_t_1) < 0) __PYX_ERR(0, 1293, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newSolver, __pyx_t_1) < 0) __PYX_ERR(0, 1299, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1301
+  /* "monosat/monosat_p.pyx":1307
  *     return py_result
  * 
  * def newSolver_arg(bytes argv ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void* newSolver_arg(char * argv)"""
  *     assert isinstance(argv, bytes), 'arg argv wrong type'
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_189newSolver_arg, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1301, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_189newSolver_arg, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1307, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newSolver_arg, __pyx_t_1) < 0) __PYX_ERR(0, 1301, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newSolver_arg, __pyx_t_1) < 0) __PYX_ERR(0, 1307, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1314
+  /* "monosat/monosat_p.pyx":1320
  * 
  * 
  * def newVar( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int newVar(void* S)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_191newVar, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1314, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_191newVar, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1320, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newVar, __pyx_t_1) < 0) __PYX_ERR(0, 1314, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_newVar, __pyx_t_1) < 0) __PYX_ERR(0, 1320, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1322
+  /* "monosat/monosat_p.pyx":1328
  *     return py_result
  * 
  * def reaches( S ,  G ,  _from ,  to ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int reaches(void* S, void* G, int _from, int to)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_193reaches, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1322, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_193reaches, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1328, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reaches, __pyx_t_1) < 0) __PYX_ERR(0, 1322, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reaches, __pyx_t_1) < 0) __PYX_ERR(0, 1328, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1336
+  /* "monosat/monosat_p.pyx":1342
  *     return py_result
  * 
  * def readGNF( S , bytes filename ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void readGNF(void* S, char * filename)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_195readGNF, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1336, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_195readGNF, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1342, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_readGNF, __pyx_t_1) < 0) __PYX_ERR(0, 1336, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_readGNF, __pyx_t_1) < 0) __PYX_ERR(0, 1342, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1344
+  /* "monosat/monosat_p.pyx":1350
  *     _readGNF_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>filename))
  * 
  * def setConflictLimit( S ,  num_conflicts ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setConflictLimit(void* S, int num_conflicts)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_197setConflictLimit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1344, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_197setConflictLimit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1350, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setConflictLimit, __pyx_t_1) < 0) __PYX_ERR(0, 1344, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setConflictLimit, __pyx_t_1) < 0) __PYX_ERR(0, 1350, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1352
+  /* "monosat/monosat_p.pyx":1358
  *     _setConflictLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_conflicts))
  * 
  * def setDecisionPolarity( S ,  v ,  b ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setDecisionPolarity(void* S, int v, bint b)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_199setDecisionPolarity, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1352, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_199setDecisionPolarity, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1358, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setDecisionPolarity, __pyx_t_1) < 0) __PYX_ERR(0, 1352, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setDecisionPolarity, __pyx_t_1) < 0) __PYX_ERR(0, 1358, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1362
+  /* "monosat/monosat_p.pyx":1368
  *     _setDecisionPolarity_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>v), (<bint>b))
  * 
  * def setDecisionPriority( S ,  var ,  priority ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setDecisionPriority(void* S, int var, int priority)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_201setDecisionPriority, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1362, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_201setDecisionPriority, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1368, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setDecisionPriority, __pyx_t_1) < 0) __PYX_ERR(0, 1362, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setDecisionPriority, __pyx_t_1) < 0) __PYX_ERR(0, 1368, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1372
+  /* "monosat/monosat_p.pyx":1378
  *     _setDecisionPriority_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<int>priority))
  * 
  * def setDecisionVar( S ,  var ,  decidable ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setDecisionVar(void* S, int var, bint decidable)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_203setDecisionVar, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1372, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_203setDecisionVar, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1378, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setDecisionVar, __pyx_t_1) < 0) __PYX_ERR(0, 1372, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setDecisionVar, __pyx_t_1) < 0) __PYX_ERR(0, 1378, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1382
+  /* "monosat/monosat_p.pyx":1388
  *     _setDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<bint>decidable))
  * 
  * def setMemoryLimit( S ,  mb ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setMemoryLimit(void* S, int mb)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_205setMemoryLimit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1382, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_205setMemoryLimit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1388, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setMemoryLimit, __pyx_t_1) < 0) __PYX_ERR(0, 1382, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setMemoryLimit, __pyx_t_1) < 0) __PYX_ERR(0, 1388, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1390
+  /* "monosat/monosat_p.pyx":1396
  *     _setMemoryLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>mb))
  * 
  * def setOutputFile( S , bytes output ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setOutputFile(void* S, char * output)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_207setOutputFile, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1390, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_207setOutputFile, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1396, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setOutputFile, __pyx_t_1) < 0) __PYX_ERR(0, 1390, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setOutputFile, __pyx_t_1) < 0) __PYX_ERR(0, 1396, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1398
+  /* "monosat/monosat_p.pyx":1404
  *     _setOutputFile_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>output))
  * 
  * def setPropagationLimit( S ,  num_propagations ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setPropagationLimit(void* S, int num_propagations)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_209setPropagationLimit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1398, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_209setPropagationLimit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1404, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setPropagationLimit, __pyx_t_1) < 0) __PYX_ERR(0, 1398, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setPropagationLimit, __pyx_t_1) < 0) __PYX_ERR(0, 1404, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1406
+  /* "monosat/monosat_p.pyx":1412
  *     _setPropagationLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>num_propagations))
  * 
  * def setTimeLimit( S ,  seconds ):             # <<<<<<<<<<<<<<
  *     """Cython signature: void setTimeLimit(void* S, int seconds)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_211setTimeLimit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1406, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_211setTimeLimit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1412, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setTimeLimit, __pyx_t_1) < 0) __PYX_ERR(0, 1406, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setTimeLimit, __pyx_t_1) < 0) __PYX_ERR(0, 1412, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1414
+  /* "monosat/monosat_p.pyx":1420
  *     _setTimeLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>seconds))
  * 
  * def shortestPathUnweighted_leq_const( S ,  G ,  _from ,  to ,  steps ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPathUnweighted_leq_const(void* S, void* G, int _from, int to, int steps)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_213shortestPathUnweighted_leq_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1414, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_213shortestPathUnweighted_leq_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1420, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPathUnweighted_leq_const, __pyx_t_1) < 0) __PYX_ERR(0, 1414, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPathUnweighted_leq_const, __pyx_t_1) < 0) __PYX_ERR(0, 1420, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1430
+  /* "monosat/monosat_p.pyx":1436
  *     return py_result
  * 
  * def shortestPathUnweighted_lt_const( S ,  G ,  _from ,  to ,  steps ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPathUnweighted_lt_const(void* S, void* G, int _from, int to, int steps)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_215shortestPathUnweighted_lt_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1430, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_215shortestPathUnweighted_lt_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1436, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPathUnweighted_lt_const, __pyx_t_1) < 0) __PYX_ERR(0, 1430, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPathUnweighted_lt_const, __pyx_t_1) < 0) __PYX_ERR(0, 1436, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1446
+  /* "monosat/monosat_p.pyx":1452
  *     return py_result
  * 
  * def shortestPath_leq_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPath_leq_bv(void* S, void* G, int _from, int to, int bvID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_217shortestPath_leq_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1446, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_217shortestPath_leq_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1452, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPath_leq_bv, __pyx_t_1) < 0) __PYX_ERR(0, 1446, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPath_leq_bv, __pyx_t_1) < 0) __PYX_ERR(0, 1452, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1462
+  /* "monosat/monosat_p.pyx":1468
  *     return py_result
  * 
  * def shortestPath_leq_const( S ,  G ,  _from ,  to ,  dist ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPath_leq_const(void* S, void* G, int _from, int to, int64_t dist)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_219shortestPath_leq_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1462, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_219shortestPath_leq_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1468, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPath_leq_const, __pyx_t_1) < 0) __PYX_ERR(0, 1462, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPath_leq_const, __pyx_t_1) < 0) __PYX_ERR(0, 1468, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1478
+  /* "monosat/monosat_p.pyx":1484
  *     return py_result
  * 
  * def shortestPath_lt_bv( S ,  G ,  _from ,  to ,  bvID ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPath_lt_bv(void* S, void* G, int _from, int to, int bvID)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_221shortestPath_lt_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1478, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_221shortestPath_lt_bv, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1484, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPath_lt_bv, __pyx_t_1) < 0) __PYX_ERR(0, 1478, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPath_lt_bv, __pyx_t_1) < 0) __PYX_ERR(0, 1484, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1494
+  /* "monosat/monosat_p.pyx":1500
  *     return py_result
  * 
  * def shortestPath_lt_const( S ,  G ,  _from ,  to ,  dist ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int shortestPath_lt_const(void* S, void* G, int _from, int to, int64_t dist)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_223shortestPath_lt_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1494, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_223shortestPath_lt_const, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1500, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPath_lt_const, __pyx_t_1) < 0) __PYX_ERR(0, 1494, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shortestPath_lt_const, __pyx_t_1) < 0) __PYX_ERR(0, 1500, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1510
+  /* "monosat/monosat_p.pyx":1516
  *     return py_result
  * 
  * def solve( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: bint solve(void* S)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_225solve, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1510, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_225solve, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1516, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_solve, __pyx_t_1) < 0) __PYX_ERR(0, 1510, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_solve, __pyx_t_1) < 0) __PYX_ERR(0, 1516, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1518
+  /* "monosat/monosat_p.pyx":1524
  *     return py_result
  * 
  * def solveAssumptions( S ,  assumptions,  n_assumptions):             # <<<<<<<<<<<<<<
  *     """Cython signature: bint solveAssumptions(void* S, int* assumptions, int n_assumptions)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_227solveAssumptions, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1518, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_227solveAssumptions, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1524, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_solveAssumptions, __pyx_t_1) < 0) __PYX_ERR(0, 1518, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_solveAssumptions, __pyx_t_1) < 0) __PYX_ERR(0, 1524, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1527
+  /* "monosat/monosat_p.pyx":1533
  *     return py_result
  * 
  * def solveAssumptionsLimited( S ,  assumptions ,  n_assumptions ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int solveAssumptionsLimited(void* S, int* assumptions, int n_assumptions)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_229solveAssumptionsLimited, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1527, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_229solveAssumptionsLimited, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1533, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_solveAssumptionsLimited, __pyx_t_1) < 0) __PYX_ERR(0, 1527, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_solveAssumptionsLimited, __pyx_t_1) < 0) __PYX_ERR(0, 1533, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1539
+  /* "monosat/monosat_p.pyx":1545
  *     return py_result
  * 
  * def solveLimited( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int solveLimited(void* S)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_231solveLimited, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1539, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_231solveLimited, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1545, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_solveLimited, __pyx_t_1) < 0) __PYX_ERR(0, 1539, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_solveLimited, __pyx_t_1) < 0) __PYX_ERR(0, 1545, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "monosat/monosat_p.pyx":1547
+  /* "monosat/monosat_p.pyx":1553
  *     return py_result
  * 
  * def true_lit( S ):             # <<<<<<<<<<<<<<
  *     """Cython signature: int true_lit(void* S)"""
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_233true_lit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1547, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_7monosat_9monosat_p_233true_lit, NULL, __pyx_n_s_monosat_monosat_p); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1553, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_true_lit, __pyx_t_1) < 0) __PYX_ERR(0, 1547, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_true_lit, __pyx_t_1) < 0) __PYX_ERR(0, 1553, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "monosat/monosat_p.pyx":1
@@ -28691,8 +29099,296 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg
 }
 #endif
 
+/* PyCFunctionFastCall */
+#if CYTHON_FAST_PYCCALL
+static CYTHON_INLINE PyObject * __Pyx_PyCFunction_FastCall(PyObject *func_obj, PyObject **args, Py_ssize_t nargs) {
+    PyCFunctionObject *func = (PyCFunctionObject*)func_obj;
+    PyCFunction meth = PyCFunction_GET_FUNCTION(func);
+    PyObject *self = PyCFunction_GET_SELF(func);
+    int flags = PyCFunction_GET_FLAGS(func);
+    assert(PyCFunction_Check(func));
+    assert(METH_FASTCALL == (flags & ~(METH_CLASS | METH_STATIC | METH_COEXIST | METH_KEYWORDS)));
+    assert(nargs >= 0);
+    assert(nargs == 0 || args != NULL);
+    /* _PyCFunction_FastCallDict() must not be called with an exception set,
+       because it may clear it (directly or indirectly) and so the
+       caller loses its exception */
+    assert(!PyErr_Occurred());
+    if ((PY_VERSION_HEX < 0x030700A0) || unlikely(flags & METH_KEYWORDS)) {
+        return (*((__Pyx_PyCFunctionFastWithKeywords)meth)) (self, args, nargs, NULL);
+    } else {
+        return (*((__Pyx_PyCFunctionFast)meth)) (self, args, nargs);
+    }
+}
+#endif
+
+/* PyFunctionFastCall */
+#if CYTHON_FAST_PYCALL
+#include "frameobject.h"
+static PyObject* __Pyx_PyFunction_FastCallNoKw(PyCodeObject *co, PyObject **args, Py_ssize_t na,
+                                               PyObject *globals) {
+    PyFrameObject *f;
+    PyThreadState *tstate = __Pyx_PyThreadState_Current;
+    PyObject **fastlocals;
+    Py_ssize_t i;
+    PyObject *result;
+    assert(globals != NULL);
+    /* XXX Perhaps we should create a specialized
+       PyFrame_New() that doesn't take locals, but does
+       take builtins without sanity checking them.
+       */
+    assert(tstate != NULL);
+    f = PyFrame_New(tstate, co, globals, NULL);
+    if (f == NULL) {
+        return NULL;
+    }
+    fastlocals = f->f_localsplus;
+    for (i = 0; i < na; i++) {
+        Py_INCREF(*args);
+        fastlocals[i] = *args++;
+    }
+    result = PyEval_EvalFrameEx(f,0);
+    ++tstate->recursion_depth;
+    Py_DECREF(f);
+    --tstate->recursion_depth;
+    return result;
+}
+#if 1 || PY_VERSION_HEX < 0x030600B1
+static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, int nargs, PyObject *kwargs) {
+    PyCodeObject *co = (PyCodeObject *)PyFunction_GET_CODE(func);
+    PyObject *globals = PyFunction_GET_GLOBALS(func);
+    PyObject *argdefs = PyFunction_GET_DEFAULTS(func);
+    PyObject *closure;
+#if PY_MAJOR_VERSION >= 3
+    PyObject *kwdefs;
+#endif
+    PyObject *kwtuple, **k;
+    PyObject **d;
+    Py_ssize_t nd;
+    Py_ssize_t nk;
+    PyObject *result;
+    assert(kwargs == NULL || PyDict_Check(kwargs));
+    nk = kwargs ? PyDict_Size(kwargs) : 0;
+    if (Py_EnterRecursiveCall((char*)" while calling a Python object")) {
+        return NULL;
+    }
+    if (
+#if PY_MAJOR_VERSION >= 3
+            co->co_kwonlyargcount == 0 &&
+#endif
+            likely(kwargs == NULL || nk == 0) &&
+            co->co_flags == (CO_OPTIMIZED | CO_NEWLOCALS | CO_NOFREE)) {
+        if (argdefs == NULL && co->co_argcount == nargs) {
+            result = __Pyx_PyFunction_FastCallNoKw(co, args, nargs, globals);
+            goto done;
+        }
+        else if (nargs == 0 && argdefs != NULL
+                 && co->co_argcount == Py_SIZE(argdefs)) {
+            /* function called with no arguments, but all parameters have
+               a default value: use default values as arguments .*/
+            args = &PyTuple_GET_ITEM(argdefs, 0);
+            result =__Pyx_PyFunction_FastCallNoKw(co, args, Py_SIZE(argdefs), globals);
+            goto done;
+        }
+    }
+    if (kwargs != NULL) {
+        Py_ssize_t pos, i;
+        kwtuple = PyTuple_New(2 * nk);
+        if (kwtuple == NULL) {
+            result = NULL;
+            goto done;
+        }
+        k = &PyTuple_GET_ITEM(kwtuple, 0);
+        pos = i = 0;
+        while (PyDict_Next(kwargs, &pos, &k[i], &k[i+1])) {
+            Py_INCREF(k[i]);
+            Py_INCREF(k[i+1]);
+            i += 2;
+        }
+        nk = i / 2;
+    }
+    else {
+        kwtuple = NULL;
+        k = NULL;
+    }
+    closure = PyFunction_GET_CLOSURE(func);
+#if PY_MAJOR_VERSION >= 3
+    kwdefs = PyFunction_GET_KW_DEFAULTS(func);
+#endif
+    if (argdefs != NULL) {
+        d = &PyTuple_GET_ITEM(argdefs, 0);
+        nd = Py_SIZE(argdefs);
+    }
+    else {
+        d = NULL;
+        nd = 0;
+    }
+#if PY_MAJOR_VERSION >= 3
+    result = PyEval_EvalCodeEx((PyObject*)co, globals, (PyObject *)NULL,
+                               args, nargs,
+                               k, (int)nk,
+                               d, (int)nd, kwdefs, closure);
+#else
+    result = PyEval_EvalCodeEx(co, globals, (PyObject *)NULL,
+                               args, nargs,
+                               k, (int)nk,
+                               d, (int)nd, closure);
+#endif
+    Py_XDECREF(kwtuple);
+done:
+    Py_LeaveRecursiveCall();
+    return result;
+}
+#endif
+#endif
+
+/* PyObjectCallMethO */
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
+    PyObject *self, *result;
+    PyCFunction cfunc;
+    cfunc = PyCFunction_GET_FUNCTION(func);
+    self = PyCFunction_GET_SELF(func);
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
+        return NULL;
+    result = cfunc(self, arg);
+    Py_LeaveRecursiveCall();
+    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
+        PyErr_SetString(
+            PyExc_SystemError,
+            "NULL result without error in PyObject_Call");
+    }
+    return result;
+}
+#endif
+
+/* PyObjectCallOneArg */
+#if CYTHON_COMPILING_IN_CPYTHON
+static PyObject* __Pyx__PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject *result;
+    PyObject *args = PyTuple_New(1);
+    if (unlikely(!args)) return NULL;
+    Py_INCREF(arg);
+    PyTuple_SET_ITEM(args, 0, arg);
+    result = __Pyx_PyObject_Call(func, args, NULL);
+    Py_DECREF(args);
+    return result;
+}
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+#if CYTHON_FAST_PYCALL
+    if (PyFunction_Check(func)) {
+        return __Pyx_PyFunction_FastCall(func, &arg, 1);
+    }
+#endif
+    if (likely(PyCFunction_Check(func))) {
+        if (likely(PyCFunction_GET_FLAGS(func) & METH_O)) {
+            return __Pyx_PyObject_CallMethO(func, arg);
+#if CYTHON_FAST_PYCCALL
+        } else if (PyCFunction_GET_FLAGS(func) & METH_FASTCALL) {
+            return __Pyx_PyCFunction_FastCall(func, &arg, 1);
+#endif
+        }
+    }
+    return __Pyx__PyObject_CallOneArg(func, arg);
+}
+#else
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject *result;
+    PyObject *args = PyTuple_Pack(1, arg);
+    if (unlikely(!args)) return NULL;
+    result = __Pyx_PyObject_Call(func, args, NULL);
+    Py_DECREF(args);
+    return result;
+}
+#endif
+
+/* PyObjectCallNoArg */
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func) {
+#if CYTHON_FAST_PYCALL
+    if (PyFunction_Check(func)) {
+        return __Pyx_PyFunction_FastCall(func, NULL, 0);
+    }
+#endif
+#ifdef __Pyx_CyFunction_USED
+    if (likely(PyCFunction_Check(func) || __Pyx_TypeCheck(func, __pyx_CyFunctionType))) {
+#else
+    if (likely(PyCFunction_Check(func))) {
+#endif
+        if (likely(PyCFunction_GET_FLAGS(func) & METH_NOARGS)) {
+            return __Pyx_PyObject_CallMethO(func, NULL);
+        }
+    }
+    return __Pyx_PyObject_Call(func, __pyx_empty_tuple, NULL);
+}
+#endif
+
+/* PyObjectCallMethod1 */
+  static PyObject* __Pyx__PyObject_CallMethod1(PyObject* method, PyObject* arg) {
+    PyObject *result = NULL;
+#if CYTHON_UNPACK_METHODS
+    if (likely(PyMethod_Check(method))) {
+        PyObject *self = PyMethod_GET_SELF(method);
+        if (likely(self)) {
+            PyObject *args;
+            PyObject *function = PyMethod_GET_FUNCTION(method);
+            #if CYTHON_FAST_PYCALL
+            if (PyFunction_Check(function)) {
+                PyObject *args[2] = {self, arg};
+                result = __Pyx_PyFunction_FastCall(function, args, 2);
+                goto done;
+            }
+            #endif
+            #if CYTHON_FAST_PYCCALL
+            if (__Pyx_PyFastCFunction_Check(function)) {
+                PyObject *args[2] = {self, arg};
+                result = __Pyx_PyCFunction_FastCall(function, args, 2);
+                goto done;
+            }
+            #endif
+            args = PyTuple_New(2);
+            if (unlikely(!args)) goto done;
+            Py_INCREF(self);
+            PyTuple_SET_ITEM(args, 0, self);
+            Py_INCREF(arg);
+            PyTuple_SET_ITEM(args, 1, arg);
+            Py_INCREF(function);
+            result = __Pyx_PyObject_Call(function, args, NULL);
+            Py_DECREF(args);
+            Py_DECREF(function);
+            return result;
+        }
+    }
+#endif
+    result = __Pyx_PyObject_CallOneArg(method, arg);
+    goto done;
+done:
+    return result;
+}
+static PyObject* __Pyx_PyObject_CallMethod1(PyObject* obj, PyObject* method_name, PyObject* arg) {
+    PyObject *method, *result;
+    method = __Pyx_PyObject_GetAttrStr(obj, method_name);
+    if (unlikely(!method)) return NULL;
+    result = __Pyx__PyObject_CallMethod1(method, arg);
+    Py_DECREF(method);
+    return result;
+}
+
+/* append */
+  static CYTHON_INLINE int __Pyx_PyObject_Append(PyObject* L, PyObject* x) {
+    if (likely(PyList_CheckExact(L))) {
+        if (unlikely(__Pyx_PyList_Append(L, x) < 0)) return -1;
+    } else {
+        PyObject* retval = __Pyx_PyObject_CallMethod1(L, __pyx_n_s_append, x);
+        if (unlikely(!retval))
+            return -1;
+        Py_DECREF(retval);
+    }
+    return 0;
+}
+
 /* ArgTypeTest */
-static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *name, int exact)
+  static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *name, int exact)
 {
     if (unlikely(!type)) {
         PyErr_SetString(PyExc_SystemError, "Missing type object");
@@ -28713,7 +29409,7 @@ static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *nam
 }
 
 /* Import */
-static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level) {
+  static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level) {
     PyObject *empty_list = 0;
     PyObject *module = 0;
     PyObject *global_dict = 0;
@@ -28778,7 +29474,7 @@ bad:
 }
 
 /* PyErrFetchRestore */
-#if CYTHON_FAST_THREAD_STATE
+  #if CYTHON_FAST_THREAD_STATE
 static CYTHON_INLINE void __Pyx_ErrRestoreInState(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb) {
     PyObject *tmp_type, *tmp_value, *tmp_tb;
     tmp_type = tstate->curexc_type;
@@ -28802,7 +29498,7 @@ static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject 
 #endif
 
 /* CLineInTraceback */
-#ifndef CYTHON_CLINE_IN_TRACEBACK
+  #ifndef CYTHON_CLINE_IN_TRACEBACK
 static int __Pyx_CLineForTraceback(CYTHON_UNUSED PyThreadState *tstate, int c_line) {
     PyObject *use_cline;
     PyObject *ptype, *pvalue, *ptraceback;
@@ -28839,7 +29535,7 @@ static int __Pyx_CLineForTraceback(CYTHON_UNUSED PyThreadState *tstate, int c_li
 #endif
 
 /* CodeObjectCache */
-static int __pyx_bisect_code_objects(__Pyx_CodeObjectCacheEntry* entries, int count, int code_line) {
+  static int __pyx_bisect_code_objects(__Pyx_CodeObjectCacheEntry* entries, int count, int code_line) {
     int start = 0, mid = 0, end = count - 1;
     if (end >= 0 && code_line > entries[end].code_line) {
         return count;
@@ -28919,7 +29615,7 @@ static void __pyx_insert_code_object(int code_line, PyCodeObject* code_object) {
 }
 
 /* AddTraceback */
-#include "compile.h"
+  #include "compile.h"
 #include "frameobject.h"
 #include "traceback.h"
 static PyCodeObject* __Pyx_CreateCodeObjectForTraceback(
@@ -29004,7 +29700,7 @@ bad:
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
+  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
     const int neg_one = (int) -1, const_zero = (int) 0;
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
@@ -29035,7 +29731,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
 }
 
 /* CIntFromPyVerify */
-#define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
+  #define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
     __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 0)
 #define __PYX_VERIFY_RETURN_INT_EXC(target_type, func_type, func_value)\
     __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 1)
@@ -29057,7 +29753,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
     }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int64_t(int64_t value) {
+  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int64_t(int64_t value) {
     const int64_t neg_one = (int64_t) -1, const_zero = (int64_t) 0;
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
@@ -29088,7 +29784,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int64_t(int64_t value) {
 }
 
 /* CIntFromPy */
-static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *x) {
+  static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *x) {
     const int neg_one = (int) -1, const_zero = (int) 0;
     const int is_unsigned = neg_one > const_zero;
 #if PY_MAJOR_VERSION < 3
@@ -29277,7 +29973,7 @@ raise_neg_overflow:
 }
 
 /* CIntFromPy */
-static CYTHON_INLINE int64_t __Pyx_PyInt_As_int64_t(PyObject *x) {
+  static CYTHON_INLINE int64_t __Pyx_PyInt_As_int64_t(PyObject *x) {
     const int64_t neg_one = (int64_t) -1, const_zero = (int64_t) 0;
     const int is_unsigned = neg_one > const_zero;
 #if PY_MAJOR_VERSION < 3
@@ -29466,7 +30162,7 @@ raise_neg_overflow:
 }
 
 /* CIntToPy */
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
+  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
     const long neg_one = (long) -1, const_zero = (long) 0;
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
@@ -29497,7 +30193,7 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
 }
 
 /* CIntFromPy */
-static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *x) {
+  static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *x) {
     const long neg_one = (long) -1, const_zero = (long) 0;
     const int is_unsigned = neg_one > const_zero;
 #if PY_MAJOR_VERSION < 3
@@ -29686,7 +30382,7 @@ raise_neg_overflow:
 }
 
 /* FastTypeChecks */
-#if CYTHON_COMPILING_IN_CPYTHON
+  #if CYTHON_COMPILING_IN_CPYTHON
 static int __Pyx_InBases(PyTypeObject *a, PyTypeObject *b) {
     while (a) {
         a = a->tp_base;
@@ -29758,7 +30454,7 @@ static CYTHON_INLINE int __Pyx_PyErr_GivenExceptionMatches2(PyObject *err, PyObj
 #endif
 
 /* CheckBinaryVersion */
-static int __Pyx_check_binary_version(void) {
+  static int __Pyx_check_binary_version(void) {
     char ctversion[4], rtversion[4];
     PyOS_snprintf(ctversion, 4, "%d.%d", PY_MAJOR_VERSION, PY_MINOR_VERSION);
     PyOS_snprintf(rtversion, 4, "%s", Py_GetVersion());
@@ -29774,7 +30470,7 @@ static int __Pyx_check_binary_version(void) {
 }
 
 /* ModuleImport */
-#ifndef __PYX_HAVE_RT_ImportModule
+  #ifndef __PYX_HAVE_RT_ImportModule
 #define __PYX_HAVE_RT_ImportModule
 static PyObject *__Pyx_ImportModule(const char *name) {
     PyObject *py_name = 0;
@@ -29792,7 +30488,7 @@ bad:
 #endif
 
 /* TypeImport */
-#ifndef __PYX_HAVE_RT_ImportType
+  #ifndef __PYX_HAVE_RT_ImportType
 #define __PYX_HAVE_RT_ImportType
 static PyTypeObject *__Pyx_ImportType(const char *module_name, const char *class_name,
     size_t size, int strict)
@@ -29857,7 +30553,7 @@ bad:
 #endif
 
 /* InitStrings */
-static int __Pyx_InitStrings(__Pyx_StringTabEntry *t) {
+  static int __Pyx_InitStrings(__Pyx_StringTabEntry *t) {
     while (t->p) {
         #if PY_MAJOR_VERSION < 3
         if (t->is_unicode) {

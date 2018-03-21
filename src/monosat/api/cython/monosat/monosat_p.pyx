@@ -773,10 +773,14 @@ def getModel_Path_EdgeLits( S ,  G ,  reach_or_distance_literal ,  store_length 
     assert isinstance(store, list), 'arg store wrong type'
 
 
-    cdef array.array a =  array.array('i', store)
-
-
+    initializer = list(range(store_length))
+    assert(len(initializer)==store_length)
+    cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
     cdef int _r = _getModel_Path_EdgeLits_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length), (<int*>a.data.as_ints))
+    store.clear()
+    for lit in a:
+        store.append(lit)
+    assert(len(store)==store_length)
     py_result = <int>_r
     return py_result
 
@@ -785,9 +789,6 @@ def getModel_Path_EdgeLits_Length( S ,  G ,  reach_or_distance_literal ):
 
     
     assert isinstance(reach_or_distance_literal, (int, long)), 'arg reach_or_distance_literal wrong type'
-
-
-
     cdef int _r = _getModel_Path_EdgeLits_Length_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal))
     py_result = <int>_r
     return py_result
@@ -801,10 +802,15 @@ def getModel_Path_Nodes( S ,  G ,  reach_or_distance_literal ,  store_length ,  
     assert isinstance(store, list), 'arg store wrong type'
 
 
-
-    cdef array.array a =  array.array('i', store)
+    initializer = list(range(store_length))
+    assert(len(initializer)==store_length)
+    cdef array.array a =  array.array('i', initializer) #is there a better way to initialize an array.array to length n?
 
     cdef int _r = _getModel_Path_Nodes_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>reach_or_distance_literal), (<int>store_length),(<int*>a.data.as_ints))
+    store.clear()
+    for node in a:
+        store.append(node)
+    assert(len(store)==store_length)
     py_result = <int>_r
     return py_result
 

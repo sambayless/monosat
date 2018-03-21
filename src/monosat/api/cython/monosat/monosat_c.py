@@ -31,7 +31,7 @@ from enum import Enum
 import pyximport
 pyximport.install()
 import monosat.monosat_p
-
+print("Loading cython monosat library")
 
 def dimacs(l):
     assert(isinstance(l,int))
@@ -993,13 +993,14 @@ class Monosat(metaclass=Singleton):
             return None
         elif arg_length == 0:
             return []
-        path = list(range(arg_length))
-        path_pointer = self.getIntArray(path)
-        l = self.monosat_c.getModel_Path_Nodes(self.solver._ptr, graph,reach_or_distance_lit, arg_length,path_pointer);
+        path = []
+        #path = list(range(arg_length))
+        #path_pointer = self.getIntArray(path)
+        l = self.monosat_c.getModel_Path_Nodes(self.solver._ptr, graph,reach_or_distance_lit, arg_length,path);
         if l != arg_length:
             raise RuntimeError("Error reading path model")
-        
-        return self.intArrayToList(path_pointer,arg_length)
+        return path
+        #return self.intArrayToList(path_pointer,arg_length)
 
     def getModel_Path_EdgeLits(self, graph, reach_or_distance_lit):
         self.checkLit(reach_or_distance_lit)
@@ -1008,13 +1009,14 @@ class Monosat(metaclass=Singleton):
             return None
         elif arg_length == 0:
             return []
-        path = list(range(arg_length))
-        path_pointer = self.getIntArray(path)
-        l = self.monosat_c.getModel_Path_EdgeLits(self.solver._ptr, graph,reach_or_distance_lit, arg_length,path_pointer);
+        path = []
+        #path = list(range(arg_length))
+        #path_pointer = self.getIntArray(path)
+        l = self.monosat_c.getModel_Path_EdgeLits(self.solver._ptr, graph,reach_or_distance_lit, arg_length,path);
         if l != arg_length:
             raise RuntimeError("Error reading path model")
-        
-        return self.intArrayToList(path_pointer,arg_length)
+        return path
+        #return self.intArrayToList(path_pointer,arg_length)
 
     def checkLit(self,l):
         if (l<0):

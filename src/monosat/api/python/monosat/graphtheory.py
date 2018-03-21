@@ -228,11 +228,12 @@ class Graph():
 
 
     def hasEdge(self,f,t):
-        for (v,u,var,weight) in self.out_edges[f]:
-           if(u==t):
-               return True;
+        return len(self.out_edge_map[f][t])>0
+        #for (v,u,var,weight) in self.out_edges[f]:
+        #   if(u==t):
+        #       return True;
            
-        return False;
+        #return False;
 
     def newEdgeSet(self,edges,enforceEdgeAssignments=True):
         for v in edges:
