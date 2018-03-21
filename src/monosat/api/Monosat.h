@@ -224,7 +224,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int maximumFlow_geq_bv(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int bvID);
   int maximumFlow_gt_bv(SolverPtr S,GraphTheorySolver_long G,int source, int sink, int bvID);
   int minimumSpanningTree_leq(SolverPtr S,GraphTheorySolver_long G, Weight weight);
-  int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G,int source, int sink, Weight weight);
+  int minimumSpanningTree_lt(SolverPtr S,GraphTheorySolver_long G, Weight weight);
   int acyclic_undirected(SolverPtr S,GraphTheorySolver_long G);
   int acyclic_directed(SolverPtr S,GraphTheorySolver_long G);
   void newEdgeSet(SolverPtr S,GraphTheorySolver_long G,int * edges, int n_edges, bool enforceEdgeAssignment);

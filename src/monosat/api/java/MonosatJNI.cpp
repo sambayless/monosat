@@ -979,7 +979,8 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(newNode(solver,graph));
 }
 
 /*
@@ -988,10 +989,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint  to,  jlong weight) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
-
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(newEdge(solver,graph,from,to,weight));
 }
 
 /*
@@ -1000,9 +1001,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge_1bv
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr,jint from,jint  to, jint bvID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(newEdge(solver,graph,from,to,bvID));
 }
 
 /*
@@ -1013,7 +1015,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge_1bv
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNodes
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(nNodes(solver,graph));
 }
 
 /*
@@ -1024,7 +1027,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNodes
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(nEdges(solver,graph));
 }
 
 /*
@@ -1033,9 +1037,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(reaches(solver,graph,from,to));
 }
 
 /*
@@ -1044,9 +1049,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1lt_1const
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jint steps) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(shortestPathUnweighted_lt_const(solver,graph,from,to,steps));
 }
 
 /*
@@ -1055,9 +1061,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1lt_1const
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1leq_1const
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jint steps) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(shortestPathUnweighted_leq_const(solver,graph,from,to,steps));
 }
 
 /*
@@ -1066,9 +1073,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1leq_1cons
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1const
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jlong dist) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(shortestPath_lt_const(solver,graph,from,to,dist));
 }
 
 /*
@@ -1077,9 +1085,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1const
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1const
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jlong dist) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(shortestPath_leq_const(solver,graph,from,to,dist));
 }
 
 /*
@@ -1088,9 +1097,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1const
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1bv
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jint bvID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(shortestPath_lt_bv(solver,graph,from,to,bvID));
 }
 
 /*
@@ -1099,9 +1109,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1bv
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1bv
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jint bvID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(shortestPath_leq_bv(solver,graph,from,to,bvID));
 }
 
 /*
@@ -1110,9 +1121,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1bv
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jlong weight) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(maximumFlow_geq(solver,graph,from,to,weight));
 }
 
 /*
@@ -1121,9 +1133,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jlong weight) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(maximumFlow_gt(solver,graph,from,to,weight));
 }
 
 /*
@@ -1132,9 +1145,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq_1bv
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jint bvID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(maximumFlow_geq_bv(solver,graph,from,to,bvID));
 }
 
 /*
@@ -1143,9 +1157,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq_1bv
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt_1bv
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jint bvID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(maximumFlow_gt_bv(solver,graph,from,to,bvID));
 }
 
 /*
@@ -1154,9 +1169,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt_1bv
  * Signature: (JJJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1leq
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong weight) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(minimumSpanningTree_leq(solver,graph,weight));
 }
 
 /*
@@ -1165,9 +1181,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1leq
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1lt
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong weight) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(minimumSpanningTree_lt(solver,graph,weight));
 }
 
 /*
@@ -1178,7 +1195,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1lt
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1undirected
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(acyclic_undirected(solver,graph));
 }
 
 /*
@@ -1189,7 +1207,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1undirected
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1directed
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(acyclic_directed(solver,graph));
 }
 
 /*
@@ -1198,9 +1217,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1directed
  * Signature: (JJ[IIZ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_newEdgeSet
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jobject array, jint, jboolean) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jobject edges, jint n_edges, jboolean enforceEdgeAssignment) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    newEdgeSet(solver,graph,(int *) env->GetDirectBufferAddress(edges),n_edges,enforceEdgeAssignment);
 }
 
 /*
@@ -1209,9 +1229,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_newEdgeSet
  * Signature: (JJJ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_graph_1setAssignEdgesToWeight
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong weight) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    graph_setAssignEdgesToWeight(solver,graph,weight);
 }
 
 /*
@@ -1220,9 +1241,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_graph_1setAssignEdgesToWeight
  * Signature: (JJIII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_createFlowRouting
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint sourceNode, jint destNode, jint maxflowLit) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return  reinterpret_cast<jlong>(createFlowRouting(solver,graph, sourceNode, destNode, maxflowLit));
 }
 
 /*
@@ -1231,10 +1253,11 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_createFlowRouting
  * Signature: (JJJII[I[I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addRoutingNet
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong, jint, jint, jobject array,
-         jintArray) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong routerPtr, jint disabledEdge, jint n_members,jobject edge_lits, jobject reach_lits){
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+     FlowRouterPtr  router = reinterpret_cast<FlowRouterPtr>(routerPtr);
+    addRoutingNet(solver,graph,router,disabledEdge,n_members,(int *) env->GetDirectBufferAddress(edge_lits),(int *) env->GetDirectBufferAddress(reach_lits));
 }
 
 /*
@@ -1245,7 +1268,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addRoutingNet
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint literal) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-
+    return jint(getModel_Literal(solver,literal));
 }
 
 /*
@@ -1254,9 +1277,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
  * Signature: (JJIZ)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jboolean) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jboolean getMaximumValue) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return jlong(getModel_BV(solver,bv,bvID,getMaximumValue));
 }
 
 /*
@@ -1265,9 +1289,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
  * Signature: (JJI)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MaxFlow
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint maxflow_literal) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jlong(getModel_MaxFlow(solver,graph,maxflow_literal));
 }
 
 /*
@@ -1276,9 +1301,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MaxFlow
  * Signature: (JJII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1EdgeFlow
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint maxflow_literal, jint edgeLit) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jlong(getModel_EdgeFlow(solver,graph,maxflow_literal,edgeLit));
 }
 
 /*
@@ -1287,9 +1313,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1EdgeFlow
  * Signature: (JJII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1AcyclicEdgeFlow
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint maxflow_literal, jint edgeLit) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jlong(getModel_AcyclicEdgeFlow(solver,graph,maxflow_literal,edgeLit));
 }
 
 /*
@@ -1298,9 +1325,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1AcyclicEdgeFlow
  * Signature: (JJI)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MinimumSpanningTreeWeight
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint spanning_tree_literal) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jlong(getModel_MinimumSpanningTreeWeight(solver,graph,spanning_tree_literal));
 }
 
 /*
@@ -1309,9 +1337,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MinimumSpanningTreeWei
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes_1Length
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint reach_or_distance_literal) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getModel_Path_Nodes_Length(solver,graph,reach_or_distance_literal));
 }
 
 /*
@@ -1320,9 +1349,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes_1Length
  * Signature: (JJII[I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jintArray) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint reach_or_distance_literal, jint store_length, jobject store) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getModel_Path_Nodes(solver,graph,reach_or_distance_literal,store_length,(int *) env->GetDirectBufferAddress(store)));
 }
 
 /*
@@ -1331,9 +1361,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits_1Length
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint reach_or_distance_literal) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getModel_Path_EdgeLits_Length(solver,graph,reach_or_distance_literal));
 }
 
 /*
@@ -1342,8 +1373,9 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits_1Length
  * Signature: (JJII[I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jintArray) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint reach_or_distance_literal,jint store_length, jobject store) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getModel_Path_EdgeLits(solver,graph,reach_or_distance_literal,store_length,(int *) env->GetDirectBufferAddress(store)));
 }
 

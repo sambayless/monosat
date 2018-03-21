@@ -1420,7 +1420,7 @@ int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<i
 	G->implementConstraints();
 	return toInt(l);
 }
-int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
+int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
 	write_out(S,"mst_weight_lt  %d %d %d %d %d %ld\n",G->getGraphID(), dimacs(l),weight);
