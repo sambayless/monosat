@@ -864,6 +864,11 @@ int newVar(Monosat::SimpSolver * S){
 	return S->newVar();
 }
 
+void releaseLiteral(Monosat::SimpSolver * S, int literal){
+    assert(literal>=0);
+    S->releaseLiteral(toLit(literal));
+}
+
 bool disallowLiteralSimplification(Monosat::SimpSolver * S, int lit){
 	if(S->isEliminated(var(toLit(lit)))){
 		fprintf(stderr,"Warning: Literal %d has already been eliminated by the pre-processor\n", dimacs(toLit(lit)));

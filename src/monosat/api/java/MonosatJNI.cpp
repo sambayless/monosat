@@ -1378,4 +1378,3 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits
     GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
     return jint(getModel_Path_EdgeLits(solver,graph,reach_or_distance_literal,store_length,(int *) env->GetDirectBufferAddress(store)));
 }
-

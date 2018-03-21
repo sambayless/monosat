@@ -2,6 +2,7 @@ package monosat;
 import java.util.ArrayList;
 import java.util.Vector;
 import java.nio.IntBuffer;
+
 /**
  * Low-level JNI mapping of the C interface to MonoSAT.
  */

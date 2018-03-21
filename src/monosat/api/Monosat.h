@@ -113,6 +113,9 @@ typedef int64_t Weight;
 
   void backtrack(SolverPtr S);
   int newVar(SolverPtr S);
+  //Release this literal back to the sat solver, so that its variable can be eventually reused (after the next backtrack to 0).
+  //The literal will be assigned to true in this process.
+  void releaseLiteral(SolverPtr S, int literal);
   void setDecisionVar(SolverPtr S,int var,bool decidable);
   bool isDecisionVar(SolverPtr S,int var);
 

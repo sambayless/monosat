@@ -7,6 +7,9 @@
 /CMakeFiles
 /api/python/build
 /src/monosat/api/python/build
+/src/monosat/api/cython/build
+/src/monosat/api/cython/cython_debug
+/src/monosat/api/java/build
 Release/*
 Release2/*
 MinSizeRel/*
