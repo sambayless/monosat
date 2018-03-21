@@ -30,7 +30,7 @@ public class MonosatJNI {
 
     //basic solver functions
     public native static boolean solve(long solverPtr);
-    public native static boolean solveAssumptions(long solverPtr,  IntBuffer  assumps);
+    public native static boolean solveAssumptions(long solverPtr,  IntBuffer  assumps, int n_assumptions);
 
     //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
     public native static void setTimeLimit(long solverPtr,int seconds);
@@ -44,7 +44,7 @@ public class MonosatJNI {
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
     public native static int solveLimited(long solverPtr);
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-    public native static int solveAssumptionsLimited(long solverPtr, IntBuffer  assumptions);
+    public native static int solveAssumptionsLimited(long solverPtr, IntBuffer  assumptions,int n_assumptions);
     
     public native static boolean lastSolutionWasOptimal(long solverPtr);
 
@@ -55,6 +55,7 @@ public class MonosatJNI {
 
     public native static void backtrack(long solverPtr);
     public native static int newVar(long solverPtr);
+    public native static void releaseLiteral(long solverPtr,int literal);
     public native static void setDecisionVar(long solverPtr,int var,boolean decidable);
     public native static boolean isDecisionVar(long solverPtr,int var);
 
@@ -70,7 +71,7 @@ public class MonosatJNI {
     public native static int true_lit(long solverPtr);
 
     //Prevents this literal from being simplified by the preprocessor
-    public native static boolean disallowLiteralSimplification(long solverPtr, int lit);
+    public native static boolean disallowLiteralSimplification(long solverPtr, int var);
 
     //permanently disable SAT-based preprocessing in this solver
     public native static void disablePreprocessing(long solverPtr);

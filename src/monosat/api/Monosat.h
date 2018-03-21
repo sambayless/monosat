@@ -131,7 +131,7 @@ typedef int64_t Weight;
   int true_lit(SolverPtr S);
 
   //Prevents this literal from being simplified by the preprocessor
-  bool disallowLiteralSimplification(SolverPtr S, int lit);
+  bool disallowLiteralSimplification(SolverPtr S, int var);
 
   //permanently disable SAT-based preprocessing in this solver
   void disablePreprocessing(SolverPtr S);

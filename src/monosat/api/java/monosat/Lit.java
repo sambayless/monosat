@@ -16,6 +16,10 @@ final public class Lit {
 
     public final static Lit Undef= new Lit(-2);
     public final static Lit Error= new Lit(-1);
+
+    /**
+     * Typically, users will create literals using Solver.newLit(), rather than constructing them directly.
+     */
     protected Lit(){
         this.l = -2;
         this.neg = Error;
@@ -42,7 +46,13 @@ final public class Lit {
     public Lit negate(){
         return neg;
     }
-
+    public Lit abs(){
+        if(sign()){
+            return neg;
+        }else{
+            return this;
+        }
+    }
     /**
      * Convert the literal into dimacs format
      * @return
@@ -51,6 +61,11 @@ final public class Lit {
         return ((l/2)+1) * (this.sign()? -1:1);
     }
 
+    /**
+     * Convert the literal into a variable.
+     * @return
+     */
+    public int toVar(){return l/2;}
     /**
      * Throws an exception if this is not a legal literal (eg, if the index is <0)
      */

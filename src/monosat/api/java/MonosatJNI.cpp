@@ -107,10 +107,9 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
  * Signature: (J[I)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jintArray assumptions) {
-    const jsize length = env->GetArrayLength(assumptions);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jintArray assumptions,jint n_assumptions) {
     jint *r = env->GetIntArrayElements(assumptions, NULL);
-    return jboolean(solveAssumptions(reinterpret_cast<SolverPtr>(solverPtr), r, length));
+    return jboolean(solveAssumptions(reinterpret_cast<SolverPtr>(solverPtr), r, n_assumptions));
 }
 
 /*
@@ -169,10 +168,9 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveLimited
  * Signature: (J[I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveAssumptionsLimited
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jintArray assumptions) {
-    const jsize length = env->GetArrayLength(assumptions);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jintArray assumptions,jint n_assumptions) {
     jint *r = env->GetIntArrayElements(assumptions, NULL);
-    return solveAssumptionsLimited(reinterpret_cast<SolverPtr>(solverPtr), r, length);
+    return solveAssumptionsLimited(reinterpret_cast<SolverPtr>(solverPtr), r, n_assumptions);
 }
 /*
  * Class:     MonosatJNI
@@ -305,9 +303,9 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_true_1lit
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_disallowLiteralSimplification
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint literal) {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint var) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jboolean(disallowLiteralSimplification(solver, literal));
+    return jboolean(disallowLiteralSimplification(solver, var));
 }
 
 /*
