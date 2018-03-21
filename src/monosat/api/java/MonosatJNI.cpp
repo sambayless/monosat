@@ -9,8 +9,8 @@ using namespace std;
  * Signature: ()Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVersion
-  (JNIEnv * env, jclass monosat_class){
-  return env->NewStringUTF(getVersion());
+        (JNIEnv *env, jclass monosat_class) {
+    return env->NewStringUTF(getVersion());
 }
 
 /*
@@ -19,8 +19,8 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVersion
  * Signature: (IZ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_varToLit
-  (JNIEnv * env, jclass monosat_class, jint var, jboolean sign){
-  return varToLit(var,sign);
+        (JNIEnv *env, jclass monosat_class, jint var, jboolean sign) {
+    return varToLit(var, sign);
 }
 
 /*
@@ -29,8 +29,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_varToLit
  * Signature: (I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_litToVar
-  (JNIEnv * env, jclass monosat_class, jint lit){
-  return litToVar(lit);
+        (JNIEnv *env, jclass monosat_class, jint lit) {
+    return litToVar(lit);
 }
 
 /*
@@ -39,8 +39,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_litToVar
  * Signature: ()J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__
-  (JNIEnv * env, jclass monosat_class){
-  return reinterpret_cast<jlong>(newSolver());
+        (JNIEnv *env, jclass monosat_class) {
+    return reinterpret_cast<jlong>(newSolver());
 }
 
 /*
@@ -49,11 +49,11 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__
  * Signature: (Ljava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__Ljava_lang_String_2
-  (JNIEnv * env, jclass monosat_class, jstring args){
-  const char *str = env->GetStringUTFChars(args, 0);
-  auto * ptr = newSolver_arg(str);
-  env->ReleaseStringUTFChars(args,str);
-  return reinterpret_cast<jlong>(ptr);
+        (JNIEnv *env, jclass monosat_class, jstring args) {
+    const char *str = env->GetStringUTFChars(args, 0);
+    auto *ptr = newSolver_arg(str);
+    env->ReleaseStringUTFChars(args, str);
+    return reinterpret_cast<jlong>(ptr);
 }
 
 /*
@@ -62,8 +62,8 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__Ljava_lang_String_2
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_deleteSolver
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
-  deleteSolver(reinterpret_cast<SolverPtr>(solverPtr));
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
+    deleteSolver(reinterpret_cast<SolverPtr>(solverPtr));
 
 }
 
@@ -73,10 +73,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_deleteSolver
  * Signature: (JLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setOutputFile
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jstring filename){
-  const char *str = env->GetStringUTFChars(filename, 0);
-  setOutputFile(reinterpret_cast<SolverPtr>(solverPtr),str);
-  env->ReleaseStringUTFChars(filename,str);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jstring filename) {
+    const char *str = env->GetStringUTFChars(filename, 0);
+    setOutputFile(reinterpret_cast<SolverPtr>(solverPtr), str);
+    env->ReleaseStringUTFChars(filename, str);
 }
 
 /*
@@ -85,10 +85,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setOutputFile
  * Signature: (JLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jstring filename){
-  const char *str = env->GetStringUTFChars(filename, 0);
-  readGNF(reinterpret_cast<SolverPtr>(solverPtr),str);
-  env->ReleaseStringUTFChars(filename,str);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jstring filename) {
+    const char *str = env->GetStringUTFChars(filename, 0);
+    readGNF(reinterpret_cast<SolverPtr>(solverPtr), str);
+    env->ReleaseStringUTFChars(filename, str);
 }
 
 /*
@@ -97,8 +97,8 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
-   return  jboolean(solve(reinterpret_cast<SolverPtr>(solverPtr)));
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
+    return jboolean(solve(reinterpret_cast<SolverPtr>(solverPtr)));
 }
 
 /*
@@ -107,10 +107,10 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
  * Signature: (J[I)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jintArray assumptions){
-  const jsize length = env->GetArrayLength(assumptions);
-  jint *r = env->GetIntArrayElements(assumptions, NULL);
-  return jboolean(solveAssumptions(reinterpret_cast<SolverPtr>(solverPtr),r,length));
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jintArray assumptions) {
+    const jsize length = env->GetArrayLength(assumptions);
+    jint *r = env->GetIntArrayElements(assumptions, NULL);
+    return jboolean(solveAssumptions(reinterpret_cast<SolverPtr>(solverPtr), r, length));
 }
 
 /*
@@ -119,8 +119,8 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setTimeLimit
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint limit){
-  setTimeLimit(reinterpret_cast<SolverPtr>(solverPtr),limit);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint limit) {
+    setTimeLimit(reinterpret_cast<SolverPtr>(solverPtr), limit);
 }
 
 /*
@@ -129,8 +129,8 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setTimeLimit
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setMemoryLimit
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint limit){
-  setMemoryLimit(reinterpret_cast<SolverPtr>(solverPtr),limit);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint limit) {
+    setMemoryLimit(reinterpret_cast<SolverPtr>(solverPtr), limit);
 }
 
 /*
@@ -139,8 +139,8 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setMemoryLimit
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setConflictLimit
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint limit){
-  setConflictLimit(reinterpret_cast<SolverPtr>(solverPtr),limit);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint limit) {
+    setConflictLimit(reinterpret_cast<SolverPtr>(solverPtr), limit);
 }
 
 /*
@@ -149,8 +149,8 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setConflictLimit
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setPropagationLimit
-        (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint limit){
-  setPropagationLimit(reinterpret_cast<SolverPtr>(solverPtr),limit);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint limit) {
+    setPropagationLimit(reinterpret_cast<SolverPtr>(solverPtr), limit);
 }
 
 /*
@@ -159,8 +159,8 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setPropagationLimit
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveLimited
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
-  return solveLimited(reinterpret_cast<SolverPtr>(solverPtr));
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
+    return solveLimited(reinterpret_cast<SolverPtr>(solverPtr));
 }
 
 /*
@@ -169,10 +169,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveLimited
  * Signature: (J[I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveAssumptionsLimited
-        (JNIEnv * env, jclass monosat_class, jlong solverPtr, jintArray assumptions){
-  const jsize length = env->GetArrayLength(assumptions);
-  jint *r = env->GetIntArrayElements(assumptions, NULL);
-  return solveAssumptionsLimited(reinterpret_cast<SolverPtr>(solverPtr),r,length);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jintArray assumptions) {
+    const jsize length = env->GetArrayLength(assumptions);
+    jint *r = env->GetIntArrayElements(assumptions, NULL);
+    return solveAssumptionsLimited(reinterpret_cast<SolverPtr>(solverPtr), r, length);
 }
 /*
  * Class:     MonosatJNI
@@ -180,8 +180,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveAssumptionsLimited
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_lastSolutionWasOptimal
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
-  return jboolean(lastSolutionWasOptimal(reinterpret_cast<SolverPtr>(solverPtr)));
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
+    return jboolean(lastSolutionWasOptimal(reinterpret_cast<SolverPtr>(solverPtr)));
 }
 
 /*
@@ -190,14 +190,14 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_lastSolutionWasOptimal
  * Signature: (J[II)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConflictClause
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jobject array, jint length){
-  SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-   if (array==nullptr || length<0){
-     return getConflictClause(solver,nullptr,-1);
-   }else{
-     assert(length>=0);
-     return getConflictClause(solver,(int*) env->GetDirectBufferAddress(array),length);
-   }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array, jint length) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    if (array == nullptr || length < 0) {
+        return getConflictClause(solver, nullptr, -1);
+    } else {
+        assert(length >= 0);
+        return getConflictClause(solver, (int *) env->GetDirectBufferAddress(array), length);
+    }
 }
 
 /*
@@ -206,7 +206,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConflictClause
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_backtrack
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     backtrack(solver);
 }
@@ -217,7 +217,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_backtrack
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newVar
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     return jint(newVar(solver));
 }
@@ -228,9 +228,9 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newVar
  * Signature: (JIZ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionVar
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint variable, jboolean is_decision){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint variable, jboolean is_decision) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    setDecisionVar(solver,variable,is_decision);
+    setDecisionVar(solver, variable, is_decision);
 }
 
 /*
@@ -239,9 +239,9 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionVar
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_isDecisionVar
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint variable){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint variable) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jboolean(isDecisionVar(solver,variable));
+    return jboolean(isDecisionVar(solver, variable));
 }
 
 /*
@@ -250,9 +250,9 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_isDecisionVar
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionPriority
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint variable, jint priority){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint variable, jint priority) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    setDecisionPriority(solver,variable,priority);
+    setDecisionPriority(solver, variable, priority);
 }
 
 /*
@@ -261,9 +261,9 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionPriority
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getDecisionPriority
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint variable){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint variable) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jint(getDecisionPriority(solver,variable));
+    return jint(getDecisionPriority(solver, variable));
 }
 
 /*
@@ -272,9 +272,9 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getDecisionPriority
  * Signature: (JIZ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionPolarity
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint variable, jboolean polarity){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint variable, jboolean polarity) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    setDecisionPolarity(solver,variable,polarity);
+    setDecisionPolarity(solver, variable, polarity);
 }
 
 /*
@@ -283,9 +283,9 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionPolarity
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_getDecisionPolarity
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint variable){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint variable) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jboolean(getDecisionPolarity(solver,variable));
+    return jboolean(getDecisionPolarity(solver, variable));
 }
 
 /*
@@ -294,7 +294,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_getDecisionPolarity
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_true_1lit
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     return jint(true_lit(solver));
 }
@@ -305,9 +305,9 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_true_1lit
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_disallowLiteralSimplification
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint literal){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint literal) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jboolean(disallowLiteralSimplification(solver,literal));
+    return jboolean(disallowLiteralSimplification(solver, literal));
 }
 
 /*
@@ -316,7 +316,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_disallowLiteralSimplification
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_disablePreprocessing
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     disablePreprocessing(solver);
 }
@@ -327,7 +327,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_disablePreprocessing
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nVars
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     return jint(nVars(solver));
 }
@@ -338,7 +338,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nVars
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nClauses
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     return jint(nClauses(solver));
 }
@@ -349,10 +349,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nClauses
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectors
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return jint(nBitvectors(solver,bv));
+    return jint(nBitvectors(solver, bv));
 }
 
 /*
@@ -361,9 +361,9 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectors
  * Signature: (J[II)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addClause
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jobject array, jint length){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array, jint length) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jboolean(addClause(solver,(int*) env->GetDirectBufferAddress(array),length));
+    return jboolean(addClause(solver, (int *) env->GetDirectBufferAddress(array), length));
 }
 
 /*
@@ -372,9 +372,9 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addClause
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addUnitClause
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint lit){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jboolean(addUnitClause(solver,lit));
+    return jboolean(addUnitClause(solver, lit));
 }
 
 /*
@@ -383,9 +383,9 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addUnitClause
  * Signature: (JII)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addBinaryClause
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint l1, jint l2){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint l1, jint l2) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jboolean(addBinaryClause(solver,l1,l2));
+    return jboolean(addBinaryClause(solver, l1, l2));
 }
 
 /*
@@ -394,9 +394,9 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addBinaryClause
  * Signature: (JIII)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addTertiaryClause
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint l1, jint l2, jint l3){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint l1, jint l2, jint l3) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return addTertiaryClause(solver,l1,l2,l3);
+    return addTertiaryClause(solver, l1, l2, l3);
 }
 
 /*
@@ -405,7 +405,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addTertiaryClause
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_clearOptimizationObjectives
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     clearOptimizationObjectives(solver);
 }
@@ -416,10 +416,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_clearOptimizationObjectives
  * Signature: (JJI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeBV
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    maximizeBV(solver,bv,bvID);
+    maximizeBV(solver, bv, bvID);
 }
 
 /*
@@ -428,10 +428,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeBV
  * Signature: (JJI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeBV
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    minimizeBV(solver,bv,bvID);
+    minimizeBV(solver, bv, bvID);
 }
 
 /*
@@ -440,9 +440,9 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeBV
  * Signature: (J[II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeLits
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jobject array, jint length){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    maximizeLits(solver,(int*) env->GetDirectBufferAddress(array),length);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array, jint length) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    maximizeLits(solver, (int *) env->GetDirectBufferAddress(array), length);
 }
 
 /*
@@ -451,9 +451,9 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeLits
  * Signature: (J[II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeLits
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jobject array, jint length){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array, jint length) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    minimizeLits(solver,(int*) env->GetDirectBufferAddress(array),length);
+    minimizeLits(solver, (int *) env->GetDirectBufferAddress(array), length);
 }
 
 /*
@@ -462,9 +462,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeLits
  * Signature: (J[I[II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeWeightedLits
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jobject array1, jobject array2, jint length){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array1, jobject array2, jint length) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    maximizeWeightedLits(solver,(int*) env->GetDirectBufferAddress(array1),(int*) env->GetDirectBufferAddress(array2),length);
+    maximizeWeightedLits(solver, (int *) env->GetDirectBufferAddress(array1),
+                         (int *) env->GetDirectBufferAddress(array2), length);
 }
 
 /*
@@ -473,9 +474,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeWeightedLits
  * Signature: (J[I[II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeWeightedLits
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jobject array1, jobject array2, jint length){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    minimizeWeightedLits(solver,(int*) env->GetDirectBufferAddress(array1),(int*) env->GetDirectBufferAddress(array2),length);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array1, jobject array2, jint length) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    minimizeWeightedLits(solver, (int *) env->GetDirectBufferAddress(array1),
+                         (int *) env->GetDirectBufferAddress(array2), length);
 }
 
 /*
@@ -484,8 +486,8 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeWeightedLits
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_initBVTheory
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     return reinterpret_cast<jlong>(initBVTheory(solver));
 }
 
@@ -495,10 +497,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_initBVTheory
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1const
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint width, jlong constantValue){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint width, jlong constantValue) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBitvector_const(solver,bv,width,constantValue);
+    return newBitvector_const(solver, bv, width, constantValue);
 }
 
 /*
@@ -507,10 +509,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1const
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1anon
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint width){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint width) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBitvector_anon(solver,bv,width);
+    return newBitvector_anon(solver, bv, width);
 }
 
 /*
@@ -519,10 +521,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1anon
  * Signature: (JJ[II)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint length){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint length) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBitvector(solver,bv,(int*) env->GetDirectBufferAddress(array),length);
+    return newBitvector(solver, bv, (int *) env->GetDirectBufferAddress(array), length);
 }
 
 /*
@@ -531,10 +533,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_bv_1width
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return bv_width(solver,bv,bvID);
+    return bv_width(solver, bv, bvID);
 }
 
 /*
@@ -543,10 +545,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_bv_1width
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1lt
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBVComparison_const_lt(solver,bv,bvID,constval);
+    return newBVComparison_const_lt(solver, bv, bvID, constval);
 }
 
 /*
@@ -555,10 +557,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1lt
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1lt
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBVComparison_bv_lt(solver,bv,bvID1,bvID2);
+    return newBVComparison_bv_lt(solver, bv, bvID1, bvID2);
 }
 
 /*
@@ -567,10 +569,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1lt
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1leq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBVComparison_const_leq(solver,bv,bvID,constval);
+    return newBVComparison_const_leq(solver, bv, bvID, constval);
 }
 
 /*
@@ -579,10 +581,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1leq
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1leq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBVComparison_bv_leq(solver,bv,bvID1,bvID2);
+    return newBVComparison_bv_leq(solver, bv, bvID1, bvID2);
 }
 
 /*
@@ -591,10 +593,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1leq
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1gt
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBVComparison_const_gt(solver,bv,bvID,constval);
+    return newBVComparison_const_gt(solver, bv, bvID, constval);
 }
 
 /*
@@ -603,10 +605,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1gt
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1gt
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBVComparison_bv_gt(solver,bv,bvID1,bvID2);
+    return newBVComparison_bv_gt(solver, bv, bvID1, bvID2);
 }
 
 /*
@@ -615,10 +617,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1gt
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1geq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBVComparison_const_geq(solver,bv,bvID,constval);
+    return newBVComparison_const_geq(solver, bv, bvID, constval);
 }
 
 /*
@@ -627,10 +629,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1geq
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1geq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return newBVComparison_bv_geq(solver,bv,bvID1,bvID2);
+    return newBVComparison_bv_geq(solver, bv, bvID1, bvID2);
 }
 
 /*
@@ -639,10 +641,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1geq
  * Signature: (JJI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1bitblast
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_bitblast(solver,bv,bvID);
+    bv_bitblast(solver, bv, bvID);
 }
 
 /*
@@ -651,10 +653,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1bitblast
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1concat
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_concat(solver,bv,aID,bID,resultID);
+    bv_concat(solver, bv, aID, bID, resultID);
 }
 
 /*
@@ -663,10 +665,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1concat
  * Signature: (JJIIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1slice
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint lower, jint upper, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint lower, jint upper,
+         jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_slice(solver,bv,aID,lower,upper,resultID);
+    bv_slice(solver, bv, aID, lower, upper, resultID);
 }
 
 /*
@@ -675,10 +678,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1slice
  * Signature: (JJII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1not
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_not(solver,bv,aID,resultID);
+    bv_not(solver, bv, aID, resultID);
 }
 
 /*
@@ -687,10 +690,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1not
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1and
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_and(solver,bv,aID,bID,resultID);
+    bv_and(solver, bv, aID, bID, resultID);
 }
 
 /*
@@ -699,10 +702,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1and
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1nand
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_nand(solver,bv,aID,bID,resultID);
+    bv_nand(solver, bv, aID, bID, resultID);
 }
 
 /*
@@ -711,10 +714,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1nand
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1or
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr,  jint aID, jint bID, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_or(solver,bv,aID,bID,resultID);
+    bv_or(solver, bv, aID, bID, resultID);
 }
 
 /*
@@ -723,10 +726,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1or
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1nor
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr,  jint aID, jint bID, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_nor(solver,bv,aID,bID,resultID);
+    bv_nor(solver, bv, aID, bID, resultID);
 }
 
 /*
@@ -735,10 +738,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1nor
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1xor
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr,  jint aID, jint bID, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_xor(solver,bv,aID,bID,resultID);
+    bv_xor(solver, bv, aID, bID, resultID);
 }
 
 /*
@@ -747,10 +750,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1xor
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1xnor
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint aID, jint bID, jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_xnor(solver,bv,aID,bID,resultID);
+    bv_xnor(solver, bv, aID, bID, resultID);
 }
 
 /*
@@ -759,10 +762,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1xnor
  * Signature: (JJIIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1ite
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint condition_lit,jint bvThenID, jint bvElseID, jint bvResultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint condition_lit, jint bvThenID,
+         jint bvElseID, jint bvResultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_ite(solver,bv,condition_lit,bvThenID,bvElseID,bvResultID);
+    bv_ite(solver, bv, condition_lit, bvThenID, bvElseID, bvResultID);
 }
 
 /*
@@ -771,10 +775,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1ite
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1addition
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, int bvID1, int bvID2, int resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, int bvID1, int bvID2, int resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_addition(solver,bv,bvID1,bvID2,resultID);
+    bv_addition(solver, bv, bvID1, bvID2, resultID);
 }
 
 /*
@@ -783,10 +787,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1addition
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1subtraction
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2,
+         jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_subtraction(solver,bv,bvID1,bvID2,resultID);
+    bv_subtraction(solver, bv, bvID1, bvID2, resultID);
 }
 
 /*
@@ -795,10 +800,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1subtraction
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1multiply
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2,
+         jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_multiply(solver,bv,bvID1,bvID2,resultID);
+    bv_multiply(solver, bv, bvID1, bvID2, resultID);
 }
 
 /*
@@ -807,10 +813,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1multiply
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1divide
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2,
+         jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_divide(solver,bv,bvID1,bvID2,resultID);
+    bv_divide(solver, bv, bvID1, bvID2, resultID);
 }
 
 /*
@@ -819,10 +826,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1divide
  * Signature: (JJ[III)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1min
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint n_args,jint resultID){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint n_args,
+         jint resultID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_min(solver,bv,(int*) env->GetDirectBufferAddress(array),n_args,resultID);
+    bv_min(solver, bv, (int *) env->GetDirectBufferAddress(array), n_args, resultID);
 }
 
 /*
@@ -831,10 +839,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1min
  * Signature: (JJ[III)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1max
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint n_args,jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint n_args,
+         jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_max(solver,bv,(int*) env->GetDirectBufferAddress(array),n_args,resultID);
+    bv_max(solver, bv, (int *) env->GetDirectBufferAddress(array), n_args, resultID);
 }
 
 /*
@@ -843,10 +852,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1max
  * Signature: (JJ[III)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1popcount
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint n_args, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint n_args,
+         jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_popcount(solver,bv,(int*) env->GetDirectBufferAddress(array),n_args,resultID);
+    bv_popcount(solver, bv, (int *) env->GetDirectBufferAddress(array), n_args, resultID);
 }
 
 /*
@@ -855,10 +865,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1popcount
  * Signature: (JJ[III)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1unary
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint n_args, jint resultID){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint n_args,
+         jint resultID) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    bv_unary(solver,bv,(int*) env->GetDirectBufferAddress(array),n_args,resultID);
+    bv_unary(solver, bv, (int *) env->GetDirectBufferAddress(array), n_args, resultID);
 }
 
 /*
@@ -867,9 +878,9 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1unary
  * Signature: (J[II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jobject array, jint n_args){
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array, jint n_args) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    at_most_one(solver,(int*) env->GetDirectBufferAddress(array),n_args);
+    at_most_one(solver, (int *) env->GetDirectBufferAddress(array), n_args);
 }
 
 
@@ -879,9 +890,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one
  * Signature: (JII[I[I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1lt
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr,  jint rhs, jint n_args, jobject literals, jobject coefficients){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint rhs, jint n_args, jobject literals,
+         jobject coefficients) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    assertPB_lt(solver, rhs, n_args, (int *) env->GetDirectBufferAddress(literals),
+                (int *) env->GetDirectBufferAddress(coefficients));
 }
 
 /*
@@ -890,8 +903,12 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1lt
  * Signature: (JII[I[I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1leq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint, jint, jobject array, jintArray){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint rhs, jint n_args, jobject literals,
+         jobject coefficients) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    assertPB_leq(solver, rhs, n_args, (int *) env->GetDirectBufferAddress(literals),
+                 (int *) env->GetDirectBufferAddress(coefficients));
+}
 
 /*
  * Class:     MonosatJNI
@@ -899,8 +916,12 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1leq
  * Signature: (JII[I[I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1eq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint, jint, jobject array, jintArray){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint rhs, jint n_args, jobject literals,
+         jobject coefficients) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    assertPB_eq(solver, rhs, n_args, (int *) env->GetDirectBufferAddress(literals),
+                (int *) env->GetDirectBufferAddress(coefficients));
+}
 
 /*
  * Class:     MonosatJNI
@@ -908,8 +929,12 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1eq
  * Signature: (JII[I[I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1geq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint, jint, jobject array, jintArray){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint rhs, jint n_args, jobject literals,
+         jobject coefficients) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    assertPB_geq(solver, rhs, n_args, (int *) env->GetDirectBufferAddress(literals),
+                 (int *) env->GetDirectBufferAddress(coefficients));
+}
 
 /*
  * Class:     MonosatJNI
@@ -917,8 +942,12 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1geq
  * Signature: (JII[I[I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1gt
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint, jint, jobject array, jintArray){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint rhs, jint n_args, jobject literals,
+         jobject coefficients) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    assertPB_gt(solver, rhs, n_args, (int *) env->GetDirectBufferAddress(literals),
+                (int *) env->GetDirectBufferAddress(coefficients));
+}
 
 /*
  * Class:     MonosatJNI
@@ -926,8 +955,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1gt
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushPB
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    flushPB(solver);
+}
 
 /*
  * Class:     MonosatJNI
@@ -935,8 +966,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushPB
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return reinterpret_cast<jlong>(newGraph(solver));
+}
 
 /*
  * Class:     MonosatJNI
@@ -944,8 +977,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -953,8 +988,11 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+
+}
 
 /*
  * Class:     MonosatJNI
@@ -962,8 +1000,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge_1bv
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -971,8 +1011,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge_1bv
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNodes
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -980,8 +1022,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNodes
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -989,8 +1033,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -998,8 +1044,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1lt_1const
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1007,8 +1055,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1lt_1const
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1leq_1const
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1016,8 +1066,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1leq_1cons
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1const
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1025,8 +1077,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1const
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1const
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1034,8 +1088,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1const
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1bv
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1043,8 +1099,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1bv
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1bv
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1052,8 +1110,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1bv
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1061,8 +1121,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1070,8 +1132,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq_1bv
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1079,8 +1143,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq_1bv
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt_1bv
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1088,8 +1154,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt_1bv
  * Signature: (JJJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1leq
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1097,8 +1165,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1leq
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1lt
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jlong) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1106,8 +1176,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1lt
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1undirected
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1115,8 +1187,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1undirected
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1directed
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1124,8 +1198,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1directed
  * Signature: (JJ[IIZ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_newEdgeSet
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jobject array, jint, jboolean){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jobject array, jint, jboolean) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1133,8 +1209,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_newEdgeSet
  * Signature: (JJJ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_graph_1setAssignEdgesToWeight
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jlong){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1142,8 +1220,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_graph_1setAssignEdgesToWeight
  * Signature: (JJIII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_createFlowRouting
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1151,8 +1231,11 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_createFlowRouting
  * Signature: (JJJII[I[I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addRoutingNet
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jlong, jint, jint, jobject array, jintArray){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jlong, jint, jint, jobject array,
+         jintArray) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1160,8 +1243,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addRoutingNet
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint literal) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+
+}
 
 /*
  * Class:     MonosatJNI
@@ -1169,8 +1254,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
  * Signature: (JJIZ)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jboolean){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jboolean) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1178,8 +1265,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
  * Signature: (JJI)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MaxFlow
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1187,8 +1276,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MaxFlow
  * Signature: (JJII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1EdgeFlow
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1196,8 +1287,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1EdgeFlow
  * Signature: (JJII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1AcyclicEdgeFlow
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1205,8 +1298,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1AcyclicEdgeFlow
  * Signature: (JJI)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MinimumSpanningTreeWeight
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1214,8 +1309,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MinimumSpanningTreeWei
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes_1Length
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1223,8 +1320,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes_1Length
  * Signature: (JJII[I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jintArray){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jintArray) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1232,8 +1331,10 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits_1Length
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 
 /*
  * Class:     MonosatJNI
@@ -1241,6 +1342,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits_1Length
  * Signature: (JJII[I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits
-  (JNIEnv * env, jclass monosat_class, jlong solverPtr, jlong, jint, jint, jintArray){
- SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr); }
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint, jint, jintArray) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long G = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+}
 

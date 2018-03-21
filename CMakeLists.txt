@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
-set (PB_SUPPORT 1)
-set (JAVA_SUPPORT 0) #set to 1 to compile Java JNI support into the shared library (requires a JDK)
+option (PB_SUPPORT "Combile with Pseudo-Boolean support (using Minisat+)" ON)
+#set to compile Java JNI support into the shared library (requires a JDK)
+option(JAVA_SUPPORT "Build the static library" OFF)
+
 set (JAVA_SOURCE_FILES "")
 if(NOT NO_GIT_VERSION)
     set (SHOW_GIT_VERSION 1)
@@ -292,12 +294,12 @@ set(SOURCE_FILES_PB
 
         )
 
-if (${PB_SUPPORT})
+if (PB_SUPPORT)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_FILES_PB})
-endif (${PB_SUPPORT})
+endif (PB_SUPPORT)
 
 
-if (${JAVA_SUPPORT})
+if (JAVA_SUPPORT)
     find_package(Java REQUIRED)
     find_package(JNI REQUIRED)
 
@@ -319,7 +321,7 @@ if (${JAVA_SUPPORT})
         message (STATUS "JNI_LIBRARIES=${JNI_LIBRARIES}")
     endif()
     include_directories(${JNI_INCLUDE_DIRS})
-endif (${JAVA_SUPPORT})
+endif (JAVA_SUPPORT)
 
 if (${SHOW_GIT_VERSION})
     #only attempt to load the git version if the git repo is found in the source directory
@@ -346,9 +348,9 @@ if (NOT APPLE)
 endif()
 target_link_libraries(monosat gmpxx)
 target_link_libraries(monosat gmp)
-if (${JAVA_SUPPORT})
+if (JAVA_SUPPORT)
     target_link_libraries(monosat ${JNI_LIBRARIES})
-endif (${JAVA_SUPPORT})
+endif (JAVA_SUPPORT)
 
 if (${UNIX})
     #librt is needed for clock_gettime, which is enabled for linux only
@@ -369,9 +371,9 @@ target_link_libraries(monosat_static z.a)
 target_link_libraries(monosat_static m.a)
 target_link_libraries(monosat_static gmpxx.a)
 target_link_libraries(monosat_static gmp.a)
-if (${JAVA_SUPPORT})
+if (JAVA_SUPPORT)
     target_link_libraries(monosat_static ${JNI_LIBRARIES})
-endif (${JAVA_SUPPORT})
+endif (JAVA_SUPPORT)
 
 
 if (${UNIX})
@@ -394,9 +396,9 @@ if (NOT APPLE)
 endif()
 target_link_libraries(libmonosat gmpxx)
 target_link_libraries(libmonosat gmp)
-if (${JAVA_SUPPORT})
+if (JAVA_SUPPORT)
     target_link_libraries(libmonosat ${JNI_LIBRARIES})
-endif (${JAVA_SUPPORT})
+endif (JAVA_SUPPORT)
 if (${UNIX})
     #librt is needed for clock_gettime, which is enabled for linux only
     #(clock_gettime is used for capturing detailed timing statistics only)
