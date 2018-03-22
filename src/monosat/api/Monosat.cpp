@@ -1057,6 +1057,32 @@ int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 	write_out(S,"bv >= %d %d %d\n",dimacs(l),bvID, compareID);
 	return toInt(l);
 }
+
+int newBVComparison_const_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID, Weight weight){
+    Lit a = toLit(newBVComparison_const_geq(S,bv,bvID,weight));
+    Lit b = toLit(newBVComparison_const_gt(S,bv,bvID,weight));
+    Lit c = mkLit(S->newVar());
+    S->addClause(a, ~c);
+    S->addClause(~b, ~c);
+    S->addClause(c, ~a, b);
+    return toInt(c);
+}
+int newBVComparison_bv_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID, int compareID){
+    Lit a = toLit(newBVComparison_bv_geq(S,bv,bvID,compareID));
+    Lit b = toLit(newBVComparison_bv_gt(S,bv,bvID,compareID));
+    Lit c = mkLit(S->newVar());
+    S->addClause(a, ~c);
+    S->addClause(~b, ~c);
+    S->addClause(c, ~a, b);
+    return toInt(c);
+}
+int newBVComparison_const_neq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID, Weight weight){
+    return toInt(~toLit(newBVComparison_bv_const_eq(S,bv,bvID,weight)));
+}
+int newBVComparison_bv_neq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID, int compareID){
+    return toInt(~toLit(newBVComparison_bv_eq(S,bv,bvID,compareID)));
+}
+
 void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int* args, int n_args,int resultID){
 	vec<int> m_args;
 	for (int i = 0;i<n_args;i++)

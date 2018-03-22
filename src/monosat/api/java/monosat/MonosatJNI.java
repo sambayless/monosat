@@ -108,7 +108,10 @@ public class MonosatJNI {
     public native static int newBVComparison_bv_gt(long solverPtr, long bvPtr, int bvID, int compareID);
     public native static int newBVComparison_const_geq(long solverPtr, long bvPtr, int bvID, long constval);
     public native static int newBVComparison_bv_geq(long solverPtr, long bvPtr, int bvID, int compareID);
-
+    public native static int newBVComparison_const_eq(long solverPtr, long bvPtr, int bvID, long constval);
+    public native static int newBVComparison_bv_eq(long solverPtr, long bvPtr, int bvID, int compareID);
+    public native static int newBVComparison_const_neq(long solverPtr, long bvPtr, int bvID, long constval);
+    public native static int newBVComparison_bv_neq(long solverPtr, long bvPtr, int bvID, int compareID);
     //Convert the specified bitvector, as well as any other bitvectors in its cone of influence, into pure CNF
     public native static void bv_bitblast(long solverPtr, long bvPtr,int bvID);
 
@@ -197,6 +200,104 @@ public class MonosatJNI {
     public native static int getModel_Path_EdgeLits_Length(long solverPtr,long graphPtr,int reach_or_distance_literal);
     public native static int getModel_Path_EdgeLits(long solverPtr,long graphPtr,int reach_or_distance_literal, int store_length,  IntBuffer  store);
 
+    //Logic building methods
+
+    public native static int And_(long solverPtr,int lit_a, int lit_b, int lit_out);
+    public native static int Ands_(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
+    public native static void AssertImpliesAnd_(long solverPtr,int implies,IntBuffer lits, int n_lits, int lit_out);
+
+    public native static int Ands(long solverPtr,IntBuffer lits, int n_lits);
+    public native static int And(long solverPtr,int lit_a, int lit_b);
+
+    public native static int Or_(long solverPtr,int lit_a, int lit_b, int lit_out);
+    public native static int Ors_(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
+
+    //If this gate is true, then all of vals must be true.
+//But if this gate is false, vals may be true or false.
+    public native static int ImpliesAnd(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
+    //If this gate is true, then at least one of vals must be true.
+//But if this gate is false, vals may be true or false.
+    public native static int ImpliesOr(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
+    //This is an OR condition that holds only if implies is true
+    public native static void AssertImpliesOr_(long solverPtr,int implies,IntBuffer lits, int n_lits, int lit_out);
+
+    public native static int Ors(long solverPtr,IntBuffer lits, int n_lits);
+    public native static int Or(long solverPtr,int lit_a, int lit_b);
+
+    public native static int Nors(long solverPtr,IntBuffer lits, int n_lits);
+    public native static int Nor(long solverPtr,int lit_a, int lit_b);
+
+    public native static int Nands(long solverPtr,IntBuffer lits, int n_lits);
+
+    public native static int Nand(long solverPtr,int lit_a, int lit_b);
+
+    public native static int Xors(long solverPtr,IntBuffer lits, int n_lits);
+    public native static int Xor(long solverPtr,int lit_a, int lit_b);
+
+
+    public native static int Xnors(long solverPtr,IntBuffer lits, int n_lits);
+    public native static int Xnor(long solverPtr,int lit_a, int lit_b);
+
+    public native static int Implies(long solverPtr,int lit_a, int lit_b);
+    public native static int Implies_(long solverPtr,int lit_a, int lit_b, int lit_out);
+
+    public native static int Ite(long solverPtr,int lit_cond, int lit_thn, int lit_els);
+    public native static int Ite_(long solverPtr,int lit_cond, int lit_thn, int lit_els,int lit_out);
+
+    public native static int Add(long solverPtr,IntBuffer lits_a, IntBuffer lits_b, int n_lits, IntBuffer lits_out);
+    public native static int Add_(long solverPtr,IntBuffer lits_a, IntBuffer lits_b, int n_lits,IntBuffer lits_out, int carry_lit);
+    public native static int Subtract(long solverPtr,IntBuffer lits_a, IntBuffer lits_b, int n_lits,IntBuffer lits_out);
+    public native static int Subtract_(long solverPtr,IntBuffer lits_a, IntBuffer lits_b, int n_lits,IntBuffer lits_out, int borrow_lit);
+
+    //perform two's complement negation (long solverPtr,invert bits and add 1)
+//IntBuffer lits_out must have enough room to hold n_lits
+    public native static void Negate(long solverPtr,IntBuffer lits, int n_lits, IntBuffer lits_out);
+    //perform two's complement negation (long solverPtr,invert bits and add 1)
+    public native static void Negate_(long solverPtr,IntBuffer lits, int n_lits, IntBuffer lits_out);
+
+    public native static void Assert(long solverPtr,int lit);
+    public native static void AssertOrTertiary(long solverPtr,int lit_a, int lit_b, int lit_c);
+    public native static void AssertOrs(long solverPtr,IntBuffer lits, int n_lits);
+    public native static void AssertOr(long solverPtr,int lit_a, int lit_b);
+
+    public native static  void AssertNands(long solverPtr,IntBuffer lits, int n_lits);
+    public native static void AssertNand(long solverPtr,int lit_a, int lit_b);
+
+    public native static void AssertAnds(long solverPtr,IntBuffer lits, int n_lits);
+    public native static void AssertAnd(long solverPtr,int lit_a, int lit_b);
+
+    public native static void AssertNors(long solverPtr,IntBuffer lits, int n_lits);
+    public native static void AssertNor(long solverPtr,int lit_a, int lit_b);
+
+    public native static void AssertXor(long solverPtr,int lit_a, int lit_b);
+    public native static void AssertXors(long solverPtr,IntBuffer lits, int n_lits);
+
+    public native static void AssertXnors(long solverPtr,IntBuffer lits, int n_lits);
+    public native static void AssertXnor(long solverPtr,int lit_a, int lit_b);
+
+    public native static void AssertImplies(long solverPtr,int lit_a, int lit_b);
+    public native static void AssertEqual(long solverPtr,int lit_a, int lit_b);
+
+    public native static void AssertAllSame(long solverPtr,IntBuffer lits, int n_lits);
+
+    public native static int Equal(long solverPtr, int a_lit, int b_lit);
+    public native static int Equals(long solverPtr,IntBuffer A_lits, IntBuffer B_lits, int n_lits);
+
+    public native static int LEQ(long solverPtr,IntBuffer A_lits, IntBuffer B_lits, int n_lits);
+    public native static int LT(long solverPtr,IntBuffer A_lits, IntBuffer B_lits, int n_lits);
+
+    public native static void AssertEquals(long solverPtr,IntBuffer A_lits, IntBuffer B_lits, int n_lits);
+    public native static void AssertLEQ(long solverPtr,IntBuffer A_lits,  IntBuffer B_lits, int n_lits);
+    public native static  void AssertLT(long solverPtr,IntBuffer A_lits, IntBuffer B_lits, int n_lits);
+
+    //uses n^2 binary clauses to create a simple at-most-one constraint.
+//if you have more than 20 or so literals, strongly consider using a pseudo-Boolean constraint solver instead
+    public native static void AssertAMO(long solverPtr,IntBuffer lits, int n_lits) ;
+    //uses n^2 binary clauses to create a simple exactly-one-constraint.
+//if you have more than 20 or so literals, strongly consider using a pseudo-Boolean constraint solver instead
+    public native static void AssertExactlyOne(long solverPtr,IntBuffer lits, int n_lits);
+
+    
 
 
     // Test Driver

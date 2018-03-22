@@ -3,6 +3,7 @@ import monosat.MonosatJNI;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 
 public class Solver {
 
@@ -156,27 +157,41 @@ public class Solver {
         return MonosatJNI.nBitvectors(solverPtr,bvPtr);
     }
 
-
-    IntBuffer getLitBuffer(ArrayList<Lit> clause){
-        return getLitBuffer(clause,0);
-    }
-    IntBuffer getLitBuffer(ArrayList<Lit> clause,int bufferN){
+    IntBuffer getBVBuffer(Collection<BitVector> clause,int bufferN){
         assert(bufferN<3);
         assert(bufferN>=0);
         IntBuffer buffer = getBuffer(bufferN, clause.size());
-        for(int i = 0;i<clause.size();i++){
-            Lit l = clause.get(i);
-            l.validate();
-            buffer.put(i,l.l);
+        int index =0;
+        for(BitVector bv:clause){
+
+            buffer.put(index,bv.id);
+            index++;
         }
         return buffer;
     }
-    IntBuffer getIntBuffer(ArrayList<Integer> ints,int bufferN){
+    IntBuffer getLitBuffer(Collection<Lit> clause){
+        return getLitBuffer(clause,0);
+    }
+    IntBuffer getLitBuffer(Collection<Lit> clause,int bufferN){
+        assert(bufferN<3);
+        assert(bufferN>=0);
+        IntBuffer buffer = getBuffer(bufferN, clause.size());
+        int index =0;
+        for(Lit l:clause){
+            l.validate();
+            buffer.put(index,l.l);
+            index++;
+        }
+        return buffer;
+    }
+    IntBuffer getIntBuffer(Collection<Integer> ints,int bufferN){
         assert(bufferN<3);
         assert(bufferN>=0);
         IntBuffer buffer = getBuffer(bufferN, ints.size());
-        for(int i = 0;i<ints.size();i++){
-            buffer.put(i,ints.get(i));
+        int index =0;
+        for(Integer i:ints){
+            buffer.put(index,i);
+            index++;
         }
         return buffer;
     }
@@ -286,14 +301,25 @@ public class Solver {
 
 
     //Holds positive versions of all literals, so that we don't need to create multiple literal objects for the same literal
-    private ArrayList<Lit> lits;
+    //As literals have no reference to the solver and are really just a thin wrapper around an integer,
+    //this list can be safely shared across all solvers.
+    private static ArrayList<Lit> lits;
 
-    public Lit toLit(int literal){
-        Lit abs = lits.get(literal/2);
+    protected Lit toLit(int literal){
+        assert(literal>=0);
+        int var = literal/2;
+        assert(var<nVars());//the variable must have already been declared in the sat solver before this call
+        while(var>=lits.size()){
+            lits.add(null);
+        }
+        if(lits.get(var)==null){
+            lits.set(var,new Lit(var));
+        }
+        Lit l = lits.get(var);
         if ((literal &1) ==1){
-            return abs.negate();
+            return l.negate();
         }else{
-            return abs;
+            return l;
         }
     }
 
@@ -366,5 +392,33 @@ public class Solver {
         MonosatJNI.flushPB(solverPtr);
     }
 
-    
+    private ArrayList<ArrayList<BitVector>> cached_bvs;
+    private static long MAX_CACHE_CONST = 255;
+    /**
+     * Caches constant bitvectors of value < MAX_CACHE_CONST
+     * @param width
+     * @param constant
+     * @return
+     */
+    public BitVector bv(int width, long constant){
+        if(constant>=0 && constant<=MAX_CACHE_CONST){
+            while(cached_bvs.size()<=width){
+                cached_bvs.add(new ArrayList<>());
+            }
+
+            int small_const = (int) constant;
+            while(cached_bvs.get(width).size()<=constant){
+                cached_bvs.get(width).add(null);
+            }
+            if(cached_bvs.get(width).get(small_const)==null){
+                cached_bvs.get(width).set(small_const,new BitVector(this,width,constant));
+            }
+            assert(cached_bvs.get(width).get(small_const)!=null);
+            return cached_bvs.get(width).get(small_const);
+        }
+        return new BitVector(this,width,constant);
+    }
+
+
+
 }

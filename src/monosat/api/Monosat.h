@@ -169,6 +169,10 @@ typedef int64_t Weight;
   int newBVComparison_bv_gt(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
   int newBVComparison_const_geq(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
   int newBVComparison_bv_geq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
+  int newBVComparison_const_eq(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
+  int newBVComparison_bv_eq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
+  int newBVComparison_const_neq(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
+  int newBVComparison_bv_neq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
 
   //Convert the specified bitvector, as well as any other bitvectors in its cone of influence, into pure CNF
   void bv_bitblast(SolverPtr S, BVTheoryPtr bv,int bvID);

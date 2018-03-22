@@ -1,6 +1,7 @@
 import monosat.MonosatJNI;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class BitVector {
     protected int id;
@@ -19,6 +20,8 @@ public class BitVector {
 
     public BitVector(Solver solver,int width, long constant){
         this.solver = solver;
+        assert(constant>=0);
+        assert(constant<(1L<<width));
         id = MonosatJNI.newBitvector_const(solver.solverPtr,solver.bvPtr,width,constant);
         this.width = width;
         for(int i = 0;i<width;i++){
@@ -53,40 +56,237 @@ public class BitVector {
     public BitVector(Solver solver, int width){
         this(solver, width,true);
     }
+    public List<Lit> getBits(){
+        return Collections.unmodifiableList(bits);
+    }
     int width(){
         return width;
     }
+    int size(){
+        return width();
+    }
 
-    int newBVComparison_const_lt(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
-    int newBVComparison_bv_lt(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-    int newBVComparison_const_leq(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
-    int newBVComparison_bv_leq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-    int newBVComparison_const_gt(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
-    int newBVComparison_bv_gt(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
-    int newBVComparison_const_geq(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
-    int newBVComparison_bv_geq(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit gt(BitVector compareTo){
+        int l = MonosatJNI.newBVComparison_bv_gt(solver.solverPtr,solver.bvPtr,this.id, compareTo.id);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit geq(BitVector compareTo){
+        int l = MonosatJNI.newBVComparison_bv_geq(solver.solverPtr,solver.bvPtr,this.id, compareTo.id);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit lt(BitVector compareTo){
+        int l = MonosatJNI.newBVComparison_bv_lt(solver.solverPtr,solver.bvPtr,this.id, compareTo.id);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit leq(BitVector compareTo){
+        int l = MonosatJNI.newBVComparison_bv_leq(solver.solverPtr,solver.bvPtr,this.id, compareTo.id);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit neq(BitVector compareTo){
+        int l = MonosatJNI.newBVComparison_bv_neq(solver.solverPtr,solver.bvPtr,this.id, compareTo.id);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit eq(BitVector compareTo){
+        int l = MonosatJNI.newBVComparison_bv_eq(solver.solverPtr,solver.bvPtr,this.id, compareTo.id);
+        return solver.toLit(l);
+    }
+
+    //Constant comparisons
+
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit gt(int compareTo){
+        int l = MonosatJNI.newBVComparison_const_gt(solver.solverPtr,solver.bvPtr,this.id, compareTo);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit geq(int compareTo){
+        int l = MonosatJNI.newBVComparison_const_geq(solver.solverPtr,solver.bvPtr,this.id, compareTo);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit lt(int compareTo){
+        int l = MonosatJNI.newBVComparison_const_lt(solver.solverPtr,solver.bvPtr,this.id, compareTo);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit leq(int compareTo){
+        int l = MonosatJNI.newBVComparison_const_leq(solver.solverPtr,solver.bvPtr,this.id, compareTo);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit neq(int compareTo){
+        int l = MonosatJNI.newBVComparison_const_neq(solver.solverPtr,solver.bvPtr,this.id, compareTo);
+        return solver.toLit(l);
+    }
+    /**
+     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * @param compareTo
+     * @return
+     */
+    Lit eq(int compareTo){
+        int l = MonosatJNI.newBVComparison_const_eq(solver.solverPtr,solver.bvPtr,this.id, compareTo);
+        return solver.toLit(l);
+    }
+
+    /**
+     * Creates a new bitvector consisting of the bits [this[0],..,this[size-1],append[0],..,append[append.size()-1]]
+     * Does not introduce any new literals.
+     * @param append BitVector to append.
+     * @return
+     */
+    BitVector append(BitVector append){
+        int w = width()+append.width();
+        BitVector result = new BitVector(solver,w);
+        MonosatJNI.bv_concat(solver.solverPtr,solver.bvPtr,this.id,append.id,result.id);
+        return result;
+    }
+
+    /**
+     * Create a new bitvector consisting of the bits [this[lower],..,this[upper-1]]
+     * @param lower
+     * @param upper
+     * @return
+     */
+    BitVector slice(int lower, int upper){
+        int w = upper-lower;
+        assert(w>=0);
+        BitVector result = new BitVector(solver,w);
+        MonosatJNI.bv_slice(solver.solverPtr,solver.bvPtr,this.id,lower,upper-1,result.id);
+        return result;
+    }
+    /**
+     * Return a new bitvector consisting of the bitwise NOT of this bitvector.
+     */
+    BitVector not(){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_not(solver.solverPtr,solver.bvPtr,this.id,result.id);
+        return result;
+    }
+    /**
+     * Return a new bitvector consisting of the bitwise AND of this bitvector and other.
+     */
+    BitVector and(BitVector other){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_and(solver.solverPtr,solver.bvPtr,this.id,other.id,result.id);
+        return result;
+    }
+    /**
+     * Return a new bitvector consisting of the bitwise NAND of this bitvector and other.
+     */
+    BitVector nand(BitVector other){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_nand(solver.solverPtr,solver.bvPtr,this.id,other.id,result.id);
+        return result;
+    }
+    /**
+     * Return a new bitvector consisting of the bitwise OR of this bitvector and other.
+     */
+    BitVector or(BitVector other){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_or(solver.solverPtr,solver.bvPtr,this.id,other.id,result.id);
+        return result;
+    }
+    /**
+     * Return a new bitvector consisting of the bitwise NOR of this bitvector and other.
+     */
+    BitVector nor(BitVector other){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_nor(solver.solverPtr,solver.bvPtr,this.id,other.id,result.id);
+        return result;
+    }
+    /**
+     * Return a new bitvector consisting of the bitwise XOR of this bitvector and other.
+     */
+    BitVector xor(BitVector other){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_xor(solver.solverPtr,solver.bvPtr,this.id,other.id,result.id);
+        return result;
+    }
+    /**
+     * Return a new bitvector consisting of the bitwise XNOR of this bitvector and other.
+     */
+    BitVector xnor(BitVector other){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_xnor(solver.solverPtr,solver.bvPtr,this.id,other.id,result.id);
+        return result;
+    }
+
+    /**
+     * Returns a Bitvector that represents the non-wrapping two's complement addition
+     * of this and other. To prevent wrapping, the solver will enforce that a+b<(1<<width()).
+     * @param other
+     * @return
+     */
+    BitVector add(BitVector other){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_addition(solver.solverPtr,solver.bvPtr,this.id,other.id,result.id);
+        return result;
+    }
 
 
-    void bv_concat( SolverPtr S, BVTheoryPtr bv,int aID, int bID, int resultID);
-    void bv_slice( SolverPtr S, BVTheoryPtr bv,int aID, int lower, int upper, int resultID);
-    void bv_not( SolverPtr S, BVTheoryPtr bv,int bvaID, int bvResultID);
-    void bv_and( SolverPtr S, BVTheoryPtr bv,int bvaID, int bvbID, int bvResultID);
-    void bv_nand( SolverPtr S, BVTheoryPtr bv,int bvaID, int bvbID, int bvResultID);
-    void bv_or( SolverPtr S, BVTheoryPtr bv,int bvaID, int bvbID, int bvResultID);
-    void bv_nor( SolverPtr S, BVTheoryPtr bv,int bvaID, int bvbID, int bvResultID);
-    void bv_xor( SolverPtr S, BVTheoryPtr bv,int bvaID, int bvbID, int bvResultID);
-    void bv_xnor( SolverPtr S, BVTheoryPtr bv,int bvaID, int bvbID, int bvResultID);
+    /**
+     * Returns a Bitvector that represents the non-wrapping two's complement subtraction
+     * of this and other. To prevent wrapping, the solver will enforce that a-b>=0.
+     * @param other
+     * @return
+     */
+    BitVector subtract(BitVector other){
+        BitVector result = new BitVector(solver,width());
+        MonosatJNI.bv_subtraction(solver.solverPtr,solver.bvPtr,this.id,other.id,result.id);
+        return result;
+    }
 
-    void bv_ite( SolverPtr S, BVTheoryPtr bv, int condition_lit,int bvThenID, int bvElseID, int bvResultID);
 
-    void bv_addition( SolverPtr S, BVTheoryPtr bv, int bvID1, int bvID2, int resultID);
-    void bv_subtraction( SolverPtr S, BVTheoryPtr bv, int bvID1, int bvID2, int resultID);
-    void bv_multiply(SolverPtr S, BVTheoryPtr bv, int bvID1, int bvID2, int resultID);
-    void bv_divide(SolverPtr S, BVTheoryPtr bv, int bvID1,  int bvID2, int resultID);
-    void bv_min(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args,int resultID);
-    void bv_max(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args,int resultID);
-    void bv_popcount(SolverPtr S, BVTheoryPtr bv,  int* args,int n_args, int resultID);
-    void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID);
 
 
 }
