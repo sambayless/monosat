@@ -84,7 +84,7 @@ The graph and finite state machine theory solvers can be found in `graph/` and `
 
 ### Licensing
 The majority of MonoSAT is released under the [MIT license] (as documented in individual source files). However, some of the code, including some important libraries, fall under the GPL, and as a result, 
-MonoSAT as a whole is currently released under the [GPL] (version 3 or later).
+MonoSAT as a whole is currently released under the [GPL] (version 2 or later).
 
 ### Acknowledgements
 
