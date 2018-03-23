@@ -98,7 +98,13 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
         (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
-    return jboolean(solve(reinterpret_cast<SolverPtr>(solverPtr)));
+    bool result = solve(reinterpret_cast<SolverPtr>(solverPtr));
+    if (result){
+        printf("SAT");
+    }else{
+        printf("UNSAT");
+    }
+    return jboolean(result);
 }
 
 /*

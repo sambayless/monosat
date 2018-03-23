@@ -244,7 +244,8 @@ public class Solver {
 
     //basic solver functions
     public boolean solve(){
-        return MonosatJNI.solve(solverPtr);
+        boolean r = MonosatJNI.solve(solverPtr);
+        return r;
     }
     public boolean solve(Lit... assumptions){
         return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions,0),assumptions.length);
