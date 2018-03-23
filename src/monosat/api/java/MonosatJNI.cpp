@@ -99,24 +99,18 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
         (JNIEnv *env, jclass monosat_class, jlong solverPtr) {
     bool result = solve(reinterpret_cast<SolverPtr>(solverPtr));
-    if (result){
-        printf("SAT");
-    }else{
-        printf("UNSAT");
-    }
     return jboolean(result);
 }
-
 /*
  * Class:     MonosatJNI
  * Method:    solveAssumptions
  * Signature: (J[I)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jintArray assumptions,jint n_assumptions) {
-    jint *r = env->GetIntArrayElements(assumptions, NULL);
-    return jboolean(solveAssumptions(reinterpret_cast<SolverPtr>(solverPtr), r, n_assumptions));
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject assumptions,jint n_assumptions) {
+    return jboolean(solveAssumptions(reinterpret_cast<SolverPtr>(solverPtr), (int *) env->GetDirectBufferAddress(assumptions), n_assumptions));
 }
+
 
 /*
  * Class:     MonosatJNI
@@ -174,9 +168,8 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveLimited
  * Signature: (J[I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveAssumptionsLimited
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jintArray assumptions,jint n_assumptions) {
-    jint *r = env->GetIntArrayElements(assumptions, NULL);
-    return solveAssumptionsLimited(reinterpret_cast<SolverPtr>(solverPtr), r, n_assumptions);
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject assumptions,jint n_assumptions) {
+    return solveAssumptionsLimited(reinterpret_cast<SolverPtr>(solverPtr), (int *) env->GetDirectBufferAddress(assumptions), n_assumptions);
 }
 /*
  * Class:     MonosatJNI

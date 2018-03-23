@@ -11,6 +11,7 @@ public class SolverTest {
         assertEquals(s.solve(s.False()),false);
         assertEquals(s.solve(s.True(),s.False()),false);
         assertEquals(s.solve(),true);
+        System.out.println("Done");
     }
 
     @Test

@@ -1,6 +1,7 @@
 import monosat.MonosatJNI;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,13 +22,14 @@ public class Solver {
     public Solver(){
         solverPtr = MonosatJNI.newSolver();
         assert(solverPtr!=0);
-        true_lit = new Lit(MonosatJNI.true_lit(solverPtr));
+        true_lit = toLit(MonosatJNI.true_lit(solverPtr));
         initBV();
         initBuffers();
     }
     public Solver(String args){
         solverPtr = MonosatJNI.newSolver(args);
         assert(solverPtr!=0);
+        true_lit = toLit(MonosatJNI.true_lit(solverPtr));
         initBV();
         initBuffers();
     }
@@ -38,6 +40,7 @@ public class Solver {
         }
         solverPtr = MonosatJNI.newSolver(arg);
         assert(solverPtr!=0);
+        true_lit = toLit(MonosatJNI.true_lit(solverPtr));
         initBV();
         initBuffers();
     }
@@ -48,11 +51,17 @@ public class Solver {
     }
     private void  initBuffer(int bufferN){
         if (bufferN==0){
-            ints0 = ByteBuffer.allocateDirect(buffer_size0).asIntBuffer();
+            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0);
+            b.order(ByteOrder.LITTLE_ENDIAN);
+            ints0 = b.asIntBuffer();
         }else if (bufferN==1){
-            ints1 = ByteBuffer.allocateDirect(buffer_size1).asIntBuffer();
+            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0);
+            b.order(ByteOrder.LITTLE_ENDIAN);
+            ints1 = b.asIntBuffer();
         }else if (bufferN==2) {
-            ints2 = ByteBuffer.allocateDirect(buffer_size2).asIntBuffer();
+            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0);
+            b.order(ByteOrder.LITTLE_ENDIAN);
+            ints2 = b.asIntBuffer();
         }
     }
 
@@ -249,12 +258,9 @@ public class Solver {
     public boolean solve(Lit... assumptions){
         return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions,0),assumptions.length);
     }
-
     public boolean solve(Collection<Lit> assumptions){
         return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions),assumptions.size());
     }
-
-
 
     //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
     public void setTimeLimit(int seconds){
@@ -328,7 +334,7 @@ public class Solver {
     //Holds positive versions of all literals, so that we don't need to create multiple literal objects for the same literal
     //As literals have no reference to the solver and are really just a thin wrapper around an integer,
     //this list can be safely shared across all solvers.
-    private static ArrayList<Lit> lits;
+    private static ArrayList<Lit> lits = new ArrayList<>();
 
     protected Lit toLit(int literal){
         assert(literal>=0);
