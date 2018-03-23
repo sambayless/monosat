@@ -97,7 +97,7 @@ MonoSAT was made possible by the use of several open-source projects, including 
 [MiniSat]:http://minisat.se/
 
 [MIT license]: http://opensource.org/licenses/MIT
-[GPL]: http://www.gnu.org/licenses/gpl.html
+[GPL]: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 [dynamic maximum-flow algorithm]:http://research.microsoft.com/en-us/um/people/pkohli/code/rrr.txt
 [Link-Cut Tree]: http://codeforces.com/contest/117/submission/860934
 [computational geometry library]:http://www.fluxionsdividebyzero.com/p1/math/geometry/geom.html
