@@ -1,5 +1,6 @@
 import monosat.MonosatJNI;
-
+import monosat.Lit;
+import monosat.Solver;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

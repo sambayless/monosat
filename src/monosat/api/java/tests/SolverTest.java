@@ -16,6 +16,7 @@ public class SolverTest {
 
     @Test
     public void testLogic(){
-
+        Solver s = Logic.getSolver();
+        Lit a = Logic.newLit();
     }
 }

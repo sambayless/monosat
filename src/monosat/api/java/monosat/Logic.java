@@ -5,10 +5,36 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class Logic {
+public final class Logic {
     private static ThreadLocal<Solver> _solver;
+
+    private Logic(){
+
+    }
+
+    public static Solver newSolver(){
+        setSolver(new Solver());
+    }
+
+    public static Solver newSolver(String args){
+        setSolver(new Solver(args));
+    }
+    public static void setSolver(Solver s){
+        _solver.set(s);
+    }
+
     public static Solver getSolver(){
+        if (_solver.get() == null){
+            newSolver();
+        }
         return _solver.get();
+    }
+
+    public static Lit newLit(){
+        return newLit(true);
+    }
+    public static Lit newLit(boolean decidable){
+        return getSolver().newLit(decidable);
     }
 
     //Literal level constructs

@@ -1,3 +1,5 @@
+
+import monosat.BitVector;
 import monosat.MonosatJNI;
 
 import java.nio.ByteBuffer;
@@ -164,7 +166,7 @@ public class Solver {
         return MonosatJNI.nBitvectors(solverPtr,bvPtr);
     }
 
-    IntBuffer getBVBuffer(Collection<BitVector> clause,int bufferN){
+    IntBuffer getBVBuffer(Collection<BitVector> clause, int bufferN){
         assert(bufferN<3);
         assert(bufferN>=0);
         IntBuffer buffer = getBuffer(bufferN, clause.size());
@@ -450,6 +452,8 @@ public class Solver {
         return new BitVector(this,width,constant);
     }
 
-
+    public BitVector bv(int width){
+        return new BitVector(this,width);
+    }
 
 }

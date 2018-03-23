@@ -101,6 +101,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
     bool result = solve(reinterpret_cast<SolverPtr>(solverPtr));
     return jboolean(result);
 }
+
 /*
  * Class:     MonosatJNI
  * Method:    solveAssumptions
@@ -110,7 +111,6 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject assumptions,jint n_assumptions) {
     return jboolean(solveAssumptions(reinterpret_cast<SolverPtr>(solverPtr), (int *) env->GetDirectBufferAddress(assumptions), n_assumptions));
 }
-
 
 /*
  * Class:     MonosatJNI
