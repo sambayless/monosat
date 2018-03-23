@@ -1,3 +1,4 @@
+package monosat;
 import monosat.MonosatJNI;
 import monosat.Lit;
 import monosat.Solver;

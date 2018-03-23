@@ -1,5 +1,8 @@
 import org.junit.Test;
 import static org.junit.Assert.*;
+import monosat.*;
+import static monosat.Logic.*;
+
 
 public class SolverTest {
     @Test
@@ -16,7 +19,10 @@ public class SolverTest {
 
     @Test
     public void testLogic(){
-        Solver s = Logic.getSolver();
-        Lit a = Logic.newLit();
+        Solver s = getSolver();
+        Lit a = newLit();
+        Lit b = newLit();
+        Lit c = and(a,b);
+        assertEquals(solve(),true);
     }
 }

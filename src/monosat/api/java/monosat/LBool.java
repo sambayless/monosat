@@ -1,3 +1,4 @@
+package monosat;
 /**
  * Represents a value that is either true, false, or undefined.
  */

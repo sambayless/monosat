@@ -1,3 +1,4 @@
+package monosat;
 import monosat.MonosatJNI;
 
 public class Graph {

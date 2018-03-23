@@ -1,4 +1,4 @@
-import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
+package monosat;
 import monosat.MonosatJNI;
 
 import java.util.ArrayList;
@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public final class Logic {
-    private static ThreadLocal<Solver> _solver;
+    private static final ThreadLocal<Solver> _solver = new ThreadLocal();
 
     private Logic(){
 
@@ -14,10 +14,12 @@ public final class Logic {
 
     public static Solver newSolver(){
         setSolver(new Solver());
+        return getSolver();
     }
 
     public static Solver newSolver(String args){
         setSolver(new Solver(args));
+        return getSolver();
     }
     public static void setSolver(Solver s){
         _solver.set(s);
@@ -37,6 +39,17 @@ public final class Logic {
         return getSolver().newLit(decidable);
     }
 
+    public static boolean solve(){
+        return getSolver().solve();
+    }
+
+    public static boolean solve(Lit...assumptions){
+        return getSolver().solve(assumptions);
+    }
+
+    public static boolean solve(Collection<Lit> assumptions){
+        return getSolver().solve(assumptions);
+    }
     //Literal level constructs
     public static Lit ite(Lit condition, Lit then,Lit els){
         Solver solver = getSolver();
@@ -45,7 +58,7 @@ public final class Logic {
 
     public static Lit and(Lit ... args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             return args[0];
         }else if (args.length==2){
@@ -56,7 +69,7 @@ public final class Logic {
     }
     public static Lit or(Lit... args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             return args[0];
         }else if (args.length==2){
@@ -70,7 +83,7 @@ public final class Logic {
     }
     public static Lit nand(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             return args[0].negate();
         }else if (args.length==2){
@@ -81,7 +94,7 @@ public final class Logic {
     }
     public static Lit nor(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             return args[0];
         }else if (args.length==2){
@@ -92,7 +105,7 @@ public final class Logic {
     }
     public static Lit xor(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             return args[0].negate();
         }else if (args.length==2){
@@ -103,7 +116,7 @@ public final class Logic {
     }
     public static Lit xnor(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             return args[0];
         }else if (args.length==2){
@@ -123,7 +136,7 @@ public final class Logic {
 
     public static void AssertAnd(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             Assert(args[0]);
         }else if (args.length==2){
@@ -133,7 +146,7 @@ public final class Logic {
     }
     public static void AssertOr(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             Assert(args[0]);
         }else if (args.length==2){
@@ -144,7 +157,7 @@ public final class Logic {
 
     public static void AssertNand(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             Assert(args[0].negate());
         }else if (args.length==2){
@@ -154,7 +167,7 @@ public final class Logic {
     }
     public static void AssertNor(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             Assert(args[0].negate());
         }else if (args.length==2){
@@ -164,7 +177,7 @@ public final class Logic {
     }
     public static void AssertXor(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             Assert(args[0]);//If this the correct behaviour here?
         }else if (args.length==2){
@@ -174,7 +187,7 @@ public final class Logic {
     }
     public static void AssertXnor(Lit...args){
         if (args.length==0) {
-            throw new ValueException("Requires at least 1 argument");
+            throw new IllegalArgumentException("Requires at least 1 argument");
         }else if (args.length==1){
             Assert(args[0]);//If this the correct behaviour here?
         }else if (args.length==2){

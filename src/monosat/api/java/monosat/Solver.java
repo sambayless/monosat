@@ -1,4 +1,4 @@
-
+package monosat;
 import monosat.BitVector;
 import monosat.MonosatJNI;
 

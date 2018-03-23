@@ -1,4 +1,5 @@
-import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
+package monosat;
+
 
 /**
  * Literals are integers in the rance 0..nVars()*2
@@ -71,7 +72,7 @@ final public class Lit {
      */
     public void validate(){
         if (l<0){
-            throw new ValueException("Invalid literal");
+            throw new IllegalArgumentException("Invalid literal");
         }
     }
 }
