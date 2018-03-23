@@ -238,6 +238,8 @@ public class Solver {
         return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions),assumptions.size());
     }
 
+
+
     //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
     public void setTimeLimit(int seconds){
         MonosatJNI.setTimeLimit(solverPtr,seconds);
@@ -256,12 +258,18 @@ public class Solver {
     }
 
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-    public int solveLimited(){
-        return MonosatJNI.solveLimited(solverPtr);
+    public Value solveLimited(){
+        int result = MonosatJNI.solveLimited(solverPtr);
+        assert(result>=0);
+        assert(result<=2);
+        return Value.values()[result];
     }
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-    public int solveAssumptionsLimited(ArrayList<Lit> assumptions){
-        return  MonosatJNI.solveAssumptionsLimited(solverPtr,getLitBuffer(assumptions),assumptions.size());
+    public Value solveAssumptionsLimited(ArrayList<Lit> assumptions){
+        int result = MonosatJNI.solveAssumptionsLimited(solverPtr,getLitBuffer(assumptions),assumptions.size());
+        assert(result>=0);
+        assert(result<=2);
+        return Value.values()[result];
     }
 
     public boolean lastSolutionWasOptimal(){
