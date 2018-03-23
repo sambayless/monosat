@@ -814,7 +814,7 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_ass
 }
 
 bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
-	return _solve(S,assumptions,n_assumptions);
+	return _solve(S,assumptions,n_assumptions) == toInt(l_True);
 }
 bool lastSolutionWasOptimal(Monosat::SimpSolver * S){
 	MonosatData * d = (MonosatData*) S->_external_data;
@@ -869,12 +869,12 @@ void releaseLiteral(Monosat::SimpSolver * S, int literal){
     S->releaseVar(toLit(literal));
 }
 
-bool disallowLiteralSimplification(Monosat::SimpSolver * S, int variable){
-	if(S->isEliminated(var(toLit(variable)))){
-		fprintf(stderr,"Warning: Literal %d has already been eliminated by the pre-processor\n", dimacs(toLit(variable)));
+bool disallowLiteralSimplification(Monosat::SimpSolver * S, int literal){
+	if(S->isEliminated(var(toLit(literal)))){
+		fprintf(stderr,"Warning: Literal %d has already been eliminated by the pre-processor\n", dimacs(toLit(literal)));
 		return false;
 	}else
-		S->setFrozen(var(toLit(variable)),true);
+		S->setFrozen(var(toLit(literal)),true);
 	return true;
 }
 void disablePreprocessing(Monosat::SimpSolver * S){

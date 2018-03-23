@@ -22,7 +22,6 @@ public class Solver {
         solverPtr = MonosatJNI.newSolver();
         assert(solverPtr!=0);
         true_lit = new Lit(MonosatJNI.true_lit(solverPtr));
-
         initBV();
         initBuffers();
     }
