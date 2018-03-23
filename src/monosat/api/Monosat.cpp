@@ -389,8 +389,8 @@ inline void write_out(Monosat::SimpSolver * S, const char *fmt, ...) {
 	va_end(args);
 	fflush(d->outfile);
 }
-int varToLit(int var, bool negated){
-	return toInt(mkLit(var,negated));
+int varToLit(int variable, bool negated){
+	return toInt(mkLit(variable,negated));
 }
 
 void setOutputFile(Monosat::SimpSolver * S,const  char * output){
@@ -866,34 +866,34 @@ int newVar(Monosat::SimpSolver * S){
 
 void releaseLiteral(Monosat::SimpSolver * S, int literal){
     assert(literal>=0);
-    S->releaseLiteral(toLit(literal));
+    S->releaseVar(toLit(literal));
 }
 
-bool disallowLiteralSimplification(Monosat::SimpSolver * S, int var){
-	if(S->isEliminated(var(toLit(var)))){
-		fprintf(stderr,"Warning: Literal %d has already been eliminated by the pre-processor\n", dimacs(toLit(lit)));
+bool disallowLiteralSimplification(Monosat::SimpSolver * S, int variable){
+	if(S->isEliminated(var(toLit(variable)))){
+		fprintf(stderr,"Warning: Literal %d has already been eliminated by the pre-processor\n", dimacs(toLit(variable)));
 		return false;
 	}else
-		S->setFrozen(var(toLit(var)),true);
+		S->setFrozen(var(toLit(variable)),true);
 	return true;
 }
 void disablePreprocessing(Monosat::SimpSolver * S){
 	S->disablePreprocessing();
 }
 
-void setDecisionVar(Monosat::SimpSolver * S,int var,bool decidable){
-	write_out(S,"decision %d %d\n",var+1,decidable);//add 1 for dimacs
-	S->setDecisionVar(var,decidable);
+void setDecisionVar(Monosat::SimpSolver * S,int variable,bool decidable){
+	write_out(S,"decision %d %d\n",variable+1,decidable);//add 1 for dimacs
+	S->setDecisionVar(variable,decidable);
 }
-void setDecisionPriority(Monosat::SimpSolver * S,int var, int priority){
-	 write_out(S,"priority %d %d\n",var+1,priority);//add 1 for dimacs
-	S->setDecisionPriority(var,priority);
+void setDecisionPriority(Monosat::SimpSolver * S,int variable, int priority){
+	 write_out(S,"priority %d %d\n",variable+1,priority);//add 1 for dimacs
+	S->setDecisionPriority(variable,priority);
 }
-bool isDecisionVar(Monosat::SimpSolver * S,int var){
-	return S->isDecisionVar(var);
+bool isDecisionVar(Monosat::SimpSolver * S,int variable){
+	return S->isDecisionVar(variable);
 }
-int getDecisionPriority(Monosat::SimpSolver * S,int var){
-	return S->getDecisionPriority(var);
+int getDecisionPriority(Monosat::SimpSolver * S,int variable){
+	return S->getDecisionPriority(variable);
 }
 
 void setDecisionPolarity(Monosat::SimpSolver * S,Var v, bool b){
@@ -1077,7 +1077,7 @@ int newBVComparison_bv_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int6
     return toInt(c);
 }
 int newBVComparison_const_neq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID, Weight weight){
-    return toInt(~toLit(newBVComparison_bv_const_eq(S,bv,bvID,weight)));
+    return toInt(~toLit(newBVComparison_const_eq(S,bv,bvID,weight)));
 }
 int newBVComparison_bv_neq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID, int compareID){
     return toInt(~toLit(newBVComparison_bv_eq(S,bv,bvID,compareID)));

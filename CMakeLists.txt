@@ -300,8 +300,8 @@ endif (PB_SUPPORT)
 
 
 if (JAVA_SUPPORT)
-    find_package(Java REQUIRED)
-    find_package(JNI REQUIRED)
+    find_package(Java 1.8 REQUIRED)
+    find_package(JNI 1.8 REQUIRED)
 
     message(STATUS "Compiling shared library with support for JNI")
 

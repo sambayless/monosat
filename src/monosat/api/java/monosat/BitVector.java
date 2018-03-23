@@ -2,7 +2,7 @@ import monosat.MonosatJNI;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
+import java.util.List;
 public class BitVector {
     protected int id;
     int width;

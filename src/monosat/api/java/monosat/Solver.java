@@ -78,8 +78,7 @@ public class Solver {
             }
             return ints2;
         }
-
-
+        throw new RuntimeException("BufferN must be between 0 and 3");
     }
 
     /**
@@ -169,8 +168,21 @@ public class Solver {
         }
         return buffer;
     }
+
     IntBuffer getLitBuffer(Collection<Lit> clause){
         return getLitBuffer(clause,0);
+    }
+    IntBuffer getLitBuffer(Lit[] clause,int bufferN){
+        assert(bufferN<3);
+        assert(bufferN>=0);
+        IntBuffer buffer = getBuffer(bufferN, clause.length);
+        int index =0;
+        for(Lit l:clause){
+            l.validate();
+            buffer.put(index,l.l);
+            index++;
+        }
+        return buffer;
     }
     IntBuffer getLitBuffer(Collection<Lit> clause,int bufferN){
         assert(bufferN<3);
@@ -234,7 +246,11 @@ public class Solver {
     public boolean solve(){
         return MonosatJNI.solve(solverPtr);
     }
-    public boolean solve(ArrayList<Lit> assumptions){
+    public boolean solve(Lit... assumptions){
+        return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions,0),assumptions.length);
+    }
+
+    public boolean solve(Collection<Lit> assumptions){
         return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions),assumptions.size());
     }
 
@@ -258,18 +274,19 @@ public class Solver {
     }
 
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-    public Value solveLimited(){
+    //Consider using Optional<Boolean> instead.
+    public LBool solveLimited(){
         int result = MonosatJNI.solveLimited(solverPtr);
         assert(result>=0);
         assert(result<=2);
-        return Value.values()[result];
+        return LBool.values()[result];
     }
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-    public Value solveAssumptionsLimited(ArrayList<Lit> assumptions){
+    public LBool solveAssumptionsLimited(ArrayList<Lit> assumptions){
         int result = MonosatJNI.solveAssumptionsLimited(solverPtr,getLitBuffer(assumptions),assumptions.size());
         assert(result>=0);
         assert(result<=2);
-        return Value.values()[result];
+        return LBool.values()[result];
     }
 
     public boolean lastSolutionWasOptimal(){
