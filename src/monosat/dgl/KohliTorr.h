@@ -24,16 +24,22 @@
 
 //Wrapper around Kohli and Torr's  Dynamic Graph Cuts algorithm (version 2)
 //Note that the Kohli Torr implementation itself is under the GPL (Version 2); only this wrapper code is MIT licensed.
+
 #include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
-#include "monosat/dgl/alg/dyncut/graph.h"
+
 #include "EdmondsKarpDynamic.h"
 #include <algorithm>
 #include <limits>
 #ifdef DEBUG_DGL
 //#define DEBUG_MAXFLOW2
 #endif
+
+#ifdef LINK_GPL
+//IF GPL sources are included, link them here.
+//Else, the 'KohliTorr' class will instead just be the much sloder EdmondsKarp algorithm
+#include "monosat/dgl/alg/dyncut/graph.h"
 namespace dgl {
 template<typename Weight>
 class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
@@ -1253,6 +1259,35 @@ public:
 	}
 };
 }
-;
+#else
+//Simple wrapper around EdmondsKarpDynamic, to be used if GPL sources are not linked.
+//Notably, in this case, the 'KohliTorr' class does NOT implement Kohli and Torr's algorithm at all.
+namespace dgl {
+template<typename Weight>
+class KohliTorr : public EdmondsKarpDynamic<Weight> {
+    static bool warning_issued;
+public:
+    double stats_calc_time = 0;
+    double stats_flow_time = 0;
+    double stats_init_time = 0;
+    long stats_flow_calcs = 0;
+    long stats_inits=0;
+    long stats_reinits=0;
+	KohliTorr(DynamicGraph<Weight>& g,  int source, int sink,bool kt_preserve_order) :EdmondsKarpDynamic<Weight>(g,source,sink){
+
+	}
+    const Weight update() override {
+        if (!warning_issued){
+            warning_issued=true;
+            fprintf(stderr,"Warning: MonoSAT was built without GPL sources, which may decrease performance of the solver on Maximum Flow predicates.");
+        }
+        return EdmondsKarpDynamic<Weight>::update();
+    }
+};
+template<typename Weight>
+bool KohliTorr<Weight>::warning_issued = false;
+}
+#endif
+
 #endif
 

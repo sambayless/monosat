@@ -83,8 +83,18 @@ The graph and finite state machine theory solvers can be found in `graph/` and `
 
 
 ### Licensing
-The majority of MonoSAT is released under the [MIT license] (as documented in individual source files). However, some of the code, including some important libraries, fall under the GPL, and as a result, 
-MonoSAT as a whole is currently released under the [GPL] (version 2 or later).
+The majority of MonoSAT is released under the [MIT license] (as documented in individual source files). 
+However, by default MonoSAT links some GPLv2 source code, and as a result is (by default) licensed as a whole under the 
+[GPLv2]. That code (which improves MonoSAT's performance on maximum flow related queries), along with the GPLv2 license, can be found in ```src/monosat/dgl/alg/dyncut```.
+
+MonoSAT can be built without including any GPL licensed sources, in which case it retains the MIT license as a whole.
+To build MonoSAT without using GPL sources, use:
+'''
+$cmake -DGPL=OFF
+''' 
+
+
+
 
 ### Acknowledgements
 
@@ -97,7 +107,7 @@ MonoSAT was made possible by the use of several open-source projects, including 
 [MiniSat]:http://minisat.se/
 
 [MIT license]: http://opensource.org/licenses/MIT
-[GPL]: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+[GPLv2]: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 [dynamic maximum-flow algorithm]:http://research.microsoft.com/en-us/um/people/pkohli/code/rrr.txt
 [Link-Cut Tree]: http://codeforces.com/contest/117/submission/860934
 [computational geometry library]:http://www.fluxionsdividebyzero.com/p1/math/geometry/geom.html

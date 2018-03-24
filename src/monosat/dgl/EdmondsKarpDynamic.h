@@ -189,7 +189,7 @@ public:
 		sink = t;
 		last_modification = -1; //needs to be -1 here, to trigger a full re-calculation
 	}
-	const Weight update() {
+	virtual const Weight update() {
 		int s = source;
 		int t = sink;
 		//see http://cstheory.stackexchange.com/a/10186
