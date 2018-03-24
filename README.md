@@ -84,10 +84,10 @@ The graph and finite state machine theory solvers can be found in `graph/` and `
 
 ### Licensing
 The majority of MonoSAT is released under the [MIT license] (as documented in individual source files). 
-However, by default MonoSAT links some GPLv2 source code, and as a result is (by default) licensed as a whole under the 
-[GPLv2]. That code (which improves MonoSAT's performance on maximum flow related queries), along with the GPLv2 license, can be found in ```src/monosat/dgl/alg/dyncut```.
+However, by default MonoSAT links some GPLv2 sources (found in ```src/monosat/dgl/alg/dyncut/```).
+If built with these sources, the resulting binary is licensed as a whole under the [GPLv2].
 
-MonoSAT can be built without including any GPL licensed sources, in which case it retains the MIT license as a whole.
+MonoSAT can be built without including any GPL licensed sources, in which case it retains the MIT license.
 To build MonoSAT without using GPL sources, use:
 '''
 $cmake -DGPL=OFF
