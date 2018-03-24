@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
+
 option (PB_SUPPORT "Combile with Pseudo-Boolean support (using Minisat+)" ON)
 #set to compile Java JNI support into the shared library (requires a JDK)
 option(JAVA_SUPPORT "Build the static library" OFF)
+#set to OFF to disable linking GPL sources
+option(GPL "Link GPLv2 sources, so that the compiled binary is licensed under the terms of the GPLv2, rather than MIT (greatly improves the performance of maximum flow predicates significantly)." ON)
 
 set (JAVA_SOURCE_FILES "")
+
+
 if(NOT NO_GIT_VERSION)
     set (SHOW_GIT_VERSION 1)
 endif()
@@ -78,8 +83,6 @@ set(SOURCE_FILES
         src/monosat/core/SolverTypes.h
         src/monosat/core/Theory.h
         src/monosat/core/TheorySolver.h
-        src/monosat/dgl/alg/dyncut/block.h
-        src/monosat/dgl/alg/dyncut/graph.h
         src/monosat/dgl/alg/AugmentedSplayTree.h
         src/monosat/dgl/alg/DisjointSets.cpp
         src/monosat/dgl/alg/DisjointSets.h
@@ -260,6 +263,12 @@ set(SOURCE_FILES
         src/monosat/routing/FlowRouterParser.h
         )
 
+#GPL Licenced source files are only included if the MIT option is not set
+set(SOURCE_FILES_GPL
+        src/monosat/dgl/alg/dyncut/block.h
+        src/monosat/dgl/alg/dyncut/graph.h
+)
+
 set(SOURCE_FILES_PB
         src/monosat/pb/Pb.h
         src/monosat/pb/Clausify.h
@@ -322,6 +331,13 @@ if (JAVA_SUPPORT)
     endif()
     include_directories(${JNI_INCLUDE_DIRS})
 endif (JAVA_SUPPORT)
+
+if (GPL)
+    MESSAGE( STATUS "Linking GPLv2 source files. Use \"cmake -DGPL=OFF\" to build without GPL sources." )
+    add_definitions(-DLINK_GPL)
+    set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_FILES_GPL})
+endif()
+
 
 if (${SHOW_GIT_VERSION})
     #only attempt to load the git version if the git repo is found in the source directory
