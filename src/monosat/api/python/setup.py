@@ -6,6 +6,22 @@ import platform
 import shutil
 import sys
 from distutils.core import setup
+monosat_path ="../../../../src/"
+#Set to False to disable compiling cython modules
+use_cython=True
+
+if use_cython:
+    # attempt to load the cython modules
+    try:
+        from distutils.extension import Extension
+        from Cython.Build import cythonize
+        from Cython.Distutils import build_ext
+        from distutils.command.sdist import sdist as _sdist
+        use_cython=True
+    except:
+        print("Could not load cython modules, falling back on ctypes")
+        use_cython=False
+
 if platform.system() == "Darwin":
     sharedlib='libmonosat.dylib'
     copy_lib = "monosat/libmonosat.dylib"
@@ -59,12 +75,35 @@ else:
 if not os.path.exists(copy_lib):
     print("Warning: could not find libmonosat.so or libmonosat.dll. See README for instructions on compiling the library, the re-install",file=sys.stderr)
 
-setup(name='monosat',
-      version='1.4',
-      description='MonoSAT Python Interface',
-      author='Sam Bayless',
-      author_email='sbayless@cs.ubc.ca',
-      url='http://www.cs.ubc.ca/labs/isd/projects/monosat/',
-      packages=['monosat'],
-      package_data={'monosat': [sharedlib]},
-      )
+if use_cython:
+
+    #build the cython interface to monosat
+    cmdclass = { }
+    cmdclass.update({ 'build_ext': build_ext })
+    setup(
+        version='1.4',
+        description='MonoSAT Cython Interface',
+        author='Sam Bayless',
+        author_email='sbayless@cs.ubc.ca',
+        url='http://www.cs.ubc.ca/labs/isd/projects/monosat/',
+        packages=['monosat'],
+        package_data={'monosat': [sharedlib]},
+        cmdclass = cmdclass,
+        runtime_library_dirs=['./'],
+        ext_modules = cythonize([Extension("monosat.monosat_p", ["monosat/monosat_p.pyx"],
+                                           include_dirs=[".","monosat",monosat_path], libraries=["monosat"],
+                                           language="c",extra_compile_args=["-DNDEBUG","-O3"]
+                                           )],include_path = ['.',"monosat"], gdb_debug=True),
+        install_requires=['cython']
+
+    )
+else:
+    setup(name='monosat',
+          version='1.4',
+          description='MonoSAT Python Interface',
+          author='Sam Bayless',
+          author_email='sbayless@cs.ubc.ca',
+          url='http://www.cs.ubc.ca/labs/isd/projects/monosat/',
+          packages=['monosat'],
+          package_data={'monosat': [sharedlib]},
+          )

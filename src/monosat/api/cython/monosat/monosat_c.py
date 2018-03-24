@@ -55,7 +55,7 @@ class Solver():
         elif isinstance(arguments,str):
             #split this up by whitespace
             arguments=arguments.split()  
-        self.arguments=arguments 
+        self.arguments=arguments
         #arguments=["monosat"]+arguments
         arr = "monosat " + " ".join(arguments)
         #for i,arg in enumerate(arguments):
