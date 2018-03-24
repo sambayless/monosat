@@ -12,7 +12,4 @@ $ sudo python3 setup.py install -f
 
 If cython is available on your system (eg, with pip3 install cython), as well an appropriate compiler, this should compile and install the cython API.
 If cython is not available, then it will install with the (roughly 30% slower) ctypes api.
-You can also force the installation of the ctypes api,  using 
-'''
-$ sudo python3 setup.py install --no-cython -f
-'''
+You can also force the use of the ctypes api, by manually setting the use_cython variable in either setup.py or monosat/monosat_c.py to False  
