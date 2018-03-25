@@ -251,7 +251,6 @@ set(SOURCE_FILES
         src/monosat/utils/ParseUtils.h
         src/monosat/utils/System.cc
         src/monosat/utils/System.h
-        src/monosat/Main.cc
         src/monosat/core/Heuristic.h
         src/monosat/api/Logic.h
         src/monosat/graph/GraphHeuristic.h
@@ -332,6 +331,8 @@ if (JAVA_SUPPORT)
         message (STATUS "JNI_LIBRARIES=${JNI_LIBRARIES}")
     endif()
     include_directories(${JNI_INCLUDE_DIRS})
+else()
+    message(STATUS "Compiling wihtout library support for Java. To enable Java support, set -DJAVA_SUPPORT=ON")
 endif (JAVA_SUPPORT)
 
 if (GPL)
@@ -356,30 +357,10 @@ if (SHOW_GIT_VERSION)
     endif()
 endif (SHOW_GIT_VERSION)
 
-add_executable(monosat ${SOURCE_FILES})
-#By default, build the staticly linked version of monosat rather than the dynamically linked one.
-set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
-target_link_libraries(monosat z)
-if (NOT APPLE)
-    target_link_libraries(monosat m)
-endif()
-target_link_libraries(monosat gmpxx)
-target_link_libraries(monosat gmp)
-
-
-if (UNIX)
-    #librt is needed for clock_gettime, which is enabled for linux only
-    #(clock_gettime is used for capturing detailed timing statistics only)
-    if (NOT APPLE)
-        target_link_libraries(monosat rt)
-    else()
-        target_link_libraries(monosat)
-    endif()
-endif (UNIX)
 
 
 
-add_library(libmonosat_static ${SOURCE_FILES})
+add_library(libmonosat_static STATIC ${SOURCE_FILES})
 set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat_static z.a)
 target_link_libraries(libmonosat_static m.a)
@@ -397,11 +378,14 @@ if (UNIX)
 endif (UNIX)
 
 
-add_executable(monosat_static ${SOURCE_FILES})
+#add_executable(monosat_static ${SOURCE_FILES})
+add_executable(monosat_static src/monosat/Main.cc)
+
 set_target_properties(monosat_static PROPERTIES OUTPUT_NAME monosat)
 if (NOT APPLE)
     target_link_libraries (monosat_static "-static-libgcc -static-libstdc++")
 endif()
+target_link_libraries(monosat_static libmonosat_static)
 target_link_libraries(monosat_static z.a)
 target_link_libraries(monosat_static m.a)
 target_link_libraries(monosat_static gmpxx.a)
@@ -443,6 +427,29 @@ if (UNIX)
 endif (UNIX)
 
 
+add_executable(monosat  src/monosat/Main.cc)
+#By default, build the staticly linked version of monosat rather than this dynamically linked one.
+set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
+target_link_libraries(monosat libmonosat)
+target_link_libraries(monosat z)
+if (NOT APPLE)
+    target_link_libraries(monosat m)
+endif()
+target_link_libraries(monosat gmpxx)
+target_link_libraries(monosat gmp)
+if (JAVA_SUPPORT)
+    target_link_libraries(monosat ${JNI_LIBRARIES})
+endif (JAVA_SUPPORT)
+
+if (UNIX)
+    #librt is needed for clock_gettime, which is enabled for linux only
+    #(clock_gettime is used for capturing detailed timing statistics only)
+    if (NOT APPLE)
+        target_link_libraries(monosat rt)
+    else()
+        target_link_libraries(monosat)
+    endif()
+endif (UNIX)
 
 install(TARGETS monosat_static libmonosat libmonosat_static
         RUNTIME DESTINATION bin
