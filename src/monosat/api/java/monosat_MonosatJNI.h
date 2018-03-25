@@ -1050,9 +1050,17 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesAnd
 /*
  * Class:     monosat_MonosatJNI
  * Method:    ImpliesOr
- * Signature: (JLjava/nio/IntBuffer;II)I
+ * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr
+  (JNIEnv *, jclass, jlong, jobject, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    ImpliesOr_
+ * Signature: (JLjava/nio/IntBuffer;II)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr_1
   (JNIEnv *, jclass, jlong, jobject, jint, jint);
 
 /*
@@ -1358,14 +1366,6 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertEqual
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAllSame
   (JNIEnv *, jclass, jlong, jobject, jint);
-
-/*
- * Class:     monosat_MonosatJNI
- * Method:    Equal
- * Signature: (JII)I
- */
-JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Equal
-  (JNIEnv *, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI

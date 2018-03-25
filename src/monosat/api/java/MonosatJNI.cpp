@@ -1375,3 +1375,621 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits
     GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
     return jint(getModel_Path_EdgeLits(solver,graph,reach_or_distance_literal,store_length,(int *) env->GetDirectBufferAddress(store)));
 }
+
+//Circuit interface
+
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    And_
+ * Signature: (JIII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_And_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b, jint lit_out){
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return jint(And_(solver,lit_a,lit_b,lit_out));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Ands_
+ * Signature: (JLjava/nio/IntBuffer;II)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits, jint lit_out){
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return jint(Ands_(solver,(int *) env->GetDirectBufferAddress(lits),n_lits,lit_out));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertImpliesAnd_
+ * Signature: (JILjava/nio/IntBuffer;II)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd_1
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint implies, jobject lits, jint n_lits, jint lit_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertImpliesAnd_(solver,implies,(int *) env->GetDirectBufferAddress(lits),n_lits,lit_out);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Ands
+ * Signature: (JLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Ands(solver,(int *) env->GetDirectBufferAddress(lits),n_lits));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    And
+ * Signature: (JII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_And
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(And(solver,lit_a,lit_b));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Or_
+ * Signature: (JIII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Or_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b, jint lit_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Or_(solver,lit_a,lit_b,lit_out));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Ors_
+ * Signature: (JLjava/nio/IntBuffer;II)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits, jint lit_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Ors_(solver,(int *) env->GetDirectBufferAddress(lits),n_lits,lit_out));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    ImpliesAnd
+ * Signature: (JLjava/nio/IntBuffer;II)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesAnd
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits, jint lit_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(ImpliesAnd(solver,(int *) env->GetDirectBufferAddress(lits),n_lits,lit_out));
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(ImpliesOr(solver,(int *) env->GetDirectBufferAddress(lits),n_lits));
+}
+
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    ImpliesOr
+ * Signature: (JLjava/nio/IntBuffer;II)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits, jint lit_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(ImpliesOr_(solver,(int *) env->GetDirectBufferAddress(lits),n_lits,lit_out));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertImpliesOr_
+ * Signature: (JILjava/nio/IntBuffer;II)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr_1
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint implies, jobject lits, jint n_lits, jint lit_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertImpliesOr_(solver,implies,(int *) env->GetDirectBufferAddress(lits),n_lits,lit_out);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Ors
+ * Signature: (JLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Ors(solver,(int *) env->GetDirectBufferAddress(lits),n_lits));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Or
+ * Signature: (JII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Or
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Or(solver,lit_a,lit_b));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Nors
+ * Signature: (JLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nors
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Nors(solver,(int *) env->GetDirectBufferAddress(lits),n_lits));
+
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Nor
+ * Signature: (JII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nor
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Nor(solver,lit_a,lit_b));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Nands
+ * Signature: (JLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nands
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Nands(solver,(int *) env->GetDirectBufferAddress(lits),n_lits));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Nand
+ * Signature: (JII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nand
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Nand(solver,lit_a,lit_b));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Xors
+ * Signature: (JLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xors
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Xors(solver,(int *) env->GetDirectBufferAddress(lits),n_lits));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Xor
+ * Signature: (JII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xor
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Xor(solver,lit_a,lit_b));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Xnors
+ * Signature: (JLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xnors
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Xnors(solver,(int *) env->GetDirectBufferAddress(lits),n_lits));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Xnor
+ * Signature: (JII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xnor
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Xnor(solver,lit_a,lit_b));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Implies
+ * Signature: (JII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Implies
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Implies(solver,lit_a,lit_b));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Implies_
+ * Signature: (JIII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Implies_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b, jint lit_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Implies_(solver,lit_a,lit_b,lit_out));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Ite
+ * Signature: (JIII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ite
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_cond, jint lit_thn, jint lit_els){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Ite(solver,lit_cond,lit_thn,lit_els));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Ite_
+ * Signature: (JIIII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ite_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_cond, jint lit_thn, jint lit_els, jint lit_result){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Ite_(solver,lit_cond,lit_thn,lit_els,lit_result));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Add
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;ILjava/nio/IntBuffer;)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Add
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits, jobject lits_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return jint(Add(solver, (int *) env->GetDirectBufferAddress(lits_a), (int *) env->GetDirectBufferAddress(lits_b), n_lits, (int *) env->GetDirectBufferAddress(lits_out)));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Add_
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;ILjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Add_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits, jobject lits_out, jint carry_lit){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Add_(solver, (int *) env->GetDirectBufferAddress(lits_a), (int *) env->GetDirectBufferAddress(lits_b), n_lits, (int *) env->GetDirectBufferAddress(lits_out),carry_lit));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Subtract
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;ILjava/nio/IntBuffer;)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Subtract
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits, jobject lits_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Subtract(solver, (int *) env->GetDirectBufferAddress(lits_a), (int *) env->GetDirectBufferAddress(lits_b), n_lits, (int *) env->GetDirectBufferAddress(lits_out)));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Subtract_
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;ILjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Subtract_1
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits, jobject lits_out, jint carry_lit){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(Subtract_(solver, (int *) env->GetDirectBufferAddress(lits_a), (int *) env->GetDirectBufferAddress(lits_b), n_lits, (int *) env->GetDirectBufferAddress(lits_out),carry_lit));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Negate
+ * Signature: (JLjava/nio/IntBuffer;ILjava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Negate
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits, jobject lits_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+ Negate(solver, (int *) env->GetDirectBufferAddress(lits),n_lits, (int *) env->GetDirectBufferAddress(lits_out));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Negate_
+ * Signature: (JLjava/nio/IntBuffer;ILjava/nio/IntBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Negate_1
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits, jobject lits_out){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+ Negate_(solver, (int *) env->GetDirectBufferAddress(lits),n_lits, (int *) env->GetDirectBufferAddress(lits_out));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Assert
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Assert
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+Assert(solver,lit_a);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertOrTertiary
+ * Signature: (JIII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOrTertiary
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b, jint lit_c){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertOrTertiary(solver,lit_a,lit_b,lit_c);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertOrs
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOrs
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertOrs(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertOr
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOr
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertOr(solver,lit_a, lit_b);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertNands
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNands
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertNands(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertNand
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNand
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertNand(solver,lit_a,lit_b);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertAnds
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAnds
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertAnds(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertAnd
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAnd
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertAnd(solver,lit_a,lit_b);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertNors
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNors
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertNors(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertNor
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNor
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertNor(solver,lit_a,lit_b);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertXor
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXor
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertXor(solver,lit_a,lit_b);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertXors
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXors
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertXors(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertXnors
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXnors
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertXnors(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertXnor
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXnor
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertXnor(solver,lit_a,lit_b);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertImplies
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImplies
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertImplies(solver,lit_a,lit_b);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertEqual
+ * Signature: (JII)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertEqual
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jint lit_a, jint lit_b){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertEqual(solver,lit_a,lit_b);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertAllSame
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAllSame
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertAllSame(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}
+
+
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    Equals
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Equals
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(LEQ(solver,(int *) env->GetDirectBufferAddress(lits_a),(int *) env->GetDirectBufferAddress(lits_b),n_lits));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    LEQ
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_LEQ
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(LEQ(solver,(int *) env->GetDirectBufferAddress(lits_a),(int *) env->GetDirectBufferAddress(lits_b),n_lits));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    LT
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_LT
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+return jint(LT(solver,(int *) env->GetDirectBufferAddress(lits_a),(int *) env->GetDirectBufferAddress(lits_b),n_lits));
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertEquals
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertEquals
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertEquals(solver,(int *) env->GetDirectBufferAddress(lits_a),(int *) env->GetDirectBufferAddress(lits_b),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertLEQ
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertLEQ
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertLEQ(solver,(int *) env->GetDirectBufferAddress(lits_a),(int *) env->GetDirectBufferAddress(lits_b),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertLT
+ * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertLT
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits_a, jobject lits_b, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertLT(solver,(int *) env->GetDirectBufferAddress(lits_a),(int *) env->GetDirectBufferAddress(lits_b),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertAMO
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAMO
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertAMO(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertExactlyOne
+ * Signature: (JLjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertExactlyOne
+(JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+AssertExactlyOne(solver,(int *) env->GetDirectBufferAddress(lits),n_lits);
+}

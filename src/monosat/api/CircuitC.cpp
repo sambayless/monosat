@@ -131,7 +131,15 @@ int ImpliesAnd(Monosat::SimpSolver *S, int *lits, int n_lits, int lit_out) {
 
 //If this gate is true, then at least one of vals must be true.
 //But if this gate is false, vals may be true or false.
-int ImpliesOr(Monosat::SimpSolver *S, int *lits, int n_lits, int lit_out) {
+int ImpliesOr(Monosat::SimpSolver *S, int *lits, int n_lits) {
+    MonosatData *d = (MonosatData *) S->_external_data;
+    assert(d);
+    Monosat::Circuit<Monosat::SimpSolver> &circuit = d->circuit;
+    toVec(lits,n_lits,tmp_lits_a);
+    return toInt(circuit.ImpliesOr(tmp_lits_a));
+}
+
+int ImpliesOr_(Monosat::SimpSolver *S, int *lits, int n_lits, int lit_out) {
     MonosatData *d = (MonosatData *) S->_external_data;
     assert(d);
     Monosat::Circuit<Monosat::SimpSolver> &circuit = d->circuit;
@@ -475,12 +483,6 @@ void AssertAllSame(Monosat::SimpSolver *S, int *lits, int n_lits) {
     circuit.AssertEqual(tmp_lits_a);
 }
 
-int Equal(Monosat::SimpSolver *S, int lit_a, int lit_b) {
-    MonosatData *d = (MonosatData *) S->_external_data;
-    assert(d);
-    Monosat::Circuit<Monosat::SimpSolver> &circuit = d->circuit;
-    return toInt(circuit.Equal(toLit(lit_a),toLit(lit_b)));
-}
 
 int Equals(Monosat::SimpSolver *S, int *lits_a,  int *lits_b, int n_lits) {
     MonosatData *d = (MonosatData *) S->_external_data;

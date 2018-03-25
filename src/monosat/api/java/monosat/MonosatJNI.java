@@ -217,7 +217,8 @@ public class MonosatJNI {
     public native static int ImpliesAnd(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
     //If this gate is true, then at least one of vals must be true.
 //But if this gate is false, vals may be true or false.
-    public native static int ImpliesOr(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
+public native static int ImpliesOr(long solverPtr,IntBuffer lits, int n_lits);
+    public native static int ImpliesOr_(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
     //This is an OR condition that holds only if implies is true
     public native static void AssertImpliesOr_(long solverPtr,int implies,IntBuffer lits, int n_lits, int lit_out);
 
@@ -280,7 +281,6 @@ public class MonosatJNI {
 
     public native static void AssertAllSame(long solverPtr,IntBuffer lits, int n_lits);
 
-    public native static int Equal(long solverPtr, int a_lit, int b_lit);
     public native static int Equals(long solverPtr,IntBuffer A_lits, IntBuffer B_lits, int n_lits);
 
     public native static int LEQ(long solverPtr,IntBuffer A_lits, IntBuffer B_lits, int n_lits);

@@ -69,7 +69,8 @@ int Ors_(SolverPtr S,int * lits, int n_lits, int lit_out);
 int ImpliesAnd(SolverPtr S,int * lits, int n_lits, int lit_out);
 //If this gate is true, then at least one of vals must be true.
 //But if this gate is false, vals may be true or false.
-int ImpliesOr(SolverPtr S,int * lits, int n_lits, int lit_out);
+int ImpliesOr(SolverPtr S,int * lits, int n_lits);
+int ImpliesOr_(SolverPtr S,int * lits, int n_lits,int lit_out);
 //This is an OR condition that holds only if implies is true
 void AssertImpliesOr_(SolverPtr S,int implies,int * lits, int n_lits, int lit_out);
 

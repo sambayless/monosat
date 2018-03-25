@@ -309,12 +309,14 @@ if (JAVA_SUPPORT)
     find_package(JNI 1.8 REQUIRED)
 
     message(STATUS "Compiling shared library with support for JNI")
-    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/monosat/api/java/MonosatJNI.cpp DEPENDS ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h)
+    set_source_files_properties(src/monosat/api/java/MonosatJNI.cpp OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h)
+    set_source_files_properties(src/monosat/api/java/monosat_MonosatJNI.h OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/__MonosatJNI.h)
 
     # generate MonosatJNI.h header
     add_custom_command(
             PRE_BUILD
-            OUTPUT ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h
+            #OUTPUT ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h
+            OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__MonosatJNI.h # Using a fake file here that is never actually generated, to ensure that javac is always re-run
             #javah is now deprecated, using javac -h instead
             # COMMAND ${Java_JAVAH_EXECUTABLE} -jni -verbose  monosat.MonosatJNI
             #COMMAND echo "Running ${Java_JAVAC_EXECUTABLE} from ${CMAKE_SOURCE_DIR}/src/monosat/api/java/"
