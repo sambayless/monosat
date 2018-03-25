@@ -1,6 +1,7 @@
 package monosat;
 import monosat.BitVector;
 import monosat.MonosatJNI;
+import monosat.Lit;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

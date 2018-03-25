@@ -39,6 +39,12 @@ public final class Logic {
         return getSolver().newLit(decidable);
     }
 
+    public static Lit True(){
+        return getSolver().True();
+    }
+    public static Lit False(){
+        return getSolver().False();
+    }
     public static boolean solve(){
         return getSolver().solve();
     }

@@ -1,6 +1,6 @@
 #include "monosat_MonosatJNI.h"
 #include "monosat/api/Monosat.h"
-
+#include "monosat/api/CircuitC.h"
 using namespace Monosat;
 using namespace std;
 /*

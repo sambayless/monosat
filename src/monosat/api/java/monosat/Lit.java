@@ -15,8 +15,8 @@ final public class Lit {
     protected int l=-2;
     private final Lit neg; //every literal also has a pointer to its negation.
 
-    public final static Lit Undef= new Lit(-2);
-    public final static Lit Error= new Lit(-1);
+    public final static Lit Undef= new Lit(-2,true);
+    public final static Lit Error= new Lit(-1,true);
 
     /**
      * Typically, users will create literals using Solver.newLit(), rather than constructing them directly.
@@ -24,6 +24,10 @@ final public class Lit {
     protected Lit(){
         this.l = -2;
         this.neg = Error;
+    }
+    private Lit(int lit, boolean define_literal){
+        this.l = lit;
+        neg = null;
     }
     protected Lit(int variable){
         assert(variable>=0);

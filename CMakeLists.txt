@@ -1,19 +1,16 @@
 cmake_minimum_required(VERSION 2.7)
 project(monosat)
 
-
+#enable to include built-in support for Pseudo-Boolean constraints (recommended)
 option (PB_SUPPORT "Combile with Pseudo-Boolean support (using Minisat+)" ON)
 #set to compile Java JNI support into the shared library (requires a JDK)
 option(JAVA_SUPPORT "Build the static library" OFF)
 #set to OFF to disable linking GPL sources
 option(GPL "Link GPLv2 sources, so that the compiled binary is licensed under the terms of the GPLv2, rather than MIT (greatly improves the performance of maximum flow predicates significantly)." ON)
-
+option(SHOW_GIT_VERSION "Include git --describe in the build version" ON)
 set (JAVA_SOURCE_FILES "")
 
 
-if(NOT NO_GIT_VERSION)
-    set (SHOW_GIT_VERSION 1)
-endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT -DDEBUG_CORE " ) #  -DDEBUG_GRAPH -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3") #it is _critically_ important that release builds specify -DNDEBUG!
@@ -313,14 +310,19 @@ if (JAVA_SUPPORT)
     find_package(JNI 1.8 REQUIRED)
 
     message(STATUS "Compiling shared library with support for JNI")
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/monosat/api/java/MonosatJNI.cpp DEPENDS ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h)
 
     # generate MonosatJNI.h header
     add_custom_command(
-            OUTPUT src/monosat/api/java/monosat_MonosatJNI.h
-            WORKING_DIRECTORY src/monosat/api/java/
+            PRE_BUILD
+            OUTPUT ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h
             #javah is now deprecated, using javac -h instead
             # COMMAND ${Java_JAVAH_EXECUTABLE} -jni -verbose  monosat.MonosatJNI
-            COMMAND ${Java_JAVAC_EXECUTABLE} -h  monosat.MonosatJNI
+            #COMMAND echo "Running ${Java_JAVAC_EXECUTABLE} from ${CMAKE_SOURCE_DIR}/src/monosat/api/java/"
+            #COMMAND echo "${Java_JAVAC_EXECUTABLE}"
+            #COMMAND ${Java_JAVAC_EXECUTABLE} -d ${CMAKE_CURRENT_BINARY_DIR}/src/monosat/api/java/monosat  monosat/MonosatJNI.java
+            COMMAND ${Java_JAVAC_EXECUTABLE} -h ${CMAKE_SOURCE_DIR}/src/monosat/api/java monosat/MonosatJNI.java
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/monosat/api/java/
     )
 
     set(JAVA_SOURCE_FILES ${JAVA_SOURCE_FILES} src/monosat/api/java/MonosatJNI.cpp src/monosat/api/java/monosat_MonosatJNI.h)
@@ -339,36 +341,32 @@ if (GPL)
 endif()
 
 
-if (${SHOW_GIT_VERSION})
+if (SHOW_GIT_VERSION)
     #only attempt to load the git version if the git repo is found in the source directory
-    if( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" )
-        MESSAGE( STATUS "Found git repo" )
+    if( EXISTS "${CMAKE_SOURCE_DIR}/.git" )
+        MESSAGE( STATUS "Found git repository" )
         SET(_definitions -DMONOSAT_VERSION=\"$CMAKE_BUILD_TYPE $$\(shell git describe --abbrev=4 --dirty --always --tags\)\")
-        set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/monosat/Version.cpp VERBATIM PROPERTIES COMPILE_FLAGS "-DMONOSAT_BUILD=${CMAKE_BUILD_TYPE} -DMONOSAT_VERSION=\"$\(shell git describe --abbrev=4 --dirty --always --tags\)\"")
-
+        set_source_files_properties(${CMAKE_SOURCE_DIR}/src/monosat/Version.cpp VERBATIM PROPERTIES COMPILE_FLAGS "-DMONOSAT_BUILD=${CMAKE_BUILD_TYPE} -DMONOSAT_VERSION=\"$\(shell git describe --abbrev=4 --dirty --always --tags\)\"")
+        set_source_files_properties(${CMAKE_SOURCE_DIR}/src/monosat/Version.cpp DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/__Version.cpp)
         add_custom_command(
-                OUTPUT
-                ${CMAKE_CURRENT_BINARY_DIR}/__Version.cpp #fake file to force that Version.cpp is always rebuilt
-                ${CMAKE_CURRENT_SOURCE_DIR}/src/monosat/Version.cpp
+                OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__Version.cpp #fake file to force that Version.cpp is always rebuilt
                 COMMAND echo
                 ARGS \"MonoSAT ${CMAKE_BUILD_TYPE} build, version: $\(shell git describe --abbrev=4 --dirty --always --tags\)\"
         )
     endif()
-endif (${SHOW_GIT_VERSION})
+endif (SHOW_GIT_VERSION)
 
 add_executable(monosat ${SOURCE_FILES})
-set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
+#set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
 target_link_libraries(monosat z)
 if (NOT APPLE)
     target_link_libraries(monosat m)
 endif()
 target_link_libraries(monosat gmpxx)
 target_link_libraries(monosat gmp)
-if (JAVA_SUPPORT)
-    target_link_libraries(monosat ${JNI_LIBRARIES})
-endif (JAVA_SUPPORT)
 
-if (${UNIX})
+
+if (UNIX)
     #librt is needed for clock_gettime, which is enabled for linux only
     #(clock_gettime is used for capturing detailed timing statistics only)
     if (NOT APPLE)
@@ -376,31 +374,29 @@ if (${UNIX})
     else()
         target_link_libraries(monosat)
     endif()
-endif (${UNIX})
+endif (UNIX)
 
-add_executable(monosat_static ${SOURCE_FILES})
-set_target_properties(monosat_static PROPERTIES OUTPUT_NAME monosat)
-if (NOT APPLE)
-    target_link_libraries (monosat_static "-static-libgcc -static-libstdc++")
-endif()
-target_link_libraries(monosat_static z.a)
-target_link_libraries(monosat_static m.a)
-target_link_libraries(monosat_static gmpxx.a)
-target_link_libraries(monosat_static gmp.a)
-if (JAVA_SUPPORT)
-    target_link_libraries(monosat_static ${JNI_LIBRARIES})
-endif (JAVA_SUPPORT)
+#add_executable(monosat_static ${SOURCE_FILES})
+#set_target_properties(monosat_static PROPERTIES OUTPUT_NAME monosat)
+#if (NOT APPLE)
+#    target_link_libraries (monosat_static "-static-libgcc -static-libstdc++")
+#endif()
+#target_link_libraries(monosat_static z.a)
+#target_link_libraries(monosat_static m.a)
+#target_link_libraries(monosat_static gmpxx.a)
+#target_link_libraries(monosat_static gmp.a)
 
 
-if (${UNIX})
-    #librt is needed for clock_gettime, which is enabled for linux only
-    #(clock_gettime is used for capturing detailed timing statistics only)
-    if (NOT APPLE)
-        target_link_libraries(monosat_static rt)
-    else()
-        target_link_libraries(monosat_static)
-    endif()
-endif (${UNIX})
+
+#if (UNIX)
+#    #librt is needed for clock_gettime, which is enabled for linux only
+#    #(clock_gettime is used for capturing detailed timing statistics only)
+#    if (NOT APPLE)
+#        target_link_libraries(monosat_static rt)
+#    else()
+#        target_link_libraries(monosat_static)
+#    endif()
+#endif (UNIX)
 
 
 
@@ -415,7 +411,7 @@ target_link_libraries(libmonosat gmp)
 if (JAVA_SUPPORT)
     target_link_libraries(libmonosat ${JNI_LIBRARIES})
 endif (JAVA_SUPPORT)
-if (${UNIX})
+if (UNIX)
     #librt is needed for clock_gettime, which is enabled for linux only
     #(clock_gettime is used for capturing detailed timing statistics only)
     if (NOT APPLE)
@@ -423,27 +419,27 @@ if (${UNIX})
     else()
         target_link_libraries(libmonosat)
     endif()
-endif (${UNIX})
+endif (UNIX)
 
 
-add_library(libmonosat_static ${SOURCE_FILES})
-set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
-target_link_libraries(libmonosat_static z.a)
-target_link_libraries(libmonosat_static m.a)
-target_link_libraries(libmonosat_static gmpxx.a)
-target_link_libraries(libmonosat_static gmp.a)
+#add_library(libmonosat_static ${SOURCE_FILES})
+#set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
+#target_link_libraries(libmonosat_static z.a)
+#target_link_libraries(libmonosat_static m.a)
+#target_link_libraries(libmonosat_static gmpxx.a)
+#target_link_libraries(libmonosat_static gmp.a)
 
-if (${UNIX})
-    #librt is needed for clock_gettime, which is enabled for linux only
-    #(clock_gettime is used for capturing detailed timing statistics only)
-    if (NOT APPLE)
-        target_link_libraries(libmonosat_static rt)
-    else()
-        target_link_libraries(libmonosat_static)
-    endif()
-endif (${UNIX})
+#if (UNIX)
+#    #librt is needed for clock_gettime, which is enabled for linux only
+#    #(clock_gettime is used for capturing detailed timing statistics only)
+#    if (NOT APPLE)
+#        target_link_libraries(libmonosat_static rt)
+#    else()
+#        target_link_libraries(libmonosat_static)
+#    endif()
+#endif (UNIX)
 
-install(TARGETS monosat_static libmonosat libmonosat_static
+install(TARGETS monosat libmonosat #libmonosat_static
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
