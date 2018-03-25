@@ -357,7 +357,8 @@ if (SHOW_GIT_VERSION)
 endif (SHOW_GIT_VERSION)
 
 add_executable(monosat ${SOURCE_FILES})
-#set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
+#By default, build the staticly linked version of monosat rather than the dynamically linked one.
+set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
 target_link_libraries(monosat z)
 if (NOT APPLE)
     target_link_libraries(monosat m)
@@ -376,27 +377,47 @@ if (UNIX)
     endif()
 endif (UNIX)
 
-#add_executable(monosat_static ${SOURCE_FILES})
-#set_target_properties(monosat_static PROPERTIES OUTPUT_NAME monosat)
-#if (NOT APPLE)
-#    target_link_libraries (monosat_static "-static-libgcc -static-libstdc++")
-#endif()
-#target_link_libraries(monosat_static z.a)
-#target_link_libraries(monosat_static m.a)
-#target_link_libraries(monosat_static gmpxx.a)
-#target_link_libraries(monosat_static gmp.a)
+
+
+add_library(libmonosat_static ${SOURCE_FILES})
+set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
+target_link_libraries(libmonosat_static z.a)
+target_link_libraries(libmonosat_static m.a)
+target_link_libraries(libmonosat_static gmpxx.a)
+target_link_libraries(libmonosat_static gmp.a)
+
+if (UNIX)
+    #librt is needed for clock_gettime, which is enabled for linux only
+    #(clock_gettime is used for capturing detailed timing statistics only)
+    if (NOT APPLE)
+        target_link_libraries(libmonosat_static rt)
+    else()
+        target_link_libraries(libmonosat_static)
+    endif()
+endif (UNIX)
+
+
+add_executable(monosat_static ${SOURCE_FILES})
+set_target_properties(monosat_static PROPERTIES OUTPUT_NAME monosat)
+if (NOT APPLE)
+    target_link_libraries (monosat_static "-static-libgcc -static-libstdc++")
+endif()
+target_link_libraries(monosat_static z.a)
+target_link_libraries(monosat_static m.a)
+target_link_libraries(monosat_static gmpxx.a)
+target_link_libraries(monosat_static gmp.a)
 
 
 
-#if (UNIX)
-#    #librt is needed for clock_gettime, which is enabled for linux only
-#    #(clock_gettime is used for capturing detailed timing statistics only)
-#    if (NOT APPLE)
-#        target_link_libraries(monosat_static rt)
-#    else()
-#        target_link_libraries(monosat_static)
-#    endif()
-#endif (UNIX)
+if (UNIX)
+    #librt is needed for clock_gettime, which is enabled for linux only
+    #(clock_gettime is used for capturing detailed timing statistics only)
+    if (NOT APPLE)
+        target_link_libraries(monosat_static rt)
+    else()
+        target_link_libraries(monosat_static)
+    endif()
+endif (UNIX)
 
 
 
@@ -422,24 +443,8 @@ if (UNIX)
 endif (UNIX)
 
 
-#add_library(libmonosat_static ${SOURCE_FILES})
-#set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
-#target_link_libraries(libmonosat_static z.a)
-#target_link_libraries(libmonosat_static m.a)
-#target_link_libraries(libmonosat_static gmpxx.a)
-#target_link_libraries(libmonosat_static gmp.a)
 
-#if (UNIX)
-#    #librt is needed for clock_gettime, which is enabled for linux only
-#    #(clock_gettime is used for capturing detailed timing statistics only)
-#    if (NOT APPLE)
-#        target_link_libraries(libmonosat_static rt)
-#    else()
-#        target_link_libraries(libmonosat_static)
-#    endif()
-#endif (UNIX)
-
-install(TARGETS monosat libmonosat #libmonosat_static
+install(TARGETS monosat_static libmonosat libmonosat_static
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
