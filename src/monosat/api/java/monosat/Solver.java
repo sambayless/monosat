@@ -1,7 +1,4 @@
 package monosat;
-import monosat.BitVector;
-import monosat.MonosatJNI;
-import monosat.Lit;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -9,9 +6,9 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.io.Closeable;
 
-public class Solver {
-
+public class Solver  implements Closeable{
     protected long solverPtr=0; //handle to the underlying monsoat this instance.
     protected long bvPtr=0;
     int buffer_size0=1024;
@@ -66,11 +63,20 @@ public class Solver {
         initBuffers();
     }
 
-    protected synchronized void dispose(){
+    @Override
+    public synchronized void close(){
+        //Does this method actually need to be syncronized?
         if(solverPtr!=0){
             MonosatJNI.deleteSolver(solverPtr);
             solverPtr=0;
         }
+    }
+
+    @Override
+    protected void finalize() {
+        //Consider replacing with Java 9's java.lang.ref.Cleaner in the future.
+        //But for now, sticking with finalize (and support for Java 8)
+        close();
     }
 
     private void  initBuffers(){
