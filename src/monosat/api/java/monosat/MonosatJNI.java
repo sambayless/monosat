@@ -201,7 +201,8 @@ public class MonosatJNI {
     public native static int getModel_Path_EdgeLits(long solverPtr,long graphPtr,int reach_or_distance_literal, int store_length,  IntBuffer  store);
 
     //Logic building methods
-
+    //Note: Many of these methods are capitalized, defying Java naming conventions.
+    //This is because the lower case versions (and, or...) are keywords in C++, and so cannot be used in the JNI bridge.
     public native static int And_(long solverPtr,int lit_a, int lit_b, int lit_out);
     public native static int Ands_(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
     public native static void AssertImpliesAnd_(long solverPtr,int implies,IntBuffer lits, int n_lits, int lit_out);
@@ -213,11 +214,11 @@ public class MonosatJNI {
     public native static int Ors_(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
 
     //If this gate is true, then all of vals must be true.
-//But if this gate is false, vals may be true or false.
+    //But if this gate is false, vals may be true or false.
     public native static int ImpliesAnd(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
     //If this gate is true, then at least one of vals must be true.
-//But if this gate is false, vals may be true or false.
-public native static int ImpliesOr(long solverPtr,IntBuffer lits, int n_lits);
+    //But if this gate is false, vals may be true or false.
+    public native static int ImpliesOr(long solverPtr,IntBuffer lits, int n_lits);
     public native static int ImpliesOr_(long solverPtr,IntBuffer lits, int n_lits, int lit_out);
     //This is an OR condition that holds only if implies is true
     public native static void AssertImpliesOr_(long solverPtr,int implies,IntBuffer lits, int n_lits, int lit_out);

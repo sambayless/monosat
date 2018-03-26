@@ -33,7 +33,7 @@ using namespace Monosat;
 // Collected in Config.h
 //=================================================================================================
 // Constructor/Destructor:
-
+bool Solver::shown_warning=false;
 Solver::Solver() :
 
 // Parameters (user settable):

@@ -5,6 +5,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+/**
+ * Logic provides static accessors for common logic functions.
+ * It also provides a  (thread local) static solver instance (getSolver()),
+ * and some methods for accessing and replacing that solver instance.
+ *
+ * The expected use of Logic is for all methods of Logic to be statically imported:
+ * import static monosat.Logic.*
+ * Making these static methods available as a light-weight domain specific language.
+ */
 public final class Logic {
     private static final ThreadLocal<Solver> _solver = new ThreadLocal();
 
@@ -39,11 +48,12 @@ public final class Logic {
         return getSolver().newLit(decidable);
     }
 
+    //Note: True and False are capitalized here, to avoid name clashing with 'true' and 'false'
     public static Lit True(){
-        return getSolver().True();
+        return getSolver().getTrue();
     }
     public static Lit False(){
-        return getSolver().False();
+        return getSolver().getFalse();
     }
     public static boolean solve(){
         return getSolver().solve();
@@ -56,291 +66,164 @@ public final class Logic {
     public static boolean solve(Collection<Lit> assumptions){
         return getSolver().solve(assumptions);
     }
+
+
     //Literal level constructs
     public static Lit ite(Lit condition, Lit then,Lit els){
         Solver solver = getSolver();
-        return solver.toLit(MonosatJNI.Ite(solver.solverPtr,condition.l,then.l,els.l));
+        return solver.ite(condition, then,els);
     }
 
     public static Lit and(Lit ... args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            return args[0];
-        }else if (args.length==2){
-            Solver solver = getSolver();
-            return solver.toLit(MonosatJNI.And(solver.solverPtr,args[0].l,args[1].l));
-        }
-        return and(Arrays.asList(args));
+        return getSolver().and(args);
     }
     public static Lit or(Lit... args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            return args[0];
-        }else if (args.length==2){
-            Solver solver = getSolver();
-            return solver.toLit(MonosatJNI.Or(solver.solverPtr,args[0].l,args[1].l));
-        }
-        return or(Arrays.asList(args));
+        return getSolver().or(args);
     }
     public static Lit not(Lit a){
+        //don't need the solver for this call
+        //so avoid the thread local access of using getSolver()
         return a.negate();
     }
     public static Lit nand(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            return args[0].negate();
-        }else if (args.length==2){
-            Solver solver = getSolver();
-            return solver.toLit(MonosatJNI.Nand(solver.solverPtr,args[0].l,args[1].l));
-        }
-        return nand(Arrays.asList(args));
+        return getSolver().nand(args);
     }
     public static Lit nor(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            return args[0];
-        }else if (args.length==2){
-            Solver solver = getSolver();
-            return solver.toLit(MonosatJNI.Nor(solver.solverPtr,args[0].l,args[1].l));
-        }
-        return nor(Arrays.asList(args));
+        return getSolver().nor(args);
     }
     public static Lit xor(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            return args[0].negate();
-        }else if (args.length==2){
-            Solver solver = getSolver();
-            return solver.toLit(MonosatJNI.Xor(solver.solverPtr,args[0].l,args[1].l));
-        }
-        return xor(Arrays.asList(args));
+        return getSolver().xor(args);
     }
     public static Lit xnor(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            return args[0];
-        }else if (args.length==2){
-            Solver solver = getSolver();
-            return solver.toLit(MonosatJNI.Xnor(solver.solverPtr,args[0].l,args[1].l));
-        }
-        return xnor(Arrays.asList(args));
+        return getSolver().xnor(args);
     }
 
-    //Assertion forms. Note, these are capitalized to avoid name-classing with the builtin 'Assert' method
-    public static void Assert(Lit a){
-        MonosatJNI.Assert(getSolver().solverPtr,a.l);
+    //Assertion forms.
+    public static void assertTrue(Lit a){
+        getSolver().assertTrue(a);
     }
-    public static void AssertNot(Lit a){
-        MonosatJNI.Assert(getSolver().solverPtr,a.negate().l);
-    }
-
-    public static void AssertAnd(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            Assert(args[0]);
-        }else if (args.length==2){
-            MonosatJNI.AssertAnd(getSolver().solverPtr,args[0].l,args[1].l);
-        }
-         AssertAnd(Arrays.asList(args));
-    }
-    public static void AssertOr(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            Assert(args[0]);
-        }else if (args.length==2){
-            MonosatJNI.AssertOr(getSolver().solverPtr,args[0].l,args[1].l);
-        }
-        AssertOr(Arrays.asList(args));
+    public static void assertFalse(Lit a){
+        getSolver().assertFalse(a);
     }
 
-    public static void AssertNand(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            Assert(args[0].negate());
-        }else if (args.length==2){
-            MonosatJNI.AssertNand(getSolver().solverPtr,args[0].l,args[1].l);
-        }
-        AssertNand(Arrays.asList(args));
+    public static void assertAnd(Lit...args){
+        getSolver().assertAnd(args);
     }
-    public static void AssertNor(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            Assert(args[0].negate());
-        }else if (args.length==2){
-            MonosatJNI.AssertNor(getSolver().solverPtr,args[0].l,args[1].l);
-        }
-        AssertNor(Arrays.asList(args));
+    public static void assertOr(Lit...args){
+        getSolver().assertOr(args);
     }
-    public static void AssertXor(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            Assert(args[0]);//If this the correct behaviour here?
-        }else if (args.length==2){
-            MonosatJNI.AssertXor(getSolver().solverPtr,args[0].l,args[1].l);
-        }
-        AssertXor(Arrays.asList(args));
+
+    public static void assertNand(Lit...args){
+        getSolver().assertNand(args);
     }
-    public static void AssertXnor(Lit...args){
-        if (args.length==0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
-        }else if (args.length==1){
-            Assert(args[0]);//If this the correct behaviour here?
-        }else if (args.length==2){
-            MonosatJNI.AssertXnor(getSolver().solverPtr,args[0].l,args[1].l);
-        }
-        AssertXnor(Arrays.asList(args));
+    public static void assertNor(Lit...args){
+        getSolver().assertNor(args);
     }
-    public static void AssertEqual(Lit a, Lit b){
-        AssertXnor(a,b);
+    public static void assertXor(Lit...args){
+        getSolver().assertXor(args);
+    }
+    public static void assertXnor(Lit...args){
+        getSolver().assertXnor(args);
+    }
+    public static void assertEqual(Lit a, Lit b){
+        getSolver().assertEqual(a,b);
     }
 
     //Multi-Literal constructs
     public static Lit and(Collection<Lit> elements){
-        Solver solver = getSolver();
-        return solver.toLit(MonosatJNI.Ands(solver.solverPtr,solver.getLitBuffer(elements),elements.size()));
+       return getSolver().and(elements);
     }
     public static Lit or(Collection<Lit> elements){
-        Solver solver = getSolver();
-        return solver.toLit(MonosatJNI.Ors(solver.solverPtr,solver.getLitBuffer(elements),elements.size()));
+        return getSolver().or(elements);
     }
     public static Lit nand(Collection<Lit> elements){
-        Solver solver = getSolver();
-        return solver.toLit(MonosatJNI.Nands(solver.solverPtr,solver.getLitBuffer(elements),elements.size()));
+        return getSolver().nand(elements);
     }
     public static Lit nor(Collection<Lit> elements){
-        Solver solver = getSolver();
-        return solver.toLit(MonosatJNI.Nors(solver.solverPtr,solver.getLitBuffer(elements),elements.size()));
+        return getSolver().nor(elements);
     }
     public static Lit xor(Collection<Lit> elements){
-        Solver solver = getSolver();
-        return solver.toLit(MonosatJNI.Xors(solver.solverPtr,solver.getLitBuffer(elements),elements.size()));
+        return getSolver().xor(elements);
     }
     public static Lit xnor(Collection<Lit> elements){
-        Solver solver = getSolver();
-        return solver.toLit(MonosatJNI.Xnors(solver.solverPtr,solver.getLitBuffer(elements),elements.size()));
+        return getSolver().xnor(elements);
     }
 
-    //Assertion forms
-    public static void Assert(Collection<Lit> elements){
-        AssertOr(elements);
+    //assertion forms
+    public static void assertAnd(Collection<Lit> elements){
+        getSolver().assertAnd(elements);
     }
-    public static void AssertAnd(Collection<Lit> elements){
-        Solver solver = getSolver();
-        MonosatJNI.AssertAnds(solver.solverPtr,solver.getLitBuffer(elements),elements.size());
+    public static void assertOr(Collection<Lit> elements){
+        getSolver().assertOr(elements);
     }
-    public static void AssertOr(Collection<Lit> elements){
-        Solver solver = getSolver();
-        MonosatJNI.AssertOrs(solver.solverPtr,solver.getLitBuffer(elements),elements.size());
+    public static void assertNand(Collection<Lit> elements){
+        getSolver().assertNand(elements);
     }
-    public static void AssertNand(Collection<Lit> elements){
-        Solver solver = getSolver();
-        MonosatJNI.AssertNands(solver.solverPtr,solver.getLitBuffer(elements),elements.size());
+    public static void assertNor(Collection<Lit> elements){
+        getSolver().assertNor(elements);
     }
-    public static void AssertNor(Collection<Lit> elements){
-        Solver solver = getSolver();
-        MonosatJNI.AssertNors(solver.solverPtr,solver.getLitBuffer(elements),elements.size());
+    public static void assertXor(Collection<Lit> elements){
+        getSolver().assertXor(elements);
     }
-    public static void AssertXor(Collection<Lit> elements){
-        Solver solver = getSolver();
-        MonosatJNI.AssertXors(solver.solverPtr,solver.getLitBuffer(elements),elements.size());
-    }
-    public static void AssertXnor(Collection<Lit> elements){
-        Solver solver = getSolver();
-        MonosatJNI.AssertXnors(solver.solverPtr,solver.getLitBuffer(elements),elements.size());
+    public static void assertXnor(Collection<Lit> elements){
+        getSolver().assertXnor(elements);
     }
 
 
     //Bitvector constructs
     public static BitVector ite(Lit condition, BitVector then, BitVector els){
-        Solver solver = getSolver();
-        assert(then.width()==els.width());
-        BitVector result = new BitVector(solver, then.width());
-        MonosatJNI.bv_ite(solver.solverPtr,solver.bvPtr,condition.l,then.id,els.id,result.id);
-        return result;
+        return getSolver().ite(condition,then,els);
     }
     public static BitVector and(BitVector a, BitVector b){
-        Solver solver = getSolver();
-        return a.and(b);
+        return getSolver().and(a,b);
     }
     public static BitVector or(BitVector a, BitVector b){
-        return a.or(b);
+        return getSolver().or(a,b);
     }
     public static BitVector not(BitVector a){
-        return a.not();
+        return getSolver().not(a);
     }
     public static BitVector nand(BitVector a, BitVector b){
-        return a.nand(b);
+        return getSolver().nand(a,b);
     }
     public static BitVector nor(BitVector a, BitVector b){
-        return a.nor(b);
+        return getSolver().nor(a,b);
     }
     public static BitVector xor(BitVector a, BitVector b){
-        return a.xor(b);
+        return getSolver().xor(a,b);
     }
     public static BitVector xnor(BitVector a, BitVector b){
-        return a.xnor(b);
+        return getSolver().xnor(a,b);
     }
 
     public static BitVector add(BitVector a, BitVector b){
-        return a.add(b);
+        return getSolver().add(a,b);
     }
     public static BitVector subtract(BitVector a, BitVector b){
-        return a.subtract(b);
+        return getSolver().subtract(a,b);
     }
 
-    public static void AssertEqual(BitVector a, BitVector b){
-        Assert(a.geq(b));
-        Assert(a.leq(b));
+    public static void assertEqual(BitVector a, BitVector b){
+        getSolver().assertEqual(a,b);
     }
 
-    public static void AssertEqual(BitVector a, long constant){
-        BitVector b = getSolver().bv(a.width(),constant);
-        Assert(a.geq(b));
-        Assert(a.leq(b));
+    public static void assertEqual(BitVector a, long constant){
+        getSolver().assertEqual(a,constant);
     }
-    public static void AssertEqual(long constant,BitVector a){
-        BitVector b = getSolver().bv(a.width(),constant);
-        Assert(a.geq(b));
-        Assert(a.leq(b));
+    public static void assertEqual(long constant,BitVector a){
+        getSolver().assertEqual(constant,a);
     }
     public static BitVector min(Collection<BitVector> args){
-        Solver solver = getSolver();
-        assert(args.size()>=0);
-        int w =args.iterator().next().width();
-        BitVector result = new BitVector(solver, w);
-        MonosatJNI.bv_min(solver.solverPtr,solver.bvPtr,solver.getBVBuffer(args,0),args.size(),result.id);
-        return result;
+        return getSolver().min(args);
     }
     public static BitVector min(BitVector a, BitVector b){
-        ArrayList pair = new ArrayList();
-        pair.add(a);
-        pair.add(b);
-        return min(pair);
+        return getSolver().min(a,b);
     }
     public static BitVector max(Collection<BitVector> args){
-        Solver solver = getSolver();
-        assert(args.size()>=0);
-        int w =args.iterator().next().width();
-        BitVector result = new BitVector(solver, w);
-        MonosatJNI.bv_min(solver.solverPtr,solver.bvPtr,solver.getBVBuffer(args,0),args.size(),result.id);
-        return result;
+        return getSolver().max(args);
     }
     public static BitVector max(BitVector a, BitVector b){
-        ArrayList pair = new ArrayList();
-        pair.add(a);
-        pair.add(b);
-        return max(pair);
+        return getSolver().max(a,b);
     }
 
     /**

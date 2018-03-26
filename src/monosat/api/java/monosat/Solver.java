@@ -7,11 +7,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 public class Solver {
 
-    protected long solverPtr=0; //handle to the underlying monsoat solver instance.
+    protected long solverPtr=0; //handle to the underlying monsoat this instance.
     protected long bvPtr=0;
     int buffer_size0=1024;
     int buffer_size1=1024;
@@ -20,33 +21,58 @@ public class Solver {
     private IntBuffer ints1;
     private IntBuffer ints2;
 
-    Lit true_lit;
-    //Instantiate a new solver
-    public Solver(){
-        solverPtr = MonosatJNI.newSolver();
-        assert(solverPtr!=0);
-        true_lit = toLit(MonosatJNI.true_lit(solverPtr));
-        initBV();
-        initBuffers();
-    }
-    public Solver(String args){
-        solverPtr = MonosatJNI.newSolver(args);
-        assert(solverPtr!=0);
-        true_lit = toLit(MonosatJNI.true_lit(solverPtr));
-        initBV();
-        initBuffers();
-    }
-    public Solver(ArrayList<String> args){
+    private static String collectArgs(ArrayList<String> args){
         String arg = "";
         for(String s:args){
             arg+= s + " ";
         }
-        solverPtr = MonosatJNI.newSolver(arg);
+        return arg;
+    }
+
+
+    Lit true_lit;
+
+    /**
+     * Instantiate a new Solver.
+     * By default, support for preprocessing is disabled (as solving with preprocessing enabled requires some extra care)
+     */
+    public Solver(){
+       this(false);
+    }
+    public Solver(String args){
+        this(args, false);
+    }
+    public Solver(boolean enable_preprocessing){
+        this("", enable_preprocessing);
+    }
+    public Solver(ArrayList<String> args){
+        this(collectArgs(args),false);
+    }
+    public Solver(ArrayList<String> args,boolean enable_preprocessing){
+        this(collectArgs(args),enable_preprocessing);
+    }
+    public Solver(String args, boolean enable_preprocessing){
+        if (args!=null && args.length()>0) {
+            solverPtr = MonosatJNI.newSolver(args);
+        }else{
+            solverPtr = MonosatJNI.newSolver();
+        }
         assert(solverPtr!=0);
+        if(!enable_preprocessing){
+            disablePreprocessing();
+        }
         true_lit = toLit(MonosatJNI.true_lit(solverPtr));
         initBV();
         initBuffers();
     }
+
+    protected synchronized void dispose(){
+        if(solverPtr!=0){
+            MonosatJNI.deleteSolver(solverPtr);
+            solverPtr=0;
+        }
+    }
+
     private void  initBuffers(){
         initBuffer(0);
         initBuffer(1);
@@ -93,7 +119,7 @@ public class Solver {
     }
 
     /**
-     * Instantiate a bitvector theory solver
+     * Instantiate a bitvector theory this
      */
     private void initBV(){
         assert(bvPtr==0);
@@ -145,10 +171,10 @@ public class Solver {
     public boolean getDecisionPolarity(Lit l){
         return MonosatJNI.getDecisionPolarity(solverPtr, l.toVar());
     }
-    public Lit True(){
+    public Lit getTrue(){
         return true_lit;
     }
-    public Lit False() {
+    public Lit getFalse() {
         return true_lit.negate();
     }
     public void disallowSimplification(Lit l){
@@ -221,7 +247,7 @@ public class Solver {
     /**
      * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
      * else returns true.
-     * @param clause The clause to add to the solver
+     * @param clause The clause to add to the this
      * @return
      */
     public boolean addClause(ArrayList<Lit> clause){
@@ -232,7 +258,7 @@ public class Solver {
     /**
      * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
      * else returns true.
-     * @param l The literal to add as a unit clause to the solver (forcing l to be true)
+     * @param l The literal to add as a unit clause to the this (forcing l to be true)
      * @return
      */
     public boolean addClause(Lit l){
@@ -253,7 +279,7 @@ public class Solver {
 
     //Solver API
 
-    //basic solver functions
+    //basic this functions
     public boolean solve(){
         boolean r = MonosatJNI.solve(solverPtr);
         return r;
@@ -273,11 +299,11 @@ public class Solver {
     public void setMemoryLimit(int mb){
         MonosatJNI.setMemoryLimit(solverPtr, mb);
     }
-    //Sets the maximum number of (additional) conflicts allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
+    //Sets the maximum number of (additional) conflicts allowed in the this before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
     public void setConflictLimit(int num_conflicts){
         MonosatJNI.setConflictLimit(solverPtr,num_conflicts);
     }
-    //Sets the maximum number of (additional) propagations allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
+    //Sets the maximum number of (additional) propagations allowed in the this before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
     public void setPropagationLimit(int num_propagations){
         MonosatJNI.setPropagationLimit(solverPtr,num_propagations);
     }
@@ -303,14 +329,14 @@ public class Solver {
     }
 
     /**
-     * If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
+     * If the last solution was unsat, then this get the 'conflict clause' produced by the this (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
      */
     public ArrayList<Lit>  getConflictClause(ArrayList<Lit> store){
         store.clear();
 
-        //If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
+        //If the last solution was unsat, then this get the 'conflict clause' produced by the this (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
         //Fills the given pointer with the first max_store_size literals of the conflict clause, and returns the number of literals in the conflict clause. Set store_clause to null and max_store_size to 0 to find the size of the conflict clause
-        //Returns -1 if the solver has no conflict clause from the most recent solve() call (because that call was not UNSAT)
+        //Returns -1 if the this has no conflict clause from the most recent solve() call (because that call was not UNSAT)
         int conflict_size = MonosatJNI.getConflictClause(solverPtr,null,0);
         IntBuffer buf = getBuffer(0,conflict_size);
         int sz = MonosatJNI.getConflictClause(solverPtr, buf, conflict_size);
@@ -328,21 +354,21 @@ public class Solver {
         return store;
     }
 
-    //Backtrack the solver to level 0
+    //Backtrack the this to level 0
     void backtrack(){
         MonosatJNI.backtrack(solverPtr);
     }
 
 
     //Holds positive versions of all literals, so that we don't need to create multiple literal objects for the same literal
-    //As literals have no reference to the solver and are really just a thin wrapper around an integer,
+    //As literals have no reference to the this and are really just a thin wrapper around an integer,
     //this list can be safely shared across all solvers.
     private static ArrayList<Lit> lits = new ArrayList<>();
 
     protected Lit toLit(int literal){
         assert(literal>=0);
         int var = literal/2;
-        assert(var<nVars());//the variable must have already been declared in the sat solver before this call
+        assert(var<nVars());//the variable must have already been declared in the sat this before this call
         while(var>=lits.size()){
             lits.add(null);
         }
@@ -387,15 +413,15 @@ public class Solver {
         MonosatJNI.minimizeWeightedLits(solverPtr,getLitBuffer(literals), getIntBuffer(weights,1), literals.size());
     }
 
-    void AssertAtMostOne(ArrayList<Lit> clause){
+    void assertAtMostOne(ArrayList<Lit> clause){
         MonosatJNI.at_most_one(solverPtr,getLitBuffer(clause),clause.size());
     }
     enum Comparison{LT,LEQ,EQ,GEQ,GT}
 
-    void AssertPB(ArrayList<Lit> clause, int compareTo,Comparison c){
-        AssertPB(clause,null,compareTo,c);
+    void assertPB(ArrayList<Lit> clause, int compareTo,Comparison c){
+        assertPB(clause,null,compareTo,c);
     }
-    void AssertPB(ArrayList<Lit> clause,ArrayList<Integer> weights, int compareTo,Comparison c){
+    void assertPB(ArrayList<Lit> clause,ArrayList<Integer> weights, int compareTo,Comparison c){
         IntBuffer wt_buffer = getBuffer(1,clause.size());
         int n_wts =0;
         if(weights!=null) {
@@ -421,7 +447,7 @@ public class Solver {
         }
     }
 
-    //Convert any pb constraints in the solver into cnf (will be called automatically before solve())
+    //Convert any pb constraints in the this into cnf (will be called automatically before solve())
     public void flushPB(){
         MonosatJNI.flushPB(solverPtr);
     }
@@ -456,5 +482,292 @@ public class Solver {
     public BitVector bv(int width){
         return new BitVector(this,width);
     }
+    
+    //Higher level constructs for the this
+
+    //Literal level constructs
+    public Lit ite(Lit condition, Lit then,Lit els){
+        
+        return this.toLit(MonosatJNI.Ite(this.solverPtr,condition.l,then.l,els.l));
+    }
+
+    public Lit and(Lit ... args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            return args[0];
+        }else if (args.length==2){
+            
+            return this.toLit(MonosatJNI.And(this.solverPtr,args[0].l,args[1].l));
+        }
+        return and(Arrays.asList(args));
+    }
+    public Lit or(Lit... args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            return args[0];
+        }else if (args.length==2){
+            
+            return this.toLit(MonosatJNI.Or(this.solverPtr,args[0].l,args[1].l));
+        }
+        return or(Arrays.asList(args));
+    }
+    public Lit not(Lit a){
+        return a.negate();
+    }
+    public Lit nand(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            return args[0].negate();
+        }else if (args.length==2){
+            
+            return this.toLit(MonosatJNI.Nand(this.solverPtr,args[0].l,args[1].l));
+        }
+        return nand(Arrays.asList(args));
+    }
+    public Lit nor(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            return args[0];
+        }else if (args.length==2){
+            
+            return this.toLit(MonosatJNI.Nor(this.solverPtr,args[0].l,args[1].l));
+        }
+        return nor(Arrays.asList(args));
+    }
+    public Lit xor(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            return args[0].negate();
+        }else if (args.length==2){
+            
+            return this.toLit(MonosatJNI.Xor(this.solverPtr,args[0].l,args[1].l));
+        }
+        return xor(Arrays.asList(args));
+    }
+    public Lit xnor(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            return args[0];
+        }else if (args.length==2){
+            
+            return this.toLit(MonosatJNI.Xnor(this.solverPtr,args[0].l,args[1].l));
+        }
+        return xnor(Arrays.asList(args));
+    }
+
+    //Assertion forms.
+    public void assertTrue(Lit a){
+        MonosatJNI.Assert(this.solverPtr,a.l);
+    }
+    public void assertFalse(Lit a){
+        MonosatJNI.Assert(this.solverPtr,a.negate().l);
+    }
+
+    public void assertAnd(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            assertTrue(args[0]);
+        }else if (args.length==2){
+            MonosatJNI.AssertAnd(this.solverPtr,args[0].l,args[1].l);
+        }
+        assertAnd(Arrays.asList(args));
+    }
+    public void assertOr(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            assertTrue(args[0]);
+        }else if (args.length==2){
+            MonosatJNI.AssertOr(this.solverPtr,args[0].l,args[1].l);
+        }
+        assertOr(Arrays.asList(args));
+    }
+
+    public void assertNand(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            assertTrue(args[0].negate());
+        }else if (args.length==2){
+            MonosatJNI.AssertNand(this.solverPtr,args[0].l,args[1].l);
+        }
+        assertNand(Arrays.asList(args));
+    }
+    public void assertNor(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            assertTrue(args[0].negate());
+        }else if (args.length==2){
+            MonosatJNI.AssertNor(this.solverPtr,args[0].l,args[1].l);
+        }
+        assertNor(Arrays.asList(args));
+    }
+    public void assertXor(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            assertTrue(args[0]);//If this the correct behaviour here?
+        }else if (args.length==2){
+            MonosatJNI.AssertXor(this.solverPtr,args[0].l,args[1].l);
+        }
+        assertXor(Arrays.asList(args));
+    }
+    public void assertXnor(Lit...args){
+        if (args.length==0) {
+            throw new IllegalArgumentException("Requires at least 1 argument");
+        }else if (args.length==1){
+            assertTrue(args[0]);//If this the correct behaviour here?
+        }else if (args.length==2){
+            MonosatJNI.AssertXnor(this.solverPtr,args[0].l,args[1].l);
+        }
+        assertXnor(Arrays.asList(args));
+    }
+    public void assertEqual(Lit a, Lit b){
+        assertXnor(a,b);
+    }
+
+    //Multi-Literal constructs
+    public Lit and(Collection<Lit> elements){
+        
+        return this.toLit(MonosatJNI.Ands(this.solverPtr,this.getLitBuffer(elements),elements.size()));
+    }
+    public Lit or(Collection<Lit> elements){
+        
+        return this.toLit(MonosatJNI.Ors(this.solverPtr,this.getLitBuffer(elements),elements.size()));
+    }
+    public Lit nand(Collection<Lit> elements){
+        
+        return this.toLit(MonosatJNI.Nands(this.solverPtr,this.getLitBuffer(elements),elements.size()));
+    }
+    public Lit nor(Collection<Lit> elements){
+        
+        return this.toLit(MonosatJNI.Nors(this.solverPtr,this.getLitBuffer(elements),elements.size()));
+    }
+    public Lit xor(Collection<Lit> elements){
+        
+        return this.toLit(MonosatJNI.Xors(this.solverPtr,this.getLitBuffer(elements),elements.size()));
+    }
+    public Lit xnor(Collection<Lit> elements){
+        
+        return this.toLit(MonosatJNI.Xnors(this.solverPtr,this.getLitBuffer(elements),elements.size()));
+    }
+
+    //assertion forms
+    public void assertAnd(Collection<Lit> elements){
+        
+        MonosatJNI.AssertAnds(this.solverPtr,this.getLitBuffer(elements),elements.size());
+    }
+    public void assertOr(Collection<Lit> elements){
+        
+        MonosatJNI.AssertOrs(this.solverPtr,this.getLitBuffer(elements),elements.size());
+    }
+    public void assertNand(Collection<Lit> elements){
+        
+        MonosatJNI.AssertNands(this.solverPtr,this.getLitBuffer(elements),elements.size());
+    }
+    public void assertNor(Collection<Lit> elements){
+        
+        MonosatJNI.AssertNors(this.solverPtr,this.getLitBuffer(elements),elements.size());
+    }
+    public void assertXor(Collection<Lit> elements){
+        
+        MonosatJNI.AssertXors(this.solverPtr,this.getLitBuffer(elements),elements.size());
+    }
+    public void assertXnor(Collection<Lit> elements){
+        
+        MonosatJNI.AssertXnors(this.solverPtr,this.getLitBuffer(elements),elements.size());
+    }
+
+
+    //Bitvector constructs
+    public BitVector ite(Lit condition, BitVector then, BitVector els){
+        
+        assert(then.width()==els.width());
+        BitVector result = new BitVector(this, then.width());
+        MonosatJNI.bv_ite(this.solverPtr,this.bvPtr,condition.l,then.id,els.id,result.id);
+        return result;
+    }
+    public BitVector and(BitVector a, BitVector b){
+        
+        return a.and(b);
+    }
+    public BitVector or(BitVector a, BitVector b){
+        return a.or(b);
+    }
+    public BitVector not(BitVector a){
+        return a.not();
+    }
+    public BitVector nand(BitVector a, BitVector b){
+        return a.nand(b);
+    }
+    public BitVector nor(BitVector a, BitVector b){
+        return a.nor(b);
+    }
+    public BitVector xor(BitVector a, BitVector b){
+        return a.xor(b);
+    }
+    public BitVector xnor(BitVector a, BitVector b){
+        return a.xnor(b);
+    }
+
+    public BitVector add(BitVector a, BitVector b){
+        return a.add(b);
+    }
+    public BitVector subtract(BitVector a, BitVector b){
+        return a.subtract(b);
+    }
+
+    public void assertEqual(BitVector a, BitVector b){
+        assertTrue(a.geq(b));
+        assertTrue(a.leq(b));
+    }
+
+    public void assertEqual(BitVector a, long constant){
+        BitVector b = this.bv(a.width(),constant);
+        assertTrue(a.geq(b));
+        assertTrue(a.leq(b));
+    }
+    public void assertEqual(long constant,BitVector a){
+        BitVector b = this.bv(a.width(),constant);
+        assertTrue(a.geq(b));
+        assertTrue(a.leq(b));
+    }
+    public BitVector min(Collection<BitVector> args){
+        
+        assert(args.size()>=0);
+        int w =args.iterator().next().width();
+        BitVector result = new BitVector(this, w);
+        MonosatJNI.bv_min(this.solverPtr,this.bvPtr,this.getBVBuffer(args,0),args.size(),result.id);
+        return result;
+    }
+    public BitVector min(BitVector a, BitVector b){
+        ArrayList pair = new ArrayList();
+        pair.add(a);
+        pair.add(b);
+        return min(pair);
+    }
+    public BitVector max(Collection<BitVector> args){
+        
+        assert(args.size()>=0);
+        int w =args.iterator().next().width();
+        BitVector result = new BitVector(this, w);
+        MonosatJNI.bv_min(this.solverPtr,this.bvPtr,this.getBVBuffer(args,0),args.size(),result.id);
+        return result;
+    }
+    public BitVector max(BitVector a, BitVector b){
+        ArrayList pair = new ArrayList();
+        pair.add(a);
+        pair.add(b);
+        return max(pair);
+    }
+
 
 }

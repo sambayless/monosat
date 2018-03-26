@@ -87,7 +87,7 @@ public class Graph {
         BitVector result = new BitVector(solver,bitwidth);
         Lit l1 = solver.toLit(MonosatJNI.maximumFlow_geq_bv(solver.solverPtr,graphPtr,from,to,result.id));
         Lit l2 = solver.toLit(MonosatJNI.maximumFlow_gt_bv(solver.solverPtr,graphPtr,from,to,result.id));
-        Logic.AssertEqual(l1,l2);
+        Logic.assertEqual(l1,l2);
         return result;
     }
 
