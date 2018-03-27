@@ -550,7 +550,8 @@ public:
 	lbool value(Lit p) const;       // The current value of a literal.
 	lbool modelValue(Var x) const; // The value of a variable in the last model. The last call to solve must have been satisfiable.
 	lbool modelValue(Lit p) const; // The value of a literal in the last model. The last call to solve must have been satisfiable.
-	int nAssigns() const;       // The current number of assigned literals.
+	bool hasModel()const; //True if the solver has a model
+    int nAssigns() const;       // The current number of assigned literals.
 	int nClauses() const;       // The current number of original clauses.
 	int nLearnts() const;       // The current number of learnt clauses.
 	int nVars() const;       // The current number of variables.
@@ -1322,6 +1323,9 @@ inline lbool Solver::modelValue(Var x) const {
 }
 inline lbool Solver::modelValue(Lit p) const {
 	return model[var(p)] ^ sign(p);
+}
+inline bool Solver::hasModel()const{
+    return model.size()>0;
 }
 inline int Solver::nAssigns() const {
 	return trail.size();

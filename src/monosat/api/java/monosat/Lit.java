@@ -71,6 +71,13 @@ final public class Lit {
      * @return
      */
     public int toVar(){return l/2;}
+
+
+    /**
+     * Convert the literal into an integer.
+     * @return
+     */
+    public int toInt(){return l;}
     /**
      * Throws an exception if this is not a legal literal (eg, if the index is <0)
      */

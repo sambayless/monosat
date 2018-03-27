@@ -905,6 +905,14 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addRoutingNet
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    hasModel
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasModel
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    getModel_Literal
  * Signature: (JI)I
  */

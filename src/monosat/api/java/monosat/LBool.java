@@ -4,5 +4,8 @@ package monosat;
  */
 public enum LBool {
     //Don't change the order of these, as they must match the order of the l_bool enum defined in Monosat.
-   True,False,Undef
+    True,False,Undef;
+    public static LBool toLbool(int value){
+        return values()[value];
+    }
 }

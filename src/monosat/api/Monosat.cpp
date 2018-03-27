@@ -1632,6 +1632,11 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
 }
 
 //model query
+//Returns true if the solver has a model (in which case it is safe to query the model), false otherwise
+bool hasModel(Monosat::SimpSolver * S){
+	return S->hasModel();
+}
+
 //Returns 0 for true, 1 for false, 2 for unassigned.
 int getModel_Literal(Monosat::SimpSolver * S,int lit){
 	Lit l = toLit(lit);

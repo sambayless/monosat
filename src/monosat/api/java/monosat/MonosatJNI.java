@@ -181,6 +181,9 @@ public class MonosatJNI {
     public native static void addRoutingNet(long solverPtr,long graphPtr, long routerPtr, int disabledEdge, int n_members,  IntBuffer  edge_lits,  IntBuffer  reach_lits);
 
     //model query
+    //Returns true if the solver has a model (in which case it is safe to query the model), false otherwise
+    public native static boolean hasModel(long solverPtr);
+
     //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
     public native static int getModel_Literal(long solverPtr,int lit);
     //Get an assignment to a bitvector in the model. The model may find a range of satisfying assignments to the bitvector;

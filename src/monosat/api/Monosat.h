@@ -255,6 +255,8 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int fsmCompositionAccepts(SolverPtr S, FSMTheorySolverPtr  fsmTheory,   int fsmGeneratorID,int fsmAcceptorID, int gen_startNode, int gen_acceptNode, int acceptor_startNode, int acceptor_acceptNode, int stringID);
 
   //model query
+  //Returns true if the solver has a model (in which case it is safe to query the model), false otherwise
+  bool hasModel(SolverPtr S);
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
   int getModel_Literal(SolverPtr S,int lit);
   //Get an assignment to a bitvector in the model. The model may find a range of satisfying assignments to the bitvector;

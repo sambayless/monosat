@@ -9,7 +9,7 @@ public class BitVector {
     protected int id;
     int width;
     Solver solver;
-    ArrayList<Lit> bits;
+    ArrayList<Lit> bits = new ArrayList<Lit>();
 
     public BitVector(Solver solver, ArrayList<Lit> bits){
         this.solver = solver;
@@ -51,7 +51,7 @@ public class BitVector {
             for(int i = 0;i<width;i++){
                 bits.add(solver.newLit());
             }
-            id = MonosatJNI.newBitvector(solver.solverPtr,solver.bvPtr,solver.getLitBuffer(bits),bits.size());
+            id = MonosatJNI.newBitvector(solver.solverPtr,solver.bvPtr,solver.getVarBuffer(bits,0),bits.size());
         }
     }
 
@@ -61,6 +61,11 @@ public class BitVector {
     public List<Lit> getBits(){
         return Collections.unmodifiableList(bits);
     }
+
+    public Lit get(int bit){
+        return bits.get(bit);
+    }
+
     int width(){
         return width;
     }

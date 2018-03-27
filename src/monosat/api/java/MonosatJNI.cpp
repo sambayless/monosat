@@ -348,6 +348,36 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_bv_1width
     return bv_width(solver, bv, bvID);
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1eq
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return newBVComparison_const_eq(solver, bv, bvID, constval);
+}
+
+
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1eq
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return newBVComparison_bv_eq(solver, bv, bvID1, bvID2);
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1neq
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return newBVComparison_const_neq(solver, bv, bvID, constval);
+}
+
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1neq
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID1, jint bvID2) {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return newBVComparison_bv_neq(solver, bv, bvID1, bvID2);
+}
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1lt
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jlong constval) {
@@ -834,6 +864,11 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addRoutingNet
     FlowRouterPtr router = reinterpret_cast<FlowRouterPtr>(routerPtr);
     addRoutingNet(solver, graph, router, disabledEdge, n_members, (int *) env->GetDirectBufferAddress(edge_lits),
                   (int *) env->GetDirectBufferAddress(reach_lits));
+}
+
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasModel(JNIEnv *env, jclass monosat_class, jlong solverPtr){
+SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return jboolean(hasModel(solver));
 }
 
 

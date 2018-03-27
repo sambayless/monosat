@@ -211,7 +211,18 @@ public class Solver  implements Closeable{
         }
         return buffer;
     }
-
+    IntBuffer getVarBuffer(Collection<Lit> clause, int bufferN){
+        assert(bufferN<3);
+        assert(bufferN>=0);
+        IntBuffer buffer = getBuffer(bufferN, clause.size());
+        int index =0;
+        for(Lit l:clause){
+            l.validate();
+            buffer.put(index,l.toVar());
+            index++;
+        }
+        return buffer;
+    }
     IntBuffer getLitBuffer(Collection<Lit> clause){
         return getLitBuffer(clause,0);
     }
@@ -320,14 +331,14 @@ public class Solver  implements Closeable{
         int result = MonosatJNI.solveLimited(solverPtr);
         assert(result>=0);
         assert(result<=2);
-        return LBool.values()[result];
+        return LBool.toLbool(result);
     }
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
     public LBool solveAssumptionsLimited(ArrayList<Lit> assumptions){
         int result = MonosatJNI.solveAssumptionsLimited(solverPtr,getLitBuffer(assumptions),assumptions.size());
         assert(result>=0);
         assert(result<=2);
-        return LBool.values()[result];
+        return LBool.toLbool(result);
     }
 
     public boolean lastSolutionWasOptimal(){
@@ -489,10 +500,69 @@ public class Solver  implements Closeable{
         return new BitVector(this,width);
     }
 
+    /**
+     * Query the model in the solver, throwing an exception if the literal is unassigned in the model.
+     * This can happen only if the literal is not a decision literal.
+     */
+    public boolean getValue(Lit l)throws RuntimeException{
+        return getValue(l,LBool.Undef);
+    }
+    /**
+     * Query the model in the solver.
+     * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
+     * Else, if the literal is unassigned, defaultVal will be returned.
+     */
+    public boolean getValue(Lit l, LBool defaultVal)throws RuntimeException{
+        LBool val = getPossibleValue(l);
+        if (val==LBool.Undef){
+            if (defaultVal==LBool.Undef){
+                throw new RuntimeException("Literal " + l.toString() + " is unassigned in the current model");
+            }else {
+                val = defaultVal;
+            }
+        }
+        return val==LBool.True;
+    }
+    /**After a solve call, non-decision literals may or may not be assigned to a value.
+    *Unassigned literals will have the value LBool.Undef;
+     */
+    public LBool getPossibleValue(Lit l){
+        l.validate();
+        if (!MonosatJNI.hasModel(solverPtr)){
+            throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
+        }
+        return LBool.toLbool(MonosatJNI.getModel_Literal(solverPtr,l.l));
+    }
 
-    //Higher level constructs for the Solver
+    /**
+     * Return the value of this bitvector from the solver.
+     * Sometimes, a range of values may be determined by the solver to be satisfying.
+     * If getMaximumValue is true, then largest value in that range will be returned,
+     * otherwise, the smallest value is returned (this is relevant if optimization queries are being performed).
+     * @param bv
+     * @param getMaximumValue
+     * @return
+     */
+    public long getModel(BitVector bv, boolean getMaximumValue){
+        if (!MonosatJNI.hasModel(solverPtr)){
+            throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
+        }
+        return MonosatJNI.getModel_BV(solverPtr,bvPtr,bv.id,getMaximumValue);
+    }
+    /**
+     * Return the value of this bitvector from the solver.
+     * Sometimes, a range of values may be determined by the solver to be satisfying.
+     * In this case, the smallest value is returned (this is relevant if optimization queries are being performed).
+     * @param bv
+     * @return
+     */
+    public long getModel(BitVector bv){
+        return getModel(bv,false);
+    }
 
+    //Higher level constructs for the solver
     //Literal level constructs
+
     public Lit ite(Lit condition, Lit then,Lit els){
         
         return this.toLit(MonosatJNI.Ite(this.solverPtr,condition.l,then.l,els.l));
