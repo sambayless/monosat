@@ -75,7 +75,7 @@ public class Solver  implements Closeable{
     @Override
     protected void finalize() {
         //Consider replacing with Java 9's java.lang.ref.Cleaner in the future.
-        //But for now, sticking with finalize (and support for Java 8)
+        //But for now, sticking with finalize (to support Java 8)
         close();
     }
 
@@ -253,7 +253,7 @@ public class Solver  implements Closeable{
     /**
      * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
      * else returns true.
-     * @param clause The clause to add to the this
+     * @param clause The clause to add to the solver
      * @return
      */
     public boolean addClause(ArrayList<Lit> clause){
@@ -264,7 +264,7 @@ public class Solver  implements Closeable{
     /**
      * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
      * else returns true.
-     * @param l The literal to add as a unit clause to the this (forcing l to be true)
+     * @param l The literal to add as a unit clause to the solver (forcing l to be true)
      * @return
      */
     public boolean addClause(Lit l){
@@ -305,11 +305,11 @@ public class Solver  implements Closeable{
     public void setMemoryLimit(int mb){
         MonosatJNI.setMemoryLimit(solverPtr, mb);
     }
-    //Sets the maximum number of (additional) conflicts allowed in the this before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
+    //Sets the maximum number of (additional) conflicts allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
     public void setConflictLimit(int num_conflicts){
         MonosatJNI.setConflictLimit(solverPtr,num_conflicts);
     }
-    //Sets the maximum number of (additional) propagations allowed in the this before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
+    //Sets the maximum number of (additional) propagations allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
     public void setPropagationLimit(int num_propagations){
         MonosatJNI.setPropagationLimit(solverPtr,num_propagations);
     }
@@ -335,14 +335,14 @@ public class Solver  implements Closeable{
     }
 
     /**
-     * If the last solution was unsat, then this get the 'conflict clause' produced by the this (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
+     * If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
      */
     public ArrayList<Lit>  getConflictClause(ArrayList<Lit> store){
         store.clear();
 
-        //If the last solution was unsat, then this get the 'conflict clause' produced by the this (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
+        //If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
         //Fills the given pointer with the first max_store_size literals of the conflict clause, and returns the number of literals in the conflict clause. Set store_clause to null and max_store_size to 0 to find the size of the conflict clause
-        //Returns -1 if the this has no conflict clause from the most recent solve() call (because that call was not UNSAT)
+        //Returns -1 if the solver has no conflict clause from the most recent solve() call (because that call was not UNSAT)
         int conflict_size = MonosatJNI.getConflictClause(solverPtr,null,0);
         IntBuffer buf = getBuffer(0,conflict_size);
         int sz = MonosatJNI.getConflictClause(solverPtr, buf, conflict_size);
@@ -360,21 +360,21 @@ public class Solver  implements Closeable{
         return store;
     }
 
-    //Backtrack the this to level 0
+    //Backtrack the solver to level 0
     void backtrack(){
         MonosatJNI.backtrack(solverPtr);
     }
 
 
     //Holds positive versions of all literals, so that we don't need to create multiple literal objects for the same literal
-    //As literals have no reference to the this and are really just a thin wrapper around an integer,
+    //As literals have no reference to the solver and are really just a thin wrapper around an integer,
     //this list can be safely shared across all solvers.
     private static ArrayList<Lit> lits = new ArrayList<>();
 
     protected Lit toLit(int literal){
         assert(literal>=0);
         int var = literal/2;
-        assert(var<nVars());//the variable must have already been declared in the sat this before this call
+        assert(var<nVars());//the variable must have already been declared in the sat solver before this call
         while(var>=lits.size()){
             lits.add(null);
         }
@@ -419,15 +419,15 @@ public class Solver  implements Closeable{
         MonosatJNI.minimizeWeightedLits(solverPtr,getLitBuffer(literals), getIntBuffer(weights,1), literals.size());
     }
 
-    void assertAtMostOne(ArrayList<Lit> clause){
+    public void assertAtMostOne(ArrayList<Lit> clause){
         MonosatJNI.at_most_one(solverPtr,getLitBuffer(clause),clause.size());
     }
     enum Comparison{LT,LEQ,EQ,GEQ,GT}
 
-    void assertPB(ArrayList<Lit> clause, int compareTo,Comparison c){
+    public void assertPB(ArrayList<Lit> clause, int compareTo,Comparison c){
         assertPB(clause,null,compareTo,c);
     }
-    void assertPB(ArrayList<Lit> clause,ArrayList<Integer> weights, int compareTo,Comparison c){
+    public void assertPB(ArrayList<Lit> clause,ArrayList<Integer> weights, int compareTo,Comparison c){
         IntBuffer wt_buffer = getBuffer(1,clause.size());
         int n_wts =0;
         if(weights!=null) {
@@ -453,7 +453,7 @@ public class Solver  implements Closeable{
         }
     }
 
-    //Convert any pb constraints in the this into cnf (will be called automatically before solve())
+    //Convert any pb constraints in the solver into cnf (will be called automatically before solve())
     public void flushPB(){
         MonosatJNI.flushPB(solverPtr);
     }
@@ -488,8 +488,9 @@ public class Solver  implements Closeable{
     public BitVector bv(int width){
         return new BitVector(this,width);
     }
-    
-    //Higher level constructs for the this
+
+
+    //Higher level constructs for the Solver
 
     //Literal level constructs
     public Lit ite(Lit condition, Lit then,Lit els){
