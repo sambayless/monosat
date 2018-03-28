@@ -47,6 +47,24 @@ public class Graph {
         }
         return solver.toLit(MonosatJNI.newEdge_bv(solver.solverPtr,graphPtr,from,to,weight.id));
     }
+
+    /**
+     * True if the graph is acyclic, false otherwise.
+     * @param directed
+     * @return
+     */
+    Lit acyclic(boolean directed){
+        if(directed){
+            return solver.toLit(MonosatJNI.acyclic_directed(solver.solverPtr,this.graphPtr));
+        }else{
+            return solver.toLit(MonosatJNI.acyclic_undirected(solver.solverPtr,this.graphPtr));
+        }
+    }
+
+    Lit acyclic(){
+        return acyclic(true);
+    }
+
     Lit reaches(int from, int to){
         return solver.toLit(MonosatJNI.reaches(solver.solverPtr,graphPtr,from,to));
     }

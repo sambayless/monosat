@@ -721,4 +721,78 @@ public class GraphTest {
 
 
     }
+
+
+    @Test
+    public void acyclicDirected() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with two diagonal edges
+        /*
+         */
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2);
+        Lit e_2_3 = g.addEdge(2,3);
+        Lit e_3_0 = g.addEdge(3,0);
+
+        Lit r = g.acyclic();
+        assertEquals(s.solve(r),true);
+        assertEquals(s.solve(r,e_0_1.negate(),e_2_3.negate()),true);
+        assertEquals(s.solve(r,e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(r,e_0_2.negate(),e_1_3.negate(),e_2_3.negate()),true);
+        assertEquals(s.solve(r,e_0_1,e_1_2,e_2_3, e_3_0),false);
+        assertEquals(s.solve(r),true);
+
+        assertEquals(s.solve(r.negate()),true);
+        assertEquals(s.solve(r.negate(),e_0_1.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(r.negate(),e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(r.negate(),e_0_2.negate(),e_1_3.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(r.negate(),e_0_1,e_1_2,e_2_3, e_3_0),true);
+        assertEquals(s.solve(r.negate()),true);
+        assertEquals(s.solve(r),true);
+
+    }
+
+
+
+    @Test
+    public void acyclicUndirected() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+
+        //create a directed square graph with two diagonal edges
+        /*
+         */
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2);
+        Lit e_2_3 = g.addEdge(2,3);
+        Lit e_3_0 = g.addEdge(3,0);
+
+        Lit r = g.acyclic();
+        assertEquals(s.solve(r),true);
+        assertEquals(s.solve(r,e_0_1.negate(),e_2_3.negate()),true);
+        assertEquals(s.solve(r,e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(r,e_0_2.negate(),e_1_3.negate(),e_2_3.negate()),true);
+        assertEquals(s.solve(r,e_0_1,e_1_2,e_2_3, e_3_0),false);
+        assertEquals(s.solve(r),true);
+
+        assertEquals(s.solve(r.negate()),true);
+        assertEquals(s.solve(r.negate(),e_0_1.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(r.negate(),e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(r.negate(),e_0_2.negate(),e_1_3.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(r.negate(),e_0_1,e_1_2,e_2_3, e_3_0),true);
+        assertEquals(s.solve(r.negate()),true);
+        assertEquals(s.solve(r),true);
+
+    }
 }
