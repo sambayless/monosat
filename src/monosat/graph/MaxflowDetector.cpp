@@ -1008,7 +1008,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
             if(v!=l_Undef && this->detectorID==2){
                 int a=1;
             }
-            if  ((max_flow_over==0) || (computed_under && ((inclusive && computeUnderApprox(under_maxflow)  >= max_flow_over) || (!inclusive && computeUnderApprox(under_maxflow)  > max_flow_over)))) {
+            if  ((max_flow_over==0 && inclusive) || (computed_under && ((inclusive && computeUnderApprox(under_maxflow)  >= max_flow_over) || (!inclusive && computeUnderApprox(under_maxflow)  > max_flow_over)))) {
                 if (outer->value(l) == l_True) {
 
                     outer->enqueueSat(l);
@@ -1031,7 +1031,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
                     return false;
                 }
 
-            } else if  ((max_flow_over>0) &&   (computed_over && ((inclusive &&  computeOverApprox(over_maxflow) < max_flow_under) || (!inclusive &&  computeOverApprox(over_maxflow) <= max_flow_under)))) {
+            } else if  ((max_flow_over>0 || !inclusive) &&   (computed_over && ((inclusive &&  computeOverApprox(over_maxflow) < max_flow_under) || (!inclusive &&  computeOverApprox(over_maxflow) <= max_flow_under)))) {
                 if (outer->value(l) == l_False) {
                     if(opt_detect_satisfied_predicates)
                         outer->enqueueSat(~l);
