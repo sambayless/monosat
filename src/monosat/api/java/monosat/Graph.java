@@ -89,7 +89,9 @@ public class Graph {
         BitVector result = new BitVector(solver,bitwidth);
         Lit l1 = solver.toLit(MonosatJNI.maximumFlow_geq_bv(solver.solverPtr,graphPtr,from,to,result.id));
         Lit l2 = solver.toLit(MonosatJNI.maximumFlow_gt_bv(solver.solverPtr,graphPtr,from,to,result.id));
-        Logic.assertEqual(l1,l2);
+        //result is geq to the max flow, and is not greater than the max flow (and so it is exactly equal to the maxflow)
+        solver.assertTrue(l1);
+        solver.assertFalse(l2);
         return result;
     }
 
