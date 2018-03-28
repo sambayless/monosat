@@ -2,6 +2,8 @@ package monosat;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+
 import static org.junit.Assert.*;
 
 public class GraphTest {
@@ -108,8 +110,27 @@ public class GraphTest {
         assertEquals(s.solve(r),true);
         assertEquals(s.solve(r,e_0_1.negate(),e_2_3.negate()),false);
         assertEquals(s.solve(r,e_0_2.negate(),e_1_3.negate()),true);
+
         assertEquals(s.solve(r,e_0_2.negate(),e_1_3.negate(),e_2_3.negate()),false);
+
+        assertEquals(s.solve(r,e_0_2.negate(),e_1_3.negate()),true);
+        //There should only be one solution to this: 0->1, 1->2, 2->3
+        ArrayList<Integer> nodes = g.getPathNodes(r);
+        ArrayList<Lit> edges = g.getPathEdges(r);
+        assertEquals(edges.size(),3);
+        assertEquals(nodes.size(),4);
+
+        assertEquals(edges.get(0),e_0_1);
+        assertEquals(edges.get(1),e_1_2);
+        assertEquals(edges.get(2),e_2_3);
+        assertEquals(s.getValue(e_0_1),true);
+        assertEquals(s.getValue(e_1_2),true);
+        assertEquals(s.getValue(e_2_3),true);
+        assertEquals(s.getValue(e_0_2),false);
+        assertEquals(s.getValue(e_1_3),false);
+
         assertEquals(s.solve(r),true);
+
     }
 
 
@@ -793,6 +814,13 @@ public class GraphTest {
         assertEquals(s.solve(r.negate(),e_0_1,e_1_2,e_2_3, e_3_0),true);
         assertEquals(s.solve(r.negate()),true);
         assertEquals(s.solve(r),true);
+
+    }
+
+
+
+    @Test
+    public void edgeTest() {
 
     }
 }

@@ -100,7 +100,7 @@ public class Solver  implements Closeable{
         }
     }
 
-    private IntBuffer  getBuffer(int bufferN, int minsize){
+    protected IntBuffer  getBuffer(int bufferN, int minsize){
 
         if (bufferN==0){
             if (minsize>=buffer_size0){
