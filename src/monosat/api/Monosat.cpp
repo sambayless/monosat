@@ -1371,6 +1371,17 @@ int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheory
 	G->implementConstraints();
 	return toInt(l);
 }
+int shortestPathUnweighted_lt_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
+int shortestPathUnweighted_leq_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
+
+int shortestPathUnweighted_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
+    Var v = newVar(S);
+    Lit l =mkLit(v);
+    write_out(S,"distance_bv_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
+    G->distanceBV(from,to, v, bvID,false);
+    G->implementConstraints();
+    return toInt(l);
+}
 int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
@@ -1395,6 +1406,9 @@ int shortestPath_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<in
 	G->implementConstraints();
 	return toInt(l);
 }
+
+
+
 int shortestPath_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
 	Var v = newVar(S);
 	Lit l =mkLit(v);

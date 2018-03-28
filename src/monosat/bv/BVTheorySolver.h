@@ -620,7 +620,8 @@ public:
 			vec<Lit> & bv = theory.bitvectors[bvID];
 			Weight over=0;
 			Weight under=0;
-			assert(bv.size());
+
+			//assert(bv.size());
 
 			for(int i = 0;i<bv.size();i++){
 				lbool val = value(bv[i]);

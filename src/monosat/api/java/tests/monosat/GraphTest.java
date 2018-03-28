@@ -112,6 +112,7 @@ public class GraphTest {
         assertEquals(s.solve(r),true);
     }
 
+
     @Test
     public void maximumFlow_geq() {
           Solver s = new Solver();
@@ -134,7 +135,7 @@ public class GraphTest {
           Lit e_1_2 = g.addEdge(1,2,2);
           Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
         BitVector cmp = s.bv(4);
-        Lit f = g.maximumFlow_geq(0,3,cmp);
+        Lit f = g.compareMaximumFlow(0,3,cmp,Compare.GEQ);
         assertEquals(s.solve(f),true);
         assertEquals(s.solve(f,cmp.eq(3)),false);
         assertEquals(s.solve(f,cmp.eq(2)),true);
@@ -168,7 +169,7 @@ public class GraphTest {
         Lit e_1_2 = g.addEdge(1,2,2);
         Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
         BitVector cmp = s.bv(4);
-        Lit f = g.maximumFlow_gt(0,3,cmp);
+        Lit f = g.compareMaximumFlow(0,3,cmp,Compare.GT);
         assertEquals(s.solve(f),true);
         assertEquals(s.solve(f,cmp.eq(3)),false);
         assertEquals(s.solve(f,cmp.eq(2)),false);
@@ -203,7 +204,7 @@ public class GraphTest {
         Lit e_1_2 = g.addEdge(1,2,2);
         Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
         BitVector cmp = s.bv(4);
-        Lit f = g.maximumFlow_leq(0,3,cmp);
+        Lit f = g.compareMaximumFlow(0,3,cmp,Compare.LEQ);
         assertEquals(s.solve(f),true);
         assertEquals(s.solve(f,cmp.eq(3)),true);
         assertEquals(s.solve(f,cmp.eq(2)),true);
@@ -241,7 +242,7 @@ public class GraphTest {
         Lit e_1_2 = g.addEdge(1,2,2);
         Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
         BitVector cmp = s.bv(4);
-        Lit f = g.maximumFlow_lt(0,3,cmp);
+        Lit f = g.compareMaximumFlow(0,3,cmp,Compare.LT);
         assertEquals(s.solve(f),true);
         assertEquals(s.solve(f,cmp.eq(3)),true);
         assertEquals(s.solve(f,cmp.eq(2)),true);
@@ -260,7 +261,7 @@ public class GraphTest {
     @Test
     public void maximumFlow() {
         Solver s = new Solver();
-        s.setOutputFile("/tmp/test.gnf");
+
         Graph g = new Graph(s,4);
         for(int i = 0;i<4;i++){
             g.addNode();
@@ -294,6 +295,429 @@ public class GraphTest {
         assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),true);
         assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
         assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate()),true);
+
+
+    }
+
+
+    @Test
+    public void distance() {
+        Solver s = new Solver();
+
+        Graph g = new Graph(s,4);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
+
+        BitVector dist = g.distance(0,3);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),false);
+        assertEquals(s.solve(dist.eq(1)),false);
+        assertEquals(s.solve(dist.eq(2)),true);
+        assertEquals(s.solve(dist.eq(3)),false);
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),false);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate()),false);
+
+
+    }
+    @Test
+    public void distanceConsts() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,3);
+
+        BitVector dist = g.distance(0,3);
+        assertEquals(s.solve(),true);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),false);
+        assertEquals(s.solve(dist.eq(1)),false);
+        assertEquals(s.solve(dist.eq(2)),true);
+        assertEquals(s.solve(dist.eq(3)),false);
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),false);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate()),false);
+
+
+    }
+
+    @Test
+    public void distanceConstsGEQ() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,3);
+
+        BitVector dist = s.bv(4);
+        Lit d = g.compareDistance(0,3,dist, Compare.GEQ);
+        s.assertTrue(d);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),true);
+        assertEquals(s.solve(dist.eq(1)),true);
+        assertEquals(s.solve(dist.eq(2)),true);
+        assertEquals(s.solve(dist.eq(3)),true);
+
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),false);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate(),dist.eq(1)),true);
+
+    }
+
+    @Test
+    public void distanceConstsGT() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,3);
+
+        BitVector dist = s.bv(4);
+        Lit d = g.compareDistance(0,3,dist, Compare.GT);
+        s.assertTrue(d);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),true);
+        assertEquals(s.solve(dist.eq(1)),true);
+        assertEquals(s.solve(dist.eq(2)),true);
+        assertEquals(s.solve(dist.eq(3)),true);
+
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),false);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate(),dist.eq(1)),true);
+
+    }
+
+    @Test
+    public void distanceConstsLT() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,3);
+
+        BitVector dist = s.bv(4);
+        Lit d = g.compareDistance(0,3,dist, Compare.LT);
+        s.assertTrue(d);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),false);
+        assertEquals(s.solve(dist.eq(1)),false);
+        assertEquals(s.solve(dist.eq(2)),false);
+        assertEquals(s.solve(dist.eq(3)),true);
+
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),true);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate(),dist.eq(1)),false);
+
+    }
+
+
+    @Test
+    public void distanceConstsLEQ() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,3);
+
+        BitVector dist = s.bv(4);
+        Lit d = g.compareDistance(0,3,dist, Compare.LEQ);
+        s.assertTrue(d);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),false);
+        assertEquals(s.solve(dist.eq(1)),false);
+        assertEquals(s.solve(dist.eq(2)),true);
+        assertEquals(s.solve(dist.eq(3)),true);
+
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),true);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate(),dist.eq(1)),false);
+
+    }
+
+    @Test
+    public void distanceGEQ() {
+        Solver s = new Solver();
+
+        Graph g = new Graph(s,4);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
+        BitVector dist = s.bv(4);
+        Lit d = g.compareDistance(0,3,dist, Compare.GEQ);
+        s.assertTrue(d);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),true);
+        assertEquals(s.solve(dist.eq(1)),true);
+        assertEquals(s.solve(dist.eq(2)),true);
+        assertEquals(s.solve(dist.eq(3)),true);
+
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),false);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate(),dist.eq(1)),true);
+
+
+    }
+
+    @Test
+    public void distanceGT() {
+        Solver s = new Solver();
+
+        Graph g = new Graph(s,4);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
+        BitVector dist = s.bv(4);
+        Lit d = g.compareDistance(0,3,dist, Compare.GT);
+        s.assertTrue(d);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),true);
+        assertEquals(s.solve(dist.eq(1)),true);
+        assertEquals(s.solve(dist.eq(2)),true);
+        assertEquals(s.solve(dist.eq(3)),true);
+
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),false);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate(),dist.eq(1)),true);
+
+
+    }
+    @Test
+    public void distanceLEQ() {
+        Solver s = new Solver();
+
+        Graph g = new Graph(s,4);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
+        BitVector dist = s.bv(4);
+        Lit d = g.compareDistance(0,3,dist, Compare.LEQ);
+        s.assertTrue(d);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),false);
+        assertEquals(s.solve(dist.eq(1)),false);
+        assertEquals(s.solve(dist.eq(2)),true);
+        assertEquals(s.solve(dist.eq(3)),true);
+
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),true);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),true);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate(),dist.eq(1)),false);
+
+
+    }
+
+
+    @Test
+    public void distanceLT() {
+        Solver s = new Solver();
+
+        Graph g = new Graph(s,4);
+        for(int i = 0;i<4;i++){
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+          /*
+
+          0 *--* 1
+            |/ |
+          2 *--* 3
+
+           */
+
+        Lit e_0_1 = g.addEdge(0,1);
+        Lit e_0_2 = g.addEdge(0,2);
+        Lit e_1_3 = g.addEdge(1,3);
+        Lit e_1_2 = g.addEdge(1,2,2);
+        Lit e_2_3 = g.addEdge(2,3,s.bv(4,1));
+        BitVector dist = s.bv(4);
+        Lit d = g.compareDistance(0,3,dist, Compare.LT);
+        s.assertTrue(d);
+        assertEquals(s.solve(dist.gt(0)),true);
+        assertEquals(s.solve(dist.eq(0)),false);
+        assertEquals(s.solve(dist.eq(1)),false);
+        assertEquals(s.solve(dist.eq(2)),false);
+        assertEquals(s.solve(dist.eq(3)),true);
+
+
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(1)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(2)),false);
+        assertEquals(s.solve(e_0_1,e_0_2,e_1_3,e_2_3 ,dist.eq(3)),true);
+
+        assertEquals(s.solve(e_0_1.negate(),e_2_3.negate()),false);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate()),true);
+        assertEquals(s.solve(e_0_2.negate(),e_1_3.negate(),e_2_3.negate(),dist.eq(1)),false);
 
 
     }

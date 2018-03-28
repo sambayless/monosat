@@ -44,6 +44,9 @@ public class BitVector {
      */
     public BitVector(Solver solver, int width, boolean introduceLiterals){
         this.solver = solver;
+        if(width<0){
+            throw new IllegalArgumentException("BitVector width must be >=0");
+        }
         this.width = width;
         if (!introduceLiterals) {
             id = MonosatJNI.newBitvector_anon(solver.solverPtr, solver.bvPtr, width);

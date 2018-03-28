@@ -2122,7 +2122,7 @@ public:
 	}
 };
 template<typename Weight, class Status>
-bool RamalReps<Weight,Status>::ever_warned_about_zero_weights = 0;
+bool RamalReps<Weight,Status>::ever_warned_about_zero_weights = false;
 }
 ;
 #endif
