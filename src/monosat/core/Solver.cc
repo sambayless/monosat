@@ -133,6 +133,7 @@ Var Solver::newVar(bool sign, bool dvar) {
 // releases of the same variable).
 void Solver::releaseVar(Lit l)
 {
+    assert(!hasTheory(var(l)));//theory vars should never be released (unless the theory is already detached from the variable?)
 	if (value(l) == l_Undef && !hasTheory(l)){//dont ever release theory atoms
 		released_vars.push(var(l));
 	}

@@ -49,7 +49,9 @@ public:
 		setTheoryVar(solverVar,theoryID,theoryVar);
 		return v;
 	}*/
-	void setTheoryVar(Var solverVar, int theory, Var theoryVar) {
+
+	//Prevent theory variables from being eliminated
+	void setTheoryVar(Var solverVar, int theory, Var theoryVar)override {
 		assert(solverVar<nVars());
 		setFrozen(solverVar, true);
 		Solver::setTheoryVar(solverVar, theory, theoryVar);

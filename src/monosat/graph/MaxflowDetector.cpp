@@ -1008,7 +1008,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
             if(v!=l_Undef && this->detectorID==2){
                 int a=1;
             }
-            if  ((max_flow_over==0) || (computed_under && ((inclusive && computeUnderApprox(under_maxflow)  >= max_flow_over) || (!inclusive && computeUnderApprox(under_maxflow)  > max_flow_over)))) {
+            if  ((max_flow_over==0 && inclusive) || (computed_under && ((inclusive && computeUnderApprox(under_maxflow)  >= max_flow_over) || (!inclusive && computeUnderApprox(under_maxflow)  > max_flow_over)))) {
                 if (outer->value(l) == l_True) {
 
                     outer->enqueueSat(l);
@@ -1031,7 +1031,7 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
                     return false;
                 }
 
-            } else if  ((max_flow_over>0) &&   (computed_over && ((inclusive &&  computeOverApprox(over_maxflow) < max_flow_under) || (!inclusive &&  computeOverApprox(over_maxflow) <= max_flow_under)))) {
+            } else if  ((max_flow_over>0 || !inclusive) &&   (computed_over && ((inclusive &&  computeOverApprox(over_maxflow) < max_flow_under) || (!inclusive &&  computeOverApprox(over_maxflow) <= max_flow_under)))) {
                 if (outer->value(l) == l_False) {
                     if(opt_detect_satisfied_predicates)
                         outer->enqueueSat(~l);
@@ -1147,22 +1147,22 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
                 if(flow_lits[j].inclusive) {
                     if (outer->value(l) == l_True) {
                         if (underCheck.maxFlow() < dist_under) {
-                            std::cout<<("Error in maxflow (true): expected flow >=") << dist_under << "but found flow of " << underCheck.maxFlow() <<"\n" ;
+                            std::cout<<("Error in maxflow (true): expected flow >= ") << dist_under << " but found flow of " << underCheck.maxFlow() <<"\n" ;
                             return false;
                         }
                     } else if (outer->value(l) == l_False) {
                         if (overCheck.maxFlow() >= dist_over) {
-                            std::cout<<("Error in maxflow (false): expected flow <") << dist_over << "but found flow of " << overCheck.maxFlow() <<"\n" ;
+                            std::cout<<("Error in maxflow (false): expected flow < ") << dist_over << " but found flow of " << overCheck.maxFlow() <<"\n" ;
                             return false;
                         }
                     } else {
                         if (underCheck.maxFlow() >= dist_under) {
 
-                            std::cout<<"Error in maxflow ("<< toInt(l) << " unassigned): expected flow <" << dist_under << "but found flow of " << underCheck.maxFlow() <<"\n" ;
+                            std::cout<<"Error in maxflow ("<< toInt(l) << " unassigned): expected flow < " << dist_under << " but found flow of " << underCheck.maxFlow() <<"\n" ;
                             return false;
                         }
                         if (overCheck.maxFlow() < dist_over) {
-                            std::cout<<("Error in maxflow (unassigned): expected flow >=") << dist_over << "but found flow of " << overCheck.maxFlow() <<"\n" ;
+                            std::cout<<("Error in maxflow (unassigned): expected flow >= ") << dist_over << " but found flow of " << overCheck.maxFlow() <<"\n" ;
                             return false;
                         }
                     }

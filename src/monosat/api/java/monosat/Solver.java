@@ -469,7 +469,7 @@ public class Solver  implements Closeable{
         MonosatJNI.flushPB(solverPtr);
     }
 
-    private ArrayList<ArrayList<BitVector>> cached_bvs;
+    private ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
     private static long MAX_CACHE_CONST = 255;
     /**
      * Caches constant bitvectors of value < MAX_CACHE_CONST

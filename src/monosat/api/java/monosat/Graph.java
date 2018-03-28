@@ -75,6 +75,8 @@ public class Graph {
     Lit maximumFlow_lt(int from, int to, long compareTo){
         return solver.toLit(MonosatJNI.maximumFlow_geq(solver.solverPtr,graphPtr,from,to,compareTo)).negate();
     }
+
+
     /**
      * Create a new bitvector, equal in value to the maximum flow between from and to.
      * Note that if your goal is to assert a comparison between the maximum flow and a constant or bitvector,

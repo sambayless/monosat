@@ -690,7 +690,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge_1bv
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jint bvID) {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
-    return jint(newEdge(solver, graph, from, to, bvID));
+    return jint(newEdge_bv(solver, graph, from, to, bvID));
 }
 
 

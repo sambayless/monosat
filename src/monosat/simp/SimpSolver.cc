@@ -85,7 +85,7 @@ Var SimpSolver::newVar(bool sign, bool dvar) {
 
 void SimpSolver::releaseVar(Lit l)
 {
-
+	assert(!isFrozen(var(l)));
 	assert(!isEliminated(var(l)));
 	if (!use_simplification && var(l) >= max_simp_var && !hasTheory(l))
 		// Note: Guarantees that no references to this variable is
