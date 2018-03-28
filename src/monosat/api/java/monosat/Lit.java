@@ -6,83 +6,96 @@ package monosat;
  * Literals come in pairs; positive literals are even, negative literals are odd.
  * Finally, there are two reserved literals:
  * lit_Undef and lit_Error, with values -2 and -1, respectively.
- *
+ * <p>
  * In an ideal world, this would be _just_ an integer, or a type-checked value class of size 32 bits.
  * However, to deal with
  */
 final public class Lit {
-    //The value of this literal
-    protected int l=-2;
+    public final static Lit Undef = new Lit(-2, true);
+    public final static Lit Error = new Lit(-1, true);
     private final Lit neg; //every literal also has a pointer to its negation.
-
-    public final static Lit Undef= new Lit(-2,true);
-    public final static Lit Error= new Lit(-1,true);
+    //The value of this literal
+    protected int l = -2;
 
     /**
      * Typically, users will create literals using Solver.newLit(), rather than constructing them directly.
      */
-    protected Lit(){
+    protected Lit() {
         this.l = -2;
         this.neg = Error;
     }
-    private Lit(int lit, boolean define_literal){
+
+    private Lit(int lit, boolean define_literal) {
         this.l = lit;
         neg = null;
     }
-    protected Lit(int variable){
-        assert(variable>=0);
-        this.l =variable*2;
-        this.neg = new Lit(l+1,this);
+
+    protected Lit(int variable) {
+        assert (variable >= 0);
+        this.l = variable * 2;
+        this.neg = new Lit(l + 1, this);
     }
-    private Lit(int l, Lit neg){
-        this.l =l;
+
+    private Lit(int l, Lit neg) {
+        this.l = l;
         this.neg = neg;
     }
 
 
     /**
      * Check whether the literal has a negation sign.
+     *
      * @return True if the literal is negative, false if it is positive.
      */
-    public boolean sign(){
-        return (l&1)==1;
+    public boolean sign() {
+        return (l & 1) == 1;
     }
 
-    public Lit negate(){
+    public Lit negate() {
         return neg;
     }
-    public Lit abs(){
-        if(sign()){
+
+    public Lit abs() {
+        if (sign()) {
             return neg;
-        }else{
+        } else {
             return this;
         }
     }
+
     /**
      * Convert the literal into dimacs format
+     *
      * @return
      */
-    public int toDimacs(){
-        return ((l/2)+1) * (this.sign()? -1:1);
+    public int toDimacs() {
+        return ((l / 2) + 1) * (this.sign() ? -1 : 1);
     }
 
     /**
      * Convert the literal into a variable.
+     *
      * @return
      */
-    public int toVar(){return l/2;}
+    public int toVar() {
+        return l / 2;
+    }
 
 
     /**
      * Convert the literal into an integer.
+     *
      * @return
      */
-    public int toInt(){return l;}
+    public int toInt() {
+        return l;
+    }
+
     /**
      * Throws an exception if this is not a legal literal (eg, if the index is <0)
      */
-    public void validate(){
-        if (l<0){
+    public void validate() {
+        if (l < 0) {
             throw new IllegalArgumentException("Invalid literal");
         }
     }
