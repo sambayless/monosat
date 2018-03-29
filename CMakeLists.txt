@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 2.7)
 project(monosat)
-
+include(GNUInstallDirs)
 #enable to include built-in support for Pseudo-Boolean constraints (recommended)
 option (PB_SUPPORT "Combile with Pseudo-Boolean support (using Minisat+)" ON)
 #set to compile Java JNI support into the shared library (requires a JDK)
-option(JAVA_SUPPORT "Build the static library" OFF)
+option(JAVA "Build the static library" OFF)
 #set to OFF to disable linking GPL sources
 option(GPL "Link GPLv2 sources, so that the compiled binary is licensed under the terms of the GPLv2, rather than MIT (greatly improves the performance of maximum flow predicates significantly)." ON)
 option(SHOW_GIT_VERSION "Include git --describe in the build version" ON)
 set (JAVA_SOURCE_FILES "")
-
+set (JAVA_NATIVE_SOURCE_FILES "")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT -DDEBUG_CORE " ) #  -DDEBUG_GRAPH -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
@@ -304,14 +304,25 @@ if (PB_SUPPORT)
 endif (PB_SUPPORT)
 
 
-if (JAVA_SUPPORT)
+if (JAVA)
     find_package(Java 1.8 REQUIRED)
     find_package(JNI 1.8 REQUIRED)
+    include(UseJava)
+
+    set(JAVA_SOURCE_FILES ${JAVA_SOURCE_FILES}
+            src/monosat/api/java/monosat/MonosatJNI.java
+            src/monosat/api/java/monosat/Solver.java
+            src/monosat/api/java/monosat/Lit.java
+            src/monosat/api/java/monosat/LBool.java
+            src/monosat/api/java/monosat/Compare.java
+            src/monosat/api/java/monosat/BitVector.java
+            src/monosat/api/java/monosat/Graph.java
+            )
 
     message(STATUS "Compiling shared library with support for JNI")
     set_source_files_properties(src/monosat/api/java/MonosatJNI.cpp OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h)
-    set_source_files_properties(src/monosat/api/java/monosat_MonosatJNI.h OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/__MonosatJNI.h)
-
+    #set_source_files_properties(src/monosat/api/java/monosat_MonosatJNI.h OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/__MonosatJNI.h)
+    set_source_files_properties(src/monosat/api/java/monosat_MonosatJNI.h OBJECT_DEPENDS "${JAVA_SOURCE_FILES}")
     # generate MonosatJNI.h header
     add_custom_command(
             PRE_BUILD
@@ -326,16 +337,19 @@ if (JAVA_SUPPORT)
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/monosat/api/java/
     )
 
-    set(JAVA_SOURCE_FILES ${JAVA_SOURCE_FILES} src/monosat/api/java/MonosatJNI.cpp src/monosat/api/java/monosat_MonosatJNI.h)
+    set(JAVA_NATIVE_SOURCE_FILES ${JAVA_NATIVE_SOURCE_FILES} src/monosat/api/java/MonosatJNI.cpp src/monosat/api/java/monosat_MonosatJNI.h)
 
     if (JNI_FOUND)
         message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
         message (STATUS "JNI_LIBRARIES=${JNI_LIBRARIES}")
     endif()
     include_directories(${JNI_INCLUDE_DIRS})
+
+
+
 else()
-    message(STATUS "Compiling wihtout library support for Java. To enable Java support, set -DJAVA_SUPPORT=ON")
-endif (JAVA_SUPPORT)
+    message(STATUS "Compiling wihtout library support for Java. To enable Java support, set -DJAVA=ON")
+endif (JAVA)
 
 if (GPL)
     MESSAGE( STATUS "Linking GPLv2 source files. Use \"cmake -DGPL=OFF\" to build without GPL sources." )
@@ -407,7 +421,7 @@ endif (UNIX)
 
 
 
-add_library(libmonosat SHARED ${SOURCE_FILES} ${JAVA_SOURCE_FILES})
+add_library(libmonosat SHARED ${SOURCE_FILES} ${JAVA_NATIVE_SOURCE_FILES})
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 if (NOT APPLE)
@@ -415,9 +429,9 @@ if (NOT APPLE)
 endif()
 target_link_libraries(libmonosat gmpxx)
 target_link_libraries(libmonosat gmp)
-if (JAVA_SUPPORT)
+if (JAVA)
     target_link_libraries(libmonosat ${JNI_LIBRARIES})
-endif (JAVA_SUPPORT)
+endif (JAVA)
 if (UNIX)
     #librt is needed for clock_gettime, which is enabled for linux only
     #(clock_gettime is used for capturing detailed timing statistics only)
@@ -439,9 +453,9 @@ if (NOT APPLE)
 endif()
 target_link_libraries(monosat gmpxx)
 target_link_libraries(monosat gmp)
-if (JAVA_SUPPORT)
+if (JAVA)
     target_link_libraries(monosat ${JNI_LIBRARIES})
-endif (JAVA_SUPPORT)
+endif (JAVA)
 
 if (UNIX)
     #librt is needed for clock_gettime, which is enabled for linux only
@@ -459,6 +473,7 @@ install(TARGETS monosat_static libmonosat libmonosat_static
         ARCHIVE DESTINATION lib
         #INCLUDES DESTINATION include/monosat
         )
+
 install(DIRECTORY src/monosat DESTINATION include
         FILES_MATCHING PATTERN "*.h"
         PATTERN api/python EXCLUDE
@@ -486,3 +501,17 @@ install(DIRECTORY src/monosat DESTINATION include
         PATTERN Win32 EXCLUDE
         PATTERN Win64 EXCLUDE
         PATTERN Win64SharedLibrary EXCLUDE)
+
+if (JAVA)
+    set(CMAKE_JNI_TARGET TRUE)
+    add_jar(monosat_jar ${JAVA_SOURCE_FILES} OUTPUT_NAME monosat)
+    get_target_property(_jarFile monosat_jar JAR_FILE)
+    get_target_property(_classDir monosat_jar CLASSDIR)
+
+    message(STATUS "Monosat jar file ${_jarFile}")
+    message(STATUS "Monosat Java Classes compiled to ${_classDir}")
+    #set(JAVA_LIB_INSTALL_DIR /usr/${CMAKE_INSTALL_LIBDIR}/java)
+    install_jar(monosat_jar ${CMAKE_INSTALL_FULL_LIBDIR})
+    message(STATUS "Installing jar to ${CMAKE_INSTALL_FULL_LIBDIR}")
+    #install_jni_symlink(monosat_jar . )
+endif(JAVA)

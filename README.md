@@ -33,6 +33,15 @@ $cd src/monosat/api/python
 $sudo python3 setup.py install -f
 ```
 
+### Install the Java Library
+
+To install the Java library, you must build Monosat with Java support enabled:
+On Ubuntu (14.04):
+```
+$cmake -DJAVA=ON
+$make
+```
+
 ### Usage
 MonoSAT is based on [MiniSat 2][Minisat], and supports many of the same calling conventions:
 

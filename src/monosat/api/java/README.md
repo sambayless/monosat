@@ -14,7 +14,7 @@ By default, the shared library does not compile with JNI bindings.
 To build with JNI support:
 ```
 $ cd <root folder of monosat>
-$ cmake  -DJAVA_SUPPORT=ON
+$ cmake  -DJAVA=ON
 $ make 
 ```
 
