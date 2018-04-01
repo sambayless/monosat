@@ -94,11 +94,11 @@ public class BitVector {
         return bits.get(bit);
     }
 
-    int width() {
+    public int width() {
         return width;
     }
 
-    int size() {
+    public int size() {
         return width();
     }
 
@@ -108,7 +108,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit gt(BitVector compareTo) {
+    public Lit gt(BitVector compareTo) {
         int l = MonosatJNI.newBVComparison_bv_gt(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
         return solver.toLit(l);
     }
@@ -119,7 +119,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit geq(BitVector compareTo) {
+    public Lit geq(BitVector compareTo) {
         int l = MonosatJNI.newBVComparison_bv_geq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
         return solver.toLit(l);
     }
@@ -130,7 +130,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit lt(BitVector compareTo) {
+    public Lit lt(BitVector compareTo) {
         int l = MonosatJNI.newBVComparison_bv_lt(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
         return solver.toLit(l);
     }
@@ -141,7 +141,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit leq(BitVector compareTo) {
+    public Lit leq(BitVector compareTo) {
         int l = MonosatJNI.newBVComparison_bv_leq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
         return solver.toLit(l);
     }
@@ -152,7 +152,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit neq(BitVector compareTo) {
+    public Lit neq(BitVector compareTo) {
         int l = MonosatJNI.newBVComparison_bv_neq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
         return solver.toLit(l);
     }
@@ -163,7 +163,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit eq(BitVector compareTo) {
+    public Lit eq(BitVector compareTo) {
         int l = MonosatJNI.newBVComparison_bv_eq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
         return solver.toLit(l);
     }
@@ -176,7 +176,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit gt(int compareTo) {
+    public Lit gt(int compareTo) {
         int l = MonosatJNI.newBVComparison_const_gt(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -187,7 +187,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit geq(int compareTo) {
+    public Lit geq(int compareTo) {
         int l = MonosatJNI.newBVComparison_const_geq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -198,7 +198,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit lt(int compareTo) {
+    public Lit lt(int compareTo) {
         int l = MonosatJNI.newBVComparison_const_lt(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -209,7 +209,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit leq(int compareTo) {
+    public Lit leq(int compareTo) {
         int l = MonosatJNI.newBVComparison_const_leq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -220,7 +220,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit neq(int compareTo) {
+    public Lit neq(int compareTo) {
         int l = MonosatJNI.newBVComparison_const_neq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -231,7 +231,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    Lit eq(int compareTo) {
+    public Lit eq(int compareTo) {
         int l = MonosatJNI.newBVComparison_const_eq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -243,7 +243,7 @@ public class BitVector {
      * @param append BitVector to append.
      * @return
      */
-    BitVector append(BitVector append) {
+    public BitVector append(BitVector append) {
         int w = width() + append.width();
         BitVector result = new BitVector(solver, w);
         MonosatJNI.bv_concat(solver.solverPtr, solver.bvPtr, this.id, append.id, result.id);
@@ -257,7 +257,7 @@ public class BitVector {
      * @param upper
      * @return
      */
-    BitVector slice(int lower, int upper) {
+    public BitVector slice(int lower, int upper) {
         int w = upper - lower;
         assert (w >= 0);
         BitVector result = new BitVector(solver, w);
@@ -268,7 +268,7 @@ public class BitVector {
     /**
      * Return a new bitvector consisting of the bitwise NOT of this bitvector.
      */
-    BitVector not() {
+    public BitVector not() {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_not(solver.solverPtr, solver.bvPtr, this.id, result.id);
         return result;
@@ -277,7 +277,7 @@ public class BitVector {
     /**
      * Return a new bitvector consisting of the bitwise AND of this bitvector and other.
      */
-    BitVector and(BitVector other) {
+    public BitVector and(BitVector other) {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_and(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;
@@ -286,7 +286,7 @@ public class BitVector {
     /**
      * Return a new bitvector consisting of the bitwise NAND of this bitvector and other.
      */
-    BitVector nand(BitVector other) {
+    public BitVector nand(BitVector other) {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_nand(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;
@@ -295,7 +295,7 @@ public class BitVector {
     /**
      * Return a new bitvector consisting of the bitwise OR of this bitvector and other.
      */
-    BitVector or(BitVector other) {
+    public BitVector or(BitVector other) {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_or(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;
@@ -304,7 +304,7 @@ public class BitVector {
     /**
      * Return a new bitvector consisting of the bitwise NOR of this bitvector and other.
      */
-    BitVector nor(BitVector other) {
+    public BitVector nor(BitVector other) {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_nor(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;
@@ -313,7 +313,7 @@ public class BitVector {
     /**
      * Return a new bitvector consisting of the bitwise XOR of this bitvector and other.
      */
-    BitVector xor(BitVector other) {
+    public BitVector xor(BitVector other) {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_xor(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;
@@ -322,7 +322,7 @@ public class BitVector {
     /**
      * Return a new bitvector consisting of the bitwise XNOR of this bitvector and other.
      */
-    BitVector xnor(BitVector other) {
+    public BitVector xnor(BitVector other) {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_xnor(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;
@@ -335,7 +335,7 @@ public class BitVector {
      * @param other
      * @return
      */
-    BitVector add(BitVector other) {
+    public BitVector add(BitVector other) {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_addition(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;
@@ -349,7 +349,7 @@ public class BitVector {
      * @param other
      * @return
      */
-    BitVector subtract(BitVector other) {
+    public BitVector subtract(BitVector other) {
         BitVector result = new BitVector(solver, width());
         MonosatJNI.bv_subtraction(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;

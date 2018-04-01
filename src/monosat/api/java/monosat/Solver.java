@@ -789,7 +789,9 @@ public class Solver implements Closeable {
     public void assertEqual(Lit a, Lit b) {
         assertXnor(a, b);
     }
-
+    public void assertImplies(Lit a, Lit b) {
+        assertOr(a.negate(), b);
+    }
     //Multi-Literal constructs
     public Lit and(Collection<Lit> elements) {
 

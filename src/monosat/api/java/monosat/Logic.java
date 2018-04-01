@@ -163,6 +163,8 @@ public final class Logic {
         getSolver().assertEqual(a, b);
     }
 
+    public static void assertImplies(Lit a, Lit b) {getSolver().assertImplies(a,b);}
+
     //Multi-Literal constructs
     public static Lit and(Collection<Lit> elements) {
         return getSolver().and(elements);

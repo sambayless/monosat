@@ -312,6 +312,7 @@ if (JAVA)
     set(JAVA_SOURCE_FILES ${JAVA_SOURCE_FILES}
             src/monosat/api/java/monosat/MonosatJNI.java
             src/monosat/api/java/monosat/Solver.java
+            src/monosat/api/java/monosat/Logic.java
             src/monosat/api/java/monosat/Lit.java
             src/monosat/api/java/monosat/LBool.java
             src/monosat/api/java/monosat/Compare.java

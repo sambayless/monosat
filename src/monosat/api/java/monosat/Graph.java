@@ -45,19 +45,19 @@ public class Graph {
         this.bitwidth = bitwidth;
     }
 
-    int nNodes() {
+    public int nNodes() {
         return MonosatJNI.nNodes(solver.solverPtr, graphPtr);
     }
 
-    int nEdges() {
+    public int nEdges() {
         return MonosatJNI.nEdges(solver.solverPtr, graphPtr);
     }
 
-    int addNode() {
+    public int addNode() {
         return addNode(Integer.toString(nNodes()));
     }
 
-    int addNode(String name) {
+    public int addNode(String name) {
         if (nodeMap.containsKey(name)) {
             throw new RuntimeException("Node names must be unique");
         }
@@ -73,23 +73,23 @@ public class Graph {
 
     }
 
-    Set<Integer> nodes() {
+    public Set<Integer> nodes() {
         return Collections.unmodifiableSet(nodes);
     }
 
-    boolean hasNode(String name) {
+    public boolean hasNode(String name) {
         return nodeMap.containsKey(name);
     }
 
-    boolean hasNode(Integer n) {
+    public boolean hasNode(Integer n) {
         return nodes.contains(n);
     }
 
-    int getNode(String name) {
+    public int getNode(String name) {
         return nodeMap.get(name);
     }
 
-    boolean hasEdge(int from, int to) {
+    public boolean hasEdge(int from, int to) {
         assert (hasNode(from));
         assert (hasNode(to));
         LinkedList<Edge> edge_list = edges.get(from).get(to);
@@ -100,11 +100,11 @@ public class Graph {
         }
     }
 
-    boolean hasEdge(String from, String to) {
+    public boolean hasEdge(String from, String to) {
         return hasEdge(getNode(from), getNode(to));
     }
 
-    Edge getEdge(int from, int to) {
+    public Edge getEdge(int from, int to) {
         if (!hasNode(from)) {
             throw new RuntimeException("No such node");
         }
@@ -119,11 +119,11 @@ public class Graph {
         }
     }
 
-    Edge getEdge(String from, String to) {
+    public Edge getEdge(String from, String to) {
         return getEdge(getNode(from), getNode(to));
     }
 
-    List<Edge> getAllEdges(int from, int to) {
+    public List<Edge> getAllEdges(int from, int to) {
         if (!hasNode(from)) {
             throw new RuntimeException("No such node");
         }
@@ -138,11 +138,11 @@ public class Graph {
         }
     }
 
-    Collection<Edge> getAllEdges(String from, String to) {
+    public Collection<Edge> getAllEdges(String from, String to) {
         return getAllEdges(getNode(from), getNode(to));
     }
 
-    Collection<Edge> getAllEdges(int from) {
+    public Collection<Edge> getAllEdges(int from) {
         if (!hasNode(from)) {
             throw new RuntimeException("No such node");
         }
@@ -151,19 +151,19 @@ public class Graph {
         return edge_map.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
-    Collection<Edge> getAllEdges(String from) {
+    public Collection<Edge> getAllEdges(String from) {
         return getAllEdges(getNode(from));
     }
 
-    int bitwidth() {
+    public int bitwidth() {
         return bitwidth;
     }
 
-    Lit addEdge(int from, int to) {
+    public Lit addEdge(int from, int to) {
         return addEdge(from, to, 1);
     }
 
-    Lit addEdge(int from, int to, long constant_weight) {
+    public Lit addEdge(int from, int to, long constant_weight) {
         if (bitwidth >= 0) {
             return addEdge(from, to, solver.bv(bitwidth, constant_weight));
         } else {
@@ -177,7 +177,7 @@ public class Graph {
         }
     }
 
-    Lit addEdge(int from, int to, BitVector weight) {
+    public Lit addEdge(int from, int to, BitVector weight) {
         if (this.bitwidth < 0) {
             throw new RuntimeException("In order to use bitvector edge weights, the bitwidth must be passed to the graph constructor, eg:" +
                     "Graph g = new Graph(solver, 8); will accept edges with bitvectors of size 8. Otherwise, edge weights are assumed to be constant integers.");
@@ -191,6 +191,44 @@ public class Graph {
         return l;
     }
 
+    public Lit addUndirectedEdge(int from, int to) {
+        return addUndirectedEdge(from, to, 1);
+    }
+
+    public Lit addUndirectedEdge(int from, int to, long constant_weight) {
+        if (bitwidth >= 0) {
+            return addUndirectedEdge(from, to, solver.bv(bitwidth, constant_weight));
+        } else {
+            Lit l = solver.toLit(MonosatJNI.newEdge(solver.solverPtr, graphPtr, from, to, constant_weight));
+            Lit l2 = solver.toLit(MonosatJNI.newEdge(solver.solverPtr, graphPtr, to, from,constant_weight));
+            solver.assertEqual(l,l2);
+            Map<Integer, LinkedList<Edge>> edge_map = edges.get(from);
+            if (edge_map.get(to) == null) {
+                edge_map.put(to, new LinkedList<>());
+            }
+            edge_map.get(to).add(new Edge(from, to, l, constant_weight));
+            return l;
+        }
+    }
+
+    public Lit addUndirectedEdge(int from, int to, BitVector weight) {
+        if (this.bitwidth < 0) {
+            throw new RuntimeException("In order to use bitvector edge weights, the bitwidth must be passed to the graph constructor, eg:" +
+                    "Graph g = new Graph(solver, 8); will accept edges with bitvectors of size 8. Otherwise, edge weights are assumed to be constant integers.");
+        }
+        Lit l = solver.toLit(MonosatJNI.newEdge_bv(solver.solverPtr, graphPtr, from, to, weight.id));
+        Lit l2 = solver.toLit(MonosatJNI.newEdge_bv(solver.solverPtr, graphPtr, to, from, weight.id));
+        solver.assertEqual(l,l2);
+        Map<Integer, LinkedList<Edge>> edge_map = edges.get(from);
+        if (edge_map.get(to) == null) {
+            edge_map.put(to, new LinkedList<>());
+        }
+        edge_map.get(to).add(new Edge(from, to, l, weight));
+        return l;
+    }
+
+
+
     /**
      * True if the graph is acyclic, false otherwise.
      * If directed is false, all edges are interpreted as undirected for the purposes of cycle checking.
@@ -198,7 +236,7 @@ public class Graph {
      * @param directed
      * @return
      */
-    Lit acyclic(boolean directed) {
+    public Lit acyclic(boolean directed) {
         if (directed) {
             return solver.toLit(MonosatJNI.acyclic_directed(solver.solverPtr, this.graphPtr));
         } else {
@@ -211,15 +249,15 @@ public class Graph {
      *
      * @return
      */
-    Lit acyclic() {
+    public Lit acyclic() {
         return acyclic(true);
     }
 
-    Lit reaches(int from, int to) {
+    public Lit reaches(int from, int to) {
         return solver.toLit(MonosatJNI.reaches(solver.solverPtr, graphPtr, from, to));
     }
 
-    Lit compareDistance(int from, int to, long compareTo, Compare comparison) {
+    public Lit compareDistance(int from, int to, long compareTo, Compare comparison) {
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.shortestPath_lt_const(solver.solverPtr, graphPtr, from, to, compareTo)).negate();
@@ -243,7 +281,7 @@ public class Graph {
         throw new RuntimeException("Unknown comparison");
     }
 
-    Lit compareDistance(int from, int to, BitVector compareTo, Compare comparison) {
+    public Lit compareDistance(int from, int to, BitVector compareTo, Compare comparison) {
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.shortestPath_lt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).negate();
@@ -267,11 +305,11 @@ public class Graph {
         throw new RuntimeException("Unknown comparison");
     }
 
-    BitVector distance(int from, int to) {
+    public BitVector distance(int from, int to) {
         return distance(from, to, this.bitwidth);
     }
 
-    BitVector distance(int from, int to, int bitwidth) {
+    public BitVector distance(int from, int to, int bitwidth) {
         if (bitwidth < 0) {
             //compute a 'large enough' bitwidth to hold the maximum possible distance
             bitwidth = 8;//temporary
@@ -296,7 +334,7 @@ public class Graph {
      * @param to
      * @return
      */
-    Lit compareMaximumFlow(int from, int to, long compareTo, Compare comparison) {
+    public Lit compareMaximumFlow(int from, int to, long compareTo, Compare comparison) {
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.maximumFlow_geq(solver.solverPtr, graphPtr, from, to, compareTo));
@@ -329,7 +367,7 @@ public class Graph {
      * @param to
      * @return
      */
-    Lit compareMaximumFlow(int from, int to, BitVector compareTo, Compare comparison) {
+    public Lit compareMaximumFlow(int from, int to, BitVector compareTo, Compare comparison) {
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.maximumFlow_geq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id));
@@ -353,7 +391,7 @@ public class Graph {
         throw new RuntimeException("Unknown comparison");
     }
 
-    BitVector maximumFlow(int from, int to) {
+    public BitVector maximumFlow(int from, int to) {
         return maximumFlow(from, to, this.bitwidth);
     }
 
@@ -366,7 +404,7 @@ public class Graph {
      * @param to
      * @return
      */
-    BitVector maximumFlow(int from, int to, int bitwidth) {
+    public BitVector maximumFlow(int from, int to, int bitwidth) {
         if (bitwidth < 0) {
             //compute a 'large enough' bitwidth to hold the maximum possible flow
             bitwidth = 8;//temporary
@@ -380,7 +418,7 @@ public class Graph {
         return result;
     }
 
-    ArrayList<Integer> getPathNodes(Lit reach_or_distance_literal) {
+    public ArrayList<Integer> getPathNodes(Lit reach_or_distance_literal) {
         reach_or_distance_literal.validate();
         ArrayList<Integer> store = new ArrayList<>();
         if (!MonosatJNI.hasModel(solver.solverPtr)) {
@@ -400,7 +438,7 @@ public class Graph {
         return store;
     }
 
-    ArrayList<Lit> getPathEdges(Lit reach_or_distance_literal) {
+    public ArrayList<Lit> getPathEdges(Lit reach_or_distance_literal) {
         reach_or_distance_literal.validate();
         if (!MonosatJNI.hasModel(solver.solverPtr)) {
             throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
