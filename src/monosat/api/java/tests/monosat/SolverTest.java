@@ -32,9 +32,9 @@ public class SolverTest {
         Solver s = new Solver();
         assertEquals(s.solve(), true);
         assertEquals(s.solve(), true);
-        assertEquals(s.solve(s.getTrue()), true);
-        assertEquals(s.solve(s.getFalse()), false);
-        assertEquals(s.solve(s.getTrue(), s.getFalse()), false);
+        assertEquals(s.solve(s.True()), true);
+        assertEquals(s.solve(s.False()), false);
+        assertEquals(s.solve(s.True(), s.False()), false);
         assertEquals(s.solve(), true);
         System.out.println("Done");
     }

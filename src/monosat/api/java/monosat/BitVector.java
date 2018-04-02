@@ -30,9 +30,9 @@ import java.util.List;
 
 public class BitVector {
     protected int id;
-    int width;
-    Solver solver;
-    ArrayList<Lit> bits = new ArrayList<Lit>();
+    private int width;
+    private Solver solver;
+    private ArrayList<Lit> bits = new ArrayList<Lit>();
 
     public BitVector(Solver solver, ArrayList<Lit> bits) {
         this.solver = solver;
@@ -51,9 +51,9 @@ public class BitVector {
         this.width = width;
         for (int i = 0; i < width; i++) {
             if ((constant & (1 << i)) == 1) {
-                bits.add(solver.getTrue());
+                bits.add(solver.True());
             } else {
-                bits.add(solver.getFalse());
+                bits.add(solver.False());
             }
         }
     }
@@ -84,6 +84,10 @@ public class BitVector {
 
     public BitVector(Solver solver, int width) {
         this(solver, width, true);
+    }
+
+    public Solver getSolver(){
+        return solver;
     }
 
     public List<Lit> getBits() {
@@ -176,7 +180,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    public Lit gt(int compareTo) {
+    public Lit gt(long compareTo) {
         int l = MonosatJNI.newBVComparison_const_gt(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -187,7 +191,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    public Lit geq(int compareTo) {
+    public Lit geq(long compareTo) {
         int l = MonosatJNI.newBVComparison_const_geq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -198,7 +202,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    public Lit lt(int compareTo) {
+    public Lit lt(long compareTo) {
         int l = MonosatJNI.newBVComparison_const_lt(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -209,7 +213,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    public Lit leq(int compareTo) {
+    public Lit leq(long compareTo) {
         int l = MonosatJNI.newBVComparison_const_leq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -220,7 +224,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    public Lit neq(int compareTo) {
+    public Lit neq(long compareTo) {
         int l = MonosatJNI.newBVComparison_const_neq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -231,7 +235,7 @@ public class BitVector {
      * @param compareTo
      * @return
      */
-    public Lit eq(int compareTo) {
+    public Lit eq(long compareTo) {
         int l = MonosatJNI.newBVComparison_const_eq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
         return solver.toLit(l);
     }
@@ -354,6 +358,5 @@ public class BitVector {
         MonosatJNI.bv_subtraction(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
         return result;
     }
-
 
 }

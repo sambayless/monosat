@@ -20,7 +20,7 @@
  **************************************************************************************************/
 
 package monosat;
-
+import monosat.Logic;
 
 /**
  * Literals are integers in the rance 0..nVars()*2
@@ -62,6 +62,14 @@ final public class Lit {
         this.neg = neg;
     }
 
+    /**
+     * Throws an exception if this is not a legal literal (eg, if the index is <0)
+     */
+    protected void validate() {
+        if (l < 0) {
+            throw new IllegalArgumentException("Invalid literal");
+        }
+    }
 
     /**
      * Check whether the literal has a negation sign.
@@ -112,12 +120,29 @@ final public class Lit {
         return l;
     }
 
+
     /**
-     * Throws an exception if this is not a legal literal (eg, if the index is <0)
+     * Query the model in the solver, throwing an exception if the literal is unassigned in the model.
+     * This can happen only if the literal is not a decision literal.
      */
-    public void validate() {
-        if (l < 0) {
-            throw new IllegalArgumentException("Invalid literal");
-        }
+    public boolean value() throws RuntimeException {
+        return Logic.getSolver().getValue(this);
     }
+    /**
+     * Query the model in the solver.
+     * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
+     * Else, if the literal is unassigned, defaultVal will be returned.
+     */
+    public boolean value(LBool defaultVal) throws RuntimeException {
+        return Logic.getSolver().getValue(this, defaultVal);
+    }
+    /**
+     * After a solve call, non-decision literals may or may not be assigned to a value.
+     * Unassigned literals will have the value LBool.Undef;
+     */
+    public LBool possibleValue(){
+        return Logic.getSolver().getPossibleValue(this);
+    }
+
+
 }

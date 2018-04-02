@@ -315,7 +315,7 @@ if (JAVA)
             src/monosat/api/java/monosat/Logic.java
             src/monosat/api/java/monosat/Lit.java
             src/monosat/api/java/monosat/LBool.java
-            src/monosat/api/java/monosat/Compare.java
+            src/monosat/api/java/monosat/Comparison.java
             src/monosat/api/java/monosat/BitVector.java
             src/monosat/api/java/monosat/Graph.java
             )

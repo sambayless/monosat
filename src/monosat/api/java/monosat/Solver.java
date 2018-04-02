@@ -83,6 +83,7 @@ public class Solver implements Closeable {
         true_lit = toLit(MonosatJNI.true_lit(solverPtr));
         initBV();
         initBuffers();
+        Logic.setSolver(this);//default the current solver to the most recently created one.
     }
 
     private static String collectArgs(ArrayList<String> args) {
@@ -216,11 +217,11 @@ public class Solver implements Closeable {
         return MonosatJNI.getDecisionPolarity(solverPtr, l.toVar());
     }
 
-    public Lit getTrue() {
+    public Lit True() {
         return true_lit;
     }
 
-    public Lit getFalse() {
+    public Lit False() {
         return true_lit.negate();
     }
 
@@ -474,39 +475,43 @@ public class Solver implements Closeable {
         MonosatJNI.minimizeBV(solverPtr, bvPtr, bv.id);
     }
 
-    public void maximizeLits(ArrayList<Lit> literals) {
+    public void maximizeLits(Collection<Lit> literals) {
         MonosatJNI.maximizeLits(solverPtr, getLitBuffer(literals), literals.size());
     }
 
-    public void minimizeLits(ArrayList<Lit> literals) {
+    public void minimizeLits(Collection<Lit> literals) {
         MonosatJNI.minimizeLits(solverPtr, getLitBuffer(literals), literals.size());
     }
 
-    public void maximizeWeightedLits(ArrayList<Lit> literals, ArrayList<Integer> weights) {
+    public void maximizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
         assert (literals.size() == weights.size());
         MonosatJNI.maximizeWeightedLits(solverPtr, getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
     }
 
-    public void minimizeWeightedLits(ArrayList<Lit> literals, ArrayList<Integer> weights) {
+    public void minimizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
         assert (literals.size() == weights.size());
         MonosatJNI.minimizeWeightedLits(solverPtr, getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
     }
 
-    public void assertAtMostOne(ArrayList<Lit> clause) {
+    public void assertAtMostOne(Collection<Lit> clause) {
         MonosatJNI.at_most_one(solverPtr, getLitBuffer(clause), clause.size());
     }
 
-    public void assertPB(ArrayList<Lit> clause, int compareTo, Comparison c) {
-        assertPB(clause, null, compareTo, c);
+    public void assertPB(Collection<Lit> clause,  Comparison c, int compareTo) {
+        assertPB(clause, null,c, compareTo);
     }
 
-    public void assertPB(ArrayList<Lit> clause, ArrayList<Integer> weights, int compareTo, Comparison c) {
+    public void assertPB(Collection<Lit> clause, Collection<Integer> weights,Comparison c, int compareTo) {
         IntBuffer wt_buffer = getBuffer(1, clause.size());
         int n_wts = 0;
         if (weights != null) {
             n_wts = Math.min(clause.size(), weights.size());
-            for (int i = 0; i < clause.size() && i < weights.size(); i++) {
-                wt_buffer.put(i, weights.get(i));
+            int i = 0;
+            for(Integer w:weights){
+                wt_buffer.put(i, w);
+                if(++i>=weights.size()){
+                    break;
+                }
             }
         }
         for (int i = n_wts; i < clause.size(); i++) {
@@ -949,7 +954,7 @@ public class Solver implements Closeable {
         return max(pair);
     }
 
-    enum Comparison {LT, LEQ, EQ, GEQ, GT}
+
 
 
 }

@@ -32,7 +32,10 @@ public class Graph {
     private Map<String, Integer> nodeMap = new HashMap<String, Integer>();
     private Set<Integer> nodes = new HashSet<Integer>();//consider arraylist<Integer>
     private ArrayList<Map<Integer, LinkedList<Edge>>> edges = new ArrayList<>();
-
+    private ArrayList<Lit> all_edge_lits = new ArrayList<>();
+    private ArrayList<ArrayList<Lit>> all_out_edge_lits = new ArrayList<>();
+    private ArrayList<ArrayList<Lit>> all_in_edge_lits = new ArrayList<>();
+    private ArrayList<ArrayList<Lit>> all_node_edge_lits = new ArrayList<>();
     public Graph(Solver solver) {
         this.solver = solver;
         graphPtr = MonosatJNI.newGraph(solver.solverPtr);
@@ -69,6 +72,11 @@ public class Graph {
         edges.set(n, new TreeMap<Integer, LinkedList<Edge>>());//Consider hash map or arraylist here, depending on density of graph...
         nodes.add(n);
         nodeMap.put(name, n);
+        while(all_in_edge_lits.size()<=n){
+            all_in_edge_lits.add(new ArrayList<>());
+            all_out_edge_lits.add(new ArrayList<>());
+            all_node_edge_lits.add(new ArrayList<>());
+        }
         return n;
 
     }
@@ -155,6 +163,35 @@ public class Graph {
         return getAllEdges(getNode(from));
     }
 
+    /**
+     * Get all edge literals in the graph
+     * @return
+     */
+    public Collection<Lit> getEdgeLits(){
+        return Collections.unmodifiableList(all_edge_lits);
+    }
+
+    /**
+     * Get all outgoing and all incoming edges from this node
+     * @param node
+     * @return
+     */
+    public Collection<Lit> getEdgeLits(int node){
+        assert(node>=0);
+        return Collections.unmodifiableList(all_node_edge_lits.get(node));
+    }
+
+    public Collection<Lit> getOutgoingEdgeLits(int node){
+        assert(node>=0);
+        return Collections.unmodifiableList(all_out_edge_lits.get(node));
+    }
+    public Collection<Lit> getIncomingEdgeLits(int node){
+        assert(node>=0);
+        return Collections.unmodifiableList(all_in_edge_lits.get(node));
+    }
+
+
+
     public int bitwidth() {
         return bitwidth;
     }
@@ -173,6 +210,11 @@ public class Graph {
                 edge_map.put(to, new LinkedList<>());
             }
             edge_map.get(to).add(new Edge(from, to, l, constant_weight));
+            all_edge_lits.add(l);
+            all_out_edge_lits.get(from).add(l);
+            all_in_edge_lits.get(to).add(l);
+            all_node_edge_lits.get(from).add(l);
+            all_node_edge_lits.get(to).add(l);
             return l;
         }
     }
@@ -188,6 +230,11 @@ public class Graph {
             edge_map.put(to, new LinkedList<>());
         }
         edge_map.get(to).add(new Edge(from, to, l, weight));
+        all_edge_lits.add(l);
+        all_out_edge_lits.get(from).add(l);
+        all_in_edge_lits.get(to).add(l);
+        all_node_edge_lits.get(from).add(l);
+        all_node_edge_lits.get(to).add(l);
         return l;
     }
 
@@ -207,6 +254,13 @@ public class Graph {
                 edge_map.put(to, new LinkedList<>());
             }
             edge_map.get(to).add(new Edge(from, to, l, constant_weight));
+            all_edge_lits.add(l);
+            all_out_edge_lits.get(from).add(l);
+            all_in_edge_lits.get(to).add(l);
+            all_out_edge_lits.get(to).add(l);
+            all_in_edge_lits.get(from).add(l);
+            all_node_edge_lits.get(from).add(l);
+            all_node_edge_lits.get(to).add(l);
             return l;
         }
     }
@@ -224,10 +278,15 @@ public class Graph {
             edge_map.put(to, new LinkedList<>());
         }
         edge_map.get(to).add(new Edge(from, to, l, weight));
+        all_edge_lits.add(l);
+        all_out_edge_lits.get(from).add(l);
+        all_in_edge_lits.get(to).add(l);
+        all_out_edge_lits.get(to).add(l);
+        all_in_edge_lits.get(from).add(l);
+        all_node_edge_lits.get(from).add(l);
+        all_node_edge_lits.get(to).add(l);
         return l;
     }
-
-
 
     /**
      * True if the graph is acyclic, false otherwise.
@@ -257,7 +316,7 @@ public class Graph {
         return solver.toLit(MonosatJNI.reaches(solver.solverPtr, graphPtr, from, to));
     }
 
-    public Lit compareDistance(int from, int to, long compareTo, Compare comparison) {
+    public Lit compareDistance(int from, int to, long compareTo, Comparison comparison) {
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.shortestPath_lt_const(solver.solverPtr, graphPtr, from, to, compareTo)).negate();
@@ -281,7 +340,7 @@ public class Graph {
         throw new RuntimeException("Unknown comparison");
     }
 
-    public Lit compareDistance(int from, int to, BitVector compareTo, Compare comparison) {
+    public Lit compareDistance(int from, int to, BitVector compareTo, Comparison comparison) {
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.shortestPath_lt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).negate();
@@ -326,7 +385,7 @@ public class Graph {
     }
 
     /**
-     * Compare a constant or bitvector to the maximum flow of a graph.
+     * Comparison a constant or bitvector to the maximum flow of a graph.
      * Note that if your goal is to assert or reason about a one-sided comparison between the maximum flow and a constant or bitvector,
      * the compareMaximumFlow form is more efficient then the direct maximumFlow() form.
      *
@@ -334,7 +393,7 @@ public class Graph {
      * @param to
      * @return
      */
-    public Lit compareMaximumFlow(int from, int to, long compareTo, Compare comparison) {
+    public Lit compareMaximumFlow(int from, int to, long compareTo, Comparison comparison) {
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.maximumFlow_geq(solver.solverPtr, graphPtr, from, to, compareTo));
@@ -359,7 +418,7 @@ public class Graph {
     }
 
     /**
-     * Compare a constant or bitvector to the maximum flow of a graph.
+     * Comparison a constant or bitvector to the maximum flow of a graph.
      * Note that if your goal is to assert or reason about a one-sided comparison between the maximum flow and a constant or bitvector,
      * the compareMaximumFlow form is more efficient then the direct maximumFlow() form.
      *
@@ -367,7 +426,7 @@ public class Graph {
      * @param to
      * @return
      */
-    public Lit compareMaximumFlow(int from, int to, BitVector compareTo, Compare comparison) {
+    public Lit compareMaximumFlow(int from, int to, BitVector compareTo, Comparison comparison) {
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.maximumFlow_geq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id));

@@ -21,6 +21,8 @@
 
 package monosat;
 
+import java.nio.IntBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -68,13 +70,14 @@ public final class Logic {
         return getSolver().newLit(decidable);
     }
 
-    //Note: True and False are capitalized here, to avoid name clashing with 'true' and 'false'
+    //Note: True and False are capitalized here, to avoid name clashing with 'true' and 'false',
+    //and because they are intended to be used like static final members.
     public static Lit True() {
-        return getSolver().getTrue();
+        return getSolver().True();
     }
 
     public static Lit False() {
-        return getSolver().getFalse();
+        return getSolver().False();
     }
 
     public static boolean solve() {
@@ -305,4 +308,47 @@ public final class Logic {
     public static BitVector bv(int width) {
         return new BitVector(getSolver(), width);
     }
+
+    //Psuedo-Boolean constraints
+
+
+    public static void clearOptimizationObjectives() {
+        getSolver().clearOptimizationObjectives();
+    }
+
+    public static void maximizeBV(BitVector bv) {
+        getSolver().maximizeBV(bv);
+    }
+
+    public static void minimizeBV(BitVector bv) {
+        getSolver().minimizeBV(bv);
+    }
+
+    public static void maximizeLits(Collection<Lit> literals) {
+        getSolver().maximizeLits(literals);
+    }
+
+    public static void minimizeLits(Collection<Lit> literals) {
+        getSolver().minimizeLits(literals);
+    }
+
+    public static void maximizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
+        getSolver().maximizeWeightedLits(literals,weights);
+    }
+
+    public static void minimizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
+        getSolver().minimizeWeightedLits(literals,weights);
+    }
+
+    public static void assertAtMostOne(Collection<Lit> clause) {
+        getSolver().assertAtMostOne(clause);
+    }
+
+    public static void assertPB(Collection<Lit> clause, Comparison c, int compareTo) {
+        getSolver().assertPB(clause,c,compareTo);
+    }
+    public static void assertPB(Collection<Lit> clause, Collection<Integer> weights, Comparison c, int compareTo) {
+        getSolver().assertPB(clause,weights,c,compareTo);
+    }
+
 }
