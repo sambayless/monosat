@@ -118,15 +118,15 @@ public class Solver implements Closeable {
 
     private void initBuffer(int bufferN) {
         if (bufferN == 0) {
-            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0);
+            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0*4);//4 bytes per integer
             b.order(ByteOrder.LITTLE_ENDIAN);
             ints0 = b.asIntBuffer();
         } else if (bufferN == 1) {
-            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0);
+            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0*4);
             b.order(ByteOrder.LITTLE_ENDIAN);
             ints1 = b.asIntBuffer();
         } else if (bufferN == 2) {
-            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0);
+            ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0*4);
             b.order(ByteOrder.LITTLE_ENDIAN);
             ints2 = b.asIntBuffer();
         }

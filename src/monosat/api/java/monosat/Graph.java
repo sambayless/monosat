@@ -167,7 +167,7 @@ public class Graph {
      * Get all edge literals in the graph
      * @return
      */
-    public Collection<Lit> getEdgeLits(){
+    public Collection<Lit> getEdgeVars(){
         return Collections.unmodifiableList(all_edge_lits);
     }
 
@@ -176,16 +176,16 @@ public class Graph {
      * @param node
      * @return
      */
-    public Collection<Lit> getEdgeLits(int node){
+    public Collection<Lit> getEdgeVars(int node){
         assert(node>=0);
         return Collections.unmodifiableList(all_node_edge_lits.get(node));
     }
 
-    public Collection<Lit> getOutgoingEdgeLits(int node){
+    public Collection<Lit> getOutgoingEdgeVars(int node){
         assert(node>=0);
         return Collections.unmodifiableList(all_out_edge_lits.get(node));
     }
-    public Collection<Lit> getIncomingEdgeLits(int node){
+    public Collection<Lit> getIncomingEdgeVars(int node){
         assert(node>=0);
         return Collections.unmodifiableList(all_in_edge_lits.get(node));
     }
