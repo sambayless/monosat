@@ -153,6 +153,22 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConflictClause
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    minimizeUnsatCore
+ * Signature: (JLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimizeUnsatCore
+  (JNIEnv *, jclass, jlong, jobject, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    minimizeConflictClause
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeConflictClause
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    backtrack
  * Signature: (J)V
  */

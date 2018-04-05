@@ -642,6 +642,71 @@ void minimizeWeightedLits(Monosat::SimpSolver *  S, int * lits, int * weights, i
 	d->optimization_objectives.push(Objective(lits_opt,weights_opt,false));
 }
 
+int minimizeUnsatCore(Monosat::SimpSolver * S, int * unsat_assumptions, int n_lits){
+
+	MonosatData * d = (MonosatData*) S->_external_data;
+	d->last_solution_optimal=true;
+	d->has_conflict_clause_from_last_solution=false;
+	vec<Lit> assumptions;
+	write_out(S,"minimize_core ");
+	for (int n = 0;n<n_lits;n++){
+		Lit l = toLit(unsat_assumptions[n]);
+		write_out(S,"%d ", dimacs(l));
+		assumptions.push(l);
+	}
+	write_out(S,"\n");
+
+	APISignal::enableResourceLimits();
+
+	S->cancelUntil(0);
+	S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
+
+
+
+	//vec<Objective> & objectives = d->optimization_objectives;//bit vectors to minimize
+	if (d->pbsolver) {
+		d->pbsolver->convert();
+	}
+	//lbool minimizeUnsatCore(SimpSolver & S,vec<Lit> & assumptions,bool do_simp){
+	lbool r = minimizeCore(*S,assumptions,opt_pre);
+	assert(assumptions.size()<=n_lits);
+	//store the minimized conflict back in the unsat assumptions pointer
+	for(int i = 0;i<assumptions.size();i++){
+		unsat_assumptions[i]=toInt(assumptions[i]);
+	}
+	d->last_solution_optimal=r!=l_Undef;
+	if(r!=l_True){
+		d->has_conflict_clause_from_last_solution=true;
+		S->conflict.clear();
+		//store the minimized conflict back in the solvers conflict set
+		for(int i = 0;i<assumptions.size();i++){
+			assert(assumptions[i]!=lit_Undef);
+			S->conflict.insert(~assumptions[i]);
+		}
+	}else{
+		d->has_conflict_clause_from_last_solution=false;
+	}
+	if (opt_verb >= 1) {
+		printStats(S);
+
+	}
+	APISignal::disableResourceLimits();
+	return assumptions.size();
+}
+
+void minimizeConflictClause(Monosat::SimpSolver * S){
+	MonosatData * d = (MonosatData*) S->_external_data;
+	if(d && d->has_conflict_clause_from_last_solution){
+		vec<int> assumptions;
+		for(Lit l:S->conflict){
+			assumptions.push(toInt(~l));
+		}
+		int size = minimizeUnsatCore(S,&assumptions[0],assumptions.size());
+		assert(size<=assumptions.size());
+		assert(S->conflict.size()==size);
+	}
+}
+
 
 void readGNF(Monosat::SimpSolver * S, const char  * filename){
 	bool precise = true;

@@ -504,6 +504,7 @@ public:
 	Lit True(){
 
 		if(const_true==lit_Undef){
+			cancelUntil(0);
 			//try using the first assigned const literal
 			/*if (trail.size()>0){
 				Lit l = trail[0];
@@ -513,6 +514,7 @@ public:
 			}else{*/
 			const_true=mkLit(newVar(false,false));
 			addClause(const_true);
+			assert(isConstantTrue(const_true));
 			//}
 		}
 
@@ -1047,6 +1049,9 @@ public:
 
 	bool isConstant(Var v)const{
 		return value(v)!=l_Undef && (level(v)==0);
+	}
+	bool isConstantTrue(Lit l)const{
+		return value(l)==l_True && (level(var(l))==0);
 	}
 
 	// Iterate over clauses and top-level assignments:

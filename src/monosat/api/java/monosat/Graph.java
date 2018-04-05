@@ -30,12 +30,16 @@ public class Graph {
     int bitwidth = -1;
     private long graphPtr;
     private Map<String, Integer> nodeMap = new HashMap<String, Integer>();
+    private ArrayList<String> nodeNames = new ArrayList<String>();
     private Set<Integer> nodes = new HashSet<Integer>();//consider arraylist<Integer>
     private ArrayList<Map<Integer, LinkedList<Edge>>> edges = new ArrayList<>();
+    private Map<Lit,Edge> edgeLitMap = new HashMap<>();
+    private ArrayList<Edge> all_edges = new ArrayList<>();
     private ArrayList<Lit> all_edge_lits = new ArrayList<>();
     private ArrayList<ArrayList<Lit>> all_out_edge_lits = new ArrayList<>();
     private ArrayList<ArrayList<Lit>> all_in_edge_lits = new ArrayList<>();
     private ArrayList<ArrayList<Lit>> all_node_edge_lits = new ArrayList<>();
+
     public Graph(Solver solver) {
         this.solver = solver;
         graphPtr = MonosatJNI.newGraph(solver.solverPtr);
@@ -56,6 +60,14 @@ public class Graph {
         return MonosatJNI.nEdges(solver.solverPtr, graphPtr);
     }
 
+    /**
+     * Gets the name associated with a node
+     * @return
+     */
+    public String getName(int node){
+        return nodeNames.get(node);
+    }
+
     public int addNode() {
         return addNode(Integer.toString(nNodes()));
     }
@@ -72,6 +84,7 @@ public class Graph {
         edges.set(n, new TreeMap<Integer, LinkedList<Edge>>());//Consider hash map or arraylist here, depending on density of graph...
         nodes.add(n);
         nodeMap.put(name, n);
+        nodeNames.add(name);
         while(all_in_edge_lits.size()<=n){
             all_in_edge_lits.add(new ArrayList<>());
             all_out_edge_lits.add(new ArrayList<>());
@@ -131,6 +144,13 @@ public class Graph {
         return getEdge(getNode(from), getNode(to));
     }
 
+    public Edge getEdge(Lit edgeVar) {
+        if(!edgeLitMap.containsKey(edgeVar)){
+            throw new RuntimeException("Literal " + edgeVar + " does not correspond to an edge in the graph.");
+        }
+        return edgeLitMap.get(edgeVar);
+    }
+
     public List<Edge> getAllEdges(int from, int to) {
         if (!hasNode(from)) {
             throw new RuntimeException("No such node");
@@ -149,7 +169,9 @@ public class Graph {
     public Collection<Edge> getAllEdges(String from, String to) {
         return getAllEdges(getNode(from), getNode(to));
     }
-
+    public Collection<Edge> getAllEdges() {
+        return Collections.unmodifiableList(all_edges);
+    }
     public Collection<Edge> getAllEdges(int from) {
         if (!hasNode(from)) {
             throw new RuntimeException("No such node");
@@ -170,7 +192,21 @@ public class Graph {
     public Collection<Lit> getEdgeVars(){
         return Collections.unmodifiableList(all_edge_lits);
     }
-
+    /**
+     * If e is an edge f->t, and there exists an edge t->f in the graph, return the literal for such an edge.
+     * If there is no such edge, throw a RuntimeException
+     */
+    public Lit getBackEdgeVar(Lit e){
+        return getBackEdge(e).l;
+    }
+    /**
+     * If e is an edge f->t, and there exists an edge t->f in the graph, return such an edge.
+     * If there is no such edge, throw a RuntimeException
+     */
+    public Edge getBackEdge(Lit e){
+        Edge edge = getEdge(e);
+        return getEdge(edge.to,edge.from);
+    }
     /**
      * Get all outgoing and all incoming edges from this node
      * @param node
@@ -209,7 +245,10 @@ public class Graph {
             if (edge_map.get(to) == null) {
                 edge_map.put(to, new LinkedList<>());
             }
-            edge_map.get(to).add(new Edge(from, to, l, constant_weight));
+            Edge e = new Edge(from, to, l, constant_weight);
+            edge_map.get(to).add(e);
+            edgeLitMap.put(l,e);
+            all_edges.add(e);
             all_edge_lits.add(l);
             all_out_edge_lits.get(from).add(l);
             all_in_edge_lits.get(to).add(l);
@@ -229,7 +268,10 @@ public class Graph {
         if (edge_map.get(to) == null) {
             edge_map.put(to, new LinkedList<>());
         }
-        edge_map.get(to).add(new Edge(from, to, l, weight));
+        Edge e = new Edge(from, to, l, weight);
+        edge_map.get(to).add(e);
+        all_edges.add(e);
+        edgeLitMap.put(l,e);
         all_edge_lits.add(l);
         all_out_edge_lits.get(from).add(l);
         all_in_edge_lits.get(to).add(l);
@@ -246,21 +288,29 @@ public class Graph {
         if (bitwidth >= 0) {
             return addUndirectedEdge(from, to, solver.bv(bitwidth, constant_weight));
         } else {
-            Lit l = solver.toLit(MonosatJNI.newEdge(solver.solverPtr, graphPtr, from, to, constant_weight));
+            Lit l = addEdge(from,to,constant_weight);
+            Lit l2 = addEdge(to,from,constant_weight);
+            solver.assertEqual(l,l2);
+/*            Lit l = solver.toLit(MonosatJNI.newEdge(solver.solverPtr, graphPtr, from, to, constant_weight));
             Lit l2 = solver.toLit(MonosatJNI.newEdge(solver.solverPtr, graphPtr, to, from,constant_weight));
             solver.assertEqual(l,l2);
             Map<Integer, LinkedList<Edge>> edge_map = edges.get(from);
             if (edge_map.get(to) == null) {
                 edge_map.put(to, new LinkedList<>());
             }
-            edge_map.get(to).add(new Edge(from, to, l, constant_weight));
+            Edge e1 = new Edge(from, to, l, constant_weight);
+            Edge e2 = new Edge(to, from, l2, constant_weight);
+            edge_map.get(to).add(e1);
+            all_edges.add(e1);
+            allEdgeMap.put(l,e);
+            allEdgeMap.put(l2,e);
             all_edge_lits.add(l);
             all_out_edge_lits.get(from).add(l);
             all_in_edge_lits.get(to).add(l);
             all_out_edge_lits.get(to).add(l);
             all_in_edge_lits.get(from).add(l);
             all_node_edge_lits.get(from).add(l);
-            all_node_edge_lits.get(to).add(l);
+            all_node_edge_lits.get(to).add(l);*/
             return l;
         }
     }
@@ -270,21 +320,27 @@ public class Graph {
             throw new RuntimeException("In order to use bitvector edge weights, the bitwidth must be passed to the graph constructor, eg:" +
                     "Graph g = new Graph(solver, 8); will accept edges with bitvectors of size 8. Otherwise, edge weights are assumed to be constant integers.");
         }
-        Lit l = solver.toLit(MonosatJNI.newEdge_bv(solver.solverPtr, graphPtr, from, to, weight.id));
+        Lit l = addEdge(from,to,weight);
+        Lit l2 = addEdge(to,from,weight);
+        solver.assertEqual(l,l2);
+        /*Lit l = solver.toLit(MonosatJNI.newEdge_bv(solver.solverPtr, graphPtr, from, to, weight.id));
         Lit l2 = solver.toLit(MonosatJNI.newEdge_bv(solver.solverPtr, graphPtr, to, from, weight.id));
         solver.assertEqual(l,l2);
         Map<Integer, LinkedList<Edge>> edge_map = edges.get(from);
         if (edge_map.get(to) == null) {
             edge_map.put(to, new LinkedList<>());
         }
-        edge_map.get(to).add(new Edge(from, to, l, weight));
+        Edge e = new Edge(from, to, l, weight);
+        edge_map.get(to).add(e);
+        all_edges.add(e);
+        allEdgeMap.put(l,e);
         all_edge_lits.add(l);
         all_out_edge_lits.get(from).add(l);
         all_in_edge_lits.get(to).add(l);
         all_out_edge_lits.get(to).add(l);
         all_in_edge_lits.get(from).add(l);
         all_node_edge_lits.get(from).add(l);
-        all_node_edge_lits.get(to).add(l);
+        all_node_edge_lits.get(to).add(l);*/
         return l;
     }
 
@@ -517,6 +573,48 @@ public class Graph {
         }
         return store;
     }
+    /**
+     * Prints out a graphviz/.dot formatted representation of this graph
+     * @return
+     */
+    public String draw(boolean showModel, boolean showConstants){
+        if(showModel && !solver.hasModel()) {
+            showModel= false;//there is no model, show all edges
+        }
+        StringBuilder w = new StringBuilder();
+        w.append("digraph{\n");
+        for(int n= 0;n<nNodes();n++){
+            w.append("n"+Integer.toString(n) + " [label=\""+getName(n) + "\"]\n");
+        }
+        LBool defaulValue=LBool.Undef;
+
+        for (Edge e:getAllEdges()){
+            w.append("n"+Integer.toString(e.from) + "->" + "n"+Integer.toString(e.to) + "[label=\""+e.l.toString() + "\"");
+            if(showModel || showConstants){
+                LBool possibleValue = solver.getPossibleValue(e.l);
+                long weight = e.getWeight();
+                if (possibleValue==LBool.False){
+                    w.append(",color=white");
+                }else if (possibleValue==LBool.Undef && showModel){
+                    w.append(",color=gray,style=dashed");
+                }else{
+                    w.append(",color=black");
+                }
+            }else{
+
+            }
+            w.append("]\n");
+        }
+        w.append("\n}\n");
+        return w.toString();
+    }
+
+    public String draw(){
+        return draw(true,true);
+    }
+    public String draw(boolean showModel){
+        return draw(showModel,true);
+    }
 
     public class Edge {
         public int from;
@@ -551,10 +649,10 @@ public class Graph {
             }
             return bv;
         }
-
         public long getWeight() {
             if (hasBV()) {
-                throw new RuntimeException("Attempt to access constant weight on edge with bitvector weight");
+                return getBV().value();
+                //throw new RuntimeException("Attempt to access constant weight on edge with bitvector weight");
             }
             assert (weight >= 0);
             return weight;

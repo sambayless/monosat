@@ -52,6 +52,10 @@ cdef extern from "monosat/api/Monosat.h":
 
     int getConflictClause(SolverPtr S, int* store_clause, int max_store_size)
 
+    int minimizeUnsatCore(SolverPtr S, int * unsat_assumptions, int n_lits)
+
+    void minimizeConflictClause(SolverPtr S)
+
     void backtrack(SolverPtr S)
 
     int newVar(SolverPtr S)

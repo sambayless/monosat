@@ -215,6 +215,11 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.getConflictClause.argtypes=[c_solver_p, c_int_p,c_int]
             self.monosat_c.getConflictClause.restype=c_int
 
+            self.monosat_c.minimizeUnsatCore.argtypes=[c_solver_p, c_int_p,c_int]
+            self.monosat_c.minimizeUnsatCore.restype=c_int
+
+            self.monosat_c.minimizeConflictClause.argtypes=[c_solver_p]
+
             self.monosat_c.setTimeLimit.argtypes=[c_solver_p,c_int]
             self.monosat_c.setMemoryLimit.argtypes=[c_solver_p,c_int]
             self.monosat_c.setConflictLimit.argtypes=[c_solver_p,c_int]
@@ -624,7 +629,16 @@ class Monosat(metaclass=Singleton):
         
         return self.intArrayToList(conflict_ptr,conflict_size)
 
+    def minimizeUnsatCore(self,assumptions):
+        lp = self.getIntArray(assumptions)
 
+        core_size =  self.monosat_c.minimizeUnsatCore(self.solver._ptr,lp,len(assumptions))
+        assert(core_size>=0);
+        assert(core_size<=len(assumptions))
+        return self.intArrayToList(lp,core_size)
+
+    def minimizeConflictClause(self):
+        self.monosat_c.minimizeConflictClause(self.solver._ptr)
 
     def solve(self,assumptions=None):
         self.backtrack()

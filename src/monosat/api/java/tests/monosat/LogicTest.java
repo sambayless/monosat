@@ -23,6 +23,8 @@ package monosat;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -470,5 +472,44 @@ public class LogicTest {
         assertEquals(Logic.solve(Logic.not(b)), true);
     }
 
+    @Test
+    public void test_unsatCore() {
+        Logic.newSolver();
+        Lit a = Logic.newLit();
+        Lit b = Logic.newLit();
+        Lit c = Logic.newLit();
+        Lit d = Logic.newLit();
+        Lit x = Logic.equal(a, b);
+        Lit y = Logic.equal(b, c.negate());
+        Lit z = Logic.equal(c, a);
+        Lit w = Logic.equal(b, d.negate());
+        Lit q = Logic.equal(d, a);
+        assertEquals(Logic.solve(), true);
+        assertEquals(Logic.solve(x, y,z,w,q), false);
+        ArrayList<Lit> conflict = Logic.getConflictClause();
+        assertEquals(conflict.isEmpty(),false);
+        ArrayList<Lit> test = new ArrayList<>();
+        for(Lit l:conflict){
+            assert(!l.sign());
+            test.add(l.negate());
+        }
+        assertEquals(Logic.solve(test), false);
 
+        assertEquals(Logic.solve(x, y,z,w,q), false);
+        ArrayList<Lit> conflict2 = Logic.getConflictClause(true);
+        assertEquals(conflict2.isEmpty(),false);
+        assertEquals(conflict2.size()<=conflict.size(), true);
+        ArrayList<Lit> test2 = new ArrayList<>();
+        for(Lit l:conflict2){
+            assert(!l.sign());
+            test2.add(l.negate());
+        }
+        assertEquals(Logic.solve(test2), false);
+        assertEquals(Logic.solve(), true);
+
+        ArrayList<Lit> conflict3 = Logic.minimizeUnsatCore(x, y,z,w,q);
+        assertEquals(conflict3.isEmpty(),false);
+        assertEquals(conflict3.size()<=3, true);
+        assertEquals(Logic.solve(), true);
+    }
 }

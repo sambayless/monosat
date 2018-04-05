@@ -1632,5 +1632,141 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 	resetDecisionPriority(S,old_decision_priority);
 
 }
+
+//Reduce the given assumptions to a (locally) minimal unsat core, if they are mutually unsat.
+//Returns l_False if this method succeeds in reducing the assumptions to a provably minimal unsat core (the resulting unsat core will
+// be stored in the supplied assumptions vector).
+//Returns l_True if the assumptions are satisfiable.
+//Returns l_Undef if solve time constraints prevent the assumptions from being reduced to a provably locally minimal unsat core
+lbool minimizeCore(SimpSolver & S,vec<Lit> & assumptions,bool do_simp){
+
+	static int solve_runs=0;
+	solve_runs++;
+	if(opt_verb>=1 || opt_verb_optimize>=1){
+		if(solve_runs>1){
+			printf("Solving(%d)...\n",solve_runs);
+		}else{
+			printf("Solving...\n");
+		}
+		fflush(stdout);
+	}
+
+	if (opt_verb > 1 && assumptions.size()) {
+		printf("Assumptions: ");
+		for (int i = 0; i < assumptions.size(); i++) {
+			Lit l = assumptions[i];
+			printf("%d, ", dimacs(l));
+		}
+		printf("\n");
+	}
+	Lit trueLit = S.True();
+	//initial solve call
+	lbool r =  S.solveLimited(assumptions,opt_pre && do_simp, !opt_pre && do_simp);
+	if (r!=l_False){
+		return r;
+	}
+
+	//initially, remove any duplicate or trivially true literals
+	LSet seen;
+	{
+		int i,j=0;
+		for (i = 0; i < assumptions.size(); i++) {
+			Lit l = assumptions[i];
+			if(l==lit_Undef || S.isConstantTrue(l) || seen.has(l)){
+				//remove l
+			}else{
+				seen.insert(l);
+				assumptions[j++]=assumptions[i];
+			}
+		}
+		assumptions.shrink(i-j);
+	}
+
+	vec<Lit> potential_removals;
+	assumptions.copyTo(potential_removals);
+	reverse(potential_removals);
+	//consider sorting this by some priority, or randomizing...
+	//randomShuffle(S.random_seed,potential_removals);
+
+	LSet dont_retry;//literals that cannot be removed are added to kept
+	LSet unprovables;//literals that could not be proven to be required in the set, due to resource limitations in the solver
+	while(potential_removals.size()) {
+
+		if(r==l_False) {
+			//remove any literals from assumptions that are no longer in the conflict
+			int i, j = 0;
+			for (i = 0; i < assumptions.size(); i++) {
+				assert(assumptions[i] != lit_Undef);
+				if (assumptions[i] == trueLit || !S.conflict.contains(~assumptions[i])) {
+					//this assumption can be removed
+					if (assumptions[i] != trueLit) {
+						//this literal is removed from the assumptions, so don't try to remove it again.
+						dont_retry.insert(assumptions[i]);
+					}
+				} else {
+					assumptions[j++] = assumptions[i];
+				}
+			}
+			assumptions.shrink(i - j);
+		}
+		int removal_pos = -1;
+		Lit potential_removal = lit_Undef;
+		while(potential_removal==lit_Undef && potential_removals.size()) {
+			potential_removal = potential_removals.last();
+			potential_removals.pop();
+			if(dont_retry.contains(potential_removal)){
+				potential_removal = lit_Undef;
+			}else{
+				//consider replacing this loop with some sort of map from literals to indices
+				for(int i = 0;i<assumptions.size();i++){
+					if(assumptions[i]==potential_removal){
+						removal_pos = i;
+						//temporarily replace this assumption with the true literal, to make it trivially sat
+						assumptions[i]=trueLit;
+						break;
+					}
+				}
+				if(removal_pos<0){
+					potential_removal = lit_Undef;
+				}
+			}
+		}
+		if(potential_removal==lit_Undef){
+			break;//couldn't remove anything further.
+		}
+		solve_runs++;
+		if (opt_verb >= 2 || opt_verb_optimize>=2) {
+			printf("Solving %d\n",solve_runs);
+		}
+		r =  S.solveLimited(assumptions,false,false);
+		if(r!=l_False) {
+			//this literal could not be removed
+			//will never try removing it directly again, though if
+			//r==l_Undef (the solver quit early), we may get lucky and l may be removed in a later call
+			dont_retry.insert(potential_removal);
+			assert(removal_pos>=0);
+			assert(assumptions[removal_pos]==trueLit);
+			assumptions[removal_pos] = potential_removal;//put the literal back into the assumptions
+		}
+		if(r==l_Undef){
+			unprovables.insert(potential_removal);//we couldn't prove this literal must be kept in the set
+		}
+	}
+	bool any_unprovable = false;
+	for(Lit l:assumptions){
+		if(unprovables.contains(l)){
+			any_unprovable=true;
+			break;
+		}
+	}
+	if(any_unprovable){
+		//the assumption set contains some literals that we could not prove are required, due to resource limitations in the solver
+		return l_Undef;
+	}else{
+		return l_False;
+	}
+}
+
+
 };
 #endif /* OPTIMIZE_CPP_ */

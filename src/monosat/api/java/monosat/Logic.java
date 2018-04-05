@@ -23,6 +23,7 @@ package monosat;
 
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -92,7 +93,36 @@ public final class Logic {
         return getSolver().solve(assumptions);
     }
 
+    public static ArrayList<Lit> getConflictClause(){
+        return getConflictClause(false);
+    }
 
+    /**
+     * If the last solve call was UNSAT due to one or more assumption literals,
+     * this method returns a subset of those assumption literals that are sufficient to keep make the instance UNSAT.
+     * @param minimize If true, a (possibly expensive) search will be applied in the solver to find a locally minimal set of
+     * literals that are mutually UNSAT. Else, an inexpensive, best effort set of literals will be returned.
+     * @return
+     */
+    public static ArrayList<Lit> getConflictClause(boolean minimize){
+        return getSolver().getConflictClause(minimize);
+    }
+
+    /**
+     * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
+     * (leaves the original set intact if the literals are not mutualy UNSAT)
+     */
+    public static ArrayList<Lit> minimizeUnsatCore(Collection<Lit> literals){
+        return getSolver().minimizeUnsatCore(literals);
+    }
+
+    /**
+     * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
+     * (leaves the original set intact if the literals are not mutualy UNSAT)
+     */
+    public static ArrayList<Lit> minimizeUnsatCore(Lit... literals){
+        return getSolver().minimizeUnsatCore(Arrays.asList(literals));
+    }
     //Literal level constructs
     public static Lit ite(Lit condition, Lit then, Lit els) {
         Solver solver = getSolver();
@@ -129,6 +159,9 @@ public final class Logic {
         return getSolver().xnor(args);
     }
 
+    public static Lit equal(Lit... args) {
+        return getSolver().xnor(args);
+    }
     //Assertion forms.
     public static void assertTrue(Lit a) {
         getSolver().assertTrue(a);

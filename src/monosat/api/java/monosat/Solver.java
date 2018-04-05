@@ -21,6 +21,8 @@
 
 package monosat;
 
+import com.sun.xml.internal.bind.v2.model.util.ArrayInfoUtil;
+
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -414,8 +416,22 @@ public class Solver implements Closeable {
     /**
      * If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
      */
-    public ArrayList<Lit> getConflictClause(ArrayList<Lit> store) {
-        store.clear();
+    public ArrayList<Lit> getConflictClause(){
+        return getConflictClause(false);
+    }
+
+    /**
+     * If the last solve call was UNSAT due to one or more assumption literals,
+     * this method returns a subset of those assumption literals that are sufficient to keep make the instance UNSAT.
+     * @param minimize If true, a (possibly expensive) search will be applied in the solver to find a locally minimal set of
+     * literals that are mutually UNSAT. Else, an inexpensive, best effort set of literals will be returned.
+     * @return
+     */
+    public ArrayList<Lit> getConflictClause(boolean minimize) {
+        ArrayList<Lit> store = new ArrayList<Lit>();
+        if(minimize){
+            minimizeConflictClause();
+        }
 
         //If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
         //Fills the given pointer with the first max_store_size literals of the conflict clause, and returns the number of literals in the conflict clause. Set store_clause to null and max_store_size to 0 to find the size of the conflict clause
@@ -432,13 +448,6 @@ public class Solver implements Closeable {
         return store;
     }
 
-    public ArrayList<Lit> getConflictClause() {
-        ArrayList<Lit> store = new ArrayList<Lit>();
-        getConflictClause(store);
-        return store;
-    }
-
-    //Optimization API
 
     //Backtrack the solver to level 0
     void backtrack() {
@@ -461,6 +470,54 @@ public class Solver implements Closeable {
         } else {
             return l;
         }
+    }
+
+
+    //Optimization API
+
+
+    /**
+     * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
+     * (leaves the original set intact if the literals are not mutualy UNSAT)
+     */
+    public ArrayList<Lit> minimizeUnsatCore(Lit... literals){
+        return minimizeUnsatCore(Arrays.asList(literals));
+    }
+    /**
+     * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
+     * (leaves the original set intact if the literals are not mutualy UNSAT)
+     */
+    public ArrayList<Lit> minimizeUnsatCore(Collection<Lit> assumptions) {
+        ArrayList<Lit> store = new ArrayList<Lit>();
+        IntBuffer buf = getLitBuffer(assumptions);
+        int core_size = MonosatJNI.minimizeUnsatCore(solverPtr,buf,assumptions.size());
+        assert(core_size>=0);
+        assert(core_size<=assumptions.size());
+      //  assumptions.clear();
+        for (int i = 0; i < core_size; i++) {
+            int l = buf.get(i);
+            Lit lit = toLit(l);
+            store.add(lit);
+        }
+        return store;
+    }
+
+
+
+    /**
+     * After UNSAT solve calls with assumptions, the solver will find a 'conflict clause' consisting of a subset of the assumptions
+     //which are sufficient to make the solver UNSAT (see getConflictClause).
+     Normally, the conflict clause is produced as a side effect of proving the query unsat, with the solver only removing literals
+     from the conflict clause on a best effort basis.
+     This method will make repeated (and potentially expensive) calls to the SAT solver to attempt to remove further literals from
+     the conflict clause.
+     Afterward, the conflict clause can be obtained using getConflictClause().
+     NOTE: this function may be expensive, is not required to get a conflict clause; getConflictClause() can be used after any UNSAT call with assumptions, even
+     without calling minimizeConflictClause().
+     Note also that if any of the setXXXXXLimits() are applied to the solver, this may not produce a locally minimal conflict clause.
+     */
+    private void minimizeConflictClause(){
+        MonosatJNI.minimizeConflictClause(solverPtr);
     }
 
     public void clearOptimizationObjectives() {
@@ -567,6 +624,22 @@ public class Solver implements Closeable {
     }
 
     /**
+     * Clear the current satisfying model in the solver (if any), while preserving the current constraints.
+     * There is normally no need to manually call restart(), as this is called automatically before calling solve().
+     */
+    public void restart(){
+        MonosatJNI.backtrack(solverPtr);
+    }
+
+    /**
+     * True if the solver has a satisfying model to its constraints
+     * @return
+     */
+    public boolean hasModel(){
+        return MonosatJNI.hasModel(solverPtr);
+    }
+
+    /**
      * Query the model in the solver, throwing an exception if the literal is unassigned in the model.
      * This can happen only if the literal is not a decision literal.
      */
@@ -596,13 +669,25 @@ public class Solver implements Closeable {
      * Unassigned literals will have the value LBool.Undef;
      */
     public LBool getPossibleValue(Lit l) {
-        l.validate();
-        if (!MonosatJNI.hasModel(solverPtr)) {
-            throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
-        }
-        return LBool.toLbool(MonosatJNI.getModel_Literal(solverPtr, l.l));
+        return getPossibleValue(l,LBool.Undef);
     }
 
+    /**
+     * After a solve call, non-decision literals may or may not be assigned to a value.
+     * Unassigned literals will have the value defaultValue
+     */
+    public LBool getPossibleValue(Lit l, LBool defaultValue) {
+        l.validate();
+        /*if (!MonosatJNI.hasModel(solverPtr)) {
+            throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
+        }*/
+        LBool val = LBool.toLbool(MonosatJNI.getModel_Literal(solverPtr, l.l));
+        if (val==LBool.Undef){
+            return defaultValue;
+        }else{
+            return val;
+        }
+    }
     /**
      * Return the value of this bitvector from the solver.
      * Sometimes, a range of values may be determined by the solver to be satisfying.

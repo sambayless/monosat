@@ -63,6 +63,18 @@ def getConflictClause():
             vars.append(Var(v))
         return vars
 
+def minimizeUnsatCore(self,assumptions):
+    assumption_ints = [a.lit for a in assumptions]
+    conf_clause = Monosat().minimizeUnsatCore(assumption_ints)
+    assert(conf_clause is not None)
+    vars = []
+    for v in conf_clause:
+        vars.append(Var(v))
+    return vars
+
+def minimizeConflictClause(self):
+    Monosat().minimizeConflictClause()
+
 #optimization support
 def clearOptimizationObjectives():
     Monosat().clearOptimizationObjectives()

@@ -83,6 +83,27 @@ public class MonosatJNI {
     //Returns -1 if the solver has no conflict clause from the most recent solve() call (because that call was not UNSAT)
     public native static int getConflictClause(long solverPtr, IntBuffer store_clause, int length);
 
+  //Reduce the given set of mutually UNSAT assumptions into a (locally) minimal-sized set of assumptions that are still UNSAT.
+  //If the assumptions are not UNSAT, this method does returns -1.
+  //Else, it returns the number of literals in the unsat core, which it will also store in the first number_literals
+  //entries in unsat_assumptions
+  //Note: This method will make repeated (and potentially expensive) calls to the SAT solver to attempt to remove literals from the
+  //set of assumptions.
+  //Note also that if any of the setXXXXXLimits() are applied to the solver, this may not produce a locally minimal unsat core.
+    public native static int minimizeUnsatCore(long solverPtr, IntBuffer unsat_assumptions, int length);
+
+  //After UNSAT solve calls with assumptions, the solver will find a 'conflict clause' consisting of a subset of the assumptions
+  //which are sufficient to make the solver UNSAT (see getConflictClause).
+  //Normally, the conflict clause is produced as a side effect of proving the query unsat, with the solver only removing literals
+  //from the conflict clause on a best effort basis.
+  //This method will make repeated (and potentially expensive) calls to the SAT solver to attempt to remove further literals from
+  //the conflict clause.
+  //Afterward, the conflict clause can be obtained using getConflictClause().
+  //NOTE: this function may be expensive, is not required to get a conflict clause; getConflictClause() can be used after any unsat call with assumptions, even
+  //without calling minimizeConflictClause().
+  //Note also that if any of the setXXXXXLimits() are applied to the solver, this may not produce a locally minimal conflict clause.
+    public native static void minimizeConflictClause(long solverPtr);
+
     public native static void backtrack(long solverPtr);
 
     public native static int newVar(long solverPtr);

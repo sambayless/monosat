@@ -359,4 +359,27 @@ public class BitVector {
         return result;
     }
 
+    /**
+     * Return the value of this bitvector from the solver.
+     * Sometimes, a range of values may be determined by the solver to be satisfying.
+     * If getMaximumValue is true, then largest value in that range will be returned,
+     * otherwise, the smallest value is returned (this is relevant if optimization queries are being performed).
+     *
+     * @param getMaximumValue
+     * @return
+     */
+    public long value(boolean getMaximumValue) {
+        return solver.getValue(this);
+    }
+
+    /**
+     * Return the value of this bitvector from the solver.
+     * Sometimes, a range of values may be determined by the solver to be satisfying.
+     * In this case, the smallest value is returned (this is relevant if optimization queries are being performed).
+     *
+     * @return
+     */
+    public long value() {
+        return this.value(false);
+    }
 }

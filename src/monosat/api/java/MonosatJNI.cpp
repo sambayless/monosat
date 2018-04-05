@@ -149,6 +149,18 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConflictClause
         return getConflictClause(solver, (int *) env->GetDirectBufferAddress(array), length);
     }
 }
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimizeUnsatCore
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array, jint length){
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return minimizeUnsatCore(solver, (int *) env->GetDirectBufferAddress(array), length);
+}
+
+
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeConflictClause
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr){
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    minimizeConflictClause(solver);
+}
 
 
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_backtrack

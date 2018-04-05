@@ -104,14 +104,44 @@ typedef int64_t Weight;
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
   //int solveAssumptionsLimited_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
+  //If the solver is operating with limits on the number of conflicts, memory usage, or runtime (see the setXXXXXLimit() methods), then optimization queries
+  //are not guaranteed to produce an optimal (or locally optimal) solution.
+  //This function returns false if the last optimization call to the solver produced a non-optimal result due to such a limit, and true otherwise.
   bool lastSolutionWasOptimal(SolverPtr S);
 
-  //If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
+  //If the last solution was UNSAT, and assumptions were enforced in the solver, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
   //Fills the given pointer with the first max_store_size literals of the conflict clause, and returns the number of literals in the conflict clause. Set store_clause to null and max_store_size to 0 to find the size of the conflict clause
   //Returns -1 if the solver has no conflict clause from the most recent solve() call (because that call was not UNSAT)
   int getConflictClause(SolverPtr S, int * store_clause, int max_store_size);
 
+  //Reduce the given set of mutually UNSAT assumptions into a (locally) minimal-sized set of assumptions that are still UNSAT.
+  //If the assumptions are not UNSAT, this method does returns -1.
+  //Else, it returns the number of literals in the unsat core, which it will also store in the first number_literals
+  //entries in unsat_assumptions
+  //Note: This method will make repeated (and potentially expensive) calls to the SAT solver to attempt to remove literals from the
+  //set of assumptions.
+  //Note also that if any of the setXXXXXLimits() are applied to the solver, this may not produce a locally minimal unsat core.
+  int minimizeUnsatCore(SolverPtr S, int * unsat_assumptions, int n_lits);
+
+  //After UNSAT solve calls with assumptions, the solver will find a 'conflict clause' consisting of a subset of the assumptions
+  //which are sufficient to make the solver UNSAT (see getConflictClause).
+  //Normally, the conflict clause is produced as a side effect of proving the query unsat, with the solver only removing literals
+  //from the conflict clause on a best effort basis.
+  //This method will make repeated (and potentially expensive) calls to the SAT solver to attempt to remove further literals from
+  //the conflict clause.
+  //Afterward, the conflict clause can be obtained using getConflictClause().
+  //NOTE: this function may be expensive, is not required to get a conflict clause; getConflictClause() can be used after any unsat call with assumptions, even
+  //without calling minimizeConflictClause().
+  //Note also that if any of the setXXXXXLimits() are applied to the solver, this may not produce a locally minimal conflict clause.
+  void minimizeConflictClause(SolverPtr S);
+
+  //Restart the solver after a solution (this will be done automatically in most circumstances, and so is not usually called)
+  //This only undoes the decisions made internally by the solver, without removing its variables or constraints.
   void backtrack(SolverPtr S);
+
+  //Create a new variable in the sat solver, and return that variable.
+  //Note: Most functions expect a literal, not a variable.
+  //To convert a variable into a literal, use varToLit(variable)
   int newVar(SolverPtr S);
   //Release this literal back to the sat solver, so that its variable can be eventually reused (after the next backtrack to 0).
   //The literal will be assigned to true in this process.

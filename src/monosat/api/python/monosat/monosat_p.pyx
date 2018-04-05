@@ -61,6 +61,9 @@ from monosat_header cimport disallowLiteralSimplification as _disallowLiteralSim
 from monosat_header cimport flushPB as _flushPB_monosat
 
 from monosat_header cimport getConflictClause as _getConflictClause_monosat
+from monosat_header cimport minimizeUnsatCore as _minimizeUnsatCore_monosat
+from monosat_header cimport minimizeConflictClause as _minimizeConflictClause_monosat
+
 from monosat_header cimport getDecisionPolarity as _getDecisionPolarity_monosat
 from monosat_header cimport getDecisionPriority as _getDecisionPriority_monosat
 from monosat_header cimport getModel_AcyclicEdgeFlow as _getModel_AcyclicEdgeFlow_monosat
@@ -667,6 +670,22 @@ def getConflictClause( S ,  store_clause ,  max_store_size ):
     cdef int _r = _getConflictClause_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)),(<int*>a.data.as_ints), (<int>max_store_size))
     py_result = <int>_r
     return py_result
+
+def minimizeUnsatCore( S ,  assumptions ,  n_lits ):
+    """Cython signature: int minimizeUnsatCore(void* S, int* assumptions, int n_lits)"""
+
+    assert isinstance(assumptions, list), 'arg assumptions wrong type'
+    assert isinstance(n_lits, (int, long)), 'arg n_lits wrong type'
+
+    cdef array.array a =  array.array('i', assumptions)
+
+    cdef int _r = _minimizeUnsatCore_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)),(<int*>a.data.as_ints), (<int>n_lits))
+    py_result = <int>_r
+    return py_result
+
+def minimizeConflictClause( S ):
+    """Cython signature: int minimizeConflictClause(void* S)"""
+    _minimizeConflictClause_monosat(<void*>pycapsule.PyCapsule_GetPointer(S,NULL));
 
 def getDecisionPolarity( S ,  v ):
     """Cython signature: bint getDecisionPolarity(void* S, int v)"""

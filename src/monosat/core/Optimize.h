@@ -98,5 +98,13 @@ int64_t optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t
 int64_t optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, int64_t & n_solves);
 
 lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const vec<Objective> & objectives, bool do_simp, bool & found_optimal);
+
+
+//Reduce the given assumptions to a (locally) minimal unsat core, if they are mutually unsat.
+//Returns l_False if this method succeeds in reducing the assumptions to a provably minimal unsat core (the resulting unsat core will
+// be stored in the supplied assumptions vector).
+//Returns l_True if the assumptions are satisfiable.
+//Returns l_Undef if solve time constraints prevent the assumptions from being reduced to a provably locally minimal unsat core
+lbool minimizeCore(SimpSolver & S,vec<Lit> & assumptions,bool do_simp=false);
 };
 #endif /* OPTIMIZE_H_ */
