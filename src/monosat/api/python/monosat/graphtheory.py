@@ -228,7 +228,7 @@ class Graph():
 
 
     def hasEdge(self,f,t):
-        return len(self.out_edge_map[f][t])>0
+        return t in self.out_edge_map[f] and len(self.out_edge_map[f][t])>0
         #for (v,u,var,weight) in self.out_edges[f]:
         #   if(u==t):
         #       return True;
