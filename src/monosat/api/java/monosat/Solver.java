@@ -549,7 +549,25 @@ public class Solver implements Closeable {
     }
 
     public void assertAtMostOne(Collection<Lit> clause) {
-        MonosatJNI.at_most_one(solverPtr, getLitBuffer(clause), clause.size());
+        //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
+        //for small numbers of variables, consider using a direct CNF encoding instead
+
+        if(clause.size()<=6){
+            //make this constant configurable in the future
+            //for small enough sets of literals, directly instantiate the binary clauses constraining them
+            //rather than introduce an amo theory
+            MonosatJNI.AssertAMO(solverPtr,getLitBuffer(clause),clause.size());
+        }else{
+            //workaround for internal limitations in monosat which require the
+            //amo constraints to operate only on variables (not literals), which must also not have been used elsewhere
+            ArrayList<Integer> vars = new ArrayList<Integer>();
+            for(Lit l:clause){
+                Lit l2 = newLit(false);
+                assertEqual(l,l2);
+                vars.add(l2.toVar());
+            }
+            MonosatJNI.at_most_one(solverPtr, getIntBuffer(vars,0), clause.size());
+        }
     }
 
     public void assertPB(Collection<Lit> clause,  Comparison c, int compareTo) {

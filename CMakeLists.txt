@@ -346,7 +346,13 @@ if (JAVA)
     endif()
     include_directories(${JNI_INCLUDE_DIRS})
 
+    set(CMAKE_JNI_TARGET TRUE)
+    add_jar(monosat_jar ${JAVA_SOURCE_FILES} OUTPUT_NAME monosat)
+    get_target_property(_jarFile monosat_jar JAR_FILE)
+    get_target_property(_classDir monosat_jar CLASSDIR)
 
+    message(STATUS "Monosat jar file ${_jarFile}")
+    message(STATUS "Monosat Java Classes compiled to ${_classDir}")
 
 else()
     message(STATUS "Compiling wihtout library support for Java. To enable Java support, set -DJAVA=ON")
@@ -504,13 +510,7 @@ install(DIRECTORY src/monosat DESTINATION include
         PATTERN Win64SharedLibrary EXCLUDE)
 
 if (JAVA)
-    set(CMAKE_JNI_TARGET TRUE)
-    add_jar(monosat_jar ${JAVA_SOURCE_FILES} OUTPUT_NAME monosat)
-    get_target_property(_jarFile monosat_jar JAR_FILE)
-    get_target_property(_classDir monosat_jar CLASSDIR)
 
-    message(STATUS "Monosat jar file ${_jarFile}")
-    message(STATUS "Monosat Java Classes compiled to ${_classDir}")
     #set(JAVA_LIB_INSTALL_DIR /usr/${CMAKE_INSTALL_LIBDIR}/java)
     install_jar(monosat_jar ${CMAKE_INSTALL_FULL_LIBDIR})
     message(STATUS "Installing jar to ${CMAKE_INSTALL_FULL_LIBDIR}")
