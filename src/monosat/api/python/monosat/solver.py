@@ -52,8 +52,12 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
         print("MonoSAT found a satisfying solution, but it might not be optimal (due to a time or memory limit)")
 
     return r
-#If the most recent solve() call was UNSAT, returns a
-def getConflictClause():
+#If the most recent solve() call was UNSAT, returns a (negated) subset of the assumptions, at least one of which must be
+#true in any satisfying solution.
+#If minimize is true, the solver will expend effort trying to find a locally minimla subest
+def getConflictClause(minimize=False):
+    if(minimize):
+        Monosat().minimizeConflictClause()
     conf_clause = Monosat().getConflictClause()
     if conf_clause is None:
         return None
@@ -72,8 +76,6 @@ def minimizeUnsatCore(self,assumptions):
         vars.append(Var(v))
     return vars
 
-def minimizeConflictClause(self):
-    Monosat().minimizeConflictClause()
 
 #optimization support
 def clearOptimizationObjectives():

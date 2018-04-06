@@ -226,6 +226,10 @@ public final class Logic {
         return getSolver().xnor(elements);
     }
 
+    public static Lit implies(Lit a, Lit b){
+        return getSolver().implies(a,b);
+    }
+
     //assertion forms
     public static void assertAnd(Collection<Lit> elements) {
         getSolver().assertAnd(elements);

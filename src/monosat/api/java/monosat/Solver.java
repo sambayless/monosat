@@ -21,8 +21,6 @@
 
 package monosat;
 
-import com.sun.xml.internal.bind.v2.model.util.ArrayInfoUtil;
-
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -911,6 +909,9 @@ public class Solver implements Closeable {
     public Lit xnor(Collection<Lit> elements) {
 
         return this.toLit(MonosatJNI.Xnors(this.solverPtr, this.getLitBuffer(elements), elements.size()));
+    }
+    public Lit implies(Lit a, Lit b){
+        return or(a.negate(), b);
     }
 
     //assertion forms

@@ -57,12 +57,8 @@ class Var:
         elif self.isConstFalse():
             return "F"
         else:
-            #return str(self.getInputLiteral())
             return str(self.getLit())
-            """if(self.lit%2==0):
-                return str((self.lit>>1))
-            else:
-                return "-"+str((self.lit>>1))"""
+
         
     def getSymbol(self):
         return self.symbol

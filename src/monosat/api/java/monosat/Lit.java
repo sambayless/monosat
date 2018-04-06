@@ -101,6 +101,16 @@ final public class Lit {
         return ((l / 2) + 1) * (this.sign() ? -1 : 1);
     }
 
+    @Override
+    public String toString() {
+        if(l==-2){
+            return "Lit_Error";
+        }else if(l==-2){
+            return "Lit_Undef";
+        }
+        return "Lit" + l;
+    }
+
     /**
      * Convert the literal into a variable.
      *
