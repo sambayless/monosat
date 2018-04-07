@@ -547,7 +547,9 @@ public class Solver implements Closeable {
         assert (literals.size() == weights.size());
         MonosatJNI.minimizeWeightedLits(solverPtr, getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
     }
-
+    public void assertAtMostOne(Lit... lits) {
+        assertAtMostOne(Arrays.asList(lits));
+    }
     public void assertAtMostOne(Collection<Lit> clause) {
         //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
         //for small numbers of variables, consider using a direct CNF encoding instead

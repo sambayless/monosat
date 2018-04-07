@@ -473,6 +473,23 @@ public class LogicTest {
     }
 
     @Test
+    public void test_assertAtMostOne() {
+        Logic.newSolver();
+        Lit a = Logic.newLit();
+        Lit b = Logic.newLit();
+        Lit c = Logic.newLit();
+        Logic.assertAtMostOne(a,b,c);
+
+        assertEquals(Logic.solve(a, b), false);
+        assertEquals(Logic.solve(b, c), false);
+        assertEquals(Logic.solve(a, c), false);
+        assertEquals(Logic.solve(a, b.negate()), true);
+        assertEquals(Logic.solve(b), true);
+        assertEquals(Logic.solve(c),true);
+    }
+
+
+    @Test
     public void test_unsatCore() {
         Logic.newSolver();
         Lit a = Logic.newLit();
@@ -512,4 +529,6 @@ public class LogicTest {
         assertEquals(conflict3.size()<=3, true);
         assertEquals(Logic.solve(), true);
     }
+
+
 }

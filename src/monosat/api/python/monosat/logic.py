@@ -113,7 +113,7 @@ class Var:
             return False
         else:
             return None
- 
+
     def isConst(self):
         return self.isConstTrue() or self.isConstFalse()
     
@@ -122,7 +122,10 @@ class Var:
     
     def isConstFalse(self):
         return self.getLit()==_monosat.false()
- 
+
+    def sign(self):
+        return (self.lit%2)!=0
+
     def And(self,other):
         o=VAR(other)
         if(self.isConstFalse() or o.isConstFalse()):
@@ -439,7 +442,13 @@ def Neq(a,b):
     return Xor(a,b)
 
 #Asserting versions of these, to avoid allocating extra literals...
+def AssertTrue(*args):
+    for arg in args:
+        Assert(arg)
 
+def AssertFalse(*args):
+    for arg in args:
+        Assert(~arg)
 
 def AssertOr(*args):    
     if len(args)==0:

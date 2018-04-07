@@ -8,7 +8,7 @@ def FoundOptimal():
     return Monosat().lastSolutionWasOptimal();
 class SolveException(Exception):
     pass
-def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_seconds=None, memory_limit_mb=None,conflict_limit=None):
+def Solve(*assumptions, preprocessing=True,bvs_to_minimize=None,time_limit_seconds=None, memory_limit_mb=None,conflict_limit=None):
     WriteConstraints()
     if time_limit_seconds is None or time_limit_seconds <=0:
         time_limit_seconds=-1
@@ -26,10 +26,17 @@ def Solve(assumptions=None, preprocessing=True,bvs_to_minimize=None,time_limit_s
     print("Solving in Monosat...")
     t = time.clock()
 
+
     if isinstance(assumptions,Var):
         assumptions=[assumptions]
     elif assumptions is None:
         assumptions = []
+    elif len(assumptions)==1 and not isinstance(assumptions[0],Var):
+        try:
+            if len(assumptions[0])!=None:
+                assumptions = assumptions[0]
+        except:
+            pass
             
     if isinstance(bvs_to_minimize,BitVector):
         bvs_to_minimize=[bvs_to_minimize]
@@ -67,7 +74,7 @@ def getConflictClause(minimize=False):
             vars.append(Var(v))
         return vars
 
-def minimizeUnsatCore(self,assumptions):
+def minimizeUnsatCore(assumptions):
     assumption_ints = [a.lit for a in assumptions]
     conf_clause = Monosat().minimizeUnsatCore(assumption_ints)
     assert(conf_clause is not None)

@@ -381,6 +381,9 @@ public final class Logic {
         getSolver().assertAtMostOne(clause);
     }
 
+    public static void assertAtMostOne(Lit... lits) {
+        getSolver().assertAtMostOne(lits);
+    }
     public static void assertPB(Collection<Lit> clause, Comparison c, int compareTo) {
         getSolver().assertPB(clause,c,compareTo);
     }
