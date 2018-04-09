@@ -65,6 +65,7 @@ public class Graph {
      * @return
      */
     public String getName(int node){
+        validateNode(node);
         return nodeNames.get(node);
     }
 
@@ -102,7 +103,8 @@ public class Graph {
         return nodeMap.containsKey(name);
     }
 
-    public boolean hasNode(Integer n) {
+    public boolean hasNode(int n) {
+        validateNode(n);
         return nodes.contains(n);
     }
 
@@ -207,22 +209,28 @@ public class Graph {
         Edge edge = getEdge(e);
         return getEdge(edge.to,edge.from);
     }
+    private void validateNode(int node){
+        if (node<0 || node>=nNodes()){
+            throw new RuntimeException("Node " + node + " does not exist");
+        }
+    }
     /**
      * Get all outgoing and all incoming edges from this node
      * @param node
      * @return
      */
     public Collection<Lit> getEdgeVars(int node){
-        assert(node>=0);
+        validateNode(node);
+
         return Collections.unmodifiableList(all_node_edge_lits.get(node));
     }
 
     public Collection<Lit> getOutgoingEdgeVars(int node){
-        assert(node>=0);
+        validateNode(node);
         return Collections.unmodifiableList(all_out_edge_lits.get(node));
     }
     public Collection<Lit> getIncomingEdgeVars(int node){
-        assert(node>=0);
+        validateNode(node);
         return Collections.unmodifiableList(all_in_edge_lits.get(node));
     }
 
@@ -237,6 +245,8 @@ public class Graph {
     }
 
     public Lit addEdge(int from, int to, long constant_weight) {
+        validateNode(from);
+        validateNode(to);
         if (bitwidth >= 0) {
             return addEdge(from, to, solver.bv(bitwidth, constant_weight));
         } else {
@@ -259,6 +269,8 @@ public class Graph {
     }
 
     public Lit addEdge(int from, int to, BitVector weight) {
+        validateNode(from);
+        validateNode(to);
         if (this.bitwidth < 0) {
             throw new RuntimeException("In order to use bitvector edge weights, the bitwidth must be passed to the graph constructor, eg:" +
                     "Graph g = new Graph(solver, 8); will accept edges with bitvectors of size 8. Otherwise, edge weights are assumed to be constant integers.");
@@ -285,6 +297,8 @@ public class Graph {
     }
 
     public Lit addUndirectedEdge(int from, int to, long constant_weight) {
+        validateNode(to);
+        validateNode(from);
         if (bitwidth >= 0) {
             return addUndirectedEdge(from, to, solver.bv(bitwidth, constant_weight));
         } else {
@@ -316,6 +330,8 @@ public class Graph {
     }
 
     public Lit addUndirectedEdge(int from, int to, BitVector weight) {
+        validateNode(to);
+        validateNode(from);
         if (this.bitwidth < 0) {
             throw new RuntimeException("In order to use bitvector edge weights, the bitwidth must be passed to the graph constructor, eg:" +
                     "Graph g = new Graph(solver, 8); will accept edges with bitvectors of size 8. Otherwise, edge weights are assumed to be constant integers.");
@@ -369,10 +385,14 @@ public class Graph {
     }
 
     public Lit reaches(int from, int to) {
+        validateNode(from);
+        validateNode(to);
         return solver.toLit(MonosatJNI.reaches(solver.solverPtr, graphPtr, from, to));
     }
 
     public Lit compareDistance(int from, int to, long compareTo, Comparison comparison) {
+        validateNode(from);
+        validateNode(to);
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.shortestPath_lt_const(solver.solverPtr, graphPtr, from, to, compareTo)).negate();
@@ -397,6 +417,8 @@ public class Graph {
     }
 
     public Lit compareDistance(int from, int to, BitVector compareTo, Comparison comparison) {
+        validateNode(from);
+        validateNode(to);
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.shortestPath_lt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).negate();
@@ -425,6 +447,8 @@ public class Graph {
     }
 
     public BitVector distance(int from, int to, int bitwidth) {
+        validateNode(from);
+        validateNode(to);
         if (bitwidth < 0) {
             //compute a 'large enough' bitwidth to hold the maximum possible distance
             bitwidth = 8;//temporary
@@ -450,6 +474,8 @@ public class Graph {
      * @return
      */
     public Lit compareMaximumFlow(int from, int to, long compareTo, Comparison comparison) {
+        validateNode(from);
+        validateNode(to);
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.maximumFlow_geq(solver.solverPtr, graphPtr, from, to, compareTo));
@@ -483,6 +509,8 @@ public class Graph {
      * @return
      */
     public Lit compareMaximumFlow(int from, int to, BitVector compareTo, Comparison comparison) {
+        validateNode(from);
+        validateNode(to);
         switch (comparison) {
             case GEQ:
                 return solver.toLit(MonosatJNI.maximumFlow_geq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id));
@@ -520,6 +548,8 @@ public class Graph {
      * @return
      */
     public BitVector maximumFlow(int from, int to, int bitwidth) {
+        validateNode(from);
+        validateNode(to);
         if (bitwidth < 0) {
             //compute a 'large enough' bitwidth to hold the maximum possible flow
             bitwidth = 8;//temporary
