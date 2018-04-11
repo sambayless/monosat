@@ -21,7 +21,7 @@
 
 package monosat;
 import monosat.Logic;
-
+import monosat.Solver;
 /**
  * Literals are integers in the rance 0..nVars()*2
  * Literals come in pairs; positive literals are even, negative literals are odd.
@@ -34,42 +34,49 @@ import monosat.Logic;
 final public class Lit {
     public final static Lit Undef = new Lit(-2, true);
     public final static Lit Error = new Lit(-1, true);
-    private final Lit neg; //every literal also has a pointer to its negation.
+    protected final Solver solver;
+
+    //private final Lit neg; //every literal also has a pointer to its negation.
     //The value of this literal
     protected int l = -2;
 
-    /**
+/*
+    *//**
      * Typically, users will create literals using Solver.newLit(), rather than constructing them directly.
-     */
-    protected Lit() {
+     *//*
+    protected Lit(Solver solver) {
         this.l = -2;
-        this.neg = Error;
-    }
+        this.solver=solver;
+        //this.neg = Error;
+    }*/
 
     private Lit(int lit, boolean define_literal) {
+        //used to define static lits
+        assert(lit<=0);
+        this.solver=null;
         this.l = lit;
-        neg = null;
+        //neg = null;
     }
 
-    protected Lit(int variable) {
-        assert (variable >= 0);
-        this.l = variable * 2;
-        this.neg = new Lit(l + 1, this);
+    protected Lit(Solver solver,int literal) {
+        assert (literal >= 0);
+        this.l =literal;
+        this.solver=solver;
+        //this.neg = new Lit(l + 1, this);
     }
 
-    private Lit(int l, Lit neg) {
+    public Solver getSolver(){
+        if(solver==null){
+            throw new RuntimeException("Cannot access solver for " + toString());
+        }
+        return solver;
+    }
+
+    /*private Lit(int l, Lit neg) {
         this.l = l;
         this.neg = neg;
-    }
+    }*/
 
-    /**
-     * Throws an exception if this is not a legal literal (eg, if the index is <0)
-     */
-    protected void validate() {
-        if (l < 0) {
-            throw new IllegalArgumentException("Invalid literal");
-        }
-    }
 
     /**
      * Check whether the literal has a negation sign.
@@ -81,12 +88,12 @@ final public class Lit {
     }
 
     public Lit negate() {
-        return neg;
+        return solver.not(this);
     }
 
     public Lit abs() {
         if (sign()) {
-            return neg;
+            return solver.not(this);
         } else {
             return this;
         }
@@ -136,7 +143,7 @@ final public class Lit {
      * This can happen only if the literal is not a decision literal.
      */
     public boolean value() throws RuntimeException {
-        return Logic.getSolver().getValue(this);
+        return getSolver().getValue(this);
     }
     /**
      * Query the model in the solver.
@@ -144,14 +151,14 @@ final public class Lit {
      * Else, if the literal is unassigned, defaultVal will be returned.
      */
     public boolean value(LBool defaultVal) throws RuntimeException {
-        return Logic.getSolver().getValue(this, defaultVal);
+        return getSolver().getValue(this, defaultVal);
     }
     /**
      * After a solve call, non-decision literals may or may not be assigned to a value.
      * Unassigned literals will have the value LBool.Undef;
      */
     public LBool possibleValue(){
-        return Logic.getSolver().getPossibleValue(this);
+        return getSolver().getPossibleValue(this);
     }
 
 

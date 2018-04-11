@@ -52,6 +52,10 @@ public class Graph {
         this.bitwidth = bitwidth;
     }
 
+    public Solver getSolver(){
+        return solver;
+    }
+
     public int nNodes() {
         return MonosatJNI.nNodes(solver.solverPtr, graphPtr);
     }
@@ -564,7 +568,7 @@ public class Graph {
     }
 
     public ArrayList<Integer> getPathNodes(Lit reach_or_distance_literal) {
-        reach_or_distance_literal.validate();
+        getSolver().validate(reach_or_distance_literal);
         ArrayList<Integer> store = new ArrayList<>();
         if (!MonosatJNI.hasModel(solver.solverPtr)) {
             throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
@@ -584,7 +588,7 @@ public class Graph {
     }
 
     public ArrayList<Lit> getPathEdges(Lit reach_or_distance_literal) {
-        reach_or_distance_literal.validate();
+        getSolver().validate(reach_or_distance_literal);
         if (!MonosatJNI.hasModel(solver.solverPtr)) {
             throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
         }

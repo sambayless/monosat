@@ -28,113 +28,35 @@ import java.util.Collection;
 
 /**
  * Logic provides static accessors for common logic functions.
- * It also provides a  (thread local) static solver instance (getSolver()),
- * and some methods for accessing and replacing that solver instance.
  * <p>
  * The expected use of Logic is for all methods of Logic to be statically imported:
  * import static monosat.Logic.*
- * Making these static methods available as a light-weight domain specific language.
+ * These static methods form a light-weight domain specific language.
  */
 public final class Logic {
-    private static final ThreadLocal<Solver> _solver = new ThreadLocal();
 
-    private Logic() {
-
-    }
-
-    public static Solver newSolver() {
-        setSolver(new Solver());
-        return getSolver();
-    }
-
-    public static Solver newSolver(String args) {
-        setSolver(new Solver(args));
-        return getSolver();
-    }
-
-    public static Solver getSolver() {
-        if (_solver.get() == null) {
-            newSolver();
-        }
-        return _solver.get();
-    }
-
-    public static void setSolver(Solver s) {
-        _solver.set(s);
-    }
-
-    public static Lit newLit() {
-        return newLit(true);
-    }
-
-    public static Lit newLit(boolean decidable) {
-        return getSolver().newLit(decidable);
-    }
-
-    //Note: True and False are capitalized here, to avoid name clashing with 'true' and 'false',
-    //and because they are intended to be used like static final members.
-    public static Lit True() {
-        return getSolver().True();
-    }
-
-    public static Lit False() {
-        return getSolver().False();
-    }
-
-    public static boolean solve() {
-        return getSolver().solve();
-    }
-
-    public static boolean solve(Lit... assumptions) {
-        return getSolver().solve(assumptions);
-    }
-
-    public static boolean solve(Collection<Lit> assumptions) {
-        return getSolver().solve(assumptions);
-    }
-
-    public static ArrayList<Lit> getConflictClause(){
-        return getConflictClause(false);
-    }
-
-    /**
-     * If the last solve call was UNSAT due to one or more assumption literals,
-     * this method returns a subset of those assumption literals that are sufficient to keep make the instance UNSAT.
-     * @param minimize If true, a (possibly expensive) search will be applied in the solver to find a locally minimal set of
-     * literals that are mutually UNSAT. Else, an inexpensive, best effort set of literals will be returned.
-     * @return
-     */
-    public static ArrayList<Lit> getConflictClause(boolean minimize){
-        return getSolver().getConflictClause(minimize);
-    }
-
-    /**
-     * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
-     * (leaves the original set intact if the literals are not mutualy UNSAT)
-     */
-    public static ArrayList<Lit> minimizeUnsatCore(Collection<Lit> literals){
-        return getSolver().minimizeUnsatCore(literals);
-    }
-
-    /**
-     * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
-     * (leaves the original set intact if the literals are not mutualy UNSAT)
-     */
-    public static ArrayList<Lit> minimizeUnsatCore(Lit... literals){
-        return getSolver().minimizeUnsatCore(Arrays.asList(literals));
-    }
+    //prevent instances of logic from being constructed
+    private Logic() {}
     //Literal level constructs
     public static Lit ite(Lit condition, Lit then, Lit els) {
-        Solver solver = getSolver();
+        Solver solver = condition.getSolver();
         return solver.ite(condition, then, els);
     }
 
     public static Lit and(Lit... args) {
-        return getSolver().and(args);
+        if(args.length>=0){
+            return args[0].getSolver().and(args);
+        }else{
+            throw new IllegalArgumentException("and requires at least one argument");
+        }
     }
 
     public static Lit or(Lit... args) {
-        return getSolver().or(args);
+        if(args.length>=0){
+            return args[0].getSolver().or(args);
+        }else{
+            throw new IllegalArgumentException("or requires at least one argument");
+        }
     }
 
     public static Lit not(Lit a) {
@@ -144,251 +66,357 @@ public final class Logic {
     }
 
     public static Lit nand(Lit... args) {
-        return getSolver().nand(args);
+        if(args.length>=0){
+            return args[0].getSolver().nand(args);
+        }else{
+            throw new IllegalArgumentException("nand requires at least one argument");
+        }
     }
 
     public static Lit nor(Lit... args) {
-        return getSolver().nor(args);
+        if(args.length>=0){
+            return args[0].getSolver().nor(args);
+        }else{
+            throw new IllegalArgumentException("nor requires at least one argument");
+        }
     }
 
     public static Lit xor(Lit... args) {
-        return getSolver().xor(args);
+        if(args.length>=0){
+            return args[0].getSolver().xor(args);
+        }else{
+            throw new IllegalArgumentException("xor requires at least one argument");
+        }
     }
 
     public static Lit xnor(Lit... args) {
-        return getSolver().xnor(args);
+        if(args.length>0) {
+            return args[0].getSolver().xnor(args);
+        }else{
+            throw new IllegalArgumentException("xnor requires at least one argument");
+        }
     }
 
     public static Lit equal(Lit... args) {
-        return getSolver().xnor(args);
+        if(args.length>0) {
+            return args[0].getSolver().xnor(args);
+        }else{
+            throw new IllegalArgumentException("equal requires at least one argument");
+        }
     }
     //Assertion forms.
     public static void assertTrue(Lit a) {
-        getSolver().assertTrue(a);
+        a.getSolver().assertTrue(a);
     }
 
     public static void assertFalse(Lit a) {
-        getSolver().assertFalse(a);
+        a.getSolver().assertFalse(a);
     }
 
     public static void assertAnd(Lit... args) {
-        getSolver().assertAnd(args);
+        if(args.length>0) {
+            args[0].getSolver().assertAnd(args);
+        }else{
+            throw new IllegalArgumentException("assertAnd requires at least one argument");
+        }
     }
 
     public static void assertOr(Lit... args) {
-        getSolver().assertOr(args);
+        if(args.length>0) {
+            args[0].getSolver().assertOr(args);
+        }else{
+            throw new IllegalArgumentException("assertOr requires at least one argument");
+        }
     }
 
     public static void assertNand(Lit... args) {
-        getSolver().assertNand(args);
+        if(args.length>0) {
+            args[0].getSolver().assertNand(args);
+        }else{
+            throw new IllegalArgumentException("assertNand requires at least one argument");
+        }
     }
 
     public static void assertNor(Lit... args) {
-        getSolver().assertNor(args);
+        if(args.length>0) {
+            args[0].getSolver().assertNor(args);
+        }else{
+            throw new IllegalArgumentException("assertNor requires at least one argument");
+        }
     }
 
     public static void assertXor(Lit... args) {
-        getSolver().assertXor(args);
+        if(args.length>0) {
+            args[0].getSolver().assertXor(args);
+        }else{
+            throw new IllegalArgumentException("assertXor requires at least one argument");
+        }
     }
 
     public static void assertXnor(Lit... args) {
-        getSolver().assertXnor(args);
+        if(args.length>0) {
+            args[0].getSolver().assertXnor(args);
+        }else{
+            throw new IllegalArgumentException("assertXnor requires at least one argument");
+        }
     }
 
     public static void assertEqual(Lit a, Lit b) {
-        getSolver().assertEqual(a, b);
+        a.getSolver().assertEqual(a, b);
     }
 
-    public static void assertImplies(Lit a, Lit b) {getSolver().assertImplies(a,b);}
+    public static void assertImplies(Lit a, Lit b) {a.getSolver().assertImplies(a,b);}
 
     //Multi-Literal constructs
-    public static Lit and(Collection<Lit> elements) {
-        return getSolver().and(elements);
+    public static Lit and(Collection<Lit> args) {
+        if(args.size()>0) {
+            return args.iterator().next().getSolver().and(args);
+        }else{
+            throw new IllegalArgumentException("and requires at least one argument");
+        }
     }
 
-    public static Lit or(Collection<Lit> elements) {
-        return getSolver().or(elements);
+    public static Lit or(Collection<Lit> args) {
+        if(args.size()>0) {
+            return args.iterator().next().getSolver().or(args);
+        }else{
+            throw new IllegalArgumentException("or requires at least one argument");
+        }
     }
 
-    public static Lit nand(Collection<Lit> elements) {
-        return getSolver().nand(elements);
+    public static Lit nand(Collection<Lit> args) {
+        if(args.size()>0) {
+            return args.iterator().next().getSolver().nand(args);
+        }else{
+            throw new IllegalArgumentException("nand requires at least one argument");
+        }
     }
 
-    public static Lit nor(Collection<Lit> elements) {
-        return getSolver().nor(elements);
+    public static Lit nor(Collection<Lit> args) {
+        if(args.size()>0) {
+            return args.iterator().next().getSolver().nor(args);
+        }else{
+            throw new IllegalArgumentException("nor requires at least one argument");
+        }
     }
 
-    public static Lit xor(Collection<Lit> elements) {
-        return getSolver().xor(elements);
+    public static Lit xor(Collection<Lit> args) {
+        if(args.size()>0) {
+            return args.iterator().next().getSolver().xor(args);
+        }else{
+            throw new IllegalArgumentException("xor requires at least one argument");
+        }
     }
 
-    public static Lit xnor(Collection<Lit> elements) {
-        return getSolver().xnor(elements);
+    public static Lit xnor(Collection<Lit> args) {
+        if(args.size()>0) {
+            return args.iterator().next(). getSolver().xnor(args);
+        }else{
+            throw new IllegalArgumentException("xnor requires at least one argument");
+        }
     }
 
     public static Lit implies(Lit a, Lit b){
-        return getSolver().implies(a,b);
+        return a.getSolver().implies(a, b);
     }
 
     //assertion forms
-    public static void assertAnd(Collection<Lit> elements) {
-        getSolver().assertAnd(elements);
+    public static void assertAnd(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertAnd(args);
+        }else{
+            throw new IllegalArgumentException("assertAnd requires at least one argument");
+        }
     }
 
-    public static void assertOr(Collection<Lit> elements) {
-        getSolver().assertOr(elements);
+    public static void assertOr(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertOr(args);
+        }else{
+            throw new IllegalArgumentException("assertOr requires at least one argument");
+        }
     }
 
-    public static void assertNand(Collection<Lit> elements) {
-        getSolver().assertNand(elements);
+    public static void assertNand(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertNand(args);
+        }else{
+            throw new IllegalArgumentException("assertNand requires at least one argument");
+        }
     }
 
-    public static void assertNor(Collection<Lit> elements) {
-        getSolver().assertNor(elements);
+    public static void assertNor(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertNor(args);
+        }else{
+            throw new IllegalArgumentException("assertNor requires at least one argument");
+        }
     }
 
-    public static void assertXor(Collection<Lit> elements) {
-        getSolver().assertXor(elements);
+    public static void assertXor(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertXor(args);
+        }else{
+            throw new IllegalArgumentException("assertXor requires at least one argument");
+        }
     }
 
-    public static void assertXnor(Collection<Lit> elements) {
-        getSolver().assertXnor(elements);
+    public static void assertXnor(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertXnor(args);
+        }else{
+            throw new IllegalArgumentException("assertXnor requires at least one argument");
+        }
     }
 
 
     //Bitvector constructs
     public static BitVector ite(Lit condition, BitVector then, BitVector els) {
-        return getSolver().ite(condition, then, els);
+        return condition.getSolver().ite(condition, then, els);
     }
 
     public static BitVector and(BitVector a, BitVector b) {
-        return getSolver().and(a, b);
+        return a.getSolver().and(a, b);
     }
 
     public static BitVector or(BitVector a, BitVector b) {
-        return getSolver().or(a, b);
+        return a.getSolver().or(a, b);
     }
 
     public static BitVector not(BitVector a) {
-        return getSolver().not(a);
+        return a.getSolver().not(a);
     }
 
     public static BitVector nand(BitVector a, BitVector b) {
-        return getSolver().nand(a, b);
+        return a.getSolver().nand(a, b);
     }
 
     public static BitVector nor(BitVector a, BitVector b) {
-        return getSolver().nor(a, b);
+        return a.getSolver().nor(a, b);
     }
 
     public static BitVector xor(BitVector a, BitVector b) {
-        return getSolver().xor(a, b);
+        return a.getSolver().xor(a, b);
     }
 
     public static BitVector xnor(BitVector a, BitVector b) {
-        return getSolver().xnor(a, b);
+        return a.getSolver().xnor(a, b);
     }
 
     public static BitVector add(BitVector a, BitVector b) {
-        return getSolver().add(a, b);
+        return a.getSolver().add(a, b);
     }
 
     public static BitVector subtract(BitVector a, BitVector b) {
-        return getSolver().subtract(a, b);
+        return a.getSolver().subtract(a, b);
     }
 
     public static void assertEqual(BitVector a, BitVector b) {
-        getSolver().assertEqual(a, b);
+        a.getSolver().assertEqual(a, b);
     }
 
     public static void assertEqual(BitVector a, long constant) {
-        getSolver().assertEqual(a, constant);
+        a.getSolver().assertEqual(a, constant);
     }
 
     public static void assertEqual(long constant, BitVector a) {
-        getSolver().assertEqual(constant, a);
+        a.getSolver().assertEqual(constant, a);
     }
 
     public static BitVector min(Collection<BitVector> args) {
-        return getSolver().min(args);
+        if(args.size()>0) {
+            return args.iterator().next().getSolver().min(args);
+        }else{
+            throw new IllegalArgumentException("min requires at least one argument");
+        }
     }
 
     public static BitVector min(BitVector a, BitVector b) {
-        return getSolver().min(a, b);
+        return a.getSolver().min(a, b);
     }
 
     public static BitVector max(Collection<BitVector> args) {
-        return getSolver().max(args);
+        if(args.size()>0) {
+            return args.iterator().next().getSolver().max(args);
+        }else{
+            throw new IllegalArgumentException("max requires at least one argument");
+        }
     }
 
     public static BitVector max(BitVector a, BitVector b) {
-        return getSolver().max(a, b);
-    }
-
-    /**
-     * Create a new bitvector  of the specified width, with a constant value
-     *
-     * @param width
-     * @param constant
-     * @return
-     */
-    public static BitVector bv(int width, long constant) {
-        return getSolver().bv(width, constant);
-    }
-
-    /**
-     * Create a new bitvector of the specified width.
-     *
-     * @param width
-     * @return
-     */
-    public static BitVector bv(int width) {
-        return new BitVector(getSolver(), width);
+        return a.getSolver().max(a, b);
     }
 
     //Psuedo-Boolean constraints
 
-
-    public static void clearOptimizationObjectives() {
-        getSolver().clearOptimizationObjectives();
-    }
-
     public static void maximizeBV(BitVector bv) {
-        getSolver().maximizeBV(bv);
+        bv.getSolver().maximizeBV(bv);
     }
 
     public static void minimizeBV(BitVector bv) {
-        getSolver().minimizeBV(bv);
+        bv.getSolver().minimizeBV(bv);
     }
 
-    public static void maximizeLits(Collection<Lit> literals) {
-        getSolver().maximizeLits(literals);
+    public static void maximizeLits(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().maximizeLits(args);
+        }else{
+            throw new IllegalArgumentException("maximizeLits requires at least one argument");
+        }
     }
 
-    public static void minimizeLits(Collection<Lit> literals) {
-        getSolver().minimizeLits(literals);
+    public static void minimizeLits(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().minimizeLits(args);
+        }else{
+            throw new IllegalArgumentException("minimizeLits requires at least one argument");
+        }
     }
 
     public static void maximizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
-        getSolver().maximizeWeightedLits(literals,weights);
+        if(literals.size()>0) {
+            literals.iterator().next().getSolver().maximizeWeightedLits(literals, weights);
+        }else{
+            throw new IllegalArgumentException("maximizeWeightedLits requires at least one argument");
+        }
     }
 
     public static void minimizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
-        getSolver().minimizeWeightedLits(literals,weights);
+        if(literals.size()>0) {
+            literals.iterator().next().getSolver().minimizeWeightedLits(literals, weights);
+        }else{
+            throw new IllegalArgumentException("minimizeWeightedLits requires at least one argument");
+        }
     }
 
-    public static void assertAtMostOne(Collection<Lit> clause) {
-        getSolver().assertAtMostOne(clause);
+    public static void assertAtMostOne(Collection<Lit> args) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertAtMostOne(args);
+        }else{
+            throw new IllegalArgumentException("assertAtMostOne requires at least one argument");
+        }
     }
 
-    public static void assertAtMostOne(Lit... lits) {
-        getSolver().assertAtMostOne(lits);
+    public static void assertAtMostOne(Lit... args) {
+        if(args.length>0) {
+            args[0].getSolver().assertAtMostOne(args);
+        }else{
+            throw new IllegalArgumentException("assertAtMostOne requires at least one argument");
+        }
     }
-    public static void assertPB(Collection<Lit> clause, Comparison c, int compareTo) {
-        getSolver().assertPB(clause,c,compareTo);
+    public static void assertPB(Collection<Lit> args, Comparison c, int compareTo) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertPB(args, c, compareTo);
+        }else{
+            throw new IllegalArgumentException("assertPB requires at least one argument");
+        }
     }
-    public static void assertPB(Collection<Lit> clause, Collection<Integer> weights, Comparison c, int compareTo) {
-        getSolver().assertPB(clause,weights,c,compareTo);
+    public static void assertPB(Collection<Lit> args, Collection<Integer> weights, Comparison c, int compareTo) {
+        if(args.size()>0) {
+            args.iterator().next().getSolver().assertPB(args, weights, c, compareTo);
+        }else{
+            throw new IllegalArgumentException("assertPB requires at least one argument");
+        }
     }
 
 }

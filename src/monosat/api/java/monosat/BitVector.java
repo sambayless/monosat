@@ -270,69 +270,6 @@ public class BitVector {
     }
 
     /**
-     * Return a new bitvector consisting of the bitwise NOT of this bitvector.
-     */
-    public BitVector not() {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_not(solver.solverPtr, solver.bvPtr, this.id, result.id);
-        return result;
-    }
-
-    /**
-     * Return a new bitvector consisting of the bitwise AND of this bitvector and other.
-     */
-    public BitVector and(BitVector other) {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_and(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
-        return result;
-    }
-
-    /**
-     * Return a new bitvector consisting of the bitwise NAND of this bitvector and other.
-     */
-    public BitVector nand(BitVector other) {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_nand(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
-        return result;
-    }
-
-    /**
-     * Return a new bitvector consisting of the bitwise OR of this bitvector and other.
-     */
-    public BitVector or(BitVector other) {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_or(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
-        return result;
-    }
-
-    /**
-     * Return a new bitvector consisting of the bitwise NOR of this bitvector and other.
-     */
-    public BitVector nor(BitVector other) {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_nor(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
-        return result;
-    }
-
-    /**
-     * Return a new bitvector consisting of the bitwise XOR of this bitvector and other.
-     */
-    public BitVector xor(BitVector other) {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_xor(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
-        return result;
-    }
-
-    /**
-     * Return a new bitvector consisting of the bitwise XNOR of this bitvector and other.
-     */
-    public BitVector xnor(BitVector other) {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_xnor(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
-        return result;
-    }
-
-    /**
      * Returns a Bitvector that represents the non-wrapping two's complement addition
      * of this and other. To prevent wrapping, the solver will enforce that a+b<(1<<width()).
      *
@@ -340,9 +277,7 @@ public class BitVector {
      * @return
      */
     public BitVector add(BitVector other) {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_addition(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
-        return result;
+        return solver.add(this,other);
     }
 
 
@@ -354,9 +289,7 @@ public class BitVector {
      * @return
      */
     public BitVector subtract(BitVector other) {
-        BitVector result = new BitVector(solver, width());
-        MonosatJNI.bv_subtraction(solver.solverPtr, solver.bvPtr, this.id, other.id, result.id);
-        return result;
+        return solver.subtract(this,other);
     }
 
     /**
