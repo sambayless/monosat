@@ -362,7 +362,7 @@ public:
 				}
 
 				under =0;
-				over=(1L<<bv.size())-1;
+				over= evalBit<Weight>(bv.size())-1; //evalBit<Weight>(bv.size())-1;
 				new_change=false;
 				//for(int i = 0;i<bv.size();i++){
 				for(int i = bv.size()-1;i>=0;i--){
@@ -377,7 +377,7 @@ public:
 								//propagationtime += startconftime - startproptime;
 								//this is a conflict
 								for(int j = bv.size()-1;j>=i;j--){
-									Weight bit = 1<<j;
+									Weight bit =  evalBit<Weight>(j);
 									lbool val = value(bv[j]);
 									if(val==l_True){
 										conflict.push(toSolver(~bv[j]));
@@ -402,7 +402,7 @@ public:
 								//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
 								//is this really the best way to handle this conflict?
 								for(int j = bv.size()-1;j>=i;j--){
-									Weight bit = 1<<j;
+									Weight bit =  evalBit<Weight>(j);;
 									lbool val = value(bv[j]);
 									if(val==l_False){
 										conflict.push(toSolver(bv[j]));
@@ -524,11 +524,11 @@ public:
 					break;
 				}
 			}
-			//Weight bit = 1<<bitpos;
+
 
 			assert(bitpos>=0);
 			Weight under = 0;
-			Weight over=(1L<<bv.size())-1;
+			Weight over= evalBit<Weight>(bv.size())-1;//evalBit<Weight>(bv.size())-1;
 
 			for(int i = bv.size()-1;i>=0;i--){
 				Weight bit =  evalBit<Weight>(i);
@@ -547,7 +547,7 @@ public:
 						//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
 						//is this really the best way to handle this conflict?
 						for(int j = bv.size()-1;j>=i;j--){
-							Weight bit = 1<<j;
+							Weight bit =  evalBit<Weight>(j);
 							lbool val = value(bv[j]);
 							if(val==l_False){
 								reason.push(toSolver(bv[j]));
@@ -561,7 +561,7 @@ public:
 						assert(bitpos==i);
 						//this is a conflict
 						for(int j = bv.size()-1;j>=i;j--){
-							Weight bit = 1<<j;
+							Weight bit =  evalBit<Weight>(j);;
 							lbool val = value(bv[j]);
 							if(val==l_True){
 								reason.push(toSolver(~bv[j]));
@@ -2955,7 +2955,7 @@ public:
 			Weight over_add = over_approx[aID] +  over_approx[bID];
 
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L)<<width)-1;
+			Weight max_val = evalBit<Weight>(width)-1; //evalBit<Weight>(width)-1;
 			if(under_add>max_val){
 				under_add=max_val;
 			}
@@ -3033,7 +3033,7 @@ public:
 			int aID=arg1->bvID;
 			int bID=arg2->bvID;
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = (1L<<width)-1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			//assert(aID<bvID);
 			//assert(bID<bvID);
 			Weight underadd = under_approx[aID] +  under_approx[bID];
@@ -3202,7 +3202,7 @@ public:
 			Weight over_add = over_approx[sumID] -  under_approx[other_argID];
 
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L)<<width)-1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			if(under_add>max_val){
 				under_add=max_val;
 			}
@@ -3278,7 +3278,7 @@ public:
 			int other_argID=otherOp->bvID;
 			int sumID=resultOp->bvID;
 			int width = theory.bitvectors[sumID].size();
-			Weight max_val = (1L<<width)-1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			//assert(aID<bvID);
 			//assert(bID<bvID);
 			Weight underadd = under_approx[bvID] +  under_approx[other_argID];
@@ -3879,7 +3879,7 @@ public:
 			Weight &overApprox = over_approx[bvID];
 
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L) << width) - 1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			Weight &otherUnder = under_approx[argOp->bvID];
 			Weight &otherOver = over_approx[argOp->bvID];
 
@@ -3947,7 +3947,7 @@ public:
 				int a = 1;
 			}
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L) << width) - 1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			Weight &otherUnder = under_approx[argOp->bvID];
 			Weight &otherOver = over_approx[argOp->bvID];
 
@@ -3976,7 +3976,7 @@ public:
 		void analyzeReason(bool compare_over, Comparison op, Weight to, vec<Lit> &conflict) {
 			importTheory(theory);
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L) << width) - 1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			Weight val = max_val - to;
 			theory.analyzeValueReason(~op, argOp->getBV(), val, conflict);
 		}
@@ -3984,7 +3984,7 @@ public:
 		bool checkApproxUpToDate(Weight &under, Weight &over) override {
 			importTheory(theory);
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L) << width) - 1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			Weight &otherUnder = under_approx[argOp->bvID];
 			Weight &otherOver = over_approx[argOp->bvID];
 
@@ -4007,7 +4007,7 @@ public:
 		bool checkSolved() override {
 			importTheory(theory);
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L) << width) - 1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			Weight &otherUnder = under_approx[argOp->bvID];
 			Weight &otherOver = over_approx[argOp->bvID];
 
@@ -4097,7 +4097,7 @@ public:
 			Weight &underApprox = under_approx[bvID];
 			Weight &overApprox = over_approx[bvID];
             int width = theory.bitvectors[bvID].size();
-            Weight max_val = ((1L) << width) - 1;
+            Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
             if(bvID==7){
                 int a =1;
             }
@@ -4210,7 +4210,7 @@ public:
 			Weight over_add = over_approx[aID] * over_approx[bID];
 
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L) << width) - 1;
+			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
 			if (under_add > max_val) {
 				under_add = max_val;
 			}
@@ -4244,7 +4244,7 @@ public:
 				Weight over_bid = over_approx[bID];
 				Weight over_aid = over_approx[aID];
                 int width = theory.bitvectors[bvID].size();
-                Weight max_val = ((1L) << width) - 1;
+                Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
                 addAnalysis(Comparison::leq, aID,safeDivide( over_approx[bvID] , over_bid,max_val));
                 addAnalysis(Comparison::leq, bID, safeDivide(over_approx[bvID] , over_aid,max_val));
 			} else {
@@ -4279,7 +4279,7 @@ public:
 			int bID = arg2->bvID;
 
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = (1L << width) - 1;
+			Weight max_val = evalBit<Weight>(width)-1;
 
 			Weight underadd = under_approx[aID] *under_approx[bID];
 			Weight overadd = over_approx[aID]  * over_approx[bID];
@@ -4360,7 +4360,7 @@ public:
 			assert(other_argID >= 0);
 			assert(sumID >= 0);
             int width = theory.bitvectors[bvID].size();
-            Weight max_val = ((1L) << width) - 1;
+            Weight max_val = evalBit<Weight>(width)-1;
             Weight under = safeDivide(under_approx[sumID] , over_approx[other_argID],0);
             Weight over = safeDivide(over_approx[sumID] , under_approx[other_argID],max_val);
 			clip_under(under, bvID);
@@ -4427,7 +4427,7 @@ public:
 			int other_argID = otherOp->bvID;
 			int sumID = resultOp->bvID;
             int width = theory.bitvectors[bvID].size();
-            Weight max_val = ((1L) << width) - 1;
+            Weight max_val = evalBit<Weight>(width)-1;
 			assert(other_argID >= 0);
 			assert(sumID >= 0);
             Weight under = safeDivide(under_approx[sumID] , over_approx[other_argID],0);
@@ -4462,7 +4462,7 @@ public:
 			Weight over_cur = over_approx[bvID];
 			Weight under_cur = under_approx[bvID];
 			int width = theory.bitvectors[bvID].size();
-			Weight max_val = ((1L) << width) - 1;
+			Weight max_val = evalBit<Weight>(width)-1;
             Weight under_add = safeDivide(under_approx[sumID] , over_approx[other_argID],0);
             Weight over_add = safeDivide(over_approx[sumID] , under_approx[other_argID],max_val);
 
@@ -4522,7 +4522,7 @@ public:
 			int other_argID = otherOp->bvID;
 			int sumID = resultOp->bvID;
             int width = theory.bitvectors[bvID].size();
-            Weight max_val = ((1L) << width) - 1;
+            Weight max_val = evalBit<Weight>(width)-1;
             Weight under_add = safeDivide(under_approx[sumID], over_approx[other_argID],0);
             Weight over_add = safeDivide(over_approx[sumID] , under_approx[other_argID],max_val);
 
@@ -4540,7 +4540,7 @@ public:
 			int other_argID = otherOp->bvID;
 			int sumID = resultOp->bvID;
 			int width = theory.bitvectors[sumID].size();
-			Weight max_val = (1L << width) - 1;
+			Weight max_val = evalBit<Weight>(width)-1;
 
 
 			//assert(aID<bvID);
@@ -5724,7 +5724,7 @@ public:
 					throw std::runtime_error("Bad decision in bv theory --- assignments out of sync with solver!");
 				}
 				if (S->value(sb) == l_Undef) {
-					Weight bit = 1L<<i;
+					Weight bit =evalBit<Weight>(i);
 
 					bool positive=true;
 					if (bit_under+ bit > to ||  bit_under+ bit > over_approx[bvID]){
@@ -5734,7 +5734,7 @@ public:
 					assert(l==lit_Undef || value(l)==l_Undef);
 					return toSolver(l);
 				} else if (S->value(sb) == l_True) {
-					Weight bit = 1L<<i;
+					Weight bit =evalBit<Weight>(i);
 					bit_under+=bit;
 				}else{
 
@@ -6168,7 +6168,7 @@ public:
 		assert_in_range(over_new,bvID);
 
 		//int width = bitvectors[bvID].size();
-		//Weight max_val = ((1L)<<width)-1;
+		//Weight max_val = evalBit<Weight>(width)-1;
 
 
 		assert_in_range(under_new,bvID);
@@ -6365,7 +6365,7 @@ public:
 			}
 
 			int width = bitvectors[bvID].size();
-			Weight max_val = (1L<<width)-1;
+			Weight max_val = evalBit<Weight>(width)-1;
 			if(under>over_approx0[bvID]){
 				under=over_approx0[bvID];
 			}
@@ -6919,7 +6919,7 @@ public:
 	inline void assert_in_range(Weight val, int bvID){
 #ifdef DEBUG_BV
 		int width = bitvectors[bvID].size();
-		Weight max_val = ((1L)<<width)-1;
+		Weight max_val = evalBit<Weight>(width)-1;
 		assert(val>=0);
 		assert(val<=max_val);
 #endif
@@ -6935,7 +6935,7 @@ public:
 	}
 	inline void clip_over(Weight & val, int bvID){
 		int width = bitvectors[bvID].size();
-		Weight max_val = ((1L)<<width)-1;
+		Weight max_val = evalBit<Weight>(width)-1;
 		if(val>max_val)
 			val=max_val;
 	}
@@ -6949,7 +6949,7 @@ public:
 			return false;
 		}
 		int width = bitvectors[bvID].size();
-		Weight max_val = ((1L)<<width)-1;
+		Weight max_val = evalBit<Weight>(width)-1;
 		if (op==Comparison::leq && to>= max_val){
 			return false;
 		}else if (op==Comparison::lt && to>max_val){
@@ -7488,7 +7488,7 @@ public:
 
         int width = getWidth(bvid);
 
-        int max_val = ((1UL) << width) - 1;
+        int max_val = evalBit<Weight>(width)-1;
         if (max_val>100000 && ! has_warned_unary){
             has_warned_unary=true;
             fprintf(stderr,"Warning: creating large (%d vars) unary bitvector, may cause performance degradation\n",max_val);
@@ -7557,7 +7557,7 @@ public:
 		}
 		under_approx[bvID]=0;
 		if(vars.size()>0)
-			over_approx[bvID]=(1L<<vars.size())-1;
+			over_approx[bvID]=evalBit<Weight>(vars.size())-1;
 		else
 			over_approx[bvID]=0;
 		under_approx0[bvID]=under_approx[bvID];
@@ -7584,7 +7584,7 @@ public:
 			bvID=eq_bitvectors[bvID];
 		BitVector bv = getBV(bvID);
 		for (int i = bv.width()-1;i>=0;i--){
-			Weight v = ((Weight)1)<<i;
+			Weight v = evalBit<Weight>(i);
 			Lit l = bv.getBits()[i];
 			if(c>=v){
 				c-=v;
@@ -7804,7 +7804,7 @@ public:
 			throw std::invalid_argument("Redefined bitvector ID " + std::to_string(bvID) );
 		}
 		under_approx[bvID]=0;
-		over_approx[bvID]=(1L<<bitwidth)-1;
+		over_approx[bvID]=evalBit<Weight>(bitwidth)-1;
 		under_approx0[bvID]=under_approx[bvID];
 		over_approx0[bvID]=over_approx[bvID];
 
@@ -7868,7 +7868,7 @@ public:
 			throw std::invalid_argument("Redefined bitvector ID " + std::to_string(bvID) );
 		}
 		under_approx[bvID]=0;
-		over_approx[bvID]=(1L<<bitwidth)-1;
+		over_approx[bvID]=evalBit<Weight>(bitwidth)-1;
 		under_approx0[bvID]=under_approx[bvID];
 		over_approx0[bvID]=over_approx[bvID];
 
@@ -7878,7 +7878,7 @@ public:
 				Weight val = constval;
 				//for now, just bitblast this constant value.
 				for (int i = bitwidth-1;i>=0;i--){
-					Weight v = 1L<<i;
+					Weight v =evalBit<Weight>(i);
 					if (val>=v){
 						val-=v;
 						bitvectors[bvID][i] = True();
@@ -8064,8 +8064,8 @@ private:
 	}
 
 	Lit getComparisonBV(Comparison op, int bvID,int compareID){
-
-		if(bvID<compareID){
+		//Note: This comparison used to be bvID>compareID, which was apparently buggy.
+		if (bvID < compareID) {
 			Lit c =getComparisonBV(-op,compareID,bvID);
 			if(c!=lit_Undef){
 				return ~c;
@@ -8123,7 +8123,7 @@ public:
 			bvID=eq_bitvectors[bvID];
 
 		int width = bitvectors[bvID].size();
-		Weight max_val = ((1L) << width) - 1;
+		Weight max_val = evalBit<Weight>(width)-1;
 
 		if (to < 0) {
 			std::stringstream ss;
@@ -8941,7 +8941,7 @@ Weight BVTheorySolver<Weight>::lowest(int bvID){
 	    vec<Lit> & bv = bitvectors[bvID];
 	    for (int i = 0;i<bv.size();i++){
 	        if (value(bv[i])==l_True)
-	            val += ((Weight )1)<<i;
+	            val += evalBit<Weight>(i);//evalBit<Weight>(i);
 	    }
 	    return val;
 	}
@@ -8951,7 +8951,7 @@ template<typename Weight>
 	    vec<Lit> & bv = bitvectors[bvID];
 	    for (int i = 0;i<bv.size();i++){
 	        if (value(bv[i])!=l_False)
-	            val += ((Weight )1)<<i;
+	            val += evalBit<Weight>(i);//evalBit<Weight>(i);
 	    }
 	    return val;
 	}
@@ -8992,7 +8992,7 @@ void BVTheorySolver<Weight>::dbg_evaluate(int bvID, int pos,vec<Weight> & vals,W
     }
     vec<Lit> & bv = bitvectors[bvID];
     if (value(bv[pos]) ==l_True or value(bv[pos]) ==l_Undef){
-    	Weight bit = (1<<pos);
+    	Weight bit = evalBit<Weight>(pos);
 		dbg_evaluate(bvID,pos-1,vals, val+bit);
     }
     if (value(bv[pos]) ==l_False or value(bv[pos]) ==l_Undef)
@@ -9056,11 +9056,11 @@ Weight BVTheorySolver<Weight>::refine_lbound_check(int bvID, Weight bound, Var i
 		Weight proposed_bound=0;
 		for(int i = bv.size()-1; i>=0 && ! done;i--){
 
-			Weight ibit = ((Weight )1)<<i;
+			Weight ibit = evalBit<Weight>(i);//evalBit<Weight>(i);
 			if ((value(bv[i])!=l_True || var(bv[i])==ignore_bit) && (bound & (ibit))){
 				bool found=false;
 				while(j>=i){
-					Weight jbit = ((Weight )1)<<j;
+					Weight jbit = evalBit<Weight>(j);//evalBit<Weight>(j);
 					if ((value(bv[j])==l_Undef || var(bv[j])==ignore_bit) && !(proposed_bound & jbit) ){
 						//bv[j] must also not have been used yet as a flip value for this case (else we should try the (!(bound & (jbit))) case)...
 						last_set_x=j;
@@ -9078,7 +9078,7 @@ Weight BVTheorySolver<Weight>::refine_lbound_check(int bvID, Weight bound, Var i
 				if (last_set_x  >-1){
 					found=true;
 					//#we were forced to set an xbit to 1 to match this ibit.
-					Weight xbit = ((Weight )1)<<last_set_x;
+					Weight xbit =evalBit<Weight>(last_set_x);// ((Weight )1)<<last_set_x;
 					assert(!(proposed_bound & xbit));
 					proposed_bound|=xbit;
 					//mp[last_set_x]='s'
@@ -9104,7 +9104,7 @@ Weight BVTheorySolver<Weight>::refine_lbound_check(int bvID, Weight bound, Var i
 		Weight refined_bound=lowest(bvID);
 	    j =bv.size()-1;
 		while (j>=0){
-			Weight jbit = ((Weight )1)<<j;
+			Weight jbit = evalBit<Weight>(j);//evalBit<Weight>(j);
 			if (proposed_bound & jbit){
 				assert(!(refined_bound & jbit));
 				refined_bound |=jbit;
@@ -9155,11 +9155,11 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 	Weight proposed_bound=0;
 	for(int i = bv.size()-1; i>=0 && ! done;i--){
 
-		Weight ibit = ((Weight )1)<<i;
+		Weight ibit = evalBit<Weight>(i);//evalBit<Weight>(i);
 		if ((value(bv[i])!=l_False || var(bv[i])==ignore_bit) && (bound & (ibit))){
 			bool found=false;
 			while(j>=i){
-				Weight jbit = ((Weight )1)<<j;
+				Weight jbit = evalBit<Weight>(j);//evalBit<Weight>(j);
 				if ((value(bv[j])==l_Undef || var(bv[j])==ignore_bit) && !(proposed_bound & jbit) ){
 					//bv[j] must also not have been used yet as a flip value for this case (else we should try the (!(bound & (jbit))) case)...
 					last_set_x=j;
@@ -9177,7 +9177,7 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 			if (last_set_x  >-1){
 				found=true;
 				//#we were forced to set an xbit to 1 to match this ibit.
-				Weight xbit = ((Weight )1)<<last_set_x;
+				Weight xbit = evalBit<Weight>(last_set_x);//((Weight )1)<<last_set_x;
 				assert(!(proposed_bound & xbit));
 				proposed_bound|=xbit;
 				//mp[last_set_x]='s'
@@ -9203,11 +9203,11 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 	Weight refined_bound= 0;//(bvID);
 	for (int i = 0;i<bv.size();i++){
 		if (value(bv[i])==l_False)
-			refined_bound += ((Weight )1)<<i;
+			refined_bound += evalBit<Weight>(i);
 	}
 	j =bv.size()-1;
 	while (j>=0){
-		Weight jbit = ((Weight )1)<<j;
+		Weight jbit = evalBit<Weight>(j);
 		if (proposed_bound & jbit){
 			assert(!(refined_bound & jbit));
 			refined_bound |=jbit;
@@ -9219,7 +9219,7 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 		j--;
 	}
 
-	refined_bound = (1L<<bv.size()) + ~refined_bound;
+	refined_bound = evalBit<Weight>(bv.size()) + ~refined_bound;
 	if(refined_bound> obound){
 #ifdef DEBUG_BV
 		assert(expected==-1);
