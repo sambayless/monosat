@@ -1196,4 +1196,17 @@ public class Solver implements Closeable {
         return max(pair);
     }
 
+    //Alternative interface to 'solve'
+    public boolean apply() {
+        return solve();
+    }
+
+    public boolean apply(Lit... assumptions) {
+        return solve(assumptions);
+    }
+
+    public boolean apply(Collection<Lit> assumptions) {
+        return solve(assumptions);
+    }
+
 }
