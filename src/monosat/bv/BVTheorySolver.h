@@ -8065,7 +8065,7 @@ private:
 
 	Lit getComparisonBV(Comparison op, int bvID,int compareID){
 
-		if(bvID>compareID){
+		if(bvID<compareID){
 			Lit c =getComparisonBV(-op,compareID,bvID);
 			if(c!=lit_Undef){
 				return ~c;
