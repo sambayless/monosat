@@ -821,7 +821,7 @@ public class Solver implements Closeable {
     public Lit and(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            return True();
         } else if (args.length == 1) {
             return args[0];
         } else if (args.length == 2) {
@@ -834,11 +834,10 @@ public class Solver implements Closeable {
     public Lit or(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            return False();
         } else if (args.length == 1) {
             return args[0];
         } else if (args.length == 2) {
-
             return this.toLit(MonosatJNI.Or(this.solverPtr, args[0].l, args[1].l));
         }
         return or(Arrays.asList(args));
@@ -856,7 +855,7 @@ public class Solver implements Closeable {
     public Lit nand(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            return this.toLit(MonosatJNI.Nands(this.solverPtr, getBuffer(0,0),0));
         } else if (args.length == 1) {
             return args[0].negate();
         } else if (args.length == 2) {
@@ -869,7 +868,7 @@ public class Solver implements Closeable {
     public Lit nor(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            return this.toLit(MonosatJNI.Nors(this.solverPtr, getBuffer(0,0),0));
         } else if (args.length == 1) {
             return args[0];
         } else if (args.length == 2) {
@@ -881,7 +880,7 @@ public class Solver implements Closeable {
     public Lit xor(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            return this.toLit(MonosatJNI.Xors(this.solverPtr, getBuffer(0,0),0));
         } else if (args.length == 1) {
             return args[0].negate();
         } else if (args.length == 2) {
@@ -894,7 +893,7 @@ public class Solver implements Closeable {
     public Lit xnor(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            return this.toLit(MonosatJNI.Xnors(this.solverPtr, getBuffer(0,0),0));
         } else if (args.length == 1) {
             return args[0];
         } else if (args.length == 2) {
@@ -918,7 +917,7 @@ public class Solver implements Closeable {
     public void assertAnd(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            //do nothing
         } else if (args.length == 1) {
             assertTrue(args[0]);
         } else if (args.length == 2) {
@@ -930,7 +929,8 @@ public class Solver implements Closeable {
     public void assertOr(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            //this is a contradiction
+            MonosatJNI.AssertOrs(this.solverPtr, getBuffer(0,0), 0);
         } else if (args.length == 1) {
             assertTrue(args[0]);
         } else if (args.length == 2) {
@@ -942,7 +942,7 @@ public class Solver implements Closeable {
     public void assertNand(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            MonosatJNI.AssertNands(this.solverPtr, getBuffer(0,0), 0);
         } else if (args.length == 1) {
             assertTrue(args[0].negate());
         } else if (args.length == 2) {
@@ -954,7 +954,7 @@ public class Solver implements Closeable {
     public void assertNor(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            MonosatJNI.AssertNors(this.solverPtr, getBuffer(0,0), 0);
         } else if (args.length == 1) {
             assertTrue(args[0].negate());
         } else if (args.length == 2) {
@@ -966,7 +966,7 @@ public class Solver implements Closeable {
     public void assertXor(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            MonosatJNI.AssertXors(this.solverPtr, getBuffer(0,0), 0);
         } else if (args.length == 1) {
             assertTrue(args[0]);//If this the correct behaviour here?
         } else if (args.length == 2) {
@@ -978,7 +978,7 @@ public class Solver implements Closeable {
     public void assertXnor(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            throw new IllegalArgumentException("Requires at least 1 argument");
+            MonosatJNI.AssertXnors(this.solverPtr, getBuffer(0,0), 0);
         } else if (args.length == 1) {
             assertTrue(args[0]);//If this the correct behaviour here?
         } else if (args.length == 2) {

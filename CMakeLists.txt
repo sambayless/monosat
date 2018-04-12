@@ -4,7 +4,7 @@ include(GNUInstallDirs)
 #enable to include built-in support for Pseudo-Boolean constraints (recommended)
 option (PB_SUPPORT "Combile with Pseudo-Boolean support (using Minisat+)" ON)
 #set to compile Java JNI support into the shared library (requires a JDK)
-option(JAVA "Build the static library" OFF)
+option(JAVA "Build the java library" OFF)
 #set to OFF to disable linking GPL sources
 option(GPL "Link GPLv2 sources, so that the compiled binary is licensed under the terms of the GPLv2, rather than MIT (greatly improves the performance of maximum flow predicates significantly)." ON)
 option(SHOW_GIT_VERSION "Include git --describe in the build version" ON)

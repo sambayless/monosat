@@ -24,18 +24,20 @@ package monosat;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class SolverTest {
     @Test
     public void testSolve() {
         Solver s = new Solver();
-        assertEquals(s.solve(), true);
-        assertEquals(s.solve(), true);
-        assertEquals(s.solve(s.True()), true);
-        assertEquals(s.solve(s.False()), false);
-        assertEquals(s.solve(s.True(), s.False()), false);
-        assertEquals(s.solve(), true);
+        assertTrue(s.solve());
+        assertTrue(s.solve());
+        assertTrue(s.solve(s.True()));
+        assertFalse(s.solve(s.False()));
+        assertFalse(s.solve(s.True(), s.False()));
+        assertTrue(s.solve());
         System.out.println("Done");
 
 
@@ -44,13 +46,27 @@ public class SolverTest {
     @Test
     public void testMultipleSolvers() {
         Solver s = new Solver();
-        assertEquals(s.solve(), true);
+        assertTrue(s.solve());
 
         Solver s2 = new Solver();
-        assertEquals(s2.solve(), true);
-        assertEquals(s.solve(), true);
+        assertTrue(s2.solve());
+        assertTrue(s.solve());
         s.close();
 
-        assertEquals(s2.solve(), true);
+        assertTrue(s2.solve());
+    }
+
+    @Test
+    public void testOrUnsat(){
+        Solver s = new Solver();
+        assertTrue(s.solve());
+        s.assertAnd();
+        assertTrue(s.solve());
+        s.assertOr();
+        assertFalse(s.solve());
+
+        Solver s2 = new Solver();
+        assertTrue(s2.solve());
+        assertFalse(s.solve());
     }
 }
