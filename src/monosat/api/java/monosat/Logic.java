@@ -377,7 +377,8 @@ public final class Logic {
         if(literals.size()>0) {
             literals.iterator().next().getSolver().maximizeWeightedLits(literals, weights);
         }else{
-            throw new IllegalArgumentException("maximizeWeightedLits requires at least one argument");
+            //do nothing
+            //throw new IllegalArgumentException("maximizeWeightedLits requires at least one argument");
         }
     }
 
@@ -385,7 +386,8 @@ public final class Logic {
         if(literals.size()>0) {
             literals.iterator().next().getSolver().minimizeWeightedLits(literals, weights);
         }else{
-            throw new IllegalArgumentException("minimizeWeightedLits requires at least one argument");
+            //do nothing
+            //throw new IllegalArgumentException("minimizeWeightedLits requires at least one argument");
         }
     }
 
@@ -393,7 +395,8 @@ public final class Logic {
         if(args.size()>0) {
             args.iterator().next().getSolver().assertAtMostOne(args);
         }else{
-            throw new IllegalArgumentException("assertAtMostOne requires at least one argument");
+            //do nothing
+            //throw new IllegalArgumentException("assertAtMostOne requires at least one argument");
         }
     }
 
@@ -401,21 +404,24 @@ public final class Logic {
         if(args.length>0) {
             args[0].getSolver().assertAtMostOne(args);
         }else{
-            throw new IllegalArgumentException("assertAtMostOne requires at least one argument");
+            //do nothing
+            //throw new IllegalArgumentException("assertAtMostOne requires at least one argument");
         }
     }
     public static void assertPB(Collection<Lit> args, Comparison c, int compareTo) {
         if(args.size()>0) {
             args.iterator().next().getSolver().assertPB(args, c, compareTo);
         }else{
-            throw new IllegalArgumentException("assertPB requires at least one argument");
+            //do nothing
+            //throw new IllegalArgumentException("assertPB requires at least one argument");
         }
     }
     public static void assertPB(Collection<Lit> args, Collection<Integer> weights, Comparison c, int compareTo) {
         if(args.size()>0) {
             args.iterator().next().getSolver().assertPB(args, weights, c, compareTo);
         }else{
-            throw new IllegalArgumentException("assertPB requires at least one argument");
+            //do nothing
+            //throw new IllegalArgumentException("assertPB requires at least one argument");
         }
     }
 
