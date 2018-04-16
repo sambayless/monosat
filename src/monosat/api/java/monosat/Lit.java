@@ -32,8 +32,8 @@ import monosat.Solver;
  * However, to deal with
  */
 final public class Lit {
-    public final static Lit Undef = new Lit(-2, true);
-    public final static Lit Error = new Lit(-1, true);
+    public final static Lit Undef = new Lit(-1, true);
+    public final static Lit Error = new Lit(-2, true);
     protected final Solver solver;
 
     //private final Lit neg; //every literal also has a pointer to its negation.
