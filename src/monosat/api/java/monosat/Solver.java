@@ -177,10 +177,10 @@ public class Solver implements Closeable {
         for(Lit l:args){
             if(l==null){
                 throw new IllegalArgumentException("Literal is null");
-            }else if (l.solver!=this){
-                throw new IllegalArgumentException("Cannot pass literal belonging to solver " + l.solver.toString() + " to solver " + toString());
             }else if (l.l<0 ) {
-                throw new IllegalArgumentException("Literal is undefined in solver " + l.toString());
+                throw new IllegalArgumentException("Literal " + l.toString() + " is not a valid literal.");
+            }else if (l.solver!=this){
+                throw new IllegalArgumentException("Cannot pass literal belonging to solver " + (l.solver ==null?"null":l.solver.toString()) + " to solver " + toString());
             }else if(l.toVar()>=nvars){
                 throw new IllegalArgumentException("Literal is undefined in solver (too large)");
             }
@@ -191,10 +191,10 @@ public class Solver implements Closeable {
         for(Lit l:args){
             if(l==null){
                 throw new IllegalArgumentException("Literal is null");
-            }else if (l.solver!=this){
-                throw new IllegalArgumentException("Cannot pass literal belonging to solver " + l.solver.toString() + " to solver " + toString());
             }else if (l.l<0 ) {
-                throw new IllegalArgumentException("Literal is undefined in solver " + l.toString());
+                throw new IllegalArgumentException("Literal " + l.toString() + " is not a valid literal.");
+            }else if (l.solver!=this){
+                throw new IllegalArgumentException("Cannot pass literal belonging to solver " + (l.solver ==null?"null":l.solver.toString()) + " to solver " + toString());
             }else if(l.toVar()>=nvars){
                 throw new IllegalArgumentException("Literal is undefined in solver (too large)");
             }
@@ -206,9 +206,9 @@ public class Solver implements Closeable {
             if(bv==null){
                 throw new IllegalArgumentException("Literal is null");
             }else if (bv.getSolver() !=this){
-                throw new IllegalArgumentException("Cannot pass literal belonging to solver " + bv.getSolver().toString() + " to solver " + toString());
+                throw new IllegalArgumentException("Cannot pass literal belonging to solver " +  (bv.getSolver() == null ? "null" : bv.getSolver().toString()) + " to solver " + toString());
             }else if (bv.id<0 ) {
-                throw new IllegalArgumentException("Bitvector is undefined in solver " + bv.toString());
+                throw new IllegalArgumentException("Bitvector is undefined " + bv.toString());
             }
         }
     }
@@ -217,9 +217,9 @@ public class Solver implements Closeable {
             if(bv==null){
                 throw new IllegalArgumentException("Literal is null");
             }else if (bv.getSolver() !=this){
-                throw new IllegalArgumentException("Cannot pass literal belonging to solver " + bv.getSolver().toString() + " to solver " + toString());
+                throw new IllegalArgumentException("Cannot pass literal belonging to solver " +  (bv.getSolver() == null ? "null" : bv.getSolver().toString()) + " to solver " + toString());
             }else if (bv.id<0 ) {
-                throw new IllegalArgumentException("Bitvector is undefined in solver " + bv.toString());
+                throw new IllegalArgumentException("Bitvector is undefined " + bv.toString());
             }
         }
     }
