@@ -112,7 +112,7 @@ final public class Lit {
     public String toString() {
         if(l==-2){
             return "Lit_Error";
-        }else if(l==-2){
+        }else if(l==-1){
             return "Lit_Undef";
         }
         return "Lit" + l;
