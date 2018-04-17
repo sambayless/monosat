@@ -94,20 +94,20 @@ public:
 	int last_decision_status = -1;
 	//stats
 
-	long stats_full_updates = 0;
-	long stats_fast_updates = 0;
-	long stats_fast_failed_updates = 0;
-	long stats_skip_deletes = 0;
-	long stats_skipped_updates = 0;
-	long stats_num_skipable_deletions = 0;
-	long stats_learnt_components = 0;
-	long stats_learnt_components_sz = 0;
+	int64_t stats_full_updates = 0;
+	int64_t stats_fast_updates = 0;
+	int64_t stats_fast_failed_updates = 0;
+	int64_t stats_skip_deletes = 0;
+	int64_t stats_skipped_updates = 0;
+	int64_t stats_num_skipable_deletions = 0;
+	int64_t stats_learnt_components = 0;
+	int64_t stats_learnt_components_sz = 0;
 	double mod_percentage = 0.2;
-	long stats_pure_skipped = 0;
-	long stats_shrink_removed = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	long stats_symmetry_conflicts = 0;
+	int64_t stats_symmetry_conflicts = 0;
 	vec<int> accepting_state;//maintains a list of all accepting states, which are not considered during symmetry breaking.
 
 

@@ -105,7 +105,7 @@ public:
 		int isEdge :1;
 		int occursPositive :1;
 		int occursNegative :1;
-		int detector_edge :29;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int detector_edge :29;	//the detector this variable beint64_ts to, or its edge number, if it is an edge variable
 		int input;
 		int output;
 		Var solverVar;
@@ -120,10 +120,10 @@ public:
 	double unreachtime = 0;
 	double pathtime = 0;
 	double propagationtime = 0;
-	long stats_propagations = 0;
-	long stats_num_conflicts = 0;
-	long stats_decisions = 0;
-	long stats_num_reasons = 0;
+	int64_t stats_propagations = 0;
+	int64_t stats_num_conflicts = 0;
+	int64_t stats_decisions = 0;
+	int64_t stats_num_reasons = 0;
 
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
@@ -131,13 +131,13 @@ public:
 	double stats_decision_time = 0;
 	double stats_reason_initial_time = 0;
 	double stats_reason_time = 0;
-	long num_learnt_paths = 0;
-	long learnt_path_clause_length = 0;
-	long num_learnt_cuts = 0;
-	long learnt_cut_clause_length = 0;
-	long stats_pure_skipped = 0;
-	long stats_mc_calls = 0;
-	long stats_propagations_skipped = 0;
+	int64_t num_learnt_paths = 0;
+	int64_t learnt_path_clause_length = 0;
+	int64_t num_learnt_cuts = 0;
+	int64_t learnt_cut_clause_length = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_mc_calls = 0;
+	int64_t stats_propagations_skipped = 0;
 
 
 	LSystemSolver(Solver * S_, int _id = -1) :

@@ -1333,7 +1333,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 				if (objectives[i].isBV()) {
 					int bvID =objectives[i].bvID;
 					vec<Lit>  lits;
-					((BVTheorySolver<long>*) S.getBVTheory())->getLiterals(bvID, lits);
+					((BVTheorySolver<int64_t>*) S.getBVTheory())->getLiterals(bvID, lits);
 					for(Lit l:lits){
 						//printf("Setting priority for %d to %d\n", var(l), 100);
 						old_decision_priority.push();

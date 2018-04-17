@@ -45,11 +45,11 @@ public:
 	vec<Lit> tmp_clause;
 
 	double propagationtime=0;
-	long stats_propagations=0;
-	long stats_propagations_skipped=0;
-	long stats_shrink_removed = 0;
-	long stats_reasons = 0;
-	long stats_conflicts = 0;
+	int64_t stats_propagations=0;
+	int64_t stats_propagations_skipped=0;
+	int64_t stats_shrink_removed = 0;
+	int64_t stats_reasons = 0;
+	int64_t stats_conflicts = 0;
 
 	Var true_var=var_Undef;
 	Var conflict_var=var_Undef;

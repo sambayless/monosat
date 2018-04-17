@@ -698,7 +698,7 @@ public:
 	uint64_t stats_theory_conflicts =0;
 	double stats_theory_prop_time =0;
 	double stats_theory_conflict_time=0;
-	long dbg=0;
+
 	uint64_t stats_solver_preempted_decisions=0;
 	uint64_t stats_theory_decisions=0;
 	double stats_pure_lit_time=0;

@@ -125,25 +125,25 @@ public:
 	vec<SuffixLit> all_suffix_lits;
 	//stats
 
-	long stats_full_updates = 0;
-	long stats_fast_updates = 0;
-	long stats_fast_failed_updates = 0;
-	long stats_skip_deletes = 0;
-	long stats_skipped_updates = 0;
-	long stats_num_skipable_deletions = 0;
-	long stats_learnt_components = 0;
-	long stats_learnt_components_sz = 0;
-	long stats_forced_edges=0;
+	int64_t stats_full_updates = 0;
+	int64_t stats_fast_updates = 0;
+	int64_t stats_fast_failed_updates = 0;
+	int64_t stats_skip_deletes = 0;
+	int64_t stats_skipped_updates = 0;
+	int64_t stats_num_skipable_deletions = 0;
+	int64_t stats_learnt_components = 0;
+	int64_t stats_learnt_components_sz = 0;
+	int64_t stats_forced_edges=0;
 	double mod_percentage = 0.2;
-	long stats_pure_skipped = 0;
-	long stats_shrink_removed = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
 
-	long stats_chokepoint_edge_propagations=0;
-	long stats_forced_edge_propagations=0;
-	long stats_nondet_gen_edge_propagations=0;
-	long stats_det_gen_edge_propagations=0;
+	int64_t stats_chokepoint_edge_propagations=0;
+	int64_t stats_forced_edge_propagations=0;
+	int64_t stats_nondet_gen_edge_propagations=0;
+	int64_t stats_det_gen_edge_propagations=0;
 
 	Map<Var,Lit> forcedVars;
 	vec<Var> lit_backward_map;
