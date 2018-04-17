@@ -48,9 +48,9 @@ $DYLD_LIBRARY_PATH=/opt/local/lib LIBRARY_PATH=/opt/local/lib make
 $sudo make install
 ```
 
-### Install the Python Library
+### Install the Python library
 
-To install the Python library (system-wide), first build monosat (see above), cd into 'src/monosat/api/python', and then use Python's setuptools to install the Python library (see below).
+To install the Python library (system-wide), first build MonoSAT (see above), cd into 'src/monosat/api/python', and then use Python's setuptools to install the Python library (see below).
 
 On Ubuntu (14.04/16.04):
 ```
@@ -60,16 +60,31 @@ $cd src/monosat/api/python
 $sudo python3 setup.py install -f
 ```
 
-### Install the Java Library
+See the [tutorial] for instructions on using the Python library.
 
-To install the Java library, you must build Monosat with Java support enabled:
-On Ubuntu (14.04):
+### Compiling the Java Library
+
+To compile the Java library, you need to build MonoSAT with Java bindings enabled.
+You will also need an installed JDK, version 1.8 or higher:
+
 ```
-$cmake -DJAVA=ON
+$cmake -DJAVA=ON .
 $make
 ```
 
-### Usage
+This should generate ```monosat.jar``` in MonoSAT's root directory.
+To use MonoSAT from Java, you will need to include the jar in your classpath.
+You will also need to ensure that Java can find MonoSAT's dynamic library, for example:
+```
+java -Djava.library.path=path/to/libmonosat.so -cp path/to/monosat.jar mypacakge.MyMainClass
+```
+
+On OSX, you would instead use ```path/to/libmonosat.dylib```
+
+### Command-Line Usage
+
+The recommended way to use MonoSAT is as a library, via the Python or Java bindings.
+However, it is also possible to call MonoSAT from the command line.
 MonoSAT is based on [MiniSat 2][Minisat], and supports many of the same calling conventions:
 
 ```
