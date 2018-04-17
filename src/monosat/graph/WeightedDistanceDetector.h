@@ -274,7 +274,7 @@ public:
 		return reach_lit_map[index].to;
 	}
 
-	void printStats() {
+	void printStats() override {
 		//printf("Distance detector\n");
 		Detector::printStats();
 		if (opt_verb > 0) {
@@ -287,7 +287,7 @@ public:
 		}
 	}
 
-	void printSolution(std::ostream& write_to);
+	void printSolution(std::ostream& write_to) override;
 
 	/*	Lit getLit(int node){
 
@@ -295,7 +295,7 @@ public:
 
 	 }*/
 
-	void unassign(Lit l) {
+	void unassign(Lit l) override {
 		Detector::unassign(l);
 /*
 		int index = var(l) - first_reach_var;
@@ -309,16 +309,16 @@ public:
 			}
 		}*/
 	}
-	void preprocess();
-	bool propagate(vec<Lit> & conflict);
+	void preprocess() override;
+	bool propagate(vec<Lit> & conflict) override;
 
 	void buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=false);
 	void buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 	void analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
 	void analyzeDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison=true);
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	Lit decide(CRef &decision_reason);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	Lit decide(CRef &decision_reason) override;
 	void updateShortestPaths();
 
 	void addWeightedShortestPathLit(int from, int to, Var reach_var, Weight within_distance, bool strictComparison);
@@ -327,7 +327,7 @@ public:
 	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	WeightedDistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 							 DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-	virtual ~WeightedDistanceDetector() {
+	~WeightedDistanceDetector() override {
 		if (positiveDistanceStatus )
 			delete positiveDistanceStatus;
 		if (negativeDistanceStatus )
@@ -355,7 +355,7 @@ public:
 		if (conflict_flow)
 			delete conflict_flow;
 	}
-	const char* getName() {
+	const char* getName() override {
 		return "Weighted Distance Detector";
 	}
 private:

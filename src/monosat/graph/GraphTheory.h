@@ -505,8 +505,8 @@ public:
 
 	struct ReachInfo {
 		int source;
-		bool distance = 0;
-		bool weighted_distance=0;
+		bool distance = false;
+		bool weighted_distance= false;
 		Detector * detector;
 
 		ReachInfo() :
@@ -683,7 +683,7 @@ public:
 		}
 		
 	} propCutStatus;
-    vec<Theory*> & getTheories(){
+    vec<Theory*> & getTheories() override {
         return theories;
     }
 	GraphTheorySolver(Solver * S_) :
@@ -733,7 +733,7 @@ public:
         graph_decision_reason = S->newReasonMarker(this,true);
 	}
 	Lit const_true= lit_Undef;
-	Lit True(){
+	Lit True() override {
 		if (const_true==lit_Undef){
 			backtrackUntil(0);
 			const_true = mkLit(newVar(var(S->True()),-1,false,true));
@@ -755,7 +755,7 @@ public:
     }
 
 
-	void printStats(int detailLevel) {
+	void printStats(int detailLevel) override {
 
 		
 		printf("Graph %d stats:\n", getGraphID());
@@ -791,7 +791,7 @@ public:
 		fflush(stdout);
 	}
 	
-	void writeTheoryWitness(std::ostream& write_to) {
+	void writeTheoryWitness(std::ostream& write_to) override {
 		
 		for (Detector * d : detectors) {
 			write_to << "Graph " << this->getGraphID() << ", detector " << d->getID() << ":\n";
@@ -800,16 +800,16 @@ public:
 		
 	}
 	
-	inline int getTheoryIndex()const {
+	inline int getTheoryIndex()const override {
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id) {
+	inline void setTheoryIndex(int id) override {
 		theory_index = id;
 	}
 	inline int getGraphID() {
 		return getTheoryIndex();
 	}
-	inline int getTheoryIndexBV(){
+	inline int getTheoryIndexBV() override {
 		return theory_index;
 	}
 
@@ -870,14 +870,14 @@ public:
 		tmp_clause.push(~o2);
 		S->addClauseSafely(tmp_clause);
 	}
-	bool addClause(Lit l1) {
+	bool addClause(Lit l1) override {
 		Lit o1 = toSolver(l1);
 		tmp_clause.clear();
 		tmp_clause.push(o1);
 		S->addClauseSafely(tmp_clause);
 		return true;
 	}
-	bool addClause(Lit l1, Lit l2) {
+	bool addClause(Lit l1, Lit l2) override {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		tmp_clause.clear();
@@ -887,7 +887,7 @@ public:
 		S->addClauseSafely(tmp_clause);
 		return true;
 	}
-	bool addClause(Lit l1, Lit l2, Lit l3) {
+	bool addClause(Lit l1, Lit l2, Lit l3) override {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
 		Lit o3 = toSolver(l3);
@@ -918,21 +918,21 @@ public:
 		S->addClauseSafely(tmp_clause);
 	}
 
-	bool addClause(const vec<Lit> & c) {
+	bool addClause(const vec<Lit> & c) override {
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
 		S->addClauseSafely(tmp_clause);
 		return true;
 	}
-	void addClauseSafely(vec<Lit> & c) {
+	void addClauseSafely(vec<Lit> & c) override {
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
 		
 		S->addClauseSafely(tmp_clause);
 	}
-	Var newVar(bool polarity = true, bool dvar = true){
+	Var newVar(bool polarity = true, bool dvar = true) override {
 		return newVar(-1,false);//does this shadow the below method, or vice versa?
 	}
 	Var newVar(int forDetector, bool connectToTheory = false) {
@@ -962,7 +962,7 @@ public:
 		return v;
 	}
 
-	void setDecisionVar(Var solverVar, bool decidable){
+	void setDecisionVar(Var solverVar, bool decidable) override {
 		S->setDecisionVar(toSolver(solverVar),decidable);
 	}
 	bool bvHasDetector(int bvID){
@@ -979,7 +979,7 @@ public:
 		bitvector_data[bvID].detectorID = detectorID;
 	}
 
-	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
+	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar) override {
 
 
 		Var v = vars.size();
@@ -1031,13 +1031,13 @@ public:
 			detectors[detector]->addVar(v);
 		return v;
 	}
-	inline int level(Var v)const {
+	inline int level(Var v)const override {
 		return S->level(toSolver(v));
 	}
-	inline int decisionLevel()const {
+	inline int decisionLevel()const override {
 		return decisions.size()-1; //S->decisionLevel();
 	}
-	inline int nVars() const {
+	inline int nVars() const override {
 		return vars.size(); //S->nVars();
 	}
 	inline Var toSolver(Var v)const {
@@ -1103,10 +1103,10 @@ public:
 		return S->value(toSolver(var(l)))==l_Undef;
 	}
 
-	inline lbool value(Var v) const{
+	inline lbool value(Var v) const override {
 		return assigns[v]; //S->value(toSolver(v));
 	}
-	inline lbool value(Lit l)const {
+	inline lbool value(Lit l)const override {
 		return assigns[var(l)] ^ sign(l);
 	}
 	inline lbool dbg_value(Var v) {
@@ -1115,7 +1115,7 @@ public:
 	inline lbool dbg_value(Lit l) {
 		return S->value(toSolver(l));
 	}
-	inline bool enqueue(Lit l, CRef reason) {
+	inline bool enqueue(Lit l, CRef reason) override {
 		assert(assigns[var(l)]==l_Undef);
 		
 		Lit sl = toSolver(l);
@@ -1178,7 +1178,7 @@ public:
 
 	    void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new,typename BVTheorySolver<Weight>::Cause & under_cause_new, typename BVTheorySolver<Weight>::Cause & over_cause_new)override{}
 
-		virtual void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override{
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override{
 			outer->dbg_check_trails();
 			int bvTrailPos = theory.analysis_trail_pos;//current position in the bitvector trail that analysis is occuring at.
 			//lookup the corresponding position in the graph theory trail that we should be applying the bv theory analysis
@@ -1209,7 +1209,7 @@ public:
 		bool checkSolved()override{	return true;}
 	};
 
-	~GraphTheorySolver() {
+	~GraphTheorySolver() override {
 		for(int i = 0;i<node_symbols.size();i++){
 			if(node_symbols[i]){
 				delete(node_symbols[i]);
@@ -1384,7 +1384,7 @@ public:
 		}
 
 	//vec<Lit> to_reenqueue;
-	void backtrackUntil(int untilLevel) {
+	void backtrackUntil(int untilLevel) override {
 		static int it = 0;
 		++it;
 		undoRewind();
@@ -1645,7 +1645,7 @@ public:
 			}
 		}
 	}
-	void undecideTheory(Lit l){
+	void undecideTheory(Lit l) override {
 		//assert(value(l)==l_True); //the value can be locally unassigned if we backtracked while building a propagation reason
 		//The value can also be unassigned if the theory was marked satisfied
 
@@ -1663,7 +1663,7 @@ public:
 	bool supportsDecisions()override {
 		return true;
 	}
-	Lit decideTheory(CRef & decision_reason) {
+	Lit decideTheory(CRef & decision_reason) override {
 		if (!opt_decide_theories)
 			return lit_Undef;
 		double start = rtime(1);
@@ -1766,7 +1766,7 @@ public:
 	}
 	
 
-	void newDecisionLevel() {
+	void newDecisionLevel() override {
 		//trail_lim.push(trail.size());
 		decisions.push(var_Undef);
 		assert(decisionLevel()<=S->decisionLevel());
@@ -1782,7 +1782,7 @@ public:
 		reason.push(c);
 	}
 
-	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
+	void buildReason(Lit p, vec<Lit> & reason,CRef marker) override {
 		//CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
@@ -1926,7 +1926,7 @@ public:
 	 return edge_num;
 	 }*/
 
-	void preprocess() {
+	void preprocess() override {
 
 		for (int i = 0; i < detectors.size(); i++) {
 			detectors[i]->preprocess();
@@ -1953,7 +1953,7 @@ public:
 		}
 
 	}
-	void setLiteralOccurs(Lit l, bool occurs) {
+	void setLiteralOccurs(Lit l, bool occurs) override {
 		if (isEdgeVar(var(l))) {
 			//don't do anything
 		} else {
@@ -1966,7 +1966,7 @@ public:
 		
 	}
 	
-	void enqueueBV(int bvID){
+	void enqueueBV(int bvID) override {
 		if(!S->model.size() && theoryIsSatisfied()){
 			stats_bv_enqueue_while_sat++;
 		}
@@ -2000,7 +2000,7 @@ public:
 			detectors[detectorID]->assignBV(bvID);
 		}
 	}
-	void backtrackBV(int bvID){
+	void backtrackBV(int bvID) override {
 		if (isEdgeBV(bvID)){
 			int edgeID = getBVEdge(bvID);
 			for (int i = 0; i < detectors.size(); i++) {
@@ -2056,7 +2056,7 @@ public:
 	}
 
 
-	void enqueueTheory(Lit l) {
+	void enqueueTheory(Lit l) override {
 		Var v = var(l);
 		stats_enqueues++;
 		int lev = level(v);//level from the SAT solver.
@@ -2247,11 +2247,12 @@ public:
 		return d->propagate(conflict,lazy_trail_head!=var_Undef);
 	}*/
 
-	bool propagateTheory(vec<Lit> & conflict) {
+	bool propagateTheory(vec<Lit> & conflict) override {
 		return propagateTheory(conflict,false);
 	}
     Heuristic * conflictingHeuristic=nullptr;
-    virtual Heuristic * getConflictingHeuristic()override{
+
+	Heuristic * getConflictingHeuristic()override{
         return conflictingHeuristic;
     }
 
@@ -2517,11 +2518,11 @@ public:
 		return true;
 	}
 
-	bool supportsLazyBacktracking(){
+	bool supportsLazyBacktracking() override {
 		return lazy_backtracking_enabled;
 	}
 
-	bool solveTheory(vec<Lit> & conflict) {
+	bool solveTheory(vec<Lit> & conflict) override {
 		n_theory_solves++;
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict,true);
@@ -2598,7 +2599,7 @@ public:
 
 	}
 	
-	bool check_solved() {
+	bool check_solved() override {
 		if (opt_print_graph) {
 			drawFull();
 		}
@@ -2792,7 +2793,7 @@ public:
 		return reasonMarker;
 	}
 
-    void addHeuristic(Heuristic * h){
+    void addHeuristic(Heuristic * h) override {
         S->addHeuristic(h);
     }
     Solver * getSolver(){
@@ -3217,7 +3218,7 @@ public:
 
 			for(int i = 0;i<edge_list.size();i++) {
 				if(edge_list[i].v<0)
-				continue;
+					continue;
 				Edge e = edge_list[i];
 				lbool val = value(e.v);
 				g_under_weights_over.setEdgeEnabled(i, (g_under.edgeEnabled(i)));
@@ -3636,28 +3637,28 @@ public:
 	 }
 	 }*/
 
-	void printSolution() {
+	void printSolution() override {
 		
 		for (auto * d : detectors) {
 			assert(d);
 			d->printSolution();
 		}
 	}
-	void addTheory(Theory * t){
+	void addTheory(Theory * t) override {
 		theories.push(t);
 	}
 
-	bool isConstant(Var v)const{
+	bool isConstant(Var v)const override {
 		return S->isConstant(toSolver(v));
 	}
 
 
-	virtual CRef reason(Var v)const{
+	CRef reason(Var v)const override {
 		return S->reason(toSolver(v));
 	}
 
 
-	bool addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) {
+	bool addConflictClause(vec<Lit> & ps, CRef & confl_out, bool permanent) override {
 		toSolver(ps);
 		return S->addConflictClause(ps,confl_out,permanent);
 	}
@@ -3695,7 +3696,7 @@ public:
 		return mkLit(getTheoryVar(var(l)), sign(l));
 	}
 
-	void needsPropagation(int theoryID){
+	void needsPropagation(int theoryID) override {
 		requiresPropagation=true;
 		S->needsPropagation(getTheoryIndex());
 	}

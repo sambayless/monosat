@@ -149,10 +149,10 @@ public:
 
 	}
 
-	int getSource() const {
+	int getSource() const override{
 		return source;
 	}
-	int getSink() const {
+	int getSink() const override{
 		return sink;
 	}
 
@@ -232,7 +232,7 @@ public:
 		flow_needs_recalc = true;
 		needs_recompute=true;
 	}
-	void setSource(int s) {
+	void setSource(int s) override{
 		same_source_sink=false;
 		assert(source!=sink);
 		if (source == s) {
@@ -318,7 +318,7 @@ public:
 			}
 		}
 	}
-	void setSink(int t) {
+	void setSink(int t) override{
 		same_source_sink=false;
 		assert(source!=sink);
 		if (sink == t) {
@@ -377,7 +377,7 @@ public:
 
 	}
 	long num_updates = 0;
-	int numUpdates() const {
+	int numUpdates() const override{
 		return num_updates;
 	}
 	void updateHistory() override {
@@ -593,7 +593,7 @@ public:
 		updateSourceSink();
 	}
 	bool max_capacity_increased=true;
-	const Weight update() {
+	const Weight update() override{
 		int s = source;
 		int t = sink;
 		if (same_source_sink)
@@ -1060,7 +1060,7 @@ private:
 
 public:
 
-	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
+	const Weight minCut(std::vector<MaxFlowEdge> & cut)override {
 		if(same_source_sink)
 			return INF;
 		Weight f = this->maxFlow();
@@ -1168,13 +1168,13 @@ public:
 
 		return f;
 	}
-	const Weight getEdgeCapacity(int id) {
+	const Weight getEdgeCapacity(int id) override{
 		assert(g.edgeEnabled(id));
 		return local_weight(id);
 	}
 
 public:
-	const bool inSourcePartition(int node){
+	const bool inSourcePartition(int node)override{
 		if(same_source_sink)
 			return node==source;
 		update();
@@ -1183,7 +1183,7 @@ public:
 		return kt->what_segment(node, SOURCE)==SOURCE;
 	}
 
-	const bool isOnCut(int edgeID){
+	const bool isOnCut(int edgeID)override{
 		if(same_source_sink)
 			return false;
 		if (g.getEdge(edgeID).from == g.getEdge(edgeID).to)
@@ -1199,7 +1199,7 @@ public:
 		return kt->what_segment(u, SOURCE) == SOURCE && kt->what_segment(v, SOURCE)==SINK;
 	}
 
-	const Weight getEdgeFlow(int flow_edge) {
+	const Weight getEdgeFlow(int flow_edge)override {
 		if(same_source_sink)
 			return 0;
 		if (g.getEdge(flow_edge).from == g.getEdge(flow_edge).to)
@@ -1254,7 +1254,7 @@ public:
 
 		return 0;
 	}
-	const Weight getEdgeResidualCapacity(int id) {
+	const Weight getEdgeResidualCapacity(int id)override {
 		return getEdgeCapacity(id) - getEdgeFlow(id);
 	}
 };

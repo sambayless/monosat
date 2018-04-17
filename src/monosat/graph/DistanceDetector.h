@@ -204,7 +204,7 @@ public:
 		assert(reach_lit_map[index].within >= 0);
 		return reach_lit_map[index].within;
 	}
-	void printStats() {
+	void printStats() override {
 		//printf("Distance detector\n");
 		Detector::printStats();
 		if (opt_verb > 0) {
@@ -217,7 +217,7 @@ public:
 		}
 	}
 	
-	void printSolution(std::ostream& write_to);
+	void printSolution(std::ostream& write_to) override;
 
 	/*	Lit getLit(int node){
 
@@ -243,14 +243,14 @@ public:
 	}
 	}
 
-	void preprocess();
-	bool propagate(vec<Lit> & conflict);
+	void preprocess() override;
+	bool propagate(vec<Lit> & conflict) override;
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
 	void buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit> & conflict);
 
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	Lit decide(CRef &decision_reason);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	Lit decide(CRef &decision_reason) override;
 	void updateShortestPaths();
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 
@@ -258,7 +258,7 @@ public:
 	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-	virtual ~DistanceDetector() {
+    ~DistanceDetector() override {
 
 		if (overapprox_unweighted_distance_detector)
 			delete overapprox_unweighted_distance_detector;
@@ -285,7 +285,7 @@ public:
 		if (conflict_flow)
 			delete conflict_flow;
 	}
-	const char* getName() {
+	const char* getName() override {
 		return "Shortest Path Detector";
 	}
 private:

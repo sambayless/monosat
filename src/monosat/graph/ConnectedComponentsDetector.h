@@ -119,22 +119,22 @@ public:
 	ConnectedComponentsStatus *positiveReachStatus;
 	ConnectedComponentsStatus *negativeReachStatus;
 
-	bool propagate(vec<Lit> & conflict);
+	bool propagate(vec<Lit> & conflict) override;
 
 	void buildMinComponentsTooLowReason(int min_components, vec<Lit> & conflict);
 	void buildMinComponentsTooHighReason(int min_components, vec<Lit> & conflict);
 	void buildNodesConnectedReason(int u, int v, vec<Lit> & conflict);
 	void buildNodesNotConnectedReason(int u, int v, vec<Lit> & conflict);
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	void printSolution(std::ostream & write_to);
-	Lit decide(CRef &decision_reason);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	void printSolution(std::ostream & write_to) override;
+	Lit decide(CRef &decision_reason) override;
 	void addTreeEdgeLit(int edge_id, Var reach_var);
 	void addConnectedComponentsLit(Var weight_var, int min_components);
 	void addConnectedLit(Var outer_weight_var, int node1, int node2);
 	ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
 			DynamicGraph<Weight>  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-	virtual ~ConnectedComponentsDetector() {
+    ~ConnectedComponentsDetector() override {
 		if (positiveReachStatus)
 			delete positiveReachStatus;
 		if (negativeReachStatus)

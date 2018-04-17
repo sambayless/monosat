@@ -124,25 +124,25 @@ public:
         return propagateTheory(conflict,true);
     }
 
-    inline int getTheoryIndex()const {
+    inline int getTheoryIndex()const override{
         return theory_index;
     }
-    inline void setTheoryIndex(int id) {
+    inline void setTheoryIndex(int id)override {
         theory_index = id;
     }
-    inline void newDecisionLevel() {
+    inline void newDecisionLevel() override{
 
     }
-    inline void backtrackUntil(int untilLevel){
+    inline void backtrackUntil(int untilLevel)override{
 
     }
     inline int decisionLevel() {
         return S->decisionLevel();
     }
-    inline void undecideTheory(Lit l){
+    inline void undecideTheory(Lit l)override{
 
     }
-    void enqueueTheory(Lit l) {
+    void enqueueTheory(Lit l)override {
 
     }
 
@@ -769,7 +769,7 @@ Lit FlowRouter<Weight>::decideTheory(CRef &decision_reason){
         }
     }
 #endif
-
+    return lit_Undef;
 }
 
 template<typename Weight>

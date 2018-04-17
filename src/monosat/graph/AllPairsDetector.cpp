@@ -26,8 +26,9 @@ using namespace Monosat;
 template<typename Weight>
 AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight> &_g,
 		DynamicGraph<Weight> &_antig, double seed) :
-		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_reach_detector(NULL), overapprox_reach_detector(
-				NULL), underapprox_path_detector(NULL), positiveReachStatus(NULL), negativeReachStatus(NULL) {
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_reach_detector(
+        nullptr), overapprox_reach_detector(
+        nullptr), underapprox_path_detector(nullptr), positiveReachStatus(nullptr), negativeReachStatus(nullptr) {
 	
 	positiveReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this, true);
 	negativeReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this, false);

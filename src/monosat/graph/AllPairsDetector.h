@@ -140,17 +140,17 @@ public:
 	 return reach_lits[node];
 
 	 }*/
-	bool propagate(vec<Lit> & conflict);
+	bool propagate(vec<Lit> & conflict) override;
 	void buildReachReason(int from, int to, vec<Lit> & conflict);
 	void buildNonReachReason(int from, int to, vec<Lit> & conflict);
 
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	Lit decide(CRef &decision_reason);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	Lit decide(CRef &decision_reason) override;
 	void addLit(int from, int to, Var reach_var, int within_steps = -1);
 	AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 			double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-	virtual ~AllPairsDetector() {
+    ~AllPairsDetector() override {
 		if (underapprox_path_detector && underapprox_path_detector!=overapprox_reach_detector){
 			delete underapprox_path_detector;
 		}
@@ -172,7 +172,7 @@ public:
 	}
 #endif
 	}
-	const char* getName() {
+	const char* getName() override {
 		return "All-pairs Reachability Detector";
 	}
 };

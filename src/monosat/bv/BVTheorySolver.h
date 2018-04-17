@@ -325,7 +325,7 @@ public:
 		OperationType getType()const override{
 			return OperationType::cause_is_bits;
 		}
-		void enqueue(Lit l, bool alter_trail){
+		void enqueue(Lit l, bool alter_trail) override {
 			importTheory(theory);
 			Var v = var(l);
 			if(alter_trail){
@@ -1824,7 +1824,7 @@ public:
 				}
 			}
 		}
-		virtual void backtrack(Assignment & e, bool rewind){
+		virtual void backtrack(Assignment & e, bool rewind)override{
 			importTheory(theory);
 			if(e.isOperation){
 				assert(e.bvID==getID());
@@ -2478,7 +2478,7 @@ public:
 			return true;
 		}
 
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override {
 			importTheory(theory);
 			int bvThenID=thenOp->bvID;
 			int bvElseID=elseOp->bvID;
@@ -2680,7 +2680,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override {
 			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
@@ -2978,7 +2978,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override{
 			importTheory(theory);
 			if(compareOver){
 
@@ -3226,7 +3226,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override {
 			importTheory(theory);
 			if(compareOver){
 
@@ -3529,7 +3529,7 @@ public:
 			assert(foundConflict);
 			analyze(conflict);
 		}
-		void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict)override{
 
 			importTheory(theory);
 			Weight  overApprox = over_approx[bvID];
@@ -3795,7 +3795,7 @@ public:
 					theory.buildComparisonReasonBV(Comparison::gt,argID,bvID,conflict);
 				}
 			}
-			void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict){
+			void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict)override{
 				importTheory(theory);
 				bool isMin = min;
 				int resultID= resultOp->bvID;
@@ -3972,7 +3972,7 @@ public:
 		}
 
 
-		void analyzeReason(bool compare_over, Comparison op, Weight to, vec<Lit> &conflict) {
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override {
 			importTheory(theory);
 			int width = theory.bitvectors[bvID].size();
 			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
@@ -4234,7 +4234,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) {
+		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) override{
 			importTheory(theory);
 			int aID = arg1->bvID;
 			int bID = arg2->bvID;
@@ -4489,7 +4489,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) {
+		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) override{
 			importTheory(theory);
 			if (compareOver) {
 
@@ -4931,7 +4931,7 @@ public:
 	inline int getTheoryIndex() const override {
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id);
+	inline void setTheoryIndex(int id)override;
 
 	bool hasEquivalentBV(int bvID){
 		return eq_bitvectors[bvID]!=bvID;
@@ -6468,7 +6468,7 @@ public:
 		}
 	}
 
-	bool propagateTheory(vec<Lit> & conflict){
+	bool propagateTheory(vec<Lit> & conflict)override{
 		return propagateTheory(conflict,false);
 	}
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {

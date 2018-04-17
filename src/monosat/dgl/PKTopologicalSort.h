@@ -502,7 +502,7 @@ private:
 	}
 
 public:
-	void update() {
+	void update()override {
 		static int iteration = 0;
 
 
@@ -555,7 +555,7 @@ public:
 
 	}
 
-	void updateHistory(){
+	void updateHistory()override{
 		update();
 	}
 
@@ -637,13 +637,13 @@ private:
 		return has_topo;
 	}
 public:
-	bool hasDirectedCycle() {
+	bool hasDirectedCycle()override {
 		update();
 		return has_cycle;
 	}
 
 	//get _any_ directed cycle from this graph (must be cyclic)
-	std::vector<int> &  getDirectedCycle() {
+	std::vector<int> &  getDirectedCycle() override{
 		update();
 		checkCycle();
 
@@ -675,12 +675,12 @@ public:
 		return store_cycle;*/
 	}
 
-	bool hasUndirectedCycle(){
+	bool hasUndirectedCycle()override{
 		assert(false);
 		return false;//not implemented
 	}
 
-	std::vector<int> & getUndirectedCycle(){
+	std::vector<int> & getUndirectedCycle()override{
 		assert(false);
 		return ignore;
 	}

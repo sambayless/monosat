@@ -65,7 +65,7 @@ public:
 	int vars = 0;
 	int clauses = 0;
 	vec<PB::Int> coefs;
-	bool parseLine(B& in, Solver& S) {
+	bool parseLine(B& in, Solver& S) override{
 
 		skipWhitespace(in);
 		if (*in == EOF)
