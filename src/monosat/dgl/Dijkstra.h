@@ -32,7 +32,7 @@
 #include <limits>
 namespace dgl {
 
-template<typename Weight = long, class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
+template<typename Weight = int64_t, class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
 class Dijkstra: public Distance<Weight> {
 	using Distance<Weight>::inf;
 	using Distance<Weight>::unreachable;
@@ -108,7 +108,7 @@ public:
 	void drawFull() {
 		
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const override{
 		return num_updates;
 	}
@@ -459,7 +459,7 @@ public:
 	void drawFull() {
 		
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const override {
 		return num_updates;
 	}

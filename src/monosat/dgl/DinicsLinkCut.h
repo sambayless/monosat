@@ -98,10 +98,10 @@ public:
 	std::vector<Link> toLink;
 
 
-	long stats_augmenting_rounds = 0;
-	long stats_rounds = 0;
-	long stats_backtracks = 0;
-	long stats_avoided_backtracks = 0;
+	int64_t stats_augmenting_rounds = 0;
+	int64_t stats_rounds = 0;
+	int64_t stats_backtracks = 0;
+	int64_t stats_avoided_backtracks = 0;
 	void printStats() {
 		printf("Dinics Link Cut:\n");
 		/*printf("Total time: %f\n", totaltime);
@@ -805,7 +805,7 @@ public:
 
 		return f;
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const {
 		return num_updates;
 	}

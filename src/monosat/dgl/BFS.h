@@ -428,7 +428,7 @@ public:
 		return true;
 	}
 	
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const override {
 		return num_updates;
 	}
@@ -773,7 +773,7 @@ public:
 		if (maxDistance < 0)
 			maxDistance =  inf();
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const override {
 		return num_updates;
 	}

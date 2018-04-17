@@ -49,15 +49,15 @@ public:
 
 
 
-    long stats_full_updates=0;
-    long stats_fast_updates=0;
-    long stats_fast_failed_updates=0;
-    long stats_skip_deletes=0;
-    long stats_skipped_updates=0;
-    long stats_num_skipable_deletions=0;
-    long stats_random_shortest_paths =0;
-    long stats_random_shortest_edges =0;
-    long stats_n_recomputes =0;
+    int64_t stats_full_updates=0;
+    int64_t stats_fast_updates=0;
+    int64_t stats_fast_failed_updates=0;
+    int64_t stats_skip_deletes=0;
+    int64_t stats_skipped_updates=0;
+    int64_t stats_num_skipable_deletions=0;
+    int64_t stats_random_shortest_paths =0;
+    int64_t stats_random_shortest_edges =0;
+    int64_t stats_n_recomputes =0;
     double stats_full_update_time=0;
     double stats_fast_update_time=0;
     double random_seed=0;
@@ -89,7 +89,7 @@ public:
     }
 
 
-    long num_updates = 0;
+    int64_t num_updates = 0;
     int numUpdates() const override {
         return num_updates;
     }

@@ -123,9 +123,9 @@ public:
 	double stats_calc_time = 0;
 	double stats_flow_time = 0;
 	double stats_init_time = 0;
-	long stats_flow_calcs = 0;
-	long stats_inits=0;
-	long stats_reinits=0;
+	int64_t stats_flow_calcs = 0;
+	int64_t stats_inits=0;
+	int64_t stats_reinits=0;
 	bool same_source_sink = false;//if the sink and source are the same node, flow is infinite, and lots of logic is bypassed to avoid putting KT in a bad state.
 	KohliTorr(DynamicGraph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
 			g(g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
@@ -376,7 +376,7 @@ public:
 	void setAllEdgeCapacities(Weight c) {
 
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const override{
 		return num_updates;
 	}
@@ -1270,9 +1270,9 @@ public:
     double stats_calc_time = 0;
     double stats_flow_time = 0;
     double stats_init_time = 0;
-    long stats_flow_calcs = 0;
-    long stats_inits=0;
-    long stats_reinits=0;
+    int64_t stats_flow_calcs = 0;
+    int64_t stats_inits=0;
+    int64_t stats_reinits=0;
 	KohliTorr(DynamicGraph<Weight>& g,  int source, int sink,bool kt_preserve_order) :EdmondsKarpDynamic<Weight>(g,source,sink){
 
 	}

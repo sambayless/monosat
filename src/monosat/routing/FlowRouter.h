@@ -75,8 +75,8 @@ private:
     vec<Lit> enabled_routing_lits;
     vec<Lit> disabled_routing_lits;
     vec<Lit> inner_conflict;
-    long stats_flow_decisions=0;
-    long stats_flow_conflicts=0;
+    int64_t stats_flow_decisions=0;
+    int64_t stats_flow_conflicts=0;
 
     struct NetHeurisitc{
         //vec<Reach*> reaches;

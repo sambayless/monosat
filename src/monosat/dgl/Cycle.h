@@ -35,7 +35,7 @@ public:
 	int stats_skip_deletes=0;
 	int stats_skipped_updates=0;
 	int stats_num_skipable_deletions=0;
-	long stats_history_clears=0;
+	int64_t stats_history_clears=0;
 	double mod_percentage;
 
 	double stats_full_update_time;

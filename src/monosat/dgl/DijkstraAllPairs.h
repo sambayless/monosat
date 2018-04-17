@@ -117,7 +117,7 @@ public:
 				prev[i].resize(n);
 		}
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const override {
 		return num_updates;
 	}
