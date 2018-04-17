@@ -206,7 +206,7 @@ public:
 		Cause new_under_cause;
 		Cause new_over_cause;
 		Assignment( int bvID,Weight previous_under,Weight previous_over,Weight new_under,Weight new_over,
-				Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause):isOperation(false),assign(0),bvID(bvID),var(var_Undef),previous_under(previous_under),previous_over(previous_over),new_under(new_under),new_over(new_over),
+				Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause):isOperation(false),assign(false),bvID(bvID),var(var_Undef),previous_under(previous_under),previous_over(previous_over),new_under(new_under),new_over(new_over),
 				prev_under_cause(prev_under_cause),prev_over_cause(prev_over_cause),new_under_cause(new_under_cause),new_over_cause(new_over_cause){
 
 		}
@@ -4848,7 +4848,7 @@ public:
         unary_prop_marker = S->newReasonMarker(this);
 		const_true = True();
 	}
-	~BVTheorySolver(){
+	~BVTheorySolver() override {
 
 	}
 	TheorySolver * getSolver(){
@@ -4899,7 +4899,7 @@ public:
 		theories[theory->getTheoryIndexBV()]=theory;
 	}
 
-	void printStats(int detailLevel) {
+	void printStats(int detailLevel) override {
 		printf("BV Theory %d stats:\n", this->getTheoryIndex());
 
 		printf("%d bitvectors, %ld bits, %d comparisons (bvcomparisons %d), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
@@ -4918,7 +4918,7 @@ public:
 		fflush(stdout);
 	}
 	
-	void writeTheoryWitness(std::ostream& write_to) {
+	void writeTheoryWitness(std::ostream& write_to) override {
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){
 				vec<Lit> & bv = bitvectors[bvID];
 				updateApproximations(bvID);
@@ -4928,12 +4928,10 @@ public:
 		}
 	}
 	
-	inline int getTheoryIndex() const{
+	inline int getTheoryIndex() const override {
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id) {
-		theory_index = id;
-	}
+	inline void setTheoryIndex(int id);
 
 	bool hasEquivalentBV(int bvID){
 		return eq_bitvectors[bvID]!=bvID;
@@ -5476,7 +5474,7 @@ public:
 	}
 
 
-	void backtrackUntil(int lev) {
+	void backtrackUntil(int lev) override {
 		//it is NOT safe to remove altered bitvectors here, because if a comparison was added at a higher lev, and then
 		//a conflict was discovered _Before_ the comparison was processed, then the comparison may never be propagated at all if the altered_bvs are cleared here.
 /*		for(int bvID:altered_bvs){
@@ -5749,23 +5747,23 @@ public:
 		return lit_Undef;
 	}
 
-	Lit decideTheory(CRef & decision_reason) {
+	Lit decideTheory(CRef & decision_reason) override {
         decision_reason = CRef_Undef;
 		return lit_Undef;
 	}
 
-	bool supportsDecisions() {
+	bool supportsDecisions() override {
 		return false;
 	}
 
 
 
-	void newDecisionLevel() {
+	void newDecisionLevel() override {
 		trail_lim.push(trail.size());
 	}
 	;
 
-	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
+	void buildReason(Lit p, vec<Lit> & reason,CRef marker) override {
 		static int iter = 0;
 		if(++iter==39){//17
 			int a =1;
@@ -5809,12 +5807,12 @@ public:
 	}
 
 
-	void preprocess() {
+	void preprocess() override {
 		if(const_true==lit_Undef)
 			const_true=True();
 
 	}
-	void setLiteralOccurs(Lit l, bool occurs) {
+	void setLiteralOccurs(Lit l, bool occurs) override {
 		/*if (isEdgeVar(var(l))) {
 			//don't do anything
 		} else {
@@ -5933,7 +5931,8 @@ public:
 		return true;
 
 	}
-	virtual void enqueueAnyUnqueued(){
+
+	void enqueueAnyUnqueued() override {
 		//in some solving modes, a theory can sometimes delay enqueing some atoms. Check for any such atoms here.
 		//so far, this should only happen if the theory was marked as 'satisfied'
 
@@ -5966,7 +5965,7 @@ public:
 
 
 	}
-	void enqueueTheory(Lit l) {
+	void enqueueTheory(Lit l) override {
 		Var v = var(l);
 		rewind_trail_pos(trail.size());
 		int lev = level(v);
@@ -7146,7 +7145,7 @@ public:
 	bool check_propagated()override{
 		return !requiresPropagation;
 	}
-	bool check_solved() {
+	bool check_solved() override {
 
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			int eqBV = bvID;
@@ -8738,7 +8737,7 @@ public:
 		return l;
 	}
 
-	void printSolution() {
+	void printSolution() override {
 
 	}
 
@@ -9236,6 +9235,12 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 #endif
 	return refined_bound;
 }
+
+template<typename Weight>
+void BVTheorySolver<Weight>::setTheoryIndex(int id) {
+	theory_index = id;
+}
+
 template<typename Weight>
 using BitVector = typename BVTheorySolver<Weight>::BitVector;
 

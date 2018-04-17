@@ -238,24 +238,24 @@ public:
 			S(S), theory_index(0), propagationtime(0), stats_propagations(0), stats_propagations_skipped(0) {
 		S->addTheory(this);
 	}
-	~PbTheory() {
+	~PbTheory() override {
 	}
 	;
 
-	inline int getTheoryIndex() const{
+	inline int getTheoryIndex() const override {
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id) {
+	inline void setTheoryIndex(int id) override {
 		theory_index = id;
 	}
-	void newDecisionLevel() {
+	void newDecisionLevel() override {
 		trail_lim.push(trail.size());
 	}
 	;
 	inline int decisionLevel() {
 		return S->decisionLevel();
 	}
-	void enqueueTheory(Lit l) {
+	void enqueueTheory(Lit l) override {
 		Var v = var(l);
 
 		int lev = level(v);
@@ -305,7 +305,7 @@ public:
 		//trail.push({true,toInt(l)});
 	}
 	;
-	bool propagateTheory(vec<Lit> & conflict) {
+	bool propagateTheory(vec<Lit> & conflict) override {
 
 		/*	 		if(trail.size()==0){
 		 stats_propagations_skipped++;
@@ -1284,7 +1284,7 @@ private:
 	}
 
 public:
-	void buildReason(Lit p, vec<Lit> & reason) {
+	void buildReason(Lit p, vec<Lit> & reason) override {
 		backtrackUntil(p);
 		assert(value(p)==l_True);
 		CRef marker = S->reason(var(toSolver(p)));
@@ -1333,13 +1333,13 @@ public:
 		toSolver(reason);
 	}
 
-	void printStats(int detailLevel) {
+	void printStats(int detailLevel) override {
 		printf("PbTheory: %d clauses\n", clauses.size());
 		printf("%ld propagations (%ld skipped)\n", stats_propagations, stats_propagations_skipped);
 		printf("%ld conflicts, %ld reasons\n", stats_conflicts, stats_reasons);
 		printf("Shrink removed %ld lits from conflict clauses\n", stats_shrink_removed);
 	}
-	void preprocess() {
+	void preprocess() override {
 
 	}
 	void implementConstraints() {
@@ -1388,7 +1388,7 @@ public:
 		constraintsToImplement.last().side = side;
 	}
 
-	void backtrackUntil(int level) {
+	void backtrackUntil(int level) override {
 		//  bool changed=false;
 		for (int clauseID : inq) {
 			clauses[clauseID].inQueue = false;
@@ -1470,7 +1470,7 @@ public:
 				qhead = trail.size();
 		}
 	}
-	bool check_solved() {
+	bool check_solved() override {
 		for (int i = 0; i < clauses.size(); i++) {
 			PbClause & c = clauses[i];
 			Lit rhs_lit = c.rhs.lit;
@@ -1561,11 +1561,11 @@ public:
 
 	}
 
-	bool solveTheory(vec<Lit> & conflict) {
+	bool solveTheory(vec<Lit> & conflict) override {
 		return propagateTheory(conflict);
 	}
 
-	void printSolution() {
+	void printSolution() override {
 
 	}
 

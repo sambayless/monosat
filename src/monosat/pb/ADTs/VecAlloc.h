@@ -30,8 +30,8 @@ class VecAlloc {
 
 public:
     VecAlloc(void) {
-        recycle = NULL;
-        table = NULL;
+        recycle = nullptr;
+        table = nullptr;
 #ifdef DEBUG_PB
         nallocs = 0;
 #endif
@@ -45,7 +45,7 @@ public:
 #endif
         Slot *curr, *next;
         curr = table;
-        while (curr != NULL)
+        while (curr != nullptr)
             next = curr[0].next,
                     xfree(curr),
             curr = next;
@@ -55,7 +55,7 @@ public:
 #ifdef DEBUG_PB
         nallocs++;
 #endif
-        if (recycle == NULL) {
+        if (recycle == nullptr) {
             if (index >= chunk_size)
                 newTable();
             return (T *) &table[index++];

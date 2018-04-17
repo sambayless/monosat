@@ -148,8 +148,8 @@ public:
 	 (optionally) the pointer to the function which
 	 will be called if allocation failed; the message
 	 passed to this function is "Not enough memory!" */
-	Block(int size, void (*err_function)(const char *) = NULL) {
-		first = last = NULL;
+	Block(int size, void (*err_function)(const char *) = nullptr) {
+		first = last = nullptr;
 		block_size = size;
 		error_function = err_function;
 	}
@@ -186,7 +186,7 @@ public:
 				last = next;
 				last->current = &(last->data[0]);
 				last->last = last->current + block_size;
-				last->next = NULL;
+				last->next = nullptr;
 			}
 		}
 		
@@ -195,24 +195,24 @@ public:
 		return t;
 	}
 	
-	/* Returns the first item (or NULL, if no items were added) */
+	/* Returns the first item (or nullptr, if no items were added) */
 	Type *ScanFirst() {
 		for (scan_current_block = first; scan_current_block; scan_current_block = scan_current_block->next) {
 			scan_current_data = &(scan_current_block->data[0]);
 			if (scan_current_data < scan_current_block->current)
 				return scan_current_data++;
 		}
-		return NULL;
+		return nullptr;
 	}
 	
-	/* Returns the next item (or NULL, if all items have been read)
+	/* Returns the next item (or nullptr, if all items have been read)
 	 Can be called only if previous ScanFirst() or ScanNext()
-	 call returned not NULL. */
+	 call returned not nullptr. */
 	Type *ScanNext() {
 		while (scan_current_data >= scan_current_block->current) {
 			scan_current_block = scan_current_block->next;
 			if (!scan_current_block)
-				return NULL;
+				return nullptr;
 			scan_current_data = &(scan_current_block->data[0]);
 		}
 		return scan_current_data++;
@@ -261,9 +261,9 @@ public:
 	 (optionally) the pointer to the function which
 	 will be called if allocation failed; the message
 	 passed to this function is "Not enough memory!" */
-	DBlock(int size, void (*err_function)(const char *) = NULL) {
-		first = NULL;
-		first_free = NULL;
+	DBlock(int size, void (*err_function)(const char *) = nullptr) {
+		first = nullptr;
+		first_free = nullptr;
 		block_size = size;
 		error_function = err_function;
 	}
@@ -292,7 +292,7 @@ public:
 			first_free = &(first->data[0]);
 			for (item = first_free; item < first_free + block_size - 1; item++)
 				item->next_free = item + 1;
-			item->next_free = NULL;
+			item->next_free = nullptr;
 			first->next = next;
 		}
 		

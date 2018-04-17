@@ -22,7 +22,7 @@
 #ifndef PB_PARSER_H_
 #define PB_PARSER_H_
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"

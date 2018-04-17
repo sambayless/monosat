@@ -178,8 +178,8 @@ public:
 
 	void clearHistory(bool forceClear = false) {
 		//long expect=std::max(1000,historyClearInterval*edges());
-		if (history.size()
-				&& (forceClear
+		if (!history.empty()
+			&& (forceClear
 						|| (history.size()
 								> (adaptive_history_clear ?
 										std::max(1000L, historyClearInterval * nRules()) : historyClearInterval)))) {//){

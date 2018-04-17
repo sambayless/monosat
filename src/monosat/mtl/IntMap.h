@@ -63,7 +63,7 @@ class IntSet
 
 public:
     // Size operations:
-    int      size        (void)      const  { return xs.size(); }
+    int      size        ()      const  { return xs.size(); }
     void     clear       (bool free = false){
         if (free)
             in_set.clear(true);
@@ -79,17 +79,17 @@ public:
         insert(elem);
     }
 
-    void pop(void) {
+    void pop() {
         assert(size() > 0);
         assert(in_set[xs.last()]);
         in_set[xs.last()]=0;
         xs.pop();
     }
 
-    const K& last(void) const {
+    const K& last() const {
         return xs.last();
     }
-    K& last(void) {
+    K& last() {
         return xs.last();
     }
 

@@ -148,7 +148,7 @@ public:
 		S->addTheory(this);
 	}
 
-	void printStats(int detailLevel) {
+	void printStats(int detailLevel) override {
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)
 				d->printStats();
@@ -159,7 +159,7 @@ public:
 		fflush(stdout);
 	}
 
-	void writeTheoryWitness(std::ostream& write_to) {
+	void writeTheoryWitness(std::ostream& write_to) override {
 
 		for (FSMDetector * d : detectors) {
 			write_to << "Graph " << this->getGraphID() << ", detector " << d->getID() << ":\n";
@@ -167,10 +167,10 @@ public:
 		}
 	}
 
-	inline int getTheoryIndex()const {
+	inline int getTheoryIndex()const override {
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id) {
+	inline void setTheoryIndex(int id) override {
 		theory_index = id;
 	}
 	inline int getGraphID() {
@@ -343,7 +343,7 @@ public:
 		}
 	}
 
-	~LSystemSolver() {
+	~LSystemSolver() override {
 	}
 
 
@@ -365,7 +365,7 @@ public:
 
 	}
 
-	void backtrackUntil(int level) {
+	void backtrackUntil(int level) override {
 		static int it = 0;
 
 		bool changed = false;
@@ -420,7 +420,7 @@ public:
 	virtual bool supportsDecisions() {
 		return true;
 	}
-	Lit decideTheory(CRef & decision_reason) {
+	Lit decideTheory(CRef & decision_reason) override {
 		decision_reason=CRef_Undef;
 		if (!opt_decide_theories)
 			return lit_Undef;
@@ -489,12 +489,12 @@ public:
 	}
 	;
 
-	void newDecisionLevel() {
+	void newDecisionLevel() override {
 		trail_lim.push(trail.size());
 	}
 	;
 
-	void buildReason(Lit p, vec<Lit> & reason) {
+	void buildReason(Lit p, vec<Lit> & reason) override {
 		CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
@@ -521,12 +521,12 @@ public:
 		return true;
 	}
 
-	void preprocess() {
+	void preprocess() override {
 		for (int i = 0; i < detectors.size(); i++) {
 			detectors[i]->preprocess();
 		}
 	}
-	void setLiteralOccurs(Lit l, bool occurs) {
+	void setLiteralOccurs(Lit l, bool occurs) override {
 		if (isEdgeVar(var(l))) {
 			//don't do anything
 		} else {
@@ -539,7 +539,7 @@ public:
 
 	}
 
-	void enqueueTheory(Lit l) {
+	void enqueueTheory(Lit l) override {
 		Var v = var(l);
 
 		int lev = level(v);
@@ -592,7 +592,7 @@ public:
 
 	}
 	;
-	bool propagateTheory(vec<Lit> & conflict) {
+	bool propagateTheory(vec<Lit> & conflict) override {
 		static int itp = 0;
 		if (++itp == 62279) {
 			int a = 1;
@@ -649,7 +649,7 @@ public:
 	}
 	;
 
-	bool solveTheory(vec<Lit> & conflict) {
+	bool solveTheory(vec<Lit> & conflict) override {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict);
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
@@ -662,7 +662,7 @@ public:
 
 	}
 
-	bool check_solved() {
+	bool check_solved() override {
 
 
 		for (int i = 0; i < detectors.size(); i++) {
@@ -711,7 +711,7 @@ public:
 		return mkLit(v, false);
 	}
 
-	void printSolution() {
+	void printSolution() override {
 
 		for (auto * d : detectors) {
 			assert(d);

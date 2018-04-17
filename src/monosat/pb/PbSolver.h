@@ -177,12 +177,13 @@ protected:
 
 public:
     PbSolver(SimpSolver & sat_solver)
-            : sat_solver(sat_solver), goal(NULL), propQ_head(0)
+            : sat_solver(sat_solver), goal(nullptr), propQ_head(0)
             //, stats(sat_solver.stats_ref())
             , declared_n_vars(-1), declared_n_constrs(-1), best_goalvalue(Int_MAX) {
 
     }
-    virtual ~PbSolver(){
+
+    ~PbSolver() override {
         mem.freeAll();
     }
     Var newVar(bool polarity = true, bool dvar = true){
@@ -317,7 +318,7 @@ public:
     }
     // Solve:
     //
-    bool okay(void) { return sat_solver.okay(); }
+    bool okay() { return sat_solver.okay(); }
 
     enum solve_Command {
         sc_Minimize, sc_FirstSolution, sc_AllSolutions,

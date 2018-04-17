@@ -20,15 +20,15 @@
 #ifndef Minisat_XAlloc_h
 #define Minisat_XAlloc_h
 
-#include <errno.h>
-#include <stdlib.h>
+#include <cerrno>
+#include <cstdlib>
 
 namespace Monosat {
 
 //=================================================================================================
 // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 
-class OutOfMemoryException {
+class OutOfMemoryException:public std::exception {
 };
 static inline void* xrealloc(void *ptr, size_t size) {
 	void* mem = realloc(ptr, size);

@@ -777,7 +777,7 @@ public:
 		;
 	}
 
-	void updateHistory(){
+	void updateHistory() override {
 		update();
 	}
 

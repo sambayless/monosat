@@ -380,7 +380,7 @@ public:
 	int numUpdates() const {
 		return num_updates;
 	}
-	void updateHistory(){
+	void updateHistory() override {
 		update();
 	}
 

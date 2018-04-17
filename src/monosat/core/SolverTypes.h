@@ -24,7 +24,7 @@
 #ifndef Monosat_SolverTypes_h
 #define Monosat_SolverTypes_h
 
-#include <assert.h>
+#include <cassert>
 
 #include "monosat/mtl/IntTypes.h"
 #include "monosat/mtl/Alg.h"
@@ -347,8 +347,8 @@ public:
 
 	template<class Lits>
 	CRef alloc(const Lits& ps, bool learnt = false) {
-		assert(sizeof(Lit) == sizeof(uint32_t));
-		assert(sizeof(float) == sizeof(uint32_t));
+		static_assert(sizeof(Lit) == sizeof(uint32_t), "");
+		static_assert(sizeof(float) == sizeof(uint32_t), "");
 		bool use_extra = learnt | extra_clause_field;
 
 		CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), use_extra));

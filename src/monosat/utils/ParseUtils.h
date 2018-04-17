@@ -21,8 +21,8 @@
 #ifndef Minisat_ParseUtils_h
 #define Minisat_ParseUtils_h
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <string>
 
 #include <zlib.h>

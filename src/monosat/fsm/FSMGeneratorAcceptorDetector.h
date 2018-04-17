@@ -152,7 +152,7 @@ public:
 	GraphTheorySolver<int64_t> * graph=nullptr;//for if we reduce the nfa to a graph
 	vec<vec<int> > nodes;
 
-	void printStats() {
+	void printStats() override {
 		//printf("Reach detector\n");
 		if(graph){
 			graph->printStats(1);
@@ -215,8 +215,8 @@ public:
 	void setSuffixGenerator(DynamicFSM *suffix_fsm){
 		this->suffix_fsm=suffix_fsm;
 	}
-	Lit decide(int level);
-	bool propagate(vec<Lit> & conflict);
+	Lit decide(int level) override;
+	bool propagate(vec<Lit> & conflict) override;
 
 	/*void unassign(Lit l) override {
 		FSMDetector::unassign(l);
@@ -252,10 +252,10 @@ public:
 
 	void buildAcceptorChokepointEdgeReason(int genFinal, int acceptFinal,int forcedAcceptorEdge, int forcedAcceptorLabel,  vec<Lit> & conflict);
 	void buildForcedNondetEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
-	void preprocess() ;
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	void printSolution(std::ostream& write_to);
+	void preprocess() override;
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	void printSolution(std::ostream& write_to) override;
 
 	bool checkNegatedPolarity() override;
 
@@ -267,11 +267,12 @@ public:
 
 	FSMGeneratorAcceptorDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,DynamicFSM & acceptor_under,DynamicFSM & acceptor_over,
 								 int gen_source,int acceptor_source, double seed = 1);
-	virtual ~FSMGeneratorAcceptorDetector() {
+
+	~FSMGeneratorAcceptorDetector() override {
 
 	}
 
-	const char* getName() {
+	const char* getName() override {
 		return "NFA Generator Acceptor Detector";
 	}
 	void setGeneratorDeterministic(bool is_deterministic){

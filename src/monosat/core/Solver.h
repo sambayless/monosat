@@ -62,18 +62,19 @@ public:
 	// Constructor/Destructor:
 	//
 	Solver();
-	virtual ~Solver();
+
+	~Solver() override;
 
 	// Problem specification:
 	//
-	virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+	Var newVar(bool polarity = true, bool dvar = true) override; // Add a new variable with parameters specifying variable mode.
 	virtual void    releaseVar(Lit l);                                  // Make literal true and promise to never refer to variable again.
 
-	virtual bool addClause(const vec<Lit>& ps);                     // Add a clause to the solver.
+	bool addClause(const vec<Lit>& ps) override;                     // Add a clause to the solver.
 	virtual bool addEmptyClause();                             // Add the empty clause, making the solver contradictory.
-	virtual bool addClause(Lit p);                                  // Add a unit clause to the solver.
-	virtual bool addClause(Lit p, Lit q);                           // Add a binary clause to the solver.
-	virtual bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
+	bool addClause(Lit p) override;                                  // Add a unit clause to the solver.
+	bool addClause(Lit p, Lit q) override;                           // Add a binary clause to the solver.
+	bool addClause(Lit p, Lit q, Lit r) override;                    // Add a ternary clause to the solver.
 	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);           // Add a clause to the solver without making superflous internal copy. Will
 
 
@@ -89,7 +90,8 @@ public:
 	int getDecisionPriority(Var v) const{
 		return priority[v];
 	}
-	virtual void setTheorySatisfied(Theory * theory)override{
+
+	void setTheorySatisfied(Theory * theory)override{
 		int theoryID = theory->getTheoryIndex();
 		if(!theorySatisfied(theory)){
 			//printf("Theory %d sat at %d\n",theoryID, decisionLevel());
@@ -103,7 +105,8 @@ public:
 			//theory_sat_queue.push(TheorySatisfaction(theoryID,trail.size()));
 		}
 	}
-	virtual bool theorySatisfied(Theory * theory)override{
+
+	bool theorySatisfied(Theory * theory)override{
 		int theoryID = theory->getTheoryIndex();
 		return satisfied_theory_trail_pos[theoryID]>=0;
 	}
@@ -126,7 +129,7 @@ public:
 		}
 	}
 	//Theory interface
-	void addTheory(Theory*t) {
+	void addTheory(Theory*t) override {
 		satisfied_theory_trail_pos.push(-1);
 		post_satisfied_theory_trail_pos.push(-1);
 		theories.push(t);
@@ -215,10 +218,10 @@ public:
 		cancelUntil(0);
 	}
 
-	int getTheoryIndex() const{
+	int getTheoryIndex() const override {
 		return theory_index;
 	}
-	void setTheoryIndex(int id) {
+	void setTheoryIndex(int id) override {
 		theory_index = id;
 	}
 
@@ -248,7 +251,7 @@ public:
 		return markers.last();
 	}
 
-	void printStats(int detail_level = 0) {
+	void printStats(int detail_level = 0) override {
 
 		double cpu_time = cpuTime();
 		//double mem_used = memUsedPeak();
@@ -296,7 +299,7 @@ public:
 		}
 	}
 
-	void writeTheoryWitness(std::ostream& write_to) {
+	void writeTheoryWitness(std::ostream& write_to) override {
 		if (!ok) {
 			write_to << "s UNSATISFIABLE\n";
 		} else {
@@ -360,7 +363,7 @@ public:
 		assert(hasTheory(v));
 		return (Var) theory_vars[v].theory_var;
 	}
-    vec<Theory*> & getTheories(){
+    vec<Theory*> & getTheories() override {
         return theories;
     }
 	//Translate a literal into its corresponding theory literal (if it has a theory literal)
@@ -368,7 +371,8 @@ public:
 		assert(hasTheory(l));
 		return mkLit(getTheoryVar(var(l)), sign(l));
 	}
-	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
+
+	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar) override {
 		while(nVars()<=solverVar)
 			newVar();
 		Var v = solverVar;
@@ -405,7 +409,7 @@ public:
 		theory_vars[solverVar].theory_var = newTheoryVar;
 	}
 
-	void preprocess(){
+	void preprocess() override {
 		for(Theory *t:theories){
 			t->preprocess();
 		}
@@ -501,7 +505,7 @@ public:
 	virtual lbool solveUntilRestart(const vec<Lit>& assumps);//attempt to solve the instance, but quit as soon as the solver restarts
 	bool okay() const;                  // FALSE means solver is in a conflicting state
 
-	Lit True(){
+	Lit True() override {
 
 		if(const_true==lit_Undef){
 			//try using the first assigned const literal
@@ -540,20 +544,20 @@ public:
 	bool getPolarity(Var v){
 		return polarity[v];
 	}
-	void setDecisionVar(Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
+	void setDecisionVar(Var v, bool b) override; // Declare if a variable should be eligible for selection in the decision heuristic.
 	bool isDecisionVar(Var v){
 		return decision[v];
 	}
 	// Read state:
 	//
-	lbool value(Var x) const;       // The current value of a variable.
-	lbool value(Lit p) const;       // The current value of a literal.
+	lbool value(Var x) const override;       // The current value of a variable.
+	lbool value(Lit p) const override;       // The current value of a literal.
 	lbool modelValue(Var x) const; // The value of a variable in the last model. The last call to solve must have been satisfiable.
 	lbool modelValue(Lit p) const; // The value of a literal in the last model. The last call to solve must have been satisfiable.
 	int nAssigns() const;       // The current number of assigned literals.
 	int nClauses() const;       // The current number of original clauses.
 	int nLearnts() const;       // The current number of learnt clauses.
-	int nVars() const;       // The current number of variables.
+	int nVars() const override;       // The current number of variables.
 	int nUnassignedVars() const;// The number of variables left to assign. Does not include variables that are not decision vars!
 	int nFreeVars() const;		// The number of non-unit variables
 	bool hasNextDecision() const;
@@ -890,18 +894,18 @@ protected:
 	Lit pickBranchLit();                                                      // Return the next decision variable.
 
 public:
-	void instantiateLazyDecision(Lit l, int atLevel, CRef reason);
-	Lit theoryDecisionLit(int theoryID){
+	void instantiateLazyDecision(Lit l, int atLevel, CRef reason) override;
+	Lit theoryDecisionLit(int theoryID) override {
 		if(theoryDecision==lit_Undef){
 			theoryDecision = mkLit(newVar(true,false));
 		}
 		return theoryDecision;
 	}
-	void newDecisionLevel();                                                      // Begins a new decision level.
+	void newDecisionLevel() override;                                                      // Begins a new decision level.
 	void uncheckedEnqueue(Lit p, CRef from = CRef_Undef);   // Enqueue a literal. Assumes value of literal is undefined.
-	bool enqueue(Lit p, CRef from = CRef_Undef);       // Test if fact 'p' contradicts current state, enqueue otherwise.
+	bool enqueue(Lit p, CRef from = CRef_Undef) override;       // Test if fact 'p' contradicts current state, enqueue otherwise.
 	void enqueueLazy(Lit p,int level, CRef from = CRef_Undef);
-	void setBVTheory(Theory * t){
+	void setBVTheory(Theory * t) override {
 		bvtheory=t;
 	}
 	Theory * getBVTheory() override{
@@ -923,13 +927,13 @@ protected:
 
 
 	CRef propagate(bool propagate_theories = true);    // Perform unit propagation. Returns possibly conflicting clause.
-	void enqueueTheory(Lit l);
-	void enqueueAnyUnqueued(); //in some solving modes, a theory can sometimes delay enqueing some atoms. Check for any such atoms here.
-	bool propagateTheory(vec<Lit> & conflict);
-	bool solveTheory(vec<Lit> & conflict_out);
+	void enqueueTheory(Lit l) override;
+	void enqueueAnyUnqueued() override; //in some solving modes, a theory can sometimes delay enqueing some atoms. Check for any such atoms here.
+	bool propagateTheory(vec<Lit> & conflict) override;
+	bool solveTheory(vec<Lit> & conflict_out) override;
 
-	void buildReason(Lit p, vec<Lit> & reason);
-	void backtrackUntil(int level);
+	void buildReason(Lit p, vec<Lit> & reason) override;
+	void backtrackUntil(int level) override;
 	//Add a clause to the clause database safely, even if the solver is in the middle of search, propagation, or clause analysis.
 	//(In reality, the clause may be added to the database sometime later)
 
@@ -943,7 +947,7 @@ public:
 	}
    // void unsafeUnassign(Lit p);
 	void cancelUntil(int level);                                             // Backtrack until a certain level.
-	inline void needsPropagation(int theoryID){
+	inline void needsPropagation(int theoryID) override {
 		if(theories[theoryID]->unskipable()){
 			unskippable_theory_q.insert(theoryID);
 		}else {
@@ -1034,17 +1038,17 @@ protected:
 public:
 	// Misc:
 	//
-	int decisionLevel() const; // Gives the current decisionlevel.
+	int decisionLevel() const override; // Gives the current decisionlevel.
 	uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
 
-	CRef reason(Var x) const;
-	int level(Var x) const;
+	CRef reason(Var x) const override;
+	int level(Var x) const override;
 	bool isDecisionReason(CRef r) const;
 	CRef decisionReason(Var x) const;
 	CRef reasonOrDecision(Var x) const;
 	double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
 
-	bool isConstant(Var v)const{
+	bool isConstant(Var v)const override {
 		return value(v)!=l_Undef && (level(v)==0);
 	}
 
@@ -1064,7 +1068,7 @@ private:
 	vec<Heuristic*> swapping_uninvolved_post_theories;
 	vec<Heuristic*> swapping_involved_theory_order;
 	bool withinBudget() const;
-	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false);
+	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false) override;
 
 	bool addDelayedClauses(CRef & conflict);
 	// Static helpers:
@@ -1130,32 +1134,32 @@ private:
 		SolverDecisionTheory(Solver & S):S(S){
 
 		}
-		Lit decideTheory(CRef & decision_reason) {
+		Lit decideTheory(CRef & decision_reason) override {
 			decision_reason = CRef_Undef;
 			return S.pickBranchLit();
 		}
-		bool supportsDecisions() {
+		bool supportsDecisions() override {
 			return true;
 		}
-		int getTheoryIndex()const{
+		int getTheoryIndex()const override {
 			return theoryID;
 		}
-		void setTheoryIndex(int id){
+		void setTheoryIndex(int id) override {
 			theoryID=id;
 		}
-		void backtrackUntil(int untilLevel){
+		void backtrackUntil(int untilLevel) override {
 
 		}
-		void newDecisionLevel(){
+		void newDecisionLevel() override {
 
 		}
-		void enqueueTheory(Lit p){
+		void enqueueTheory(Lit p) override {
 
 		}
-		bool propagateTheory(vec<Lit> & conflict){
+		bool propagateTheory(vec<Lit> & conflict) override {
 			return true;
 		}
-		bool solveTheory(vec<Lit> & conflict){
+		bool solveTheory(vec<Lit> & conflict) override {
 			return true;
 		}
 	};

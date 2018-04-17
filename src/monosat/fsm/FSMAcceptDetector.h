@@ -111,7 +111,7 @@ public:
 	vec<int> accepting_state;//maintains a list of all accepting states, which are not considered during symmetry breaking.
 
 
-	void printStats() {
+	void printStats() override {
 		//printf("Reach detector\n");
 		FSMDetector::printStats();
 		if (opt_detect_pure_theory_lits)
@@ -187,9 +187,9 @@ public:
 	void preprocess()override{
 		accepting_state.growTo(g_over.states());
 	}
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	void printSolution(std::ostream& write_to);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	void printSolution(std::ostream& write_to) override;
 
 	void addAcceptLit(int state, int strID, Var reach_var);
 
@@ -202,11 +202,12 @@ public:
 
 	FSMAcceptDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
 					  int _source, vec<vec<int>> &  strs, double seed = 1);
-	virtual ~FSMAcceptDetector() {
+
+    ~FSMAcceptDetector() override {
 
 	}
 
-	const char* getName() {
+	const char* getName() override {
 		return "NFA Accepts Detector";
 	}
 

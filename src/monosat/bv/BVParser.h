@@ -25,7 +25,7 @@
 #define BVPARSER_H_
 
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"
@@ -237,7 +237,7 @@ private:
 		multbvs.last().resultID = resultID;
 		multbvs.last().aBV =  (int) arg1;
 		multbvs.last().bBV = (int) arg2;
-		return;
+
 
 	}
 	void readDivBV(B& in, Solver& S) {
@@ -257,7 +257,7 @@ private:
 		divbvs.last().resultID = resultID;
 		divbvs.last().aBV =  (int) arg1;
 		divbvs.last().bBV = (int) arg2;
-		return;
+
 
 	}
 
@@ -285,7 +285,6 @@ private:
 		addbvs.last().resultID = resultID;
 		addbvs.last().aBV =  (int) arg1;
 		addbvs.last().bBV = (int) arg2;
-		return;
 	}
 	void readSubtractionBV(B& in, Solver& S) {
 
@@ -311,8 +310,7 @@ private:
 		subtractionbvs.last().resultID = resultID;
 		subtractionbvs.last().aBV =  (int) arg1;
 		subtractionbvs.last().bBV = (int) arg2;
-		return;
-    }
+	}
 	void readSymbol(B& in, Solver& S){
 		//this is a variable symbol map
 		skipWhitespace(in);

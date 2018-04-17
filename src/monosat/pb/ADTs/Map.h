@@ -69,7 +69,7 @@ class Map {
         for (int i = 0; i < capacity; i++) table[i] = NULL;
     }
 
-    void dispose(void) {
+    void dispose() {
         for (int i = 0; i < capacity; i++) {
             for (Cell *p = table[i]; p != NULL;) {
                 Cell *next = p->next;

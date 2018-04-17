@@ -36,12 +36,12 @@ public:
 	// Constructor/Destructor:
 	//
 	SimpSolver();
-	~SimpSolver();
+	~SimpSolver() override;
 
 	// Problem specification:
 	//
-	Var newVar(bool polarity = true, bool dvar = true);
-	void    releaseVar(Lit l);
+	Var newVar(bool polarity = true, bool dvar = true) override;
+	void    releaseVar(Lit l) override;
 /*	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar){
 		while(nVars()<=solverVar)
 			newVar();
@@ -49,16 +49,16 @@ public:
 		setTheoryVar(solverVar,theoryID,theoryVar);
 		return v;
 	}*/
-	void setTheoryVar(Var solverVar, int theory, Var theoryVar) {
+	void setTheoryVar(Var solverVar, int theory, Var theoryVar) override {
 		assert(solverVar<nVars());
 		setFrozen(solverVar, true);
 		Solver::setTheoryVar(solverVar, theory, theoryVar);
 	}
-	bool addClause(const vec<Lit>& ps);
-	bool addEmptyClause();                // Add the empty clause to the solver.
-	bool addClause(Lit p);               // Add a unit clause to the solver.
-	bool addClause(Lit p, Lit q);        // Add a binary clause to the solver.
-	bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
+	bool addClause(const vec<Lit>& ps) override;
+	bool addEmptyClause() override;                // Add the empty clause to the solver.
+	bool addClause(Lit p) override;               // Add a unit clause to the solver.
+	bool addClause(Lit p, Lit q) override;        // Add a binary clause to the solver.
+	bool addClause(Lit p, Lit q, Lit r) override; // Add a ternary clause to the solver.
 
 	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);
 	bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
@@ -85,25 +85,25 @@ public:
 	bool solve(Lit p, Lit q, bool do_simp, bool turn_off_simp = false);
 	bool solve(Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp = false);
 
-	bool propagateAssignment(const vec<Lit>& assumps);
+	bool propagateAssignment(const vec<Lit>& assumps) override;
 
 	//Also override the Solver's constructors
-	bool solve(const vec<Lit>& assumps){
+	bool solve(const vec<Lit>& assumps) override {
 		return solve(assumps,true,false);
 	}
-	lbool solveLimited(const vec<Lit>& assumps){
+	lbool solveLimited(const vec<Lit>& assumps) override {
 		return solveLimited(assumps,true,false);
 	}
-	bool solve(){
+	bool solve() override {
 		return solve(true,false);
 	}
-	bool solve(Lit p){
+	bool solve(Lit p) override {
 		return solve(p,true,false);
 	}
-	bool solve(Lit p, Lit q){
+	bool solve(Lit p, Lit q) override {
 		return solve(p,q,true,false);
 	}
-	bool solve(Lit p, Lit q, Lit r){
+	bool solve(Lit p, Lit q, Lit r) override {
 		return solve(p,q,r,true,false);
 	}
 
@@ -112,7 +112,7 @@ public:
 	void disablePreprocessing();
 	// Memory managment:
 	//
-	virtual void garbageCollect();
+	void garbageCollect() override;
 
 	// Generate a (possibly simplified) DIMACS file:
 	//

@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Monosat {
 namespace PB {
 
-struct Exception_IntOverflow {
+struct Exception_IntOverflow: public std::exception {
     char *where;
 
     Exception_IntOverflow(char *w) : where(w) { }    // (takes ownership of string)

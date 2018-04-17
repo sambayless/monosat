@@ -21,7 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Monosat {
 namespace PB {
 
-vec<cchar *> *debug_names = NULL;
+vec<cchar *> *debug_names = nullptr;
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -37,7 +37,7 @@ void dump(Int num) {
 
 
 void dump(Lit p) {
-    if (debug_names == NULL)
+    if (debug_names == nullptr)
         reportf("%sx%d", sign(p) ? "~" : "", var(p));
     else {
         if (var(p) < debug_names->size())

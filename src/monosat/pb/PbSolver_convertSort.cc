@@ -165,7 +165,7 @@ void buildSorter(vec<Formula> &ps, vec<Int> &Cs, vec<Formula> &out_sorter) {
 }
 
 
-class Exception_TooBig {
+class Exception_TooBig:public std::exception {
 };
 
 static

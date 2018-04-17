@@ -83,13 +83,13 @@ public:
 	}
 	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 	
-	void setSource(int s) {
+	void setSource(int s) override {
 		source = s;
 		last_modification = -1;
 		last_addition = -1;
 		last_deletion = -1;
 	}
-	int getSource() {
+	int getSource() override {
 		return source;
 	}
 	
@@ -395,10 +395,10 @@ public:
 	}
 	
 	long num_updates = 0;
-	int numUpdates() const {
+	int numUpdates() const override {
 		return num_updates;
 	}
-	void update() {
+	void update() override {
 		static int iteration = 0;
 		int local_it = ++iteration;
 		
@@ -599,14 +599,14 @@ public:
 		return true;
 	}
 	
-	bool connected_unsafe(int t) {
+	bool connected_unsafe(int t) override {
 		return t < seen.size() && seen[t];
 	}
-	bool connected_unchecked(int t) {
+	bool connected_unchecked(int t) override {
 		assert(last_modification == g.modifications);
 		return connected_unsafe(t);
 	}
-	bool connected(int t) {
+	bool connected(int t) override {
 		if (last_modification != g.modifications)
 			update();
 		
@@ -626,12 +626,12 @@ public:
 		else
 			return -1;
 	}
-	int incomingEdge(int t) {
+	int incomingEdge(int t) override {
 		assert(t >= 0 && t < prev.size());
 		assert(prev[t] >= -1);
 		return prev[t];
 	}
-	int previous(int t) {
+	int previous(int t) override {
 		if (prev[t] < 0)
 			return -1;
 		if (undirected && g.getEdge(incomingEdge(t)).from == t) {
