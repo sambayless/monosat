@@ -279,10 +279,10 @@ public:
 		Detector::printStats();
 		if (opt_verb > 0) {
 			if (opt_detect_pure_theory_lits)
-				printf("\tPropagations skipped by pure literal detection: %ld\n", stats_pure_skipped);
-			printf("\tUnweighted Reasons (leq,gt): %ld,%ld\n", stats_unweighted_leq_reasons, stats_unweighted_gt_reasons);
-			printf("\tWeighted Reasons (leq,gt): %ld,%ld\n", stats_distance_leq_reasons, stats_distance_gt_reasons);
-			printf("\tConflict Edges Skipped (unweighted %ld, weighted %ld)\n", stats_gt_unweighted_edges_skipped,
+				printf("\tPropagations skipped by pure literal detection: %" PRId64 "\n", stats_pure_skipped);
+			printf("\tUnweighted Reasons (leq,gt): %" PRId64 ",%" PRId64 "\n", stats_unweighted_leq_reasons, stats_unweighted_gt_reasons);
+			printf("\tWeighted Reasons (leq,gt): %" PRId64 ",%" PRId64 "\n", stats_distance_leq_reasons, stats_distance_gt_reasons);
+			printf("\tConflict Edges Skipped (unweighted %" PRId64 ", weighted %" PRId64 ")\n", stats_gt_unweighted_edges_skipped,
 				   stats_gt_weighted_edges_skipped);
 		}
 	}

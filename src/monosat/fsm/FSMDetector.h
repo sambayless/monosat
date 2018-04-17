@@ -68,16 +68,16 @@ public:
 		if (opt_verb > 0) {
 			printf("Detector %d (%s):\n", getID(), getName());
 			//printf("Updates: %d (under), %d over\n", stats_under_updates, stats_over_updates);
-			printf("\tUnder-approx updates: %ld (%ld skipped) (%f s total, %f s avg)\n", stats_under_updates,
+			printf("\tUnder-approx updates: %" PRId64 " (%" PRId64 " skipped) (%f s total, %f s avg)\n", stats_under_updates,
 				   stats_skipped_under_updates, (double) stats_under_update_time,
 				   (double) stats_under_update_time / (double) (stats_under_updates + 1));
-			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,
+			printf("\tOver-approx updates: %" PRId64 " (%" PRId64 " skipped)  (%f s total, %f s avg)\n", stats_over_updates,
 				   stats_skipped_over_updates, (double) stats_over_update_time,
 				   (double) stats_over_update_time / (double) (stats_over_updates + 1));
-			printf("\tTheory Decisions: %ld (%f s total, %f s avg)\n", stats_decisions, (double) stats_decide_time,
+			printf("\tTheory Decisions: %" PRId64 " (%f s total, %f s avg)\n", stats_decisions, (double) stats_decide_time,
 				   (double) stats_decide_time / (double) (stats_decisions + 1));
 			printf(
-					"\tConflicts (under,over): %ld (clause literals: %ld), %ld, (clause literals: %ld), (under time %f s, over time %f s)\n",
+					"\tConflicts (under,over): %" PRId64 " (clause literals: %" PRId64 "), %" PRId64 ", (clause literals: %" PRId64 "), (under time %f s, over time %f s)\n",
 					stats_under_conflicts, stats_under_clause_length, stats_over_conflicts, stats_over_clause_length,
 					stats_under_conflict_time, stats_over_conflict_time);
 

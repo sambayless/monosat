@@ -224,7 +224,7 @@ public:
 	void printStats(int detailLevel) override {
 		printf("FSM %d stats:\n", getGraphID());
 		if(stats_decisions>0){
-			printf("FSM decisions: %ld\n",stats_decisions);
+			printf("FSM decisions: %" PRId64 "\n",stats_decisions);
 		}
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)

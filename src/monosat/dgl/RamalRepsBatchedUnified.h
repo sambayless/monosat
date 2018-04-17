@@ -859,7 +859,7 @@ public:
 
 
     void printStats()override{
-        printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
+        printf("Updates: %" PRId64 " (+%" PRId64 " skipped), %" PRId64 " restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
     }
     void updateHistory() override {
         update();
@@ -1211,7 +1211,7 @@ public:
         alg_id=g.addDynamicAlgorithm(this);
     }
     void printStats() override {
-        printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
+        printf("Updates: %" PRId64 " (+%" PRId64 " skipped), %" PRId64 " restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
     }
     //Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
     void setMaxDistance(int &_maxDistance) override {

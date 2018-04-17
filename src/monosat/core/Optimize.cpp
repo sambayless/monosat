@@ -232,7 +232,7 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 	int64_t value = getApprox(bvTheory,bvID,!invert);
 	int64_t last_decision_value=value;
 	if(opt_verb>=1 || opt_verb_optimize>=1){
-		printf("Best bv%d = %ld",bvID,value);
+		printf("Best bv%d = %" PRId64 "",bvID,value);
 	}
 	// int bvID,const Weight & to, Var outerVar = var_Undef, bool decidable=true
 
@@ -272,7 +272,7 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 		n_solves++;
 
 		if(opt_verb_optimize>=2){
-			printf("Testing bv%d %s %ld...\n",bvID, invert? ">=":"<=",value);
+			printf("Testing bv%d %s %" PRId64 "...\n",bvID, invert? ">=":"<=",value);
 		}
 
 		int64_t conflict_limit = S->getConflictBudget();
@@ -329,11 +329,11 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 			}
 			value=value2;
 			if(opt_verb_optimize>=2){
-				printf("Found bv%d = %ld...\n",bvID,value);
+				printf("Found bv%d = %" PRId64 "...\n",bvID,value);
 			}
 			assume.pop();
 			if(opt_verb>=1){
-				printf("\rMin bv%d = %ld",bvID,value);
+				printf("\rMin bv%d = %" PRId64 "",bvID,value);
 			}
 		}else{
 			assume.pop();
@@ -783,7 +783,7 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 	int64_t min_val = getApprox(bvTheory, bvID, invert,true); //bvTheory->getUnderApprox(bvID,true);
 	int64_t max_val = getApprox(bvTheory, bvID, !invert); //bvTheory->getOverApprox(bvID);
 	if(opt_verb>=1 || opt_verb_optimize>=1){
-		printf("Best bv%d = %ld",bvID,max_val);
+		printf("Best bv%d = %" PRId64 "",bvID,max_val);
 	}
 	int64_t suggested_next_midpoint = -1;
 
@@ -853,7 +853,7 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 
 		n_solves++;
 		if(opt_verb_optimize>=2){
-			printf("Testing bv%d %s %ld...\n",bvID, invert? ">=":"<=",mid_point);
+			printf("Testing bv%d %s %" PRId64 "...\n",bvID, invert? ">=":"<=",mid_point);
 		}
 		{
 			int conflict_limit = S->getConflictBudget();
@@ -911,7 +911,7 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 			assert(lt(new_value,max_val,invert));
 			max_val=new_value;
 			if(opt_verb_optimize>=2){
-				printf("Found bv%d = %ld...\n",bvID,max_val);
+				printf("Found bv%d = %" PRId64 "...\n",bvID,max_val);
 			}
 			if(leq(new_value,min_val,invert)){
 				//this can only happen if a budget was used and the solver quit early.
@@ -919,7 +919,7 @@ int64_t optimize_binary_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
                 assert(geq(min_val,getApprox(bvTheory,bvID,invert,true),invert)); //assert(min_val>=bvTheory->getUnderApprox(bvID,true));
 			}
 			if(opt_verb>=1 || opt_verb_optimize>=1){
-				printf("\rBest bv%d = %ld",bvID,max_val);
+				printf("\rBest bv%d = %" PRId64 "",bvID,max_val);
 			}
 		}else{
 			min_val = invert ? mid_point-1 : mid_point+1; //yes this is intentionally backward
@@ -1006,7 +1006,7 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 	int64_t min_val = getApprox(bvTheory, bvID, invert,true); //bvTheory->getUnderApprox(bvID,true);
 	int64_t max_val = getApprox(bvTheory, bvID, !invert); //bvTheory->getOverApprox(bvID);
 	if(opt_verb>=1 || opt_verb_optimize>=1){
-		printf("Best bv%d = %ld",bvID,max_val);
+		printf("Best bv%d = %" PRId64 "",bvID,max_val);
 	}
 	int64_t suggested_next_midpoint = -1;
 
@@ -1081,7 +1081,7 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 
 		n_solves++;
 		if(opt_verb_optimize>=2){
-			printf("Testing bv%d %s %ld...\n",bvID, invert? ">=":"<=",mid_point);
+			printf("Testing bv%d %s %" PRId64 "...\n",bvID, invert? ">=":"<=",mid_point);
 		}
 		{
 			int conflict_limit = S->getConflictBudget();
@@ -1131,7 +1131,7 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 			last_decision_value=mid_point;
 			int64_t new_value = getApprox(bvTheory, bvID, !invert); //bvTheory->getOverApprox(bvID);
 			if(opt_verb_optimize>=2){
-				printf("Found bv%d = %ld...\n",bvID,new_value);
+				printf("Found bv%d = %" PRId64 "...\n",bvID,new_value);
 			}
 			if(geq(new_value,max_val,invert)){
 				throw std::runtime_error("Error2 in optimization (minimum values are inconsistent with model)");
@@ -1149,7 +1149,7 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 				assert(gt(min_val,getApprox(bvTheory,bvID,invert,true),invert)); //assert(min_val>=bvTheory->getUnderApprox(bvID,true));
 			}
 			if(opt_verb>=1 || opt_verb_optimize>=1){
-				printf("\rBest bv%d = %ld",bvID,max_val);
+				printf("\rBest bv%d = %" PRId64 "",bvID,max_val);
 			}
 			suggested_next_midpoint=-1;
 			apparent_min_val=min_val;
@@ -1169,7 +1169,7 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 			if (gt(new_apparent_limit, apparent_min_val, invert) || ((drand(S->random_seed)<=opt_rnd_optimization_restart_freq))){
 				apparent_min_val = new_apparent_limit;
 				if(opt_verb_optimize>=2)
-					printf("Updating apparent min val to %ld.\n", apparent_min_val);
+					printf("Updating apparent min val to %" PRId64 ".\n", apparent_min_val);
 			}
 			if (!invert)
 				suggested_next_midpoint = apparent_min_val + (max_val - apparent_min_val) / 2;
@@ -1180,7 +1180,7 @@ int64_t optimize_binary_restart_bv(Monosat::SimpSolver * S, Monosat::BVTheorySol
 				}
 			}
 			if(opt_verb_optimize>=2)
-				printf("Suggested mid point is %ld (from minval %ld, maxval %ld, apparent_min_val %ld, current_apparent_min %ld).\n", suggested_next_midpoint,min_val,max_val, apparent_min_val, new_apparent_limit);
+				printf("Suggested mid point is %" PRId64 " (from minval %" PRId64 ", maxval %" PRId64 ", apparent_min_val %" PRId64 ", current_apparent_min %" PRId64 ").\n", suggested_next_midpoint,min_val,max_val, apparent_min_val, new_apparent_limit);
 			number_of_restarts++;
 
 			if(drand(S->random_seed)<=opt_rnd_optimization_freq){
@@ -1459,7 +1459,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 					}
 					assert(min_values[i] >= 0);
 					if (opt_verb >= 1 || opt_verb_optimize>=1) {
-						printf("\rBest bv%d = %ld\n", bvID, objectives[i].maximize? max_values[i]: min_values[i]);
+						printf("\rBest bv%d = %" PRId64 "\n", bvID, objectives[i].maximize? max_values[i]: min_values[i]);
 					}
 
 				}else{
@@ -1580,12 +1580,12 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 			assert(r);
 
 			if(opt_verb>0 || opt_verb_optimize>=1){
-				printf("Best values found (after %ld calls) : ",n_solves);
+				printf("Best values found (after %" PRId64 " calls) : ",n_solves);
 				for(int i = 0;i<min_values.size();i++){
 					int64_t best_value = objectives[i].maximize ? max_values[i] : min_values[i];
 					if(objectives[i].isBV()) {
 						int bvID = objectives[i].bvID;
-						printf("bv%d=%ld,", bvID, best_value);
+						printf("bv%d=%" PRId64 ",", bvID, best_value);
 					}else{
 
 						printf("pb (");
@@ -1594,7 +1594,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 							int weight = objectives[i].pb_weights[j];
 							printf("%d * %dL +",weight,dimacs(l));
 						}
-						printf(") =%ld,", best_value);
+						printf(") =%" PRId64 ",", best_value);
 					}
 				}
 				printf("\n");

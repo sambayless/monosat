@@ -134,7 +134,7 @@ public:
 				   stats_learnt_components_sz / (float) stats_learnt_components);
 		}
 		if(opt_decide_theories){
-			printf("\t%ld heuristic path recomputations\n",stats_heuristic_recomputes);
+			printf("\t%" PRId64 " heuristic path recomputations\n",stats_heuristic_recomputes);
 		}
 		if(overapprox_reach_detector){
 			printf("\t\tOverapproxReach: ");

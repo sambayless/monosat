@@ -119,12 +119,12 @@ public:
     }
     void printStats() override {
         reach->printStats();
-        printf("Cached Reach Recomputes: %ld\n",stats_n_recomputes);
+        printf("Cached Reach Recomputes: %" PRId64 "\n",stats_n_recomputes);
         if(randomShortestPathFrequency>0){
-            printf("Random shortest paths (%f freq): %ld\n",randomShortestPathFrequency,stats_random_shortest_paths);
+            printf("Random shortest paths (%f freq): %" PRId64 "\n",randomShortestPathFrequency,stats_random_shortest_paths);
         }
         if(randomShortestEdgeFrequency>0){
-            printf("Random shortest edges (%f freq): %ld\n",randomShortestEdgeFrequency,stats_random_shortest_edges);
+            printf("Random shortest edges (%f freq): %" PRId64 "\n",randomShortestEdgeFrequency,stats_random_shortest_edges);
         }
 
     }

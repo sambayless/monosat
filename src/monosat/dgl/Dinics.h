@@ -100,7 +100,7 @@ public:
 	void printStats() override{
 		printf("Dinics :\n");
 
-		printf("Rounds: %ld, Augmenting Rounds: %ld\n", stats_rounds, stats_augmenting_rounds);
+		printf("Rounds: %" PRId64 ", Augmenting Rounds: %" PRId64 "\n", stats_rounds, stats_augmenting_rounds);
 	}
 
 	void setCapacity(int u, int w, Weight c) {

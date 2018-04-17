@@ -769,18 +769,18 @@ public:
 		 printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
 		 */
 		printf("%d nodes, %d edges\n", g_under.nodes(), g_under.edges());
-		printf("History Clears: over_approx %ld, under_approx %ld, cut_graph %ld\n", g_over.historyclears,
+		printf("History Clears: over_approx %" PRId64 ", under_approx %" PRId64 ", cut_graph %" PRId64 "\n", g_over.historyclears,
 				g_under.historyclears, cutGraph.historyclears);
-		printf("Skipped History Clears: over_approx %ld, under_approx %ld, cut_graph %ld\n", g_over.skipped_historyclears,
+		printf("Skipped History Clears: over_approx %" PRId64 ", under_approx %" PRId64 ", cut_graph %" PRId64 "\n", g_over.skipped_historyclears,
 				g_under.skipped_historyclears, cutGraph.skipped_historyclears);
-		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
+		printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped)\n", stats_propagations, propagationtime,
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
-		printf("Decisions: %ld (%f s, avg: %f s), lazy decisions: %ld\n", stats_decisions, stats_decision_time,
+		printf("Decisions: %" PRId64 " (%f s, avg: %f s), lazy decisions: %" PRId64 "\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1), stats_lazy_decisions);
-		printf("Conflicts: %ld (lazy conflicts %ld)\n", stats_num_conflicts,stats_num_lazy_conflicts);
-		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
+		printf("Conflicts: %" PRId64 " (lazy conflicts %" PRId64 ")\n", stats_num_conflicts,stats_num_lazy_conflicts);
+		printf("Reasons: %" PRId64 " (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
-		printf("enqueues %ld, backtracks %ld (bv enqueues %ld (%ld while sat), bv backtracks %ld)\n",stats_enqueues,stats_backtrack_assigns,stats_bv_enqueues,stats_bv_enqueue_while_sat,stats_bv_backtracks);
+		printf("enqueues %" PRId64 ", backtracks %" PRId64 " (bv enqueues %" PRId64 " (%" PRId64 " while sat), bv backtracks %" PRId64 ")\n",stats_enqueues,stats_backtrack_assigns,stats_bv_enqueues,stats_bv_enqueue_while_sat,stats_bv_backtracks);
 
 		fflush(stdout);
 

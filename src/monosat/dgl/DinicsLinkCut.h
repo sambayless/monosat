@@ -107,8 +107,8 @@ public:
 		/*printf("Total time: %f\n", totaltime);
 		printf("BFS Time: %f\n", bfstime);
 		printf("Augmenting Path Time: %f (search: %f, cleanup: %f)\n", augtime, augtime_search, augtime_cleanup);
-*/		printf("Rounds: %ld, Augmenting Rounds: %ld\n", stats_rounds, stats_augmenting_rounds);
-		printf("Backtracks %ld (%ld avoided)\n", stats_backtracks, stats_avoided_backtracks);
+*/		printf("Rounds: %" PRId64 ", Augmenting Rounds: %" PRId64 "\n", stats_rounds, stats_augmenting_rounds);
+		printf("Backtracks %" PRId64 " (%" PRId64 " avoided)\n", stats_backtracks, stats_avoided_backtracks);
 	}
 
 public:

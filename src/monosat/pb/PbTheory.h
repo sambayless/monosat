@@ -1335,9 +1335,9 @@ public:
 
 	void printStats(int detailLevel) override {
 		printf("PbTheory: %d clauses\n", clauses.size());
-		printf("%ld propagations (%ld skipped)\n", stats_propagations, stats_propagations_skipped);
-		printf("%ld conflicts, %ld reasons\n", stats_conflicts, stats_reasons);
-		printf("Shrink removed %ld lits from conflict clauses\n", stats_shrink_removed);
+		printf("%" PRId64 " propagations (%" PRId64 " skipped)\n", stats_propagations, stats_propagations_skipped);
+		printf("%" PRId64 " conflicts, %" PRId64 " reasons\n", stats_conflicts, stats_reasons);
+		printf("Shrink removed %" PRId64 " lits from conflict clauses\n", stats_shrink_removed);
 	}
 	void preprocess() override {
 

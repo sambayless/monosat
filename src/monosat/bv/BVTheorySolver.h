@@ -348,7 +348,7 @@ public:
 					double startconftime = rtime(2);
 					theory.stats_num_conflicts++;
 					if(opt_verb>1){
-						printf("bv approximation update conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv approximation update conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					//propagationtime += startconftime - startproptime;
 					//this is already a conflict;
@@ -385,7 +385,7 @@ public:
 								}
 								theory.stats_num_conflicts++;theory.stats_bit_conflicts++;
 								if(opt_verb>1){
-									printf("bv bit conflict %ld\n", theory.stats_num_conflicts);
+									printf("bv bit conflict %" PRId64 "\n", theory.stats_num_conflicts);
 								}
 								theory.buildComparisonReason(Comparison::leq,bvID,overApprox,conflict);
 
@@ -410,7 +410,7 @@ public:
 								}
 								theory.stats_num_conflicts++;theory.stats_bit_conflicts++;
 								if(opt_verb>1){
-									printf("bv bit conflict %ld\n", theory.stats_num_conflicts);
+									printf("bv bit conflict %" PRId64 "\n", theory.stats_num_conflicts);
 								}
 								theory.buildComparisonReason(Comparison::geq,bvID,underApprox,conflict);
 
@@ -1037,7 +1037,7 @@ public:
 
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
+								printf("bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 							}
 							assert(value(l)==l_False);
 							assert(theory.dbg_value(l)==l_False);
@@ -1057,7 +1057,7 @@ public:
 
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
+								printf("bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 							}
 							conflict.push(toSolver(~l));
 							theory.buildComparisonReason(-op,bvID,to,conflict);
@@ -1079,7 +1079,7 @@ public:
 							//propagationtime += startconftime - startproptime;
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
+								printf("bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 							}
 							conflict.push(toSolver(~l));
 							theory.buildComparisonReason(-op,bvID,to,conflict);
@@ -1102,7 +1102,7 @@ public:
 							//propagationtime += startconftime - startproptime;
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
+								printf("bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 							}
 							conflict.push(toSolver(l));
 							theory.buildComparisonReason(op,bvID,to,conflict);
@@ -1450,7 +1450,7 @@ public:
 						//propagationtime += startconftime - startproptime;
 						theory.stats_num_conflicts++;theory.stats_bv_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv bv comparison conflict %ld\n", theory.stats_num_conflicts);
+							printf("bv bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 						}
 						conflict.push(toSolver(~l));
 						theory.buildComparisonReasonBV(-op,bvID,compareID,conflict);
@@ -1477,7 +1477,7 @@ public:
 						//propagationtime += startconftime - startproptime;
 						theory.stats_num_conflicts++;theory.stats_bv_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv bv comparison conflict %ld\n", theory.stats_num_conflicts);
+							printf("bv bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 						}
 						conflict.push(toSolver(~l));
 						theory.buildComparisonReasonBV(-op,bvID,compareID,conflict);
@@ -2157,7 +2157,7 @@ public:
 					//propagationtime += startconftime - startproptime;
 					theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 					if(opt_verb>1){
-						printf("bv condition conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv condition conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					if(value(condition)==l_True){
 						conflict.push(toSolver(~condition));
@@ -2172,7 +2172,7 @@ public:
 					double startconftime = rtime(2);
 					//propagationtime += startconftime - startproptime;
 					if(opt_verb>1){
-						printf("bv condition conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv condition conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 					if(value(condition)==l_True){
@@ -2868,7 +2868,7 @@ public:
 					theory.stats_num_conflicts++;
 					theory.stats_addition_conflicts++;
 					if(opt_verb>1){
-						printf("bv addition conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv addition conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					buildReason(conflict);
 
@@ -2878,7 +2878,7 @@ public:
 					double startconftime = rtime(2);
 					//propagationtime += startconftime - startproptime;
 					if(opt_verb>1){
-						printf("bv addition conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv addition conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					theory.stats_num_conflicts++;
 					theory.stats_addition_conflicts++;
@@ -3109,7 +3109,7 @@ public:
 				theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 
 				if(opt_verb>1){
-					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv addition arg conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -3120,7 +3120,7 @@ public:
 				//propagationtime += startconftime - startproptime;
 				theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 				if(opt_verb>1){
-					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv addition arg conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -3725,7 +3725,7 @@ public:
 				//propagationtime += startconftime - startproptime;
 				theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 				if(opt_verb>1){
-					printf("bv minmax conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv minmax conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -3897,7 +3897,7 @@ public:
 				theory.stats_num_conflicts++;
 				theory.stats_addition_conflicts++;
 				if (opt_verb > 1) {
-					printf("bv inversion conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv inversion conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 
 				//the reason is that either this bv needs to be less than underApprox
@@ -3915,7 +3915,7 @@ public:
 				theory.stats_num_conflicts++;
 				theory.stats_addition_conflicts++;
 				if (opt_verb > 1) {
-					printf("bv inversion conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv inversion conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				//the reason is that either this bv needs to be less than underApprox
 				theory.buildComparisonReason(Comparison::leq, bvID, overApprox, conflict);
@@ -4111,7 +4111,7 @@ public:
 				theory.stats_num_conflicts++;
 				theory.stats_mult_conflicts++;
 				if (opt_verb > 1) {
-					printf("bv mult conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv mult conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -4121,7 +4121,7 @@ public:
 				double startconftime = rtime(2);
 				//propagationtime += startconftime - startproptime;
 				if (opt_verb > 1) {
-					printf("bv mult conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv mult conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				theory.stats_num_conflicts++;
 				theory.stats_mult_conflicts++;
@@ -4372,7 +4372,7 @@ public:
 				theory.stats_addition_conflicts++;
 
 				if (opt_verb > 1) {
-					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv addition arg conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -4384,7 +4384,7 @@ public:
 				theory.stats_num_conflicts++;
 				theory.stats_addition_conflicts++;
 				if (opt_verb > 1) {
-					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv addition arg conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -4902,18 +4902,18 @@ public:
 	void printStats(int detailLevel) override {
 		printf("BV Theory %d stats:\n", this->getTheoryIndex());
 
-		printf("%d bitvectors, %ld bits, %d comparisons (bvcomparisons %d), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
-		printf("constant bitvectors (at start, end of deduction): %ld, %ld\n",n_starting_consts ,n_consts);
+		printf("%d bitvectors, %" PRId64 " bits, %d comparisons (bvcomparisons %d), %" PRId64 " additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
+		printf("constant bitvectors (at start, end of deduction): %" PRId64 ", %" PRId64 "\n",n_starting_consts ,n_consts);
 
 
-		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped), bv updates: %ld (%f s), bv propagations %ld (%ld skipped)\n", stats_propagations, propagationtime,
+		printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped), bv updates: %" PRId64 " (%f s), bv propagations %" PRId64 " (%" PRId64 " skipped)\n", stats_propagations, propagationtime,
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped,statis_bv_updates,stats_update_time,stats_bv_propagations,stats_bv_skipped_propagations);
-		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
+		printf("Decisions: %" PRId64 " (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1));
-		printf("Conflicts: %ld (bits: %ld, additions: %ld, comparisons: %ld, bv comparisons: %ld), %f seconds\n", stats_num_conflicts,stats_bit_conflicts,stats_addition_conflicts,stats_compare_conflicts,stats_bv_compare_conflicts, stats_conflict_time);
-		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
+		printf("Conflicts: %" PRId64 " (bits: %" PRId64 ", additions: %" PRId64 ", comparisons: %" PRId64 ", bv comparisons: %" PRId64 "), %f seconds\n", stats_num_conflicts,stats_bit_conflicts,stats_addition_conflicts,stats_compare_conflicts,stats_bv_compare_conflicts, stats_conflict_time);
+		printf("Reasons: %" PRId64 " (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
-		printf("Build: value reason %ld, bv value reason %ld, addition reason %ld\n", stats_build_value_reason,stats_build_value_bv_reason,stats_build_addition_reason);
+		printf("Build: value reason %" PRId64 ", bv value reason %" PRId64 ", addition reason %" PRId64 "\n", stats_build_value_reason,stats_build_value_bv_reason,stats_build_addition_reason);
 
 		fflush(stdout);
 	}

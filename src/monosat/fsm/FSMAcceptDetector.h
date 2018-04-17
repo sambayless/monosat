@@ -115,17 +115,17 @@ public:
 		//printf("Reach detector\n");
 		FSMDetector::printStats();
 		if (opt_detect_pure_theory_lits)
-			printf("\tPropagations skipped by pure literal detection: %ld\n", stats_pure_skipped);
+			printf("\tPropagations skipped by pure literal detection: %" PRId64 "\n", stats_pure_skipped);
 		if (opt_shrink_theory_conflicts) {
-			printf("\t%ld lits removed by shrinking conflicts\n", stats_shrink_removed);
+			printf("\t%" PRId64 " lits removed by shrinking conflicts\n", stats_shrink_removed);
 		}
 
 		if (opt_learn_unreachable_component) {
-			printf("\t%ld components learned, average component size: %f\n", stats_learnt_components,
+			printf("\t%" PRId64 " components learned, average component size: %f\n", stats_learnt_components,
 				   stats_learnt_components_sz / (float) stats_learnt_components);
 		}
 		if(opt_fsm_symmetry_breaking){
-			printf("Symmetry breaking conflicts: %ld\n", stats_symmetry_conflicts);
+			printf("Symmetry breaking conflicts: %" PRId64 "\n", stats_symmetry_conflicts);
 		}
 	}
 

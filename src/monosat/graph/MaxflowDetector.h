@@ -218,16 +218,16 @@ public:
 		if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			KohliTorr<Weight> * kt = (KohliTorr<Weight> *) overapprox_detector;
 			printf(
-					"\tInit Time %f, Decision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f),  inits: %ld,re-inits %ld\n",
+					"\tInit Time %f, Decision flow calculations: %" PRId64 ", (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%" PRId64 ") (maxflow %f,flow assignment %f),  inits: %" PRId64 ",re-inits %" PRId64 "\n",
 					kt->stats_init_time, stats_decision_calculations, stats_redecide_time, stats_flow_calc_time, stats_flow_recalc_time,
 					kt->stats_flow_calcs, kt->stats_flow_time, kt->stats_calc_time, kt->stats_inits, kt->stats_reinits);
 		} else
-			printf("\tDecision flow calculations: %ld\n", stats_decision_calculations);
+			printf("\tDecision flow calculations: %" PRId64 "\n", stats_decision_calculations);
 		if(n_stats_priority_decisions>0){
-			printf("\tPriority decisions: %ld\n",n_stats_priority_decisions);
+			printf("\tPriority decisions: %" PRId64 "\n",n_stats_priority_decisions);
 		}
 		if(opt_theory_internal_vsids){
-			printf("\tVsids decisions: %ld\n",n_stats_vsids_decisions);
+			printf("\tVsids decisions: %" PRId64 "\n",n_stats_vsids_decisions);
 		}
 
 	}

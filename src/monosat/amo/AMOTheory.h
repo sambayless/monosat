@@ -235,11 +235,11 @@ public:
 		if(!clausified) {
 			printf("AMO Theory %d stats:\n", this->getTheoryIndex());
 
-			printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
+			printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped)\n", stats_propagations, propagationtime,
 				   (propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 
-			printf("Conflicts: %ld\n", stats_conflicts);
-			printf("Reasons: %ld\n", stats_reasons);
+			printf("Conflicts: %" PRId64 "\n", stats_conflicts);
+			printf("Reasons: %" PRId64 "\n", stats_reasons);
 
 			fflush(stdout);
 		}

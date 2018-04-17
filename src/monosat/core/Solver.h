@@ -262,24 +262,24 @@ public:
 			printf("conflict counter restarts:     %" PRIu64 "\n",stats_theory_conflict_counter_restarts);
 		}
 		if(opt_theory_order_swapping_reset_counts_new_conflict){
-			printf("swapping counter clears/total, max swapping counter value:     %ld/%ld, %ld\n",stats_max_swap_count,stats_swapping_conflict_count,stats_swapping_resets);
+			printf("swapping counter clears/total, max swapping counter value:     %" PRId64 "/%" PRId64 ", %" PRId64 "\n",stats_max_swap_count,stats_swapping_conflict_count,stats_swapping_resets);
 		}
-		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%ld theory learnts), %" PRId64 " removed)\n", conflicts,
+		printf("conflicts             : %-12" PRIu64 "   (%.0f /sec, %d learnts (%" PRId64 " theory learnts), %" PRId64 " removed)\n", conflicts,
 			   conflicts / cpu_time, learnts.size(),stats_theory_conflicts, stats_removed_clauses);
 		printf("decisions             : %-12" PRIu64 "   (%4.2f %% random) (%.0f /sec)\n", decisions,
 			   (float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
 		if(opt_decide_theories){
-			printf("Theory decisions: %ld\n",stats_theory_decisions);
+			printf("Theory decisions: %" PRId64 "\n",stats_theory_decisions);
 			printf("Theory decision rounds: %" PRId64 "/%" PRId64 "\n",n_theory_decision_rounds,starts);
 		}
 		if(opt_vsids_both){
-			printf("Sovler pre-empted decisions: %ld\n",stats_solver_preempted_decisions);
+			printf("Sovler pre-empted decisions: %" PRId64 "\n",stats_solver_preempted_decisions);
 		}
 		printf("propagations          : %-12" PRIu64 "   (%.0f /sec)\n", propagations, propagations / cpu_time);
 		printf("conflict literals     : %-12" PRIu64 "   (%4.2f %% deleted)\n", tot_literals,
 			   (max_literals - tot_literals) * 100 / (double) max_literals);
 		if(stats_skipped_theory_prop_rounds>0){
-			printf("theory propagations skipped: %ld\n",stats_skipped_theory_prop_rounds);
+			printf("theory propagations skipped: %" PRId64 "\n",stats_skipped_theory_prop_rounds);
 		}
 		if (opt_detect_pure_theory_lits) {
 			printf("pure literals     : %" PRId64 " (%" PRId64 " theory lits) (%" PRId64 " rounds, %f time)\n", stats_pure_lits,

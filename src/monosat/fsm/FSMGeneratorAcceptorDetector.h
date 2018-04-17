@@ -159,22 +159,22 @@ public:
 		}else{
 			FSMDetector::printStats();
 			if (opt_detect_pure_theory_lits)
-				printf("\tPropagations skipped by pure literal detection: %ld\n", stats_pure_skipped);
+				printf("\tPropagations skipped by pure literal detection: %" PRId64 "\n", stats_pure_skipped);
 			if (opt_shrink_theory_conflicts) {
-				printf("\t%ld lits removed by shrinking conflicts\n", stats_shrink_removed);
+				printf("\t%" PRId64 " lits removed by shrinking conflicts\n", stats_shrink_removed);
 			}
 			if (opt_learn_unreachable_component) {
-				printf("\t%ld components learned, average component size: %f\n", stats_learnt_components,
+				printf("\t%" PRId64 " components learned, average component size: %f\n", stats_learnt_components,
 					   stats_learnt_components_sz / (float) stats_learnt_components);
 			}
 			if(opt_fsm_forced_edge_prop){
-				printf("Forced edge assignments: %ld\n", stats_forced_edge_propagations);
+				printf("Forced edge assignments: %" PRId64 "\n", stats_forced_edge_propagations);
 			}
 			if(opt_fsm_chokepoint_prop){
-				printf("Chokepoint edge assignments: %ld\n", stats_chokepoint_edge_propagations);
+				printf("Chokepoint edge assignments: %" PRId64 "\n", stats_chokepoint_edge_propagations);
 			}
 			if(opt_fsm_edge_prop){
-				printf("Generator edge assignments (deterministic,nondeterministic): %ld,%ld\n", stats_det_gen_edge_propagations,stats_nondet_gen_edge_propagations);
+				printf("Generator edge assignments (deterministic,nondeterministic): %" PRId64 ",%" PRId64 "\n", stats_det_gen_edge_propagations,stats_nondet_gen_edge_propagations);
 			}
 
 		}
