@@ -295,7 +295,7 @@ public:
 			&& (forceClear
 				|| (history.size()
 					> (adaptive_history_clear ?
-					   std::max(1000L, historyClearInterval * edges()) : historyClearInterval)))) {//){
+					   std::max((int64_t)1000, historyClearInterval * edges()) : historyClearInterval)))) {//){
 			history.clear();
 			historyclears++;
 
