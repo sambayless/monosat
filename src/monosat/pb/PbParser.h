@@ -22,7 +22,7 @@
 #ifndef PB_PARSER_H_
 #define PB_PARSER_H_
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"
@@ -65,7 +65,7 @@ public:
 	int vars = 0;
 	int clauses = 0;
 	vec<PB::Int> coefs;
-	bool parseLine(B& in, Solver& S) {
+	bool parseLine(B& in, Solver& S) override{
 
 		skipWhitespace(in);
 		if (*in == EOF)

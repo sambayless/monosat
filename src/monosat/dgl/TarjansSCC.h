@@ -192,7 +192,7 @@ public:
 		}
 	}
 	
-	void update() {
+	void update() override {
 		static int iteration = 0;
 		int local_it = ++iteration;
 		
@@ -231,7 +231,7 @@ public:
 		;
 	}
 	
-	bool connected(int from, int to) {
+	bool connected(int from, int to) override {
 		update();
 		return scc[from].id == scc[to].id;
 	}
@@ -245,7 +245,7 @@ public:
 		return strict_scc_set;
 	}
 	// returns the number of distinct SCCs in the graph.
-	int numComponents() {
+	int numComponents() override {
 		update();
 		return scc_set.size();
 	}
@@ -254,12 +254,12 @@ public:
 			return scc[node].id;
 		}
 	//Returns the index of the SCC in the graph that this node belongs to
-	int getComponent(int node) {
+	int getComponent(int node) override {
 		update();
 		return scc[node].id;
 	}
 	//returns an (arbitrary) node in the ith SCC
-	int getElement(int sccID) {
+	int getElement(int sccID) override {
 		update();
 		assert(sccID < scc_set.size());
 		return scc_set[sccID].element;

@@ -2,9 +2,9 @@
 #ifndef _TREAP_H_
 #define _TREAP_H_
 
-#include <assert.h>
-#include <stdlib.h>
-#include <limits.h>
+#include <cassert>
+#include <cstdlib>
+#include <climits>
 
 // A Cartesian tree.
 // adapted from treap code by Bobby Blumofe

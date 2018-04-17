@@ -22,7 +22,7 @@
 #ifndef LSYSTEM_PARSER_H_
 #define LSYSTEM_PARSER_H_
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/core/SolverTypes.h"

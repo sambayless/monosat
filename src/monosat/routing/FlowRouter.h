@@ -75,8 +75,8 @@ private:
     vec<Lit> enabled_routing_lits;
     vec<Lit> disabled_routing_lits;
     vec<Lit> inner_conflict;
-    long stats_flow_decisions=0;
-    long stats_flow_conflicts=0;
+    int64_t stats_flow_decisions=0;
+    int64_t stats_flow_conflicts=0;
 
     struct NetHeurisitc{
         //vec<Reach*> reaches;
@@ -110,8 +110,8 @@ public:
 
     void printStats(int detailLevel = 0) override{
         printf("Flow Router:\n");
-        printf("\tFlow conflicts: %ld\n",stats_flow_conflicts);
-        printf("\tFlow decisions: %ld\n",stats_flow_decisions);
+        printf("\tFlow conflicts: %" PRId64 "\n",stats_flow_conflicts);
+        printf("\tFlow decisions: %" PRId64 "\n",stats_flow_decisions);
     }
     bool propagateTheory(vec<Lit> & conflict) override{
         return propagateTheory(conflict,false);
@@ -124,25 +124,25 @@ public:
         return propagateTheory(conflict,true);
     }
 
-    inline int getTheoryIndex()const {
+    inline int getTheoryIndex()const override{
         return theory_index;
     }
-    inline void setTheoryIndex(int id) {
+    inline void setTheoryIndex(int id)override {
         theory_index = id;
     }
-    inline void newDecisionLevel() {
+    inline void newDecisionLevel() override{
 
     }
-    inline void backtrackUntil(int untilLevel){
+    inline void backtrackUntil(int untilLevel)override{
 
     }
     inline int decisionLevel() {
         return S->decisionLevel();
     }
-    inline void undecideTheory(Lit l){
+    inline void undecideTheory(Lit l)override{
 
     }
-    void enqueueTheory(Lit l) {
+    void enqueueTheory(Lit l)override {
 
     }
 
@@ -769,7 +769,7 @@ Lit FlowRouter<Weight>::decideTheory(CRef &decision_reason){
         }
     }
 #endif
-
+    return lit_Undef;
 }
 
 template<typename Weight>

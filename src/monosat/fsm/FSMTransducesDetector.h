@@ -119,7 +119,7 @@ public:
 
 
 
-	void printStats() {
+	void printStats() override {
 		//printf("Reach detector\n");
 		FSMDetector::printStats();
 		if (opt_detect_pure_theory_lits)
@@ -133,7 +133,7 @@ public:
 		}
 	}
 	
-	void unassign(Lit l) {
+	void unassign(Lit l) override {
 		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
 		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1) {
@@ -174,13 +174,13 @@ public:
 		assert(accept_lit_map[index].to >= 0);
 		return accept_lit_map[index].str2;
 	}
-	bool propagate(vec<Lit> & conflict);
+	bool propagate(vec<Lit> & conflict) override;
 	void buildTransducesReason(int node,int str1,int str2, vec<Lit> & conflict);
 	void buildNonTransducesReason(int node,int str1,int str2, vec<Lit> & conflict);
 
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	void printSolution(std::ostream& write_to);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	void printSolution(std::ostream& write_to) override;
 
 	void addTransducesLit(int state, int strID1,int strID2, Var reach_var);
 
@@ -188,11 +188,12 @@ public:
 
 	FSMTransducesDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
 			int _source, vec<vec<int>> &  strs, double seed = 1);
-	virtual ~FSMTransducesDetector() {
+
+	~FSMTransducesDetector() override {
 		
 	}
 	
-	const char* getName() {
+	const char* getName() override {
 		return "NFA Transduces Detector";
 	}
 	

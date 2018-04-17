@@ -143,7 +143,7 @@ char *vnsprintf(const char *format, va_list args) ___malloc;
 template<class T>
 macro T *xmalloc(size_t size) {
     T *tmp = (T *) malloc(size * sizeof(T));
-    assert(size == 0 || tmp != NULL);
+    assert(size == 0 || tmp != nullptr);
     return tmp;
 }
 

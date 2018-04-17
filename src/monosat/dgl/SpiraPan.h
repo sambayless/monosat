@@ -647,11 +647,11 @@ public:
 		}
 		components_to_visit.clear();
 	}
-	long num_updates = 0;
-	int numUpdates() const {
+	int64_t num_updates = 0;
+	int numUpdates() const override{
 		return num_updates;
 	}
-	void update() {
+	void update() override{
 		static int iteration = 0;
 		int local_it = ++iteration;
 
@@ -777,36 +777,36 @@ public:
 		;
 	}
 
-	void updateHistory(){
+	void updateHistory() override {
 		update();
 	}
 
-	std::vector<int> & getSpanningTree() {
+	std::vector<int> & getSpanningTree() override{
 		update();
 		return mst;
 	}
 
-	int getParent(int node) {
+	int getParent(int node)override {
 		update();
 
 		return parents[node];
 	}
-	int getParentEdge(int node) {
+	int getParentEdge(int node)override {
 		if (getParent(node) != -1)
 			return parent_edges[node];
 		else
 			return -1;
 	}
-	bool edgeInTree(int edgeid) {
+	bool edgeInTree(int edgeid)override {
 		update();
 		return in_tree[edgeid];
 	}
-	bool dbg_mst() {
+	bool dbg_mst() override{
 
 		return true;
 	}
 
-	Weight & weight() {
+	Weight & weight() override{
 		update();
 		assert(dbg_uptodate());
 		if (num_sets == 1)
@@ -815,20 +815,20 @@ public:
 			return INF;
 	}
 
-	Weight & forestWeight() {
+	Weight & forestWeight()override {
 		update();
 		assert(dbg_uptodate());
 		return min_weight;
 	}
-	int numComponents() {
+	int numComponents() override{
 		update();
 		return num_sets;
 	}
-	int getComponent(int node) {
+	int getComponent(int node) override{
 		update();
 		return components[node];
 	}
-	int getRoot(int component = 0) {
+	int getRoot(int component = 0)override {
 		update();
 		int c = 0;
 		int nc = 0;
@@ -840,7 +840,7 @@ public:
 		//return parents[component];
 	}
 
-	bool dbg_uptodate() {
+	bool dbg_uptodate()override {
 #ifdef DEBUG_DGL
 
 		dbg_parents();

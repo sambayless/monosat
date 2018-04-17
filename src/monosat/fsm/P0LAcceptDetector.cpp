@@ -260,16 +260,16 @@ bool P0LAcceptDetector::find_path(int source, int dest,vec<int> & string,int dep
 							//backtrack until the path is backtrack size.
 							assert(backtrack<path.size());
 							while(backtrack<path.size()){
-								PathElement & p= stack.last();
-								if(p.emove){
+								PathElement & p2= stack.last();
+								if(p2.emove){
 									emove_count--;
 								}else{
 									str_pos--;
 								}
-								if (p.on_path){
+								if (p2.on_path){
 									path.pop();
 								}
-					/*			if(p.used_rule){
+					/*			if(p2.used_rule){
 									int rID = used_rule_set.last();
 									used_edges[rID]=false;
 									used_rule_set.pop();
@@ -780,8 +780,8 @@ void P0LAcceptDetector::printSolution(std::ostream& out){
 			if(g_under.ruleEnabled(ruleID)){
 				n_rules++;
 				out<<c<<" -> ";
-				for(int c:g_under.getRule(ruleID)){
-					out<<c<<",";
+				for(int d:g_under.getRule(ruleID)){
+					out<<d<<",";
 				}
 				out<<"\n";
 			}

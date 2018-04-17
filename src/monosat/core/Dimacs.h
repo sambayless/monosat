@@ -44,8 +44,8 @@ template<class B, class Solver>
 class Parser {
 	const char * parser_name;
 protected:
-	DimacsMap * dimacsParser;
-	BVMap * bvmap;
+	DimacsMap * dimacsParser=nullptr;
+	BVMap * bvmap=nullptr;
 public:
 
 	Parser(const char * parser_name):parser_name(parser_name) {
@@ -199,7 +199,7 @@ public:
 
 	}
 
-	virtual ~Dimacs() {
+	~Dimacs() override {
 	}
 
 

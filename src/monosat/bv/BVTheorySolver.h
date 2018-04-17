@@ -206,7 +206,7 @@ public:
 		Cause new_under_cause;
 		Cause new_over_cause;
 		Assignment( int bvID,Weight previous_under,Weight previous_over,Weight new_under,Weight new_over,
-				Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause):isOperation(false),assign(0),bvID(bvID),var(var_Undef),previous_under(previous_under),previous_over(previous_over),new_under(new_under),new_over(new_over),
+				Cause prev_under_cause,Cause prev_over_cause,Cause new_under_cause,Cause new_over_cause):isOperation(false),assign(false),bvID(bvID),var(var_Undef),previous_under(previous_under),previous_over(previous_over),new_under(new_under),new_over(new_over),
 				prev_under_cause(prev_under_cause),prev_over_cause(prev_over_cause),new_under_cause(new_under_cause),new_over_cause(new_over_cause){
 
 		}
@@ -325,7 +325,7 @@ public:
 		OperationType getType()const override{
 			return OperationType::cause_is_bits;
 		}
-		void enqueue(Lit l, bool alter_trail){
+		void enqueue(Lit l, bool alter_trail) override {
 			importTheory(theory);
 			Var v = var(l);
 			if(alter_trail){
@@ -348,7 +348,7 @@ public:
 					double startconftime = rtime(2);
 					theory.stats_num_conflicts++;
 					if(opt_verb>1){
-						printf("bv approximation update conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv approximation update conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					//propagationtime += startconftime - startproptime;
 					//this is already a conflict;
@@ -385,7 +385,7 @@ public:
 								}
 								theory.stats_num_conflicts++;theory.stats_bit_conflicts++;
 								if(opt_verb>1){
-									printf("bv bit conflict %ld\n", theory.stats_num_conflicts);
+									printf("bv bit conflict %" PRId64 "\n", theory.stats_num_conflicts);
 								}
 								theory.buildComparisonReason(Comparison::leq,bvID,overApprox,conflict);
 
@@ -410,7 +410,7 @@ public:
 								}
 								theory.stats_num_conflicts++;theory.stats_bit_conflicts++;
 								if(opt_verb>1){
-									printf("bv bit conflict %ld\n", theory.stats_num_conflicts);
+									printf("bv bit conflict %" PRId64 "\n", theory.stats_num_conflicts);
 								}
 								theory.buildComparisonReason(Comparison::geq,bvID,underApprox,conflict);
 
@@ -1038,7 +1038,7 @@ public:
 
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
+								printf("bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 							}
 							assert(value(l)==l_False);
 							assert(theory.dbg_value(l)==l_False);
@@ -1058,7 +1058,7 @@ public:
 
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
+								printf("bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 							}
 							conflict.push(toSolver(~l));
 							theory.buildComparisonReason(-op,bvID,to,conflict);
@@ -1080,7 +1080,7 @@ public:
 							//propagationtime += startconftime - startproptime;
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
+								printf("bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 							}
 							conflict.push(toSolver(~l));
 							theory.buildComparisonReason(-op,bvID,to,conflict);
@@ -1103,7 +1103,7 @@ public:
 							//propagationtime += startconftime - startproptime;
 							theory.stats_num_conflicts++;theory.stats_compare_conflicts++;
 							if(opt_verb>1){
-								printf("bv comparison conflict %ld\n", theory.stats_num_conflicts);
+								printf("bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 							}
 							conflict.push(toSolver(l));
 							theory.buildComparisonReason(op,bvID,to,conflict);
@@ -1451,7 +1451,7 @@ public:
 						//propagationtime += startconftime - startproptime;
 						theory.stats_num_conflicts++;theory.stats_bv_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv bv comparison conflict %ld\n", theory.stats_num_conflicts);
+							printf("bv bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 						}
 						conflict.push(toSolver(~l));
 						theory.buildComparisonReasonBV(-op,bvID,compareID,conflict);
@@ -1478,7 +1478,7 @@ public:
 						//propagationtime += startconftime - startproptime;
 						theory.stats_num_conflicts++;theory.stats_bv_compare_conflicts++;
 						if(opt_verb>1){
-							printf("bv bv comparison conflict %ld\n", theory.stats_num_conflicts);
+							printf("bv bv comparison conflict %" PRId64 "\n", theory.stats_num_conflicts);
 						}
 						conflict.push(toSolver(~l));
 						theory.buildComparisonReasonBV(-op,bvID,compareID,conflict);
@@ -1825,7 +1825,7 @@ public:
 				}
 			}
 		}
-		virtual void backtrack(Assignment & e, bool rewind){
+		virtual void backtrack(Assignment & e, bool rewind)override{
 			importTheory(theory);
 			if(e.isOperation){
 				assert(e.bvID==getID());
@@ -2158,7 +2158,7 @@ public:
 					//propagationtime += startconftime - startproptime;
 					theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 					if(opt_verb>1){
-						printf("bv condition conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv condition conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					if(value(condition)==l_True){
 						conflict.push(toSolver(~condition));
@@ -2173,7 +2173,7 @@ public:
 					double startconftime = rtime(2);
 					//propagationtime += startconftime - startproptime;
 					if(opt_verb>1){
-						printf("bv condition conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv condition conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 					if(value(condition)==l_True){
@@ -2479,7 +2479,7 @@ public:
 			return true;
 		}
 
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override {
 			importTheory(theory);
 			int bvThenID=thenOp->bvID;
 			int bvElseID=elseOp->bvID;
@@ -2681,7 +2681,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override {
 			importTheory(theory);
 			int other_argID=otherOp->bvID;
 			int resultID=resultOp->bvID;
@@ -2869,7 +2869,7 @@ public:
 					theory.stats_num_conflicts++;
 					theory.stats_addition_conflicts++;
 					if(opt_verb>1){
-						printf("bv addition conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv addition conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					buildReason(conflict);
 
@@ -2879,7 +2879,7 @@ public:
 					double startconftime = rtime(2);
 					//propagationtime += startconftime - startproptime;
 					if(opt_verb>1){
-						printf("bv addition conflict %ld\n", theory.stats_num_conflicts);
+						printf("bv addition conflict %" PRId64 "\n", theory.stats_num_conflicts);
 					}
 					theory.stats_num_conflicts++;
 					theory.stats_addition_conflicts++;
@@ -2979,7 +2979,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict)override{
 			importTheory(theory);
 			if(compareOver){
 
@@ -3110,7 +3110,7 @@ public:
 				theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 
 				if(opt_verb>1){
-					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv addition arg conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -3121,7 +3121,7 @@ public:
 				//propagationtime += startconftime - startproptime;
 				theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 				if(opt_verb>1){
-					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv addition arg conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -3227,7 +3227,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override {
 			importTheory(theory);
 			if(compareOver){
 
@@ -3530,7 +3530,7 @@ public:
 			assert(foundConflict);
 			analyze(conflict);
 		}
-		void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict){
+		void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict)override{
 
 			importTheory(theory);
 			Weight  overApprox = over_approx[bvID];
@@ -3726,7 +3726,7 @@ public:
 				//propagationtime += startconftime - startproptime;
 				theory.stats_num_conflicts++;theory.stats_addition_conflicts++;
 				if(opt_verb>1){
-					printf("bv minmax conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv minmax conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -3796,7 +3796,7 @@ public:
 					theory.buildComparisonReasonBV(Comparison::gt,argID,bvID,conflict);
 				}
 			}
-			void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict){
+			void analyzeReason(bool compare_over,Comparison op, Weight  to,  vec<Lit> & conflict)override{
 				importTheory(theory);
 				bool isMin = min;
 				int resultID= resultOp->bvID;
@@ -3898,7 +3898,7 @@ public:
 				theory.stats_num_conflicts++;
 				theory.stats_addition_conflicts++;
 				if (opt_verb > 1) {
-					printf("bv inversion conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv inversion conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 
 				//the reason is that either this bv needs to be less than underApprox
@@ -3916,7 +3916,7 @@ public:
 				theory.stats_num_conflicts++;
 				theory.stats_addition_conflicts++;
 				if (opt_verb > 1) {
-					printf("bv inversion conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv inversion conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				//the reason is that either this bv needs to be less than underApprox
 				theory.buildComparisonReason(Comparison::leq, bvID, overApprox, conflict);
@@ -3973,7 +3973,7 @@ public:
 		}
 
 
-		void analyzeReason(bool compare_over, Comparison op, Weight to, vec<Lit> &conflict) {
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override {
 			importTheory(theory);
 			int width = theory.bitvectors[bvID].size();
 			Weight max_val =  evalBit<Weight>(width)-1;//evalBit<Weight>(width)-1;
@@ -4112,7 +4112,7 @@ public:
 				theory.stats_num_conflicts++;
 				theory.stats_mult_conflicts++;
 				if (opt_verb > 1) {
-					printf("bv mult conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv mult conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -4122,7 +4122,7 @@ public:
 				double startconftime = rtime(2);
 				//propagationtime += startconftime - startproptime;
 				if (opt_verb > 1) {
-					printf("bv mult conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv mult conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				theory.stats_num_conflicts++;
 				theory.stats_mult_conflicts++;
@@ -4235,7 +4235,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) {
+		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) override{
 			importTheory(theory);
 			int aID = arg1->bvID;
 			int bID = arg2->bvID;
@@ -4373,7 +4373,7 @@ public:
 				theory.stats_addition_conflicts++;
 
 				if (opt_verb > 1) {
-					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv addition arg conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -4385,7 +4385,7 @@ public:
 				theory.stats_num_conflicts++;
 				theory.stats_addition_conflicts++;
 				if (opt_verb > 1) {
-					printf("bv addition arg conflict %ld\n", theory.stats_num_conflicts);
+					printf("bv addition arg conflict %" PRId64 "\n", theory.stats_num_conflicts);
 				}
 				buildReason(conflict);
 
@@ -4490,7 +4490,7 @@ public:
 			analyze(conflict);
 		}
 
-		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) {
+		void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit> &conflict) override{
 			importTheory(theory);
 			if (compareOver) {
 
@@ -4849,7 +4849,7 @@ public:
         unary_prop_marker = S->newReasonMarker(this);
 		const_true = True();
 	}
-	~BVTheorySolver(){
+	~BVTheorySolver() override {
 
 	}
 	TheorySolver * getSolver(){
@@ -4900,26 +4900,26 @@ public:
 		theories[theory->getTheoryIndexBV()]=theory;
 	}
 
-	void printStats(int detailLevel) {
+	void printStats(int detailLevel) override {
 		printf("BV Theory %d stats:\n", this->getTheoryIndex());
 
-		printf("%d bitvectors, %ld bits, %d comparisons (bvcomparisons %d), %ld additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
-		printf("constant bitvectors (at start, end of deduction): %ld, %ld\n",n_starting_consts ,n_consts);
+		printf("%d bitvectors, %" PRId64 " bits, %d comparisons (bvcomparisons %d), %" PRId64 " additions\n", bitvectors.size(),n_bits,compares.size()+bvcompares.size(),bvcompares.size(), n_additions				 );
+		printf("constant bitvectors (at start, end of deduction): %" PRId64 ", %" PRId64 "\n",n_starting_consts ,n_consts);
 
 
-		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped), bv updates: %ld (%f s), bv propagations %ld (%ld skipped)\n", stats_propagations, propagationtime,
+		printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped), bv updates: %" PRId64 " (%f s), bv propagations %" PRId64 " (%" PRId64 " skipped)\n", stats_propagations, propagationtime,
 				(propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped,statis_bv_updates,stats_update_time,stats_bv_propagations,stats_bv_skipped_propagations);
-		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
+		printf("Decisions: %" PRId64 " (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
 				(stats_decision_time) / ((double) stats_decisions + 1));
-		printf("Conflicts: %ld (bits: %ld, additions: %ld, comparisons: %ld, bv comparisons: %ld), %f seconds\n", stats_num_conflicts,stats_bit_conflicts,stats_addition_conflicts,stats_compare_conflicts,stats_bv_compare_conflicts, stats_conflict_time);
-		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
+		printf("Conflicts: %" PRId64 " (bits: %" PRId64 ", additions: %" PRId64 ", comparisons: %" PRId64 ", bv comparisons: %" PRId64 "), %f seconds\n", stats_num_conflicts,stats_bit_conflicts,stats_addition_conflicts,stats_compare_conflicts,stats_bv_compare_conflicts, stats_conflict_time);
+		printf("Reasons: %" PRId64 " (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 				(stats_reason_time) / ((double) stats_num_reasons + 1));
-		printf("Build: value reason %ld, bv value reason %ld, addition reason %ld\n", stats_build_value_reason,stats_build_value_bv_reason,stats_build_addition_reason);
+		printf("Build: value reason %" PRId64 ", bv value reason %" PRId64 ", addition reason %" PRId64 "\n", stats_build_value_reason,stats_build_value_bv_reason,stats_build_addition_reason);
 
 		fflush(stdout);
 	}
 	
-	void writeTheoryWitness(std::ostream& write_to) {
+	void writeTheoryWitness(std::ostream& write_to) override {
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){
 				vec<Lit> & bv = bitvectors[bvID];
 				updateApproximations(bvID);
@@ -4929,12 +4929,10 @@ public:
 		}
 	}
 	
-	inline int getTheoryIndex() const{
+	inline int getTheoryIndex() const override {
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id) {
-		theory_index = id;
-	}
+	inline void setTheoryIndex(int id)override;
 
 	bool hasEquivalentBV(int bvID){
 		return eq_bitvectors[bvID]!=bvID;
@@ -5477,7 +5475,7 @@ public:
 	}
 
 
-	void backtrackUntil(int lev) {
+	void backtrackUntil(int lev) override {
 		//it is NOT safe to remove altered bitvectors here, because if a comparison was added at a higher lev, and then
 		//a conflict was discovered _Before_ the comparison was processed, then the comparison may never be propagated at all if the altered_bvs are cleared here.
 /*		for(int bvID:altered_bvs){
@@ -5750,23 +5748,23 @@ public:
 		return lit_Undef;
 	}
 
-	Lit decideTheory(CRef & decision_reason) {
+	Lit decideTheory(CRef & decision_reason) override {
         decision_reason = CRef_Undef;
 		return lit_Undef;
 	}
 
-	bool supportsDecisions() {
+	bool supportsDecisions() override {
 		return false;
 	}
 
 
 
-	void newDecisionLevel() {
+	void newDecisionLevel() override {
 		trail_lim.push(trail.size());
 	}
 	;
 
-	void buildReason(Lit p, vec<Lit> & reason,CRef marker) {
+	void buildReason(Lit p, vec<Lit> & reason,CRef marker) override {
 		static int iter = 0;
 		if(++iter==39){//17
 			int a =1;
@@ -5810,12 +5808,12 @@ public:
 	}
 
 
-	void preprocess() {
+	void preprocess() override {
 		if(const_true==lit_Undef)
 			const_true=True();
 
 	}
-	void setLiteralOccurs(Lit l, bool occurs) {
+	void setLiteralOccurs(Lit l, bool occurs) override {
 		/*if (isEdgeVar(var(l))) {
 			//don't do anything
 		} else {
@@ -5934,7 +5932,8 @@ public:
 		return true;
 
 	}
-	virtual void enqueueAnyUnqueued(){
+
+	void enqueueAnyUnqueued() override {
 		//in some solving modes, a theory can sometimes delay enqueing some atoms. Check for any such atoms here.
 		//so far, this should only happen if the theory was marked as 'satisfied'
 
@@ -5967,7 +5966,7 @@ public:
 
 
 	}
-	void enqueueTheory(Lit l) {
+	void enqueueTheory(Lit l) override {
 		Var v = var(l);
 		rewind_trail_pos(trail.size());
 		int lev = level(v);
@@ -6470,7 +6469,7 @@ public:
 		}
 	}
 
-	bool propagateTheory(vec<Lit> & conflict){
+	bool propagateTheory(vec<Lit> & conflict)override{
 		return propagateTheory(conflict,false);
 	}
 	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
@@ -6627,7 +6626,7 @@ public:
 			}
 
 			assert(altered_bvs.last()==bvID);
-			assert(alteredBV[bvID]==true);
+			assert(alteredBV[bvID]);
 			altered_bvs.pop();
 			alteredBV[bvID]=false;
 		}
@@ -7147,7 +7146,7 @@ public:
 	bool check_propagated()override{
 		return !requiresPropagation;
 	}
-	bool check_solved() {
+	bool check_solved() override {
 
 		for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			int eqBV = bvID;
@@ -8739,7 +8738,7 @@ public:
 		return l;
 	}
 
-	void printSolution() {
+	void printSolution() override {
 
 	}
 
@@ -9237,6 +9236,12 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 #endif
 	return refined_bound;
 }
+
+template<typename Weight>
+void BVTheorySolver<Weight>::setTheoryIndex(int id) {
+	theory_index = id;
+}
+
 template<typename Weight>
 using BitVector = typename BVTheorySolver<Weight>::BitVector;
 

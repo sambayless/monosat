@@ -551,7 +551,7 @@ void PbSolver::solve(solve_Command cmd) {
     }
 
     // Freeze goal function variables (for SatELite):
-    if (goal != NULL) {
+    if (goal != nullptr) {
         for (int i = 0; i < goal->size; i++)
             sat_solver.setFrozen(toSolver(var((*goal)[i])), true);
     }
@@ -561,9 +561,9 @@ void PbSolver::solve(solve_Command cmd) {
     //sat_solver.verbosity = opt_verbosity;
 
     vec<Lit> goal_ps;
-    if (goal != NULL) { for (int i = 0; i < goal->size; i++) goal_ps.push((*goal)[i]); }
+    if (goal != nullptr) { for (int i = 0; i < goal->size; i++) goal_ps.push((*goal)[i]); }
     vec<Int> goal_Cs;
-    if (goal != NULL) { for (int i = 0; i < goal->size; i++) goal_Cs.push((*goal)(i)); }
+    if (goal != nullptr) { for (int i = 0; i < goal->size; i++) goal_Cs.push((*goal)(i)); }
     assert(best_goalvalue == Int_MAX);
 
     if (opt_polarity_sug != 0) {
@@ -613,7 +613,7 @@ void PbSolver::solve(solve_Command cmd) {
                 assert(sat_solver.model[toSolver(x)] != l_Undef),
                         best_model.push(sat_solver.model[toSolver(x)] == l_True);
 
-            if (goal == NULL)   // ((fix: moved here Oct 4, 2005))
+            if (goal == nullptr)   // ((fix: moved here Oct 4, 2005))
                 break;
 
             best_goalvalue = evalGoal(*goal, sat_solver.model);
@@ -629,12 +629,12 @@ void PbSolver::solve(solve_Command cmd) {
             convertPbs(false);
         }
     }
-    if (goal == NULL && sat)
+    if (goal == nullptr && sat)
         best_goalvalue = Int_MIN;       // (found model, but don't care about it)
     if (opt_verbosity >= 1) {
         if (!sat)
             reportf("\bUNSATISFIABLE\b\n");
-        else if (goal == NULL)
+        else if (goal == nullptr)
             reportf("\bSATISFIABLE: No goal function specified.\b\n");
         else if (cmd == sc_FirstSolution) {
             char *tmp = toString(best_goalvalue);

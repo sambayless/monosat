@@ -17,7 +17,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3") #it is _c
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG -O2") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG") #it is _critically_ important that release builds specify -DNDEBUG!
 
-set( CMAKE_VERBOSE_MAKEFILE on )
+set( CMAKE_VERBOSE_MAKEFILE ON )
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to 'Release' as none was specified.\nUse cmake -DCMAKE_BUILD_TYPE=Debug to select Debug release.")
@@ -176,7 +176,6 @@ set(SOURCE_FILES
         src/monosat/geometry/cevans/typedefs.h
         src/monosat/geometry/cevans/typeop.h
         src/monosat/geometry/cevans/zero.h
-        src/monosat/geometry/polypartition/polypartition.cpp
         src/monosat/geometry/polypartition/polypartition.h
         src/monosat/geometry/ConvexHull.h
         src/monosat/geometry/ConvexHullCollisionDetection.cpp

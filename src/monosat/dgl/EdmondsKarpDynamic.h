@@ -171,7 +171,7 @@ public:
 	void setAllEdgeCapacities(Weight c) {
 
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const {
 		return num_updates;
 	}

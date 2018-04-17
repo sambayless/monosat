@@ -38,13 +38,13 @@ class NFAGraphAccept:public NFAAcceptor{
 	int history_qhead=0;
 	int last_history_clear=0;
 
-	long stats_full_updates=0;
-	long stats_fast_updates=0;
-	long stats_fast_failed_updates=0;
-	long stats_skip_deletes=0;
-	long stats_skipped_updates=0;
-	long stats_skipped_string_updates=0;
-	long stats_num_skipable_deletions=0;
+	int64_t stats_full_updates=0;
+	int64_t stats_fast_updates=0;
+	int64_t stats_fast_failed_updates=0;
+	int64_t stats_skip_deletes=0;
+	int64_t stats_skipped_updates=0;
+	int64_t stats_skipped_string_updates=0;
+	int64_t stats_num_skipable_deletions=0;
 	double mod_percentage=0;
 
 	double stats_full_update_time=0;
@@ -250,7 +250,7 @@ private:
 
 public:
 
-	void update(){
+	void update() override {
 
 		if (last_modification > 0 && f.modifications == last_modification){
 			return;
@@ -299,7 +299,7 @@ public:
 		last_history_clear = f.historyclears;
 	}
 
-	int numUpdates() const {
+	int numUpdates() const override {
 		if(!rr)
 			return 0;
 		return rr->numUpdates();
@@ -309,7 +309,7 @@ public:
 
 public:
 
-	void setTrackStringAcceptance(int str, int state,bool trackPositiveAcceptance, bool trackNegativeAcceptance){
+	void setTrackStringAcceptance(int str, int state,bool trackPositiveAcceptance, bool trackNegativeAcceptance) override {
 		addStringAcceptanceCheck(str,state);
 
 	}
@@ -318,14 +318,14 @@ public:
 
 	//inefficient!
 	//If state is -1, then this is true if any state accepts the string.
-	bool acceptsString(int string, int state){
+	bool acceptsString(int string, int state) override {
 
 		update();
 		int s =string_last_nodes[string]->states[state];
 		return rr->connected(s);
 
 	}
-	bool getPath(int string, int state, vec<NFATransition> &path) {
+	bool getPath(int string, int state, vec<NFATransition> &path) override {
 		update();
 		int s =string_last_nodes[string]->states[state];
 		if(! rr->connected(s)){
@@ -343,7 +343,7 @@ public:
 		return true;
 	}
 	vec<Bitset> used_transition;
-	bool getAbstractPath(int string, int state, vec<NFATransition> &path, bool reversed) {
+	bool getAbstractPath(int string, int state, vec<NFATransition> &path, bool reversed) override {
 		update();
 		int s =string_last_nodes[string]->states[state];
 		if(! rr->connected(s)){

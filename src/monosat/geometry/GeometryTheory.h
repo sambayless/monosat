@@ -116,10 +116,10 @@ public:
 	double unreachtime=0;
 	double pathtime=0;
 	double propagationtime=0;
-	long stats_propagations=0;
-	long stats_num_conflicts=0;
-	long stats_decisions=0;
-	long stats_num_reasons=0;
+	int64_t stats_propagations=0;
+	int64_t stats_num_conflicts=0;
+	int64_t stats_decisions=0;
+	int64_t stats_num_reasons=0;
 
 	double reachupdatetime=0;
 	double unreachupdatetime=0;
@@ -127,13 +127,13 @@ public:
 	double stats_decision_time=0;
 	double stats_reason_initial_time=0;
 	double stats_reason_time=0;
-	long num_learnt_paths=0;
-	long learnt_path_clause_length=0;
-	long num_learnt_cuts=0;
-	long learnt_cut_clause_length=0;
-	long stats_pure_skipped=0;
-	long stats_mc_calls=0;
-	long stats_propagations_skipped=0;
+	int64_t num_learnt_paths=0;
+	int64_t learnt_path_clause_length=0;
+	int64_t num_learnt_cuts=0;
+	int64_t learnt_cut_clause_length=0;
+	int64_t stats_pure_skipped=0;
+	int64_t stats_mc_calls=0;
+	int64_t stats_propagations_skipped=0;
 	vec<Lit> reach_cut;
 
 	GeometryTheorySolver(Solver * S_, int _id = -1) :
@@ -167,12 +167,12 @@ public:
 		 printf("Min-cut Time: %f (%d calls, %f average, #Cuts: %d, AvgLength %f, total: %d)\n", mctime, stats_mc_calls,(mctime/(stats_mc_calls ? stats_mc_calls:1)),  num_learnt_cuts, (learnt_cut_clause_length /  ((float) num_learnt_cuts+1)),learnt_cut_clause_length);
 		 */
 
-		printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
+		printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped)\n", stats_propagations, propagationtime,
 			   (propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
-		printf("Decisions: %ld (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
+		printf("Decisions: %" PRId64 " (%f s, avg: %f s)\n", stats_decisions, stats_decision_time,
 			   (stats_decision_time) / ((double) stats_decisions + 1));
-		printf("Conflicts: %ld\n", stats_num_conflicts);
-		printf("Reasons: %ld (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
+		printf("Conflicts: %" PRId64 "\n", stats_num_conflicts);
+		printf("Reasons: %" PRId64 " (%f s, avg: %f s)\n", stats_num_reasons, stats_reason_time,
 			   (stats_reason_time) / ((double) stats_num_reasons + 1));
 		fflush(stdout);
 	}

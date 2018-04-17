@@ -107,32 +107,32 @@ public:
 	};
 	std::vector<AreaLit> areaDetectors;
 
-	static long stats_propagations;
-	static long stats_bound_checks;
-	static long stats_bounds_skips_under;
-	static long stats_bounds_skips_over;
-	static long stats_under_clause_length;
-	static long stats_over_clause_length;
-	static long stats_under_clauses;
-	static long stats_over_clauses;
-	static long stats_line_intersection_skips_under;
-	static long stats_line_intersection_skips_over;
+	static int64_t stats_propagations;
+	static int64_t stats_bound_checks;
+	static int64_t stats_bounds_skips_under;
+	static int64_t stats_bounds_skips_over;
+	static int64_t stats_under_clause_length;
+	static int64_t stats_over_clause_length;
+	static int64_t stats_under_clauses;
+	static int64_t stats_over_clauses;
+	static int64_t stats_line_intersection_skips_under;
+	static int64_t stats_line_intersection_skips_over;
 
 	void printStats() {
 		printf("Convex hull %d: ", getID());
 		cout << under_hull->getHull() << "\n";
 
-		printf("propagations: %ld\n", stats_propagations);
-		printf("bound checks %ld (skipped under,over: %ld,%ld)\n", stats_bound_checks, stats_bounds_skips_under,
+		printf("propagations: %" PRId64 "\n", stats_propagations);
+		printf("bound checks %" PRId64 " (skipped under,over: %" PRId64 ",%" PRId64 ")\n", stats_bound_checks, stats_bounds_skips_under,
 			   stats_bounds_skips_over);
-		printf("containment: bounds skipped %ld, triangle skipped %ld, checks %ld, %ld depth\n",
+		printf("containment: bounds skipped %" PRId64 ", triangle skipped %" PRId64 ", checks %" PRId64 ", %" PRId64 " depth\n",
 			   ConvexPolygon<D, T>::stats_bounds_avoided, ConvexPolygon<D, T>::stats_triangle_avoided,
 			   ConvexPolygon<D, T>::stats_split_full_checks, ConvexPolygon<D, T>::stats_split_checks_depths);
-		printf("intersections: bounds skipped %ld, checks skipped under: %ld, skipped over: %ld\n",
+		printf("intersections: bounds skipped %" PRId64 ", checks skipped under: %" PRId64 ", skipped over: %" PRId64 "\n",
 			   ConvexPolygon<D, T>::stats_bounds_intersections_avoided, stats_line_intersection_skips_under,
 			   stats_line_intersection_skips_over);
 
-		printf("Skipped updates: %ld/%ld under, %ld/%ld over\n",
+		printf("Skipped updates: %" PRId64 "/%" PRId64 " under, %" PRId64 "/%" PRId64 " over\n",
 			   ((MonotoneConvexHull<D, T>*) under_hull)->stats_skipped_updates,
 			   ((MonotoneConvexHull<D, T>*) under_hull)->stats_updates,
 			   ((MonotoneConvexHull<D, T>*) over_hull)->stats_skipped_updates,
@@ -286,28 +286,28 @@ private:
 	}
 };
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_bounds_skips_under = 0;
+int64_t ConvexHullDetector<D, T>::stats_bounds_skips_under = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_bounds_skips_over = 0;
+int64_t ConvexHullDetector<D, T>::stats_bounds_skips_over = 0;
 
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_line_intersection_skips_under = 0;
+int64_t ConvexHullDetector<D, T>::stats_line_intersection_skips_under = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_line_intersection_skips_over = 0;
+int64_t ConvexHullDetector<D, T>::stats_line_intersection_skips_over = 0;
 
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_propagations = 0;
+int64_t ConvexHullDetector<D, T>::stats_propagations = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_bound_checks = 0;
+int64_t ConvexHullDetector<D, T>::stats_bound_checks = 0;
 
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_under_clause_length = 0;
+int64_t ConvexHullDetector<D, T>::stats_under_clause_length = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_over_clause_length = 0;
+int64_t ConvexHullDetector<D, T>::stats_over_clause_length = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_under_clauses = 0;
+int64_t ConvexHullDetector<D, T>::stats_under_clauses = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_over_clauses = 0;
+int64_t ConvexHullDetector<D, T>::stats_over_clauses = 0;
 
 template<unsigned int D, class T>
 ConvexHullDetector<D, T>::ConvexHullDetector(int detectorID, PointSet<D, T> & under, PointSet<D, T> & over,

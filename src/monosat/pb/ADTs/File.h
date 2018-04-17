@@ -55,7 +55,7 @@ class File {
 public:
 #define DEFAULTS fd(-1), mode(READ), buf(NULL), size(-1), pos(0), own_fd(true)
 
-    File(void) : DEFAULTS { }
+    File() : DEFAULTS { }
 
     File(int fd, FileMode mode, bool own_fd = true) : DEFAULTS {
         open(fd, mode, own_fd);
@@ -67,27 +67,27 @@ public:
 
 #undef DEFAULTS
 
-    ~File(void) {
+    ~File() {
         close();
     }
 
     void open(int fd, FileMode mode,
               bool own_fd = true);    // Low-level open. If 'own_fd' is FALSE, descriptor will not be closed by destructor.
     void open(cchar *name, cchar *mode);                     // FILE* compatible interface.
-    void close(void);
+    void close();
 
-    bool null(void) {               // TRUE if no file is opened.
+    bool null() {               // TRUE if no file is opened.
         return fd == -1;
     }
 
-    int releaseDescriptor(void) {   // Don't run UNIX function 'close()' on descriptor in 'File's 'close()'.
+    int releaseDescriptor() {   // Don't run UNIX function 'close()' on descriptor in 'File's 'close()'.
         if (mode == READ)
             lseek64(fd, pos - size, SEEK_CUR);
         own_fd = false;
         return fd;
     }
 
-    FileMode getMode(void) {
+    FileMode getMode() {
         return mode;
     }
 
@@ -104,7 +104,7 @@ public:
         pos = 0;
     }
 
-    int getCharQ(void) {            // Quick version with minimal overhead -- don't call this in the wrong mode!
+    int getCharQ() {            // Quick version with minimal overhead -- don't call this in the wrong mode!
 #ifdef PARANOID
         assert(mode == READ);
 #endif
@@ -128,7 +128,7 @@ public:
         return buf[pos++] = (uchar) chr;
     }
 
-    int getChar(void) {
+    int getChar() {
         if (mode == WRITE) setMode(READ);
         return getCharQ();
     }
@@ -138,7 +138,7 @@ public:
         return putCharQ(chr);
     }
 
-    bool eof(void) {
+    bool eof() {
         assert(mode == READ);
         if (pos < size) return false;
         if (size < File_BufSize) return true;
@@ -148,7 +148,7 @@ public:
         return false;
     }
 
-    void flush(void) {
+    void flush() {
         assert(mode == WRITE);
         ssize_t wrote = write(fd, buf, pos);
         if (wrote != pos) printf("ERROR! Write failed.\n"), exit(1);
@@ -157,7 +157,7 @@ public:
 
     void seek(int64 pos, int whence = SEEK_SET);
 
-    int64 tell(void);
+    int64 tell();
 };
 
 

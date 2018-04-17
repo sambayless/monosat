@@ -34,15 +34,15 @@ class MonotoneConvexHull: public ConvexHull<D, T> {
 
 	PointSet<D, T> & pointSet;
 	NConvexPolygon<D, T> hull;
-	long last_modification = -1;
+	int64_t last_modification = -1;
 
 	int last_addition = 0;
 	int last_deletion = 0;
 	int history_qhead = 0;
 	int last_history_clear = 0;
 public:
-	long stats_skipped_updates = 0;
-	long stats_updates = 0;
+	int64_t stats_skipped_updates = 0;
+	int64_t stats_updates = 0;
 	MonotoneConvexHull(PointSet<D, T> & p) :
 			pointSet(p) {
 		hull.setBoundingVolume(new BoundingBox<D, T, Polygon<D, T>>(hull));

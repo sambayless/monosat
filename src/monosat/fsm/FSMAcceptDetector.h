@@ -94,38 +94,38 @@ public:
 	int last_decision_status = -1;
 	//stats
 
-	long stats_full_updates = 0;
-	long stats_fast_updates = 0;
-	long stats_fast_failed_updates = 0;
-	long stats_skip_deletes = 0;
-	long stats_skipped_updates = 0;
-	long stats_num_skipable_deletions = 0;
-	long stats_learnt_components = 0;
-	long stats_learnt_components_sz = 0;
+	int64_t stats_full_updates = 0;
+	int64_t stats_fast_updates = 0;
+	int64_t stats_fast_failed_updates = 0;
+	int64_t stats_skip_deletes = 0;
+	int64_t stats_skipped_updates = 0;
+	int64_t stats_num_skipable_deletions = 0;
+	int64_t stats_learnt_components = 0;
+	int64_t stats_learnt_components_sz = 0;
 	double mod_percentage = 0.2;
-	long stats_pure_skipped = 0;
-	long stats_shrink_removed = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	long stats_symmetry_conflicts = 0;
+	int64_t stats_symmetry_conflicts = 0;
 	vec<int> accepting_state;//maintains a list of all accepting states, which are not considered during symmetry breaking.
 
 
-	void printStats() {
+	void printStats() override {
 		//printf("Reach detector\n");
 		FSMDetector::printStats();
 		if (opt_detect_pure_theory_lits)
-			printf("\tPropagations skipped by pure literal detection: %ld\n", stats_pure_skipped);
+			printf("\tPropagations skipped by pure literal detection: %" PRId64 "\n", stats_pure_skipped);
 		if (opt_shrink_theory_conflicts) {
-			printf("\t%ld lits removed by shrinking conflicts\n", stats_shrink_removed);
+			printf("\t%" PRId64 " lits removed by shrinking conflicts\n", stats_shrink_removed);
 		}
 
 		if (opt_learn_unreachable_component) {
-			printf("\t%ld components learned, average component size: %f\n", stats_learnt_components,
+			printf("\t%" PRId64 " components learned, average component size: %f\n", stats_learnt_components,
 				   stats_learnt_components_sz / (float) stats_learnt_components);
 		}
 		if(opt_fsm_symmetry_breaking){
-			printf("Symmetry breaking conflicts: %ld\n", stats_symmetry_conflicts);
+			printf("Symmetry breaking conflicts: %" PRId64 "\n", stats_symmetry_conflicts);
 		}
 	}
 
@@ -187,9 +187,9 @@ public:
 	void preprocess()override{
 		accepting_state.growTo(g_over.states());
 	}
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	void printSolution(std::ostream& write_to);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	void printSolution(std::ostream& write_to) override;
 
 	void addAcceptLit(int state, int strID, Var reach_var);
 
@@ -202,11 +202,12 @@ public:
 
 	FSMAcceptDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,
 					  int _source, vec<vec<int>> &  strs, double seed = 1);
-	virtual ~FSMAcceptDetector() {
+
+    ~FSMAcceptDetector() override {
 
 	}
 
-	const char* getName() {
+	const char* getName() override {
 		return "NFA Accepts Detector";
 	}
 

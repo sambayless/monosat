@@ -121,7 +121,7 @@ public:
 	}
 
 
-	void printStats() {
+	void printStats() override {
 		//printf("Reach detector\n");
 		Detector::printStats();
 		if (opt_detect_pure_theory_lits)
@@ -134,7 +134,7 @@ public:
 				   stats_learnt_components_sz / (float) stats_learnt_components);
 		}
 		if(opt_decide_theories){
-			printf("\t%ld heuristic path recomputations\n",stats_heuristic_recomputes);
+			printf("\t%" PRId64 " heuristic path recomputations\n",stats_heuristic_recomputes);
 		}
 		if(overapprox_reach_detector){
 			printf("\t\tOverapproxReach: ");
@@ -229,38 +229,38 @@ public:
 				detector(_outer), over_approx(over_approx) {
 
 		}
-		int numUpdates() const {
+		int numUpdates() const override {
 			return num_updates;
 		}
 
-		void update() {
+		void update() override {
 			num_updates++;
 		}
-		void setSource(int s) {
+		void setSource(int s) override {
 			assert(s == detector.source);
 		}
-		int getSource() {
+		int getSource() override {
 			return detector.source;
 		}
 
-		bool connected_unsafe(int t) {
+		bool connected_unsafe(int t) override {
 			return connected(t);
 		}
-		bool connected_unchecked(int t) {
+		bool connected_unchecked(int t) override {
 			return connected(t);
 		}
-		bool connected(int t) {
+		bool connected(int t) override {
 			assert(detector.reach_lits[t] != lit_Undef);
 			if (over_approx)
 				return detector.outer->value(detector.reach_lits[t]) != l_False;
 			else
 				return detector.outer->value(detector.reach_lits[t]) == l_True;
 		}
-		int previous(int node) {
+		int previous(int node) override {
 			assert(false);
 			exit(5); //not supported
 		}
-		int incomingEdge(int node) {
+		int incomingEdge(int node) override {
 			assert(false);
 			exit(5); //not supported
 		}
@@ -314,22 +314,22 @@ public:
 	 }*/
 	void attachSubHeuristic(Heuristic * h, int to);
 	void buildSATConstraints(bool onlyUnderApprox = false, int within_steps = -1);
-	bool propagate(vec<Lit> & conflict);
+	bool propagate(vec<Lit> & conflict) override;
 	void buildReachReason(int node, vec<Lit> & conflict);
 	void buildNonReachReason(int node, vec<Lit> & conflict, bool force_maxflow = false);
 	void buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict);
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	void printSolution(std::ostream& write_to);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	void printSolution(std::ostream& write_to) override;
 
 	void addLit(int from, int to, Var reach_var);
-	Lit decide(CRef &decision_reason);
-	void preprocess();
+	Lit decide(CRef &decision_reason) override;
+	void preprocess() override;
 	void dbg_sync_reachability();
 
 	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 				  int _source, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
-	virtual ~ReachDetector() {
+	~ReachDetector() override {
 
 		if (chokepoint_detector)
 			delete chokepoint_detector;
@@ -372,7 +372,7 @@ public:
 		}
 	}
 
-	const char* getName() {
+	const char* getName() override {
 		return "Reachability Detector";
 	}
 

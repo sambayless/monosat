@@ -38,23 +38,23 @@ public:
 
 	int unassigned_positives = 0;
 	int unassigned_negatives = 0;
-	long last_negated_check=0;
+	int64_t last_negated_check=0;
 
 	//Stats
 	double stats_under_update_time = 0;
 	double stats_over_update_time = 0;
-	long stats_under_updates = 0;
-	long stats_over_updates = 0;
-	long stats_under_conflicts = 0;
-	long stats_over_conflicts = 0;
+	int64_t stats_under_updates = 0;
+	int64_t stats_over_updates = 0;
+	int64_t stats_under_conflicts = 0;
+	int64_t stats_over_conflicts = 0;
 	double stats_under_conflict_time = 0;
 	double stats_over_conflict_time = 0;
-	long stats_skipped_under_updates = 0;
-	long stats_skipped_over_updates = 0;
-	long stats_decisions = 0;
+	int64_t stats_skipped_under_updates = 0;
+	int64_t stats_skipped_over_updates = 0;
+	int64_t stats_decisions = 0;
 	double stats_decide_time = 0;
-	long stats_under_clause_length = 0;
-	long stats_over_clause_length = 0;
+	int64_t stats_under_clause_length = 0;
+	int64_t stats_over_clause_length = 0;
 
 	int getID() {
 		return detectorID;
@@ -68,16 +68,16 @@ public:
 		if (opt_verb > 0) {
 			printf("Detector %d (%s):\n", getID(), getName());
 			//printf("Updates: %d (under), %d over\n", stats_under_updates, stats_over_updates);
-			printf("\tUnder-approx updates: %ld (%ld skipped) (%f s total, %f s avg)\n", stats_under_updates,
+			printf("\tUnder-approx updates: %" PRId64 " (%" PRId64 " skipped) (%f s total, %f s avg)\n", stats_under_updates,
 				   stats_skipped_under_updates, (double) stats_under_update_time,
 				   (double) stats_under_update_time / (double) (stats_under_updates + 1));
-			printf("\tOver-approx updates: %ld (%ld skipped)  (%f s total, %f s avg)\n", stats_over_updates,
+			printf("\tOver-approx updates: %" PRId64 " (%" PRId64 " skipped)  (%f s total, %f s avg)\n", stats_over_updates,
 				   stats_skipped_over_updates, (double) stats_over_update_time,
 				   (double) stats_over_update_time / (double) (stats_over_updates + 1));
-			printf("\tTheory Decisions: %ld (%f s total, %f s avg)\n", stats_decisions, (double) stats_decide_time,
+			printf("\tTheory Decisions: %" PRId64 " (%f s total, %f s avg)\n", stats_decisions, (double) stats_decide_time,
 				   (double) stats_decide_time / (double) (stats_decisions + 1));
 			printf(
-					"\tConflicts (under,over): %ld (clause literals: %ld), %ld, (clause literals: %ld), (under time %f s, over time %f s)\n",
+					"\tConflicts (under,over): %" PRId64 " (clause literals: %" PRId64 "), %" PRId64 ", (clause literals: %" PRId64 "), (under time %f s, over time %f s)\n",
 					stats_under_conflicts, stats_under_clause_length, stats_over_conflicts, stats_over_clause_length,
 					stats_under_conflict_time, stats_over_conflict_time);
 

@@ -239,7 +239,7 @@ public:
 	}
 
 
-	void update() {
+	void update() override {
 		static int iteration = 0;
 		int local_it = ++iteration;
 
@@ -270,20 +270,20 @@ public:
 		;
 	}
 
-	bool hasDirectedCycle() {
+	bool hasDirectedCycle() override {
 		update();
 		return has_directed_cycle;
 	}
-	bool hasUndirectedCycle() {
+	bool hasUndirectedCycle() override {
 		update();
 		return has_undirected_cycle;
 	}
 
-	std::vector<int> & getUndirectedCycle() {
+	std::vector<int> & getUndirectedCycle() override {
 		update();
 		return undirected_cycle;
 	}
-	std::vector<int> & getDirectedCycle() {
+	std::vector<int> & getDirectedCycle() override {
 		update();
 		return directed_cycle;
 	}

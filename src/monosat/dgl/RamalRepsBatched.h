@@ -128,12 +128,12 @@ public:
     bool has_zero_weights=false;
 public:
 
-    long stats_full_updates=0;
-    long stats_fast_updates=0;
-    long stats_fast_failed_updates=0;
-    long stats_skip_deletes=0;
-    long stats_skipped_updates=0;
-    long stats_num_skipable_deletions=0;
+    int64_t stats_full_updates=0;
+    int64_t stats_fast_updates=0;
+    int64_t stats_fast_failed_updates=0;
+    int64_t stats_skip_deletes=0;
+    int64_t stats_skipped_updates=0;
+    int64_t stats_num_skipable_deletions=0;
     double mod_percentage=0;
 
     double stats_full_update_time=0;
@@ -156,13 +156,13 @@ public:
         alg_id=g.addDynamicAlgorithm(this);
     }
 
-    void setSource(int s) {
+    void setSource(int s)override {
         source = s;
         last_modification = -1;
         last_addition = -1;
         last_deletion = -1;
     }
-    int getSource() {
+    int getSource() override{
         return source;
     }
 
@@ -492,12 +492,12 @@ public:
 
     }
 
-    long num_updates = 0;
-    int numUpdates() const {
+    int64_t num_updates = 0;
+    int numUpdates() const override {
         return num_updates;
     }
 
-    void update() {
+    void update() override {
 
         if (g.outfile) {
             fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
@@ -938,10 +938,10 @@ public:
 
     }
 
-    void printStats(){
-        printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
+    void printStats()override{
+        printf("Updates: %" PRId64 " (+%" PRId64 " skipped), %" PRId64 " restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
     }
-    void updateHistory(){
+    void updateHistory() override {
         update();
     }
     bool dbg_path(int to) {
@@ -1016,18 +1016,18 @@ public:
         return true;
     }
 
-    bool connected_unsafe(int t) {
+    bool connected_unsafe(int t) override{
         //dbg_uptodate();
         if(has_zero_weights){
             return dijkstras.connected_unsafe(t);
         }
         return t < dist.size() && dist[t] < INF;
     }
-    bool connected_unchecked(int t) {
+    bool connected_unchecked(int t) override{
         assert(last_modification == g.modifications);
         return connected_unsafe(t);
     }
-    bool connected(int t) {
+    bool connected(int t) override{
 
         update();
 
@@ -1037,7 +1037,7 @@ public:
         }
         return dist[t] < INF;
     }
-    Weight & distance(int t) {
+    Weight & distance(int t) override{
 
         update();
         if(has_zero_weights){
@@ -1048,7 +1048,7 @@ public:
         else
             return this->unreachable();
     }
-    Weight &distance_unsafe(int t) {
+    Weight &distance_unsafe(int t) override{
         if(has_zero_weights){
             return dijkstras.distance_unsafe(t);
         }
@@ -1057,7 +1057,7 @@ public:
         else
             return this->unreachable();
     }
-    int incomingEdge(int t) {
+    int incomingEdge(int t)override {
         if(has_zero_weights){
             return dijkstras.incomingEdge(t);
         }
@@ -1096,7 +1096,7 @@ public:
         assert(prev_edgeID!=-1);
         return prev_edgeID;
     }
-    int previous(int t) {
+    int previous(int t)override {
         if(has_zero_weights){
             return dijkstras.previous(t);
         }
@@ -1263,12 +1263,12 @@ public:
     int alg_id;
 public:
 
-    long stats_full_updates=0;
-    long stats_fast_updates=0;
-    long stats_fast_failed_updates=0;
-    long stats_skip_deletes=0;
-    long stats_skipped_updates=0;
-    long stats_num_skipable_deletions=0;
+    int64_t stats_full_updates=0;
+    int64_t stats_fast_updates=0;
+    int64_t stats_fast_failed_updates=0;
+    int64_t stats_skip_deletes=0;
+    int64_t stats_skipped_updates=0;
+    int64_t stats_num_skipable_deletions=0;
     double mod_percentage=0;
 
     double stats_full_update_time=0;
@@ -1291,11 +1291,11 @@ public:
         mod_percentage = 0.2;
         alg_id=g.addDynamicAlgorithm(this);
     }
-    void printStats(){
-        printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
+    void printStats() override {
+        printf("Updates: %" PRId64 " (+%" PRId64 " skipped), %" PRId64 " restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
     }
     //Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
-    void setMaxDistance(int &_maxDistance) {
+    void setMaxDistance(int &_maxDistance) override {
         if (_maxDistance != maxDistance) {
             last_modification = -1;		//force the next update to recompute from scratch
             if (_maxDistance < 0) {
@@ -1305,13 +1305,13 @@ public:
         }
     }
 
-    void setSource(int s) {
+    void setSource(int s) override {
         source = s;
         last_modification = -1;
         last_addition = -1;
         last_deletion = -1;
     }
-    int getSource() {
+    int getSource() override {
         return source;
     }
 
@@ -1612,12 +1612,12 @@ public:
 
     }
 
-    long num_updates = 0;
-    int numUpdates() const {
+    int64_t num_updates = 0;
+    int numUpdates() const override {
         return num_updates;
     }
 
-    void update() {
+    void update() override {
 
         if (g.outfile) {
             fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
@@ -2104,7 +2104,7 @@ public:
         }
 #endif
     }
-    void updateHistory(){
+    void updateHistory() override {
         update();
     }
 
@@ -2203,15 +2203,15 @@ public:
         return true;
     }
 
-    bool connected_unsafe(int t) {
+    bool connected_unsafe(int t) override {
         dbg_uptodate();
         return t < dist.size() && dist[t] < INF;
     }
-    bool connected_unchecked(int t) {
+    bool connected_unchecked(int t) override {
         assert(last_modification == g.modifications);
         return connected_unsafe(t);
     }
-    bool connected(int t) {
+    bool connected(int t) override {
 
         update();
 
@@ -2220,7 +2220,7 @@ public:
 
         return dist[t] < INF;
     }
-    int& distance(int t) {
+    int& distance(int t) override {
 
         update();
 
@@ -2229,13 +2229,13 @@ public:
         else
             return this->unreachable();
     }
-    int& distance_unsafe(int t) {
+    int& distance_unsafe(int t) override {
         if (connected_unsafe(t))
             return dist[t];
         else
             return this->unreachable();
     }
-    int incomingEdge(int t) {
+    int incomingEdge(int t) override {
 
         if (!connected_unsafe(t)){
             return -1;
@@ -2272,7 +2272,7 @@ public:
 
         return prev_edgeID;
     }
-    int previous(int t) {
+    int previous(int t) override {
 
         if (!connected_unsafe(t)){
             return -1;

@@ -41,14 +41,14 @@ class LineSegment;
 template<unsigned int D, class T>
 class ConvexPolygon: public Polygon<D, T> {
 public:
-	static long stats_triangle_avoided;
-	static long stats_bounds_avoided;
-	static long stats_split_checks;
-	static long stats_contain_checks;
-	static long stats_split_full_checks;
-	static long stats_split_checks_depths;
-	static long stats_bounds_intersections_avoided;
-	static long stats_intersections;
+	static int64_t stats_triangle_avoided;
+	static int64_t stats_bounds_avoided;
+	static int64_t stats_split_checks;
+	static int64_t stats_contain_checks;
+	static int64_t stats_split_full_checks;
+	static int64_t stats_split_checks_depths;
+	static int64_t stats_bounds_intersections_avoided;
+	static int64_t stats_intersections;
 	ConvexPolygon() :
 			Polygon<D, T>() {
 
@@ -133,23 +133,23 @@ private:
 };
 
 template<unsigned int D, class T>
-long ConvexPolygon<D, T>::stats_triangle_avoided = 0;
+int64_t ConvexPolygon<D, T>::stats_triangle_avoided = 0;
 template<unsigned int D, class T>
-long ConvexPolygon<D, T>::stats_bounds_avoided = 0;
+int64_t ConvexPolygon<D, T>::stats_bounds_avoided = 0;
 template<unsigned int D, class T>
-long ConvexPolygon<D, T>::stats_bounds_intersections_avoided = 0;
+int64_t ConvexPolygon<D, T>::stats_bounds_intersections_avoided = 0;
 template<unsigned int D, class T>
-long ConvexPolygon<D, T>::stats_split_checks = 0;
+int64_t ConvexPolygon<D, T>::stats_split_checks = 0;
 template<unsigned int D, class T>
-long ConvexPolygon<D, T>::stats_contain_checks = 0;
+int64_t ConvexPolygon<D, T>::stats_contain_checks = 0;
 template<unsigned int D, class T>
-long ConvexPolygon<D, T>::stats_split_full_checks = 0;
+int64_t ConvexPolygon<D, T>::stats_split_full_checks = 0;
 
 template<unsigned int D, class T>
-long ConvexPolygon<D, T>::stats_split_checks_depths = 0;
+int64_t ConvexPolygon<D, T>::stats_split_checks_depths = 0;
 
 template<unsigned int D, class T>
-long ConvexPolygon<D, T>::stats_intersections = 0;
+int64_t ConvexPolygon<D, T>::stats_intersections = 0;
 
 /**
  * A triangle defined by three vertices

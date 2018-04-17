@@ -49,15 +49,15 @@ public:
 
 
 
-    long stats_full_updates=0;
-    long stats_fast_updates=0;
-    long stats_fast_failed_updates=0;
-    long stats_skip_deletes=0;
-    long stats_skipped_updates=0;
-    long stats_num_skipable_deletions=0;
-    long stats_random_shortest_paths =0;
-    long stats_random_shortest_edges =0;
-    long stats_n_recomputes =0;
+    int64_t stats_full_updates=0;
+    int64_t stats_fast_updates=0;
+    int64_t stats_fast_failed_updates=0;
+    int64_t stats_skip_deletes=0;
+    int64_t stats_skipped_updates=0;
+    int64_t stats_num_skipable_deletions=0;
+    int64_t stats_random_shortest_paths =0;
+    int64_t stats_random_shortest_edges =0;
+    int64_t stats_n_recomputes =0;
     double stats_full_update_time=0;
     double stats_fast_update_time=0;
     double random_seed=0;
@@ -71,11 +71,11 @@ public:
 
     }
     CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
-            g(graph), status(Distance<Weight>::nullStatus),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
+            g(graph), status(Distance<Weight>::nullStatus),reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }
 
-    void setSource(int s) {
+    void setSource(int s) override {
         if(s!=reach->getSource()) {
             needs_recompute = true;
             last_modification = -1;
@@ -84,13 +84,13 @@ public:
             reach->setSource(s);
         }
     }
-    int getSource() {
+    int getSource() override {
         return reach->getSource();
     }
 
 
-    long num_updates = 0;
-    int numUpdates() const {
+    int64_t num_updates = 0;
+    int numUpdates() const override {
         return num_updates;
     }
 
@@ -104,7 +104,7 @@ public:
     bool needs_recompute=true;
 
 
-    void clearCache(){
+    void clearCache() override {
         needs_recompute=true;
     }
 
@@ -117,14 +117,14 @@ public:
     void removeDestination(int node) override{
 
     }
-    void printStats(){
+    void printStats() override {
         reach->printStats();
-        printf("Cached Reach Recomputes: %ld\n",stats_n_recomputes);
+        printf("Cached Reach Recomputes: %" PRId64 "\n",stats_n_recomputes);
         if(randomShortestPathFrequency>0){
-            printf("Random shortest paths (%f freq): %ld\n",randomShortestPathFrequency,stats_random_shortest_paths);
+            printf("Random shortest paths (%f freq): %" PRId64 "\n",randomShortestPathFrequency,stats_random_shortest_paths);
         }
         if(randomShortestEdgeFrequency>0){
-            printf("Random shortest edges (%f freq): %ld\n",randomShortestEdgeFrequency,stats_random_shortest_edges);
+            printf("Random shortest edges (%f freq): %" PRId64 "\n",randomShortestEdgeFrequency,stats_random_shortest_edges);
         }
 
     }
@@ -287,17 +287,18 @@ public:
         last_history_clear = g.historyclears;
 
     }
-    virtual bool dbg_manual_uptodate(){
+
+    bool dbg_manual_uptodate() override {
         return reach->dbg_manual_uptodate();
     }
-    bool connected_unsafe(int t) {
+    bool connected_unsafe(int t) override {
         return has_path_to[t];
     }
-    bool connected_unchecked(int t) {
+    bool connected_unchecked(int t) override {
         assert(last_modification == g.modifications && ! needs_recompute);
         return connected_unsafe(t);
     }
-    bool connected(int t) {
+    bool connected(int t) override {
         //if (last_modification != g.modifications)
         update();
         return has_path_to[t];
@@ -314,12 +315,12 @@ public:
         else
             return -1;
     }
-    int incomingEdge(int t) {
+    int incomingEdge(int t) override {
         assert(last_modification == g.modifications && ! needs_recompute);
         assert(previous_edge[t]>=0);
         return previous_edge[t]; //reach->incomingEdge(t);
     }
-    int previous(int t) {
+    int previous(int t) override {
         assert(last_modification == g.modifications && ! needs_recompute);
         if (previous_edge[t]<0){
         	return -1;

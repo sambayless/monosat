@@ -76,12 +76,12 @@ public:
 
 public:
 
-	long stats_full_updates=0;
-	long stats_fast_updates=0;
-	long stats_fast_failed_updates=0;
-	long stats_skip_deletes=0;
-	long stats_skipped_updates=0;
-	long stats_num_skipable_deletions=0;
+	int64_t stats_full_updates=0;
+	int64_t stats_fast_updates=0;
+	int64_t stats_fast_failed_updates=0;
+	int64_t stats_skip_deletes=0;
+	int64_t stats_skipped_updates=0;
+	int64_t stats_num_skipable_deletions=0;
 	double mod_percentage=0;
 
 	double stats_full_update_time=0;
@@ -109,7 +109,7 @@ public:
 		last_deletion = -1;
 	}
 
-	void setSource(int s) {
+	void setSource(int s) override {
 		if (!std::count(sources.begin(), sources.end(), s)) {
 			addSource(s);
 		}
@@ -117,7 +117,7 @@ public:
 		default_source = s;
 
 	}
-	int getSource() {
+	int getSource() override {
 		return default_source;
 	}
 
@@ -276,11 +276,11 @@ public:
 	DisjointSets dbg_sets;
 #endif
 	int iteration;
-	long num_updates = 0;
-	int numUpdates() const {
+	int64_t num_updates = 0;
+	int numUpdates() const override {
 		return num_updates;
 	}
-	void update() {
+	void update() override {
 
 		int local_it = ++iteration;
 
@@ -527,13 +527,13 @@ public:
 		return t.getPath(source, to, path_store);
 	}
 
-	bool connected_unsafe(int t) {
+	bool connected_unsafe(int t) override {
 		return connected_unsafe(getSource(), t);
 	}
-	bool connected_unchecked(int t) {
+	bool connected_unchecked(int t) override {
 		return connected_unchecked(getSource(), t);
 	}
-	bool connected(int to) {
+	bool connected(int to) override {
 		update();
 		assert(default_source_index >= 0);
 		assert(to >= 0);
@@ -574,7 +574,7 @@ public:
 	 return prev[to];
 	 }*/
 
-	int incomingEdge(int to) {
+	int incomingEdge(int to) override {
 		update();
 		assert(to >= 0);
 		if (!hasPrev) {
@@ -610,7 +610,7 @@ public:
 		return prev[to];
 		//return prev[to];
 	}
-	int previous(int t) {
+	int previous(int t) override {
 		int edgeID = incomingEdge(t);
 		if (edgeID < 0)
 			return -1;

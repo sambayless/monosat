@@ -113,7 +113,7 @@ public:
 	MSTStatus *positiveReachStatus;
 	MSTStatus *negativeReachStatus;
 
-	void unassign(Lit l) {
+	void unassign(Lit l) override {
 		Detector::unassign(l);
 		int index = var(l) - first_reach_var;
 		if (index >= 0 && index < tree_edge_lits_map.size() && tree_edge_lits_map[index] != -1) {
@@ -124,22 +124,22 @@ public:
 			}
 		}
 	}
-	void preprocess();
-	bool propagate(vec<Lit> & conflict);
+	void preprocess() override;
+	bool propagate(vec<Lit> & conflict) override;
 	void buildMinWeightTooSmallReason(Weight & weight, vec<Lit> & conflict);
 	void buildMinWeightTooLargeReason(Weight & weight, vec<Lit> & conflict);
 	void buildEdgeInTreeReason(int edge, vec<Lit> & conflict);
 	void buildEdgeNotInTreeReason(int edge, vec<Lit> & conflict);
 
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	Lit decide(CRef &decision_reason);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	Lit decide(CRef &decision_reason) override;
 	void addTreeEdgeLit(int edge_id, Var reach_var);
 	void addWeightLit(Var weight_var, Weight & min_weight, bool inclusive);
-	void printSolution(std::ostream & write_to);
+	void printSolution(std::ostream & write_to) override;
 	MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
 				double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-	virtual ~MSTDetector() {
+	~MSTDetector() override {
 		if (positiveReachStatus)
 			delete positiveReachStatus;
 		if (negativeReachStatus)
@@ -158,7 +158,7 @@ public:
 
 
 	}
-	const char* getName() {
+	const char* getName() override {
 		return "MST Detector";
 	}
 	Weight getModel_SpanningTreeWeight(){

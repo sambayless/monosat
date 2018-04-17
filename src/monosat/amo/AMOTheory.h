@@ -45,11 +45,11 @@ public:
 	vec<Lit> tmp_clause;
 
 	double propagationtime=0;
-	long stats_propagations=0;
-	long stats_propagations_skipped=0;
-	long stats_shrink_removed = 0;
-	long stats_reasons = 0;
-	long stats_conflicts = 0;
+	int64_t stats_propagations=0;
+	int64_t stats_propagations_skipped=0;
+	int64_t stats_shrink_removed = 0;
+	int64_t stats_reasons = 0;
+	int64_t stats_conflicts = 0;
 
 	Var true_var=var_Undef;
 	Var conflict_var=var_Undef;
@@ -115,22 +115,22 @@ public:
 	}
 
 
-	inline int getTheoryIndex()const {
+	inline int getTheoryIndex()const override {
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id) {
+	inline void setTheoryIndex(int id) override {
 		theory_index = id;
 	}
-	inline void newDecisionLevel() {
+	inline void newDecisionLevel() override {
 
 	}
-	inline void backtrackUntil(int untilLevel){
+	inline void backtrackUntil(int untilLevel) override {
 
 	}
 	inline int decisionLevel() {
 		return S->decisionLevel();
 	}
-	inline void undecideTheory(Lit l){
+	inline void undecideTheory(Lit l) override {
 		if(var(l)==true_var){
 			needs_propagation=false;
 			true_var=var_Undef;
@@ -140,7 +140,7 @@ public:
 			conflict_var=var_Undef;
 		}
 	}
-	void enqueueTheory(Lit l) {
+	void enqueueTheory(Lit l) override {
 		if(clausified)
 			return;
 		if(conflict_var==var_Undef){
@@ -171,7 +171,7 @@ public:
 		}
 	}
 	;
-	bool propagateTheory(vec<Lit> & conflict) {
+	bool propagateTheory(vec<Lit> & conflict) override {
 		if (clausified) {
 			S->setTheorySatisfied(this);
 			return true;
@@ -231,24 +231,24 @@ public:
 		}
 		return true;
 	}
-	void printStats(int detailLevel) {
+	void printStats(int detailLevel) override {
 		if(!clausified) {
 			printf("AMO Theory %d stats:\n", this->getTheoryIndex());
 
-			printf("Propagations: %ld (%f s, avg: %f s, %ld skipped)\n", stats_propagations, propagationtime,
+			printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped)\n", stats_propagations, propagationtime,
 				   (propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
 
-			printf("Conflicts: %ld\n", stats_conflicts);
-			printf("Reasons: %ld\n", stats_reasons);
+			printf("Conflicts: %" PRId64 "\n", stats_conflicts);
+			printf("Reasons: %" PRId64 "\n", stats_reasons);
 
 			fflush(stdout);
 		}
 	}
 
-	inline bool solveTheory(vec<Lit> & conflict){
+	inline bool solveTheory(vec<Lit> & conflict) override {
 		return propagateTheory(conflict);
 	}
-	inline void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker){
+	inline void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker) override {
 		stats_reasons++;
 		assert(reason_marker==assign_false_reason);
 		if(var(p)!=true_var){
@@ -261,7 +261,7 @@ public:
 			assert(false);
 		}
 	}
-	bool check_solved() {
+	bool check_solved() override {
 		int n_true=0;
 		for (Var v:amo){
 			if(S->value(v)==l_True){

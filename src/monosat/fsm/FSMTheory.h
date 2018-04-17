@@ -164,7 +164,7 @@ public:
 		int occursPositive :1;
 		int occursNegative :1;
 		int isSatisfied:1;
-		int detector_edge :28;	//the detector this variable belongs to, or its edge number, if it is an edge variable
+		int detector_edge :28;	//the detector this variable beint64_ts to, or its edge number, if it is an edge variable
 		int input;
 		int output;
 		int fsmID;
@@ -180,11 +180,11 @@ public:
 	double unreachtime = 0;
 	double pathtime = 0;
 	double propagationtime = 0;
-	long stats_propagations = 0;
-	long propagations=0;
-	long stats_num_conflicts = 0;
-	long stats_decisions = 0;
-	long stats_num_reasons = 0;
+	int64_t stats_propagations = 0;
+	int64_t propagations=0;
+	int64_t stats_num_conflicts = 0;
+	int64_t stats_decisions = 0;
+	int64_t stats_num_reasons = 0;
 
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
@@ -192,13 +192,13 @@ public:
 	double stats_decision_time = 0;
 	double stats_reason_initial_time = 0;
 	double stats_reason_time = 0;
-	long num_learnt_paths = 0;
-	long learnt_path_clause_length = 0;
-	long num_learnt_cuts = 0;
-	long learnt_cut_clause_length = 0;
-	long stats_pure_skipped = 0;
-	long stats_mc_calls = 0;
-	long stats_propagations_skipped = 0;
+	int64_t num_learnt_paths = 0;
+	int64_t learnt_path_clause_length = 0;
+	int64_t num_learnt_cuts = 0;
+	int64_t learnt_cut_clause_length = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_mc_calls = 0;
+	int64_t stats_propagations_skipped = 0;
 
 
 	FSMTheorySolver(Solver * S_, int _id = -1) :
@@ -207,7 +207,7 @@ public:
 		rnd_seed = opt_random_seed;
 		S->addTheory(this);
 	}
-	~FSMTheorySolver(){
+	~FSMTheorySolver() override {
 		if(this->strings){
 			//delete(this->strings);//why is this problematic?
 		}
@@ -221,10 +221,10 @@ public:
 	Solver * getSolver(){
 		return S;
 	}
-	void printStats(int detailLevel) {
+	void printStats(int detailLevel) override {
 		printf("FSM %d stats:\n", getGraphID());
 		if(stats_decisions>0){
-			printf("FSM decisions: %ld\n",stats_decisions);
+			printf("FSM decisions: %" PRId64 "\n",stats_decisions);
 		}
 		if (detailLevel > 0) {
 			for (FSMDetector * d : detectors)
@@ -235,7 +235,7 @@ public:
 		fflush(stdout);
 	}
 	
-	void writeTheoryWitness(std::ostream& write_to) {
+	void writeTheoryWitness(std::ostream& write_to) override {
 		
 		for (FSMDetector * d : detectors) {
 			write_to << "Graph " << this->getGraphID() << ", detector " << d->getID() << ":\n";
@@ -243,10 +243,10 @@ public:
 		}
 	}
 	
-	inline int getTheoryIndex()const {
+	inline int getTheoryIndex()const override {
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id) {
+	inline void setTheoryIndex(int id) override {
 		theory_index = id;
 	}
 	inline int getGraphID() {
@@ -492,7 +492,7 @@ public:
 		return n >= 0 && n < nNodes(fsmID);
 	}
 
-	void backtrackUntil(int level) {
+	void backtrackUntil(int level) override {
 		static int it = 0;
 		
 		bool changed = false;
@@ -550,10 +550,11 @@ public:
 		assert(dbg_graphsUpToDate());
 		
 	};
-	virtual bool supportsDecisions() {
+
+	bool supportsDecisions() override {
 		return true;
 	}
-	Lit decideTheory(CRef & decision_reason) {
+	Lit decideTheory(CRef & decision_reason) override {
 		decision_reason=CRef_Undef;
 		if (!opt_decide_theories)
 			return lit_Undef;
@@ -629,12 +630,12 @@ public:
 	}
 	;
 
-	void newDecisionLevel() {
+	void newDecisionLevel() override {
 		trail_lim.push(trail.size());
 	}
 	;
 
-	void buildReason(Lit p, vec<Lit> & reason) {
+	void buildReason(Lit p, vec<Lit> & reason) override {
 		CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
@@ -661,12 +662,12 @@ public:
 		return true;
 	}
 
-	void preprocess() {
+	void preprocess() override {
 		for (int i = 0; i < detectors.size(); i++) {
 			detectors[i]->preprocess();
 		}
 	}
-	void setLiteralOccurs(Lit l, bool occurs) {
+	void setLiteralOccurs(Lit l, bool occurs) override {
 		if (isEdgeVar(var(l))) {
 			//don't do anything
 		} else {
@@ -684,7 +685,7 @@ public:
 		
 	}
 	
-	void enqueueTheory(Lit l) {
+	void enqueueTheory(Lit l) override {
 		Var v = var(l);
 		
 		int lev = level(v);
@@ -765,7 +766,7 @@ public:
 		return literalOccurs(~l) && !isSatisfied(l);
 	}
 
-	bool propagateTheory(vec<Lit> & conflict) {
+	bool propagateTheory(vec<Lit> & conflict) override {
 		return propagateTheory(conflict,false);
 	}
 
@@ -836,7 +837,7 @@ public:
 	}
 	;
 
-	bool solveTheory(vec<Lit> & conflict) {
+	bool solveTheory(vec<Lit> & conflict) override {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
 		bool ret = propagateTheory(conflict,true);
 /*		if(ret){
@@ -861,7 +862,7 @@ public:
 		}
 	}
 
-	bool check_solved() {
+	bool check_solved() override {
 		for(int fsmID = 0;fsmID<nFsms();fsmID++){
 			if(!g_unders[fsmID])
 				continue;
@@ -1008,7 +1009,7 @@ public:
 		return mkLit(v, false);
 	}
 
-	void printSolution() {
+	void printSolution() override {
 		
 		for (auto * d : detectors) {
 			assert(d);

@@ -47,7 +47,7 @@ static inline double Monosat::cpuTime(void) {return (double)clock() / CLOCKS_PER
 static inline double Monosat::fastTime(void) {return (double)clock() / CLOCKS_PER_SEC;}
 
 #else
-#include <time.h>
+#include <ctime>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>

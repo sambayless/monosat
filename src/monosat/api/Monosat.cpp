@@ -126,7 +126,7 @@ void enableResourceLimits(){
 		assert(cur_time>=0);
 		int64_t local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
 		if(opt_verb>1){
-			printf("Limiting cpu time to %ld\n",local_time_limit);
+			printf("Limiting cpu time to %" PRId64 "\n",local_time_limit);
 		}
 		if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
 			rl.rlim_cur = local_time_limit;
@@ -148,7 +148,7 @@ void enableResourceLimits(){
 	if (memory_limit < INT32_MAX && memory_limit>=0) {
 		rlim_t new_mem_lim = (rlim_t) memory_limit * 1024 * 1024; //Is this safe?
 		if(opt_verb>1){
-			printf("Limiting virtual memory to %ld\n",new_mem_lim);
+			printf("Limiting virtual memory to %" PRId64 "\n",new_mem_lim);
 		}
 		if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
 			rl.rlim_cur = new_mem_lim;
@@ -1037,7 +1037,7 @@ int newBitvector_anon(Monosat::SimpSolver * S,Monosat::BVTheorySolver<int64_t> *
 }
 int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvWidth, int64_t constval){
 	int bvID = bv->newBitvector(-1,bvWidth,constval).getID();
-	write_out(S,"bv const %d %d %ld\n",bvID, bvWidth, constval);
+	write_out(S,"bv const %d %d %" PRId64 "\n",bvID, bvWidth, constval);
 	return bvID;
 }
 
@@ -1064,7 +1064,7 @@ int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<in
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
 	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::lt,bvID,weight));
-	write_out(S,"bv const < %d %d %ld\n",dimacs(l),bvID, weight);
+	write_out(S,"bv const < %d %d %" PRId64 "\n",dimacs(l),bvID, weight);
 
 	return toInt(l);
 }
@@ -1081,8 +1081,8 @@ int newBVComparison_const_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<i
 	//Lit l =mkLit(v);
 
 	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::leq,bvID,weight));
-	//printf("Const bv leq bv %d to %ld = var %d\n",bvID, weight, dimacs(l));
-	write_out(S,"bv const <= %d %d %ld\n",dimacs(l),bvID, weight);
+	//printf("Const bv leq bv %d to %" PRId64 " = var %d\n",bvID, weight, dimacs(l));
+	write_out(S,"bv const <= %d %d %" PRId64 "\n",dimacs(l),bvID, weight);
 	return toInt(l);
 }
 int newBVComparison_bv_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
@@ -1097,7 +1097,7 @@ int newBVComparison_const_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<in
 	// Var v = newVar(S);
 	// Lit l =mkLit(v);
 	Lit l =bv->toSolver( bv->newComparison(Monosat::Comparison::gt,bvID,weight));
-	write_out(S,"bv const > %d %d %ld\n",dimacs(l),bvID, weight);
+	write_out(S,"bv const > %d %d %" PRId64 "\n",dimacs(l),bvID, weight);
 	return toInt(l);
 }
 int newBVComparison_bv_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
@@ -1111,8 +1111,8 @@ int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<i
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
 	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::geq,bvID,weight));
-	//printf("Const bv geq bv %d to %ld = var %d\n",bvID, weight, dimacs(l));
-	write_out(S,"bv const >= %d %d %ld\n",dimacs(l),bvID, weight);
+	//printf("Const bv geq bv %d to %" PRId64 " = var %d\n",bvID, weight, dimacs(l));
+	write_out(S,"bv const >= %d %d %" PRId64 "\n",dimacs(l),bvID, weight);
 	return toInt(l);
 }
 int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
@@ -1406,7 +1406,7 @@ int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int 
 	Var v = newVar(S);
 	Lit l =mkLit(v);
 
-	write_out(S,"edge %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),weight);
+	write_out(S,"edge %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),weight);
 	G->newEdge( from,  to, v,  weight );
 	return toInt(l);
 }
@@ -1445,7 +1445,7 @@ int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int f
 int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	write_out(S,"distance_lt %d %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),steps);
+	write_out(S,"distance_lt %d %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),steps);
 	G->reaches(from, to, v,steps-1);
 	G->implementConstraints();
 	return toInt(l);
@@ -1464,7 +1464,7 @@ int shortestPathUnweighted_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySol
 int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	write_out(S,"distance_leq %d %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),steps);
+	write_out(S,"distance_leq %d %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),steps);
 	G->reaches(from, to, v,steps);
 	G->implementConstraints();
 	return toInt(l);
@@ -1472,7 +1472,7 @@ int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheor
 int shortestPath_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int64_t dist){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_lt %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),dist);
+	  write_out(S,"weighted_distance_lt %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),dist);
 	G->distance(from, to, v,dist, false);
 	G->implementConstraints();
 	return toInt(l);
@@ -1480,7 +1480,7 @@ int shortestPath_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int
 int shortestPath_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int64_t dist){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_leq %d %d %d %d %ld\n",G->getGraphID(),from,to, dimacs(l),dist);
+	  write_out(S,"weighted_distance_leq %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),dist);
 	G->distance(from, to, v,dist, true);
 	G->implementConstraints();
 	return toInt(l);
@@ -1507,7 +1507,7 @@ int shortestPath_leq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64
 int maximumFlow_geq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	  write_out(S,"maximum_flow_geq %d %d %d %d %ld\n",G->getGraphID(),source,sink, dimacs(l),weight);
+	  write_out(S,"maximum_flow_geq %d %d %d %d %" PRId64 "\n",G->getGraphID(),source,sink, dimacs(l),weight);
 	G->maxflow(source, sink, v, weight,true);
 	G->implementConstraints();
 	return toInt(l);
@@ -1515,7 +1515,7 @@ int maximumFlow_geq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> 
 int maximumFlow_gt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	 write_out(S,"maximum_flow_gt %d %d %d %d %ld\n",G->getGraphID(),source,sink, dimacs(l),weight);
+	 write_out(S,"maximum_flow_gt %d %d %d %d %" PRId64 "\n",G->getGraphID(),source,sink, dimacs(l),weight);
 	G->maxflow(source, sink, v, weight,false);
 	G->implementConstraints();
 	return toInt(l);
@@ -1539,7 +1539,7 @@ int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t
 int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	write_out(S,"mst_weight_leq %d %d %d %d %d %ld\n",G->getGraphID(), dimacs(l),weight);
+	write_out(S,"mst_weight_leq %d %d %d %d %d %" PRId64 "\n",G->getGraphID(), dimacs(l),weight);
 	G->minimumSpanningTree(v, weight,true);
 	G->implementConstraints();
 	return toInt(l);
@@ -1547,7 +1547,7 @@ int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<i
 int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	write_out(S,"mst_weight_lt  %d %d %d %d %d %ld\n",G->getGraphID(), dimacs(l),weight);
+	write_out(S,"mst_weight_lt  %d %d %d %d %d %" PRId64 "\n",G->getGraphID(), dimacs(l),weight);
 	G->minimumSpanningTree(v, weight,false);
 	G->implementConstraints();
 	return toInt(l);
@@ -1612,7 +1612,7 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 }
 
 void graph_setAssignEdgesToWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
-    write_out(S,"graph_assign_edges_to_weight %d %ld\n", G->getGraphID(),weight);
+    write_out(S,"graph_assign_edges_to_weight %d %" PRId64 "\n", G->getGraphID(),weight);
     G->setAssignEdgesToWeight(weight);
 }
 

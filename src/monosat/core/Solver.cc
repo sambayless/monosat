@@ -21,7 +21,7 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include <math.h>
+#include <cmath>
 #include "monosat/mtl/Alg.h"
 #include <algorithm>
 #include "monosat/mtl/Sort.h"
@@ -73,9 +73,7 @@ Solver::~Solver() {
 	for (Theory * t : theories) {
 		delete (t);
 	}
-	if(pbsolver){
-		delete pbsolver;
-	}
+	delete pbsolver;
 }
 
 //=================================================================================================
@@ -313,7 +311,7 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
                         max_learnts *= learntsize_inc;
 
                         if (verbosity >= 1)
-                            printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %ld removed |\n", (int) conflicts,
+                            printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %" PRId64 " removed |\n", (int) conflicts,
                                     (int) dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(),
                                     (int) clauses_literals, (int) max_learnts, nLearnts(),
                                     (double) learnts_literals / nLearnts(), stats_removed_clauses);
@@ -3181,7 +3179,7 @@ void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max) {
 
 void Solver::toDimacs(const char *file, const vec<Lit>& assumps) {
 	FILE* f = fopen(file, "wr");
-	if (f == NULL){
+	if (!f){
 		throw std::runtime_error("could not open file");
 	}
 	//fprintf(stderr, "could not open file %s\n", file), exit(1);

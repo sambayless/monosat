@@ -36,12 +36,11 @@ namespace Monosat {
 class Theory : public virtual Heuristic{
 
 public:
-	virtual ~Theory() {
+	~Theory() override {
 	}
 
 
-
-	virtual int getTheoryIndex()const=0;
+	int getTheoryIndex()const override =0;
 	virtual void setTheoryIndex(int id)=0;
 	virtual void backtrackUntil(int untilLevel)=0;
 	virtual void newDecisionLevel()=0;

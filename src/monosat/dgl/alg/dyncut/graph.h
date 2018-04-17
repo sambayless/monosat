@@ -82,10 +82,10 @@
 #ifndef __KOHLI_TORR_GRAPH_H__
 #define __KOHLI_TORR_GRAPH_H__
 #include <vector>
-#include <string.h>
+#include <cstring>
 #include "block.h"
 #include <cstdlib>
-#include <assert.h>
+#include <cassert>
 #include <new>
 #include <algorithm>
 #include <stdexcept>
@@ -139,7 +139,7 @@ public:
 	// Also, temporarily the amount of allocated memory would be more than twice than needed.
 	// Similarly for edges.
 	// If you wish to avoid this overhead, you can download version 2.2, where nodes and edges are stored in blocks.
-	Graph(int node_num_max, int edge_num_max, void (*err_function)(const char *) = NULL);
+	Graph(int node_num_max, int edge_num_max, void (*err_function)(const char *) = nullptr);
 
 	// Destructor
 	~Graph();
@@ -163,7 +163,7 @@ public:
 	// Computes the maxflow. Can be called several times.
 	// FOR DESCRIPTION OF reuse_trees, SEE mark_node().
 	// FOR DESCRIPTION OF changed_list, SEE remove_from_changed_list().
-	flowtype maxflow(bool reuse_trees = false, Block<node_id>** changed_list = NULL);
+	flowtype maxflow(bool reuse_trees = false, Block<node_id>** changed_list = nullptr);
 
 	// After the maxflow is computed, this function returns to which
 	// segment the node 'i' belongs (Graph<captype,tcaptype,flowtype>::SOURCE or Graph<captype,tcaptype,flowtype>::SINK).
@@ -912,7 +912,7 @@ inline tcaptype Graph<captype, tcaptype, flowtype>::MAX(tcaptype a, tcaptype b) 
 
 template<typename captype, typename tcaptype, typename flowtype>
 Graph<captype, tcaptype, flowtype>::Graph(int node_num_max, int edge_num_max, void (*err_function)(const char *)) :
-		node_num(0), nodeptr_block(NULL), changed_list(NULL), error_function(err_function) {
+		node_num(0), nodeptr_block(NULL), changed_list(nullptr), error_function(err_function) {
 	if (node_num_max < 16)
 		node_num_max = 16;
 	if (edge_num_max < 16)
@@ -1548,7 +1548,7 @@ template<typename captype, typename tcaptype, typename flowtype>
 inline typename Graph<captype, tcaptype, flowtype>::node* Graph<captype, tcaptype, flowtype>::next_active() {
 	node *i;
 
-	while (1) {
+	while (true) {
 		if (!(i = queue_first[0])) {
 			queue_first[0] = i = queue_first[1];
 			queue_last[0] = queue_last[1];
@@ -1824,7 +1824,7 @@ void Graph<captype, tcaptype, flowtype>::process_source_orphan(node *i) {
 			if (!j->is_sink && (a = j->parent)) {
 				/* checking the origin of j */
 				d = 0;
-				while (1) {
+				while (true) {
 					if (j->TS == TIME) {
 						d += j->DIST;
 						break;
@@ -1892,7 +1892,7 @@ void Graph<captype, tcaptype, flowtype>::process_sink_orphan(node *i) {
 			if (j->is_sink && (a = j->parent)) {
 				/* checking the origin of j */
 				d = 0;
-				while (1) {
+				while (true) {
 					if (j->TS == TIME) {
 						d += j->DIST;
 						break;
@@ -1961,7 +1961,7 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 
 	if (maxflow_iteration == 0) {
 		reuse_trees = false;
-		_changed_list = NULL;
+		_changed_list = nullptr;
 	}
 
 	if (_changed_list) {
@@ -1980,7 +1980,7 @@ flowtype Graph<captype, tcaptype, flowtype>::maxflow(bool reuse_trees, Block<nod
 		maxflow_init();
 
 	// main loop
-	while (1) {
+	while (true) {
 		// test_consistency(current_node);
 
 		if ((i = current_node)) {

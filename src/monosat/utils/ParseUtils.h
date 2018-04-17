@@ -21,8 +21,8 @@
 #ifndef Minisat_ParseUtils_h
 #define Minisat_ParseUtils_h
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <string>
 
 #include <zlib.h>
@@ -147,7 +147,7 @@ static int parseInt(B& in) {
 	return neg ? -val : val;
 }
 template<class B>
-static int parseLong(B& in) {
+static int64_t parseLong(B& in) {
 	int64_t val = 0;
 	bool neg = false;
 	skipWhitespace(in);

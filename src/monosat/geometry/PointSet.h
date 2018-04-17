@@ -34,7 +34,7 @@ class PointSet {
 	std::vector<bool> enabled;
 	int id;
 public:
-	long modifications = 0;
+	int64_t modifications = 0;
 	int num_enabled = 0;
 
 	int additions = 0;
@@ -47,8 +47,8 @@ public:
 		bool addition;
 		int id;
 
-		long mod;
-		long prev_mod;
+		int64_t mod;
+		int64_t prev_mod;
 	};
 	std::vector<PointsetChange> history;
 public:
@@ -142,7 +142,7 @@ public:
 		return points[index];
 	}
 	
-	long getModifications() const {
+	int64_t getModifications() const {
 		return modifications;
 	}
 	

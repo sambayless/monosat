@@ -99,7 +99,7 @@ public:
 	double stats_flow_calc_time = 0;
 	double stats_flow_recalc_time = 0;
 	double stats_redecide_time = 0;
-	long stats_heuristic_recomputes=0;
+	int64_t stats_heuristic_recomputes=0;
 	Lit last_decision_lit = lit_Undef;
 
 	//vec<Lit> decisions;
@@ -133,10 +133,10 @@ public:
 	vec<int> priority_decisions;
 
 	struct DistLit {
-		Lit l;
+		Lit l=lit_Undef;
 		Weight max_flow=(Weight)-1;
 		BitVector<Weight>  bv;
-		bool inclusive;//If inclusive true, l is true iff the maximum flow is >= max_flow; else, l is true iff the maximum flow is > max_flow.
+		bool inclusive=false;//If inclusive true, l is true iff the maximum flow is >= max_flow; else, l is true iff the maximum flow is > max_flow.
 		FlowOp * op=nullptr;
 	};
 	vec<DistLit> flow_lits;
@@ -163,23 +163,23 @@ public:
         virtual void edgeFlowChange(int edgeID, const Weight & flow)=0;
     } * flowListener=nullptr;
 
-	void backtrack(int level) {
+	void backtrack(int level) override {
 		to_decide.clear();
 		last_decision_status = -1;
 		//LevelDetector::backtrack(level);
 	}
 	void collectChangedEdges();
 	void collectDisabledEdges();
-	void updateHistory(){
+	void updateHistory() override {
 		collectDisabledEdges();
 	}
-	bool propagate(vec<Lit> & conflict){
+	bool propagate(vec<Lit> & conflict) override {
 		Lit ignore=lit_Undef;
 		return propagate(conflict,false,ignore);
 	}
 
 
-	bool propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit);
+	bool propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit) override;
 	void analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict, bool force_maxflow=false);
 	void analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict);
 	void buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict);
@@ -187,12 +187,12 @@ public:
 	Lit findFirstReasonTooLow(Weight flow);
 	void buildMaxFlowTooLowReason(Weight flow, vec<Lit> & conflict, bool force_maxflow = false);
 	void buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict);
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	bool decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op)override;
 	void undecideEdgeWeight(int edgeID)override;
 	void undecide(Lit l)override;
-	void debug_decidable(Var v);
+	void debug_decidable(Var v) override;
 	void assignBV(int bvID)override ;
 	void unassignBV(int bvID) override;
 	void assign(Lit l)override{
@@ -203,31 +203,31 @@ public:
 	}
 	void setSatisfied(Lit l, bool isSatisfied)override;
 	bool detectorIsSatisfied()override;
-	Lit decide(CRef &decision_reason);
-	bool supportsEdgeDecisions(){
+	Lit decide(CRef &decision_reason) override;
+	bool supportsEdgeDecisions() override {
 		return true;
 	}
     void attachFlowListener(FlowListener * l){
         assert(!flowListener);
         flowListener = l;
     }
-	void suggestDecision(Lit l);
-	void printStats() {
+	void suggestDecision(Lit l) override;
+	void printStats() override {
 		Detector::printStats();
 		printf("\tTotal Detector Propagation Time: %fs\n",stats_total_prop_time);
 		if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			KohliTorr<Weight> * kt = (KohliTorr<Weight> *) overapprox_detector;
 			printf(
-					"\tInit Time %f, Decision flow calculations: %ld, (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%ld) (maxflow %f,flow assignment %f),  inits: %ld,re-inits %ld\n",
+					"\tInit Time %f, Decision flow calculations: %" PRId64 ", (redecide: %f s) flow_calc %f s, flow_discovery %f s, (%" PRId64 ") (maxflow %f,flow assignment %f),  inits: %" PRId64 ",re-inits %" PRId64 "\n",
 					kt->stats_init_time, stats_decision_calculations, stats_redecide_time, stats_flow_calc_time, stats_flow_recalc_time,
 					kt->stats_flow_calcs, kt->stats_flow_time, kt->stats_calc_time, kt->stats_inits, kt->stats_reinits);
 		} else
-			printf("\tDecision flow calculations: %ld\n", stats_decision_calculations);
+			printf("\tDecision flow calculations: %" PRId64 "\n", stats_decision_calculations);
 		if(n_stats_priority_decisions>0){
-			printf("\tPriority decisions: %ld\n",n_stats_priority_decisions);
+			printf("\tPriority decisions: %" PRId64 "\n",n_stats_priority_decisions);
 		}
 		if(opt_theory_internal_vsids){
-			printf("\tVsids decisions: %ld\n",n_stats_vsids_decisions);
+			printf("\tVsids decisions: %" PRId64 "\n",n_stats_vsids_decisions);
 		}
 
 	}
@@ -267,7 +267,7 @@ public:
 
 	//Lit decideByPath(int level);
 	void dbg_decisions();
-	void printSolution(std::ostream & write_to);
+	void printSolution(std::ostream & write_to) override;
 	Weight getModel_Maxflow(){
 		underapprox_detector->update();
 		return underapprox_detector->maxFlow();
@@ -296,7 +296,7 @@ public:
 		return refined_flow_model[edgeID];
 
 	}
-	void buildModel(){
+	void buildModel() override {
 		underapprox_detector->update();
 		refined_flow_model.clear();
 	}
@@ -305,7 +305,7 @@ public:
 	void addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 					DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1, bool overIsEdgeSet=false); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-	~MaxflowDetector() {
+	~MaxflowDetector() override {
 		if (underapprox_conflict_detector && underapprox_conflict_detector!=underapprox_detector)
 			delete 	underapprox_conflict_detector;
 		if (overapprox_conflict_detector && overapprox_conflict_detector!=overapprox_detector)
@@ -321,7 +321,7 @@ public:
 		if (acyclic_flow)
 			delete acyclic_flow;
 	}
-	const char* getName() {
+	const char* getName() override {
 		return "Max-flow Detector";
 	}
 
@@ -376,7 +376,7 @@ public:
 		dbg_decisions();
 	}*/
 
-	void preprocess(){
+	void preprocess() override {
 		activity.growTo(g_under.edges());
 		seen.growTo(outer->nNodes());
 		is_potential_decision.growTo(g_under.edges(), false);

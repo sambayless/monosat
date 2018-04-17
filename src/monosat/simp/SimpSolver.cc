@@ -585,7 +585,7 @@ bool SimpSolver::substitute(Var v, Lit x) {
 		removeClause(cls[i]);
 
 		if (!addClause_(subst_clause))//should this clause be treated as derived?
-			return ok = false;
+			return (ok = false);
 	}
 
 	return true;

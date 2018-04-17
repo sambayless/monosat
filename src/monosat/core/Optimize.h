@@ -74,6 +74,7 @@ struct Objective{
             from.pb_weights.clear();
             from.bvID=-1;
         }
+        return *this;
     }
     Objective():maximize(false),type(Type::BV),bvID(-1){
     }

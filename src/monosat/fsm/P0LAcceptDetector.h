@@ -100,7 +100,7 @@ public:
 
 
 
-	void printStats() {
+	void printStats() override {
 		//printf("Reach detector\n");
 		FSMDetector::printStats();
 		if (opt_detect_pure_theory_lits)
@@ -114,7 +114,7 @@ public:
 		}
 	}
 	
-	void unassign(Lit l) {
+	void unassign(Lit l) override {
 		FSMDetector::unassign(l);
 		int index = indexOf(var(l));
 		if (index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].str != -1) {
@@ -146,13 +146,13 @@ public:
 		return accept_lit_map[index].str;
 	}
 
-	bool propagate(vec<Lit> & conflict);
+	bool propagate(vec<Lit> & conflict) override;
 	void buildAcceptReason(int atom,int str, vec<Lit> & conflict);
 	void buildNonAcceptReason(int atom,int str, vec<Lit> & conflict);
 
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	void printSolution(std::ostream& write_to);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	void printSolution(std::ostream& write_to) override;
 
 	void addProducesLit(int atom, int strID, Var reach_var);
 
@@ -160,11 +160,12 @@ public:
 
 	P0LAcceptDetector(int _detectorID, LSystemSolver * _outer, LSystem &g_under, LSystem &g_over,
 			 vec<vec<int>> &  strs, double seed = 1);
-	virtual ~P0LAcceptDetector() {
+
+	~P0LAcceptDetector() override {
 		
 	}
 	
-	const char* getName() {
+	const char* getName() override {
 		return "P0-LSystem Accepts Detector";
 	}
 

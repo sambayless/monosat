@@ -204,20 +204,20 @@ public:
 		assert(reach_lit_map[index].within >= 0);
 		return reach_lit_map[index].within;
 	}
-	void printStats() {
+	void printStats() override {
 		//printf("Distance detector\n");
 		Detector::printStats();
 		if (opt_verb > 0) {
 			if (opt_detect_pure_theory_lits)
-				printf("\tPropagations skipped by pure literal detection: %ld\n", stats_pure_skipped);
-			printf("\tUnweighted Reasons (leq,gt): %ld,%ld\n", stats_unweighted_leq_reasons, stats_unweighted_gt_reasons);
-			printf("\tWeighted Reasons (leq,gt): %ld,%ld\n", stats_distance_leq_reasons, stats_distance_gt_reasons);
-			printf("\tConflict Edges Skipped (unweighted %ld, weighted %ld)\n", stats_gt_unweighted_edges_skipped,
+				printf("\tPropagations skipped by pure literal detection: %" PRId64 "\n", stats_pure_skipped);
+			printf("\tUnweighted Reasons (leq,gt): %" PRId64 ",%" PRId64 "\n", stats_unweighted_leq_reasons, stats_unweighted_gt_reasons);
+			printf("\tWeighted Reasons (leq,gt): %" PRId64 ",%" PRId64 "\n", stats_distance_leq_reasons, stats_distance_gt_reasons);
+			printf("\tConflict Edges Skipped (unweighted %" PRId64 ", weighted %" PRId64 ")\n", stats_gt_unweighted_edges_skipped,
 					stats_gt_weighted_edges_skipped);
 		}
 	}
 	
-	void printSolution(std::ostream& write_to);
+	void printSolution(std::ostream& write_to) override;
 
 	/*	Lit getLit(int node){
 
@@ -243,14 +243,14 @@ public:
 	}
 	}
 
-	void preprocess();
-	bool propagate(vec<Lit> & conflict);
+	void preprocess() override;
+	bool propagate(vec<Lit> & conflict) override;
 	void buildUnweightedDistanceLEQReason(int node, vec<Lit> & conflict);
 	void buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit> & conflict);
 
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	Lit decide(CRef &decision_reason);
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	Lit decide(CRef &decision_reason) override;
 	void updateShortestPaths();
 	void addUnweightedShortestPathLit(int from, int to, Var reach_var, int within_steps = -1);
 
@@ -258,7 +258,7 @@ public:
 	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-	virtual ~DistanceDetector() {
+    ~DistanceDetector() override {
 
 		if (overapprox_unweighted_distance_detector)
 			delete overapprox_unweighted_distance_detector;
@@ -285,7 +285,7 @@ public:
 		if (conflict_flow)
 			delete conflict_flow;
 	}
-	const char* getName() {
+	const char* getName() override {
 		return "Shortest Path Detector";
 	}
 private:

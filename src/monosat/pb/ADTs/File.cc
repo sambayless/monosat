@@ -34,10 +34,10 @@ void File::open(int file_descr, FileMode m, bool own) {
 
 void File::open(cchar *name, cchar *mode_) {
     if (fd != -1) ::close(fd);
-    bool has_r = strchr(mode_, 'r') != NULL;
-    bool has_w = strchr(mode_, 'w') != NULL;
-    bool has_a = strchr(mode_, 'a') != NULL;
-    bool has_p = strchr(mode_, '+') != NULL;
+    bool has_r = strchr(mode_, 'r') != nullptr;
+    bool has_w = strchr(mode_, 'w') != nullptr;
+    bool has_a = strchr(mode_, 'a') != nullptr;
+    bool has_p = strchr(mode_, '+') != nullptr;
     assert(!(has_r && has_w));
     assert(has_r || has_w || has_a);
 
@@ -63,7 +63,7 @@ void File::open(cchar *name, cchar *mode_) {
 }
 
 
-void File::close(void) {
+void File::close() {
     if (fd == -1) return;
     if (mode == WRITE)
         flush();
@@ -88,7 +88,7 @@ void File::seek(int64 file_pos, int whence) {
     }
 }
 
-int64 File::tell(void) {
+int64 File::tell() {
     if (mode == WRITE)
         return lseek64(fd, 0, SEEK_CUR);
     else

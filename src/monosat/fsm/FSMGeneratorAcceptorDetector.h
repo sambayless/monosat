@@ -125,25 +125,25 @@ public:
 	vec<SuffixLit> all_suffix_lits;
 	//stats
 
-	long stats_full_updates = 0;
-	long stats_fast_updates = 0;
-	long stats_fast_failed_updates = 0;
-	long stats_skip_deletes = 0;
-	long stats_skipped_updates = 0;
-	long stats_num_skipable_deletions = 0;
-	long stats_learnt_components = 0;
-	long stats_learnt_components_sz = 0;
-	long stats_forced_edges=0;
+	int64_t stats_full_updates = 0;
+	int64_t stats_fast_updates = 0;
+	int64_t stats_fast_failed_updates = 0;
+	int64_t stats_skip_deletes = 0;
+	int64_t stats_skipped_updates = 0;
+	int64_t stats_num_skipable_deletions = 0;
+	int64_t stats_learnt_components = 0;
+	int64_t stats_learnt_components_sz = 0;
+	int64_t stats_forced_edges=0;
 	double mod_percentage = 0.2;
-	long stats_pure_skipped = 0;
-	long stats_shrink_removed = 0;
+	int64_t stats_pure_skipped = 0;
+	int64_t stats_shrink_removed = 0;
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
 
-	long stats_chokepoint_edge_propagations=0;
-	long stats_forced_edge_propagations=0;
-	long stats_nondet_gen_edge_propagations=0;
-	long stats_det_gen_edge_propagations=0;
+	int64_t stats_chokepoint_edge_propagations=0;
+	int64_t stats_forced_edge_propagations=0;
+	int64_t stats_nondet_gen_edge_propagations=0;
+	int64_t stats_det_gen_edge_propagations=0;
 
 	Map<Var,Lit> forcedVars;
 	vec<Var> lit_backward_map;
@@ -152,29 +152,29 @@ public:
 	GraphTheorySolver<int64_t> * graph=nullptr;//for if we reduce the nfa to a graph
 	vec<vec<int> > nodes;
 
-	void printStats() {
+	void printStats() override {
 		//printf("Reach detector\n");
 		if(graph){
 			graph->printStats(1);
 		}else{
 			FSMDetector::printStats();
 			if (opt_detect_pure_theory_lits)
-				printf("\tPropagations skipped by pure literal detection: %ld\n", stats_pure_skipped);
+				printf("\tPropagations skipped by pure literal detection: %" PRId64 "\n", stats_pure_skipped);
 			if (opt_shrink_theory_conflicts) {
-				printf("\t%ld lits removed by shrinking conflicts\n", stats_shrink_removed);
+				printf("\t%" PRId64 " lits removed by shrinking conflicts\n", stats_shrink_removed);
 			}
 			if (opt_learn_unreachable_component) {
-				printf("\t%ld components learned, average component size: %f\n", stats_learnt_components,
+				printf("\t%" PRId64 " components learned, average component size: %f\n", stats_learnt_components,
 					   stats_learnt_components_sz / (float) stats_learnt_components);
 			}
 			if(opt_fsm_forced_edge_prop){
-				printf("Forced edge assignments: %ld\n", stats_forced_edge_propagations);
+				printf("Forced edge assignments: %" PRId64 "\n", stats_forced_edge_propagations);
 			}
 			if(opt_fsm_chokepoint_prop){
-				printf("Chokepoint edge assignments: %ld\n", stats_chokepoint_edge_propagations);
+				printf("Chokepoint edge assignments: %" PRId64 "\n", stats_chokepoint_edge_propagations);
 			}
 			if(opt_fsm_edge_prop){
-				printf("Generator edge assignments (deterministic,nondeterministic): %ld,%ld\n", stats_det_gen_edge_propagations,stats_nondet_gen_edge_propagations);
+				printf("Generator edge assignments (deterministic,nondeterministic): %" PRId64 ",%" PRId64 "\n", stats_det_gen_edge_propagations,stats_nondet_gen_edge_propagations);
 			}
 
 		}
@@ -215,8 +215,8 @@ public:
 	void setSuffixGenerator(DynamicFSM *suffix_fsm){
 		this->suffix_fsm=suffix_fsm;
 	}
-	Lit decide(int level);
-	bool propagate(vec<Lit> & conflict);
+	Lit decide(int level) override;
+	bool propagate(vec<Lit> & conflict) override;
 
 	/*void unassign(Lit l) override {
 		FSMDetector::unassign(l);
@@ -252,10 +252,10 @@ public:
 
 	void buildAcceptorChokepointEdgeReason(int genFinal, int acceptFinal,int forcedAcceptorEdge, int forcedAcceptorLabel,  vec<Lit> & conflict);
 	void buildForcedNondetEdgeReason(int genFinal, int acceptFinal,int forcedEdge, int forcedLabel,  vec<Lit> & conflict);
-	void preprocess() ;
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker);
-	bool checkSatisfied();
-	void printSolution(std::ostream& write_to);
+	void preprocess() override;
+	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
+	bool checkSatisfied() override;
+	void printSolution(std::ostream& write_to) override;
 
 	bool checkNegatedPolarity() override;
 
@@ -267,11 +267,12 @@ public:
 
 	FSMGeneratorAcceptorDetector(int _detectorID, FSMTheorySolver * _outer, DynamicFSM &g_under, DynamicFSM &g_over,DynamicFSM & acceptor_under,DynamicFSM & acceptor_over,
 								 int gen_source,int acceptor_source, double seed = 1);
-	virtual ~FSMGeneratorAcceptorDetector() {
+
+	~FSMGeneratorAcceptorDetector() override {
 
 	}
 
-	const char* getName() {
+	const char* getName() override {
 		return "NFA Generator Acceptor Detector";
 	}
 	void setGeneratorDeterministic(bool is_deterministic){

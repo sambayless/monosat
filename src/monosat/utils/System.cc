@@ -22,8 +22,8 @@
 
 #if defined(__linux__)
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 using namespace Monosat;
 
@@ -37,7 +37,7 @@ static inline int memReadStat(int field) {
 	
 	sprintf(name, "/proc/%d/statm", pid);
 	FILE* in = fopen(name, "rb");
-	if (in == NULL)
+	if (in == nullptr)
 		return 0;
 	
 	for (; field >= 0; field--)
@@ -53,7 +53,7 @@ static inline int memReadPeak(void) {
 	
 	sprintf(name, "/proc/%d/status", pid);
 	FILE* in = fopen(name, "rb");
-	if (in == NULL)
+	if (in == nullptr)
 		return 0;
 	
 	// Find the correct line, beginning with "VmPeak:":

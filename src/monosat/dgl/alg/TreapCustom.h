@@ -24,7 +24,7 @@
 //untested at this point.
 #ifndef TREAPCUSTOM_H_
 #define TREAPCUSTOM_H_
-#include <stdlib.h>
+#include <cstdlib>
 #include "SearchTree.h"
 
 template<typename Value>

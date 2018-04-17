@@ -31,7 +31,7 @@ class NP0LAccept{
 
 	int stats_skipped_updates=0;
 	int stats_num_skipable_deletions=0;
-	long stats_skipped_accepts=0;
+	int64_t stats_skipped_accepts=0;
 
 
 
@@ -312,7 +312,7 @@ private:
 		while(true){
 
 			if(path.size()>=string.size()){
-				//don't consider a string this long.
+				//don't consider a string this int64_t.
 				//backtrack until the path is backtrack size.
 				int backtrack = path.size()-1;
 				assert(backtrack<path.size());

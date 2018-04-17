@@ -38,13 +38,13 @@ public:
 	bool strictlyProducing=true;
 	int nTerminalCharacters=0;
 	bool adaptive_history_clear = false;
-	long historyClearInterval = 1000;
+	int64_t historyClearInterval = 1000;
 	int modifications=0;
 	int additions=0;
 	int deletions=0;
 	int in_alphabet =1;
 	int out_alphabet=1;
-	long historyclears=0;
+	int64_t historyclears=0;
 	struct EdgeChange {
 		bool addition;
 
@@ -177,9 +177,9 @@ public:
 	}
 
 	void clearHistory(bool forceClear = false) {
-		//long expect=std::max(1000,historyClearInterval*edges());
-		if (history.size()
-				&& (forceClear
+		//int64_t expect=std::max(1000,historyClearInterval*edges());
+		if (!history.empty()
+			&& (forceClear
 						|| (history.size()
 								> (adaptive_history_clear ?
 										std::max(1000L, historyClearInterval * nRules()) : historyClearInterval)))) {//){

@@ -121,7 +121,7 @@ public:
 		keys.resize(n);
 		parent_edges.resize(n);
 	}
-	long num_updates = 0;
+	int64_t num_updates = 0;
 	int numUpdates() const {
 		return num_updates;
 	}

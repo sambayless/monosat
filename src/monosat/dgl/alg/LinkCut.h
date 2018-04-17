@@ -39,7 +39,7 @@ class LinkCut {
 		Node* right;
 		Node *parent;
 		Node(int _id) :
-				id(_id), left(NULL), right(NULL), parent(NULL) {
+				id(_id), left(nullptr), right(nullptr), parent(nullptr) {
 		}
 		;
 	};
@@ -47,7 +47,7 @@ class LinkCut {
 	std::vector<Node*> nodes;
 	// Whether x is a root of a splay tree
 	bool isRoot(Node *x) {
-		return x->parent == NULL || (x->parent->left != x && x->parent->right != x);
+		return x->parent == nullptr || (x->parent->left != x && x->parent->right != x);
 	}
 
 	void connect(Node* ch, Node* p, bool leftChild) {
@@ -55,7 +55,7 @@ class LinkCut {
 			p->left = ch;
 		else
 			p->right = ch;
-		if (ch != NULL)
+		if (ch != nullptr)
 			ch->parent = p;
 	}
 
@@ -63,11 +63,11 @@ class LinkCut {
 		Node* q = p->parent;
 		Node* r = q->parent;
 
-		if ((q->left = p->right) != NULL)
+		if ((q->left = p->right) != nullptr)
 			q->left->parent = q;
 		p->right = q;
 		q->parent = p;
-		if ((p->parent = r) != NULL) {
+		if ((p->parent = r) != nullptr) {
 			if (r->left == q)
 				r->left = p;
 			else if (r->right == q)
@@ -80,11 +80,11 @@ class LinkCut {
 		Node * q = p->parent;
 		Node * r = q->parent;
 
-		if ((q->right = p->left) != NULL)
+		if ((q->right = p->left) != nullptr)
 			q->right->parent = q;
 		p->left = q;
 		q->parent = p;
-		if ((p->parent = r) != NULL) {
+		if ((p->parent = r) != nullptr) {
 			if (r->left == q)
 				r->left = p;
 			else if (r->right == q)
@@ -126,8 +126,8 @@ class LinkCut {
 	// Makes node x the root of the virtual tree, and also x is the leftmost
 	// node in its splay tree
 	Node *expose(Node* x) {
-		Node *last = NULL;
-		for (Node* y = x; y != NULL; y = y->parent) {
+		Node *last = nullptr;
+		for (Node* y = x; y != nullptr; y = y->parent) {
 			splay(y);
 			y->left = last;
 			last = y;
@@ -138,7 +138,7 @@ class LinkCut {
 
 	Node * _findRoot(Node * x) {
 		expose(x);
-		while (x->right != NULL) {
+		while (x->right != nullptr) {
 			x = x->right;
 		}
 		//splay(x);
@@ -178,19 +178,19 @@ class LinkCut {
 			return true;
 		expose(x);
 		expose(y);
-		return x->parent != NULL;
+		return x->parent != nullptr;
 	}
 
 	void _cut(Node *x, Node *y) {
 		expose(x);
 		expose(y);
-		if (x->parent != NULL) {
+		if (x->parent != nullptr) {
 			setCount++;
 		}
-		assert(! (y->right != x || x->left != NULL || x->right != NULL));
+		assert(! (y->right != x || x->left != nullptr || x->right != nullptr));
 
-		y->right->parent = NULL;
-		y->right = NULL;
+		y->right->parent = nullptr;
+		y->right = nullptr;
 		assert(dbgSetCount());
 	}
 
@@ -242,7 +242,7 @@ public:
 		}
 
 #endif
-		return xnode->parent != NULL;
+		return xnode->parent != nullptr;
 
 	}
 
@@ -259,9 +259,9 @@ public:
 
 	void reset() {
 		for (int i = 0; i < nodes.size(); i++) {
-			nodes[i]->parent = NULL;
-			nodes[i]->left = NULL;
-			nodes[i]->right = NULL;
+			nodes[i]->parent = nullptr;
+			nodes[i]->left = nullptr;
+			nodes[i]->right = nullptr;
 		}
 		setCount = nodes.size();
 	}
