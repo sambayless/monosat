@@ -623,11 +623,11 @@ public:
 	int64_t stats_num_lazy_conflicts=0;
 	int64_t stats_decisions = 0;
 	int64_t stats_num_reasons = 0;
-	long stats_bv_backtracks =0;
-	long stats_bv_enqueues =0;
-	long stats_bv_enqueue_while_sat=0;
-	long stats_backtrack_assigns = 0;
-	long stats_enqueues=0;
+	int64_t stats_bv_backtracks =0;
+	int64_t stats_bv_enqueues =0;
+	int64_t stats_bv_enqueue_while_sat=0;
+	int64_t stats_backtrack_assigns = 0;
+	int64_t stats_enqueues=0;
 	double reachupdatetime = 0;
 	double unreachupdatetime = 0;
 	double stats_initial_propagation_time = 0;

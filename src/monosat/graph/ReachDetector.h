@@ -108,7 +108,7 @@ public:
 	int stats_num_skipable_deletions = 0;
 	int stats_learnt_components = 0;
 	int stats_learnt_components_sz = 0;
-	long stats_heuristic_recomputes=0;
+	int64_t stats_heuristic_recomputes=0;
 	double mod_percentage = 0.2;
 	int stats_pure_skipped = 0;
 	int stats_shrink_removed = 0;

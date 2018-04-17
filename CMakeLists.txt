@@ -11,13 +11,17 @@ option(SHOW_GIT_VERSION "Include git --describe in the build version" ON)
 set (JAVA_SOURCE_FILES "")
 set (JAVA_NATIVE_SOURCE_FILES "")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+#set(CMAKE_ENABLE_COMPILE_COMMANDS ON) # set to enable clang tidy
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Wno-unknown-warning-option -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT -DDEBUG_CORE " ) #  -DDEBUG_GRAPH -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG -O2") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG") #it is _critically_ important that release builds specify -DNDEBUG!
 
 set( CMAKE_VERBOSE_MAKEFILE ON )
+
+#enable more flexible shared library path loading on OSX
+set(CMAKE_MACOSX_RPATH 1)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to 'Release' as none was specified.\nUse cmake -DCMAKE_BUILD_TYPE=Debug to select Debug release.")
