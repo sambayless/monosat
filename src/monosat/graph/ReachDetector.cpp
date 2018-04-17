@@ -552,8 +552,8 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
 	bool path_is_cut=false;
 	int dest_node=-1;
 	Heuristic * sub_heuristic=nullptr;
-	long stats_random_shortest_paths =0;
-	long stats_random_shortest_edges =0;
+	int64_t stats_random_shortest_paths =0;
+	int64_t stats_random_shortest_edges =0;
 	double random_seed=0;
 	double randomShortestPathFrequency=0;//With this probability, select a random (but still shortest) path
 	double randomShortestEdgeFrequency =0;

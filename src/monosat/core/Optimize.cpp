@@ -33,8 +33,8 @@
 namespace Monosat{
 
 namespace Optimization{
-static long long time_limit=-1;
-static long long memory_limit=-1;
+static int64_t time_limit=-1;
+static int64_t memory_limit=-1;
 
 static bool has_system_time_limit=false;
 static rlim_t system_time_limit;
@@ -95,7 +95,7 @@ void enableResourceLimits(Solver * S){
 
 		if (time_limit < INT32_MAX && time_limit>=0) {
 			assert(cur_time>=0);
-			long long local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
+			int64_t local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
 			if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
 				rl.rlim_cur = local_time_limit;
 				if (setrlimit(RLIMIT_CPU, &rl) == -1)

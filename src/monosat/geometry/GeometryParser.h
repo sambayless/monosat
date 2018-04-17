@@ -181,7 +181,7 @@ class GeometryParser: public Parser<B, Solver> {
 	 //stringstream ss(in);
 	 for(int i = 0;i<d;i++){
 	 //skipWhitespace(in);
-	 long n = parseInt(in);
+	 int64_t n = parseInt(in);
 	 //double p = parseDouble(in,tmp_str);
 	 point.position.push((T)n);
 	 }
@@ -209,7 +209,7 @@ class GeometryParser: public Parser<B, Solver> {
 	 //stringstream ss(in);
 	 for(int i = 0;i<d;i++){
 	 //skipWhitespace(in);
-	 long n = parseInt(in);
+	 int64_t n = parseInt(in);
 	 //double p = parseDouble(in,tmp_str);
 	 point.position.push((T)n);
 	 }

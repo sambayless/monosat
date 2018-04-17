@@ -107,16 +107,16 @@ public:
 	};
 	std::vector<AreaLit> areaDetectors;
 
-	static long stats_propagations;
-	static long stats_bound_checks;
-	static long stats_bounds_skips_under;
-	static long stats_bounds_skips_over;
-	static long stats_under_clause_length;
-	static long stats_over_clause_length;
-	static long stats_under_clauses;
-	static long stats_over_clauses;
-	static long stats_line_intersection_skips_under;
-	static long stats_line_intersection_skips_over;
+	static int64_t stats_propagations;
+	static int64_t stats_bound_checks;
+	static int64_t stats_bounds_skips_under;
+	static int64_t stats_bounds_skips_over;
+	static int64_t stats_under_clause_length;
+	static int64_t stats_over_clause_length;
+	static int64_t stats_under_clauses;
+	static int64_t stats_over_clauses;
+	static int64_t stats_line_intersection_skips_under;
+	static int64_t stats_line_intersection_skips_over;
 
 	void printStats() {
 		printf("Convex hull %d: ", getID());
@@ -286,28 +286,28 @@ private:
 	}
 };
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_bounds_skips_under = 0;
+int64_t ConvexHullDetector<D, T>::stats_bounds_skips_under = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_bounds_skips_over = 0;
+int64_t ConvexHullDetector<D, T>::stats_bounds_skips_over = 0;
 
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_line_intersection_skips_under = 0;
+int64_t ConvexHullDetector<D, T>::stats_line_intersection_skips_under = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_line_intersection_skips_over = 0;
+int64_t ConvexHullDetector<D, T>::stats_line_intersection_skips_over = 0;
 
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_propagations = 0;
+int64_t ConvexHullDetector<D, T>::stats_propagations = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_bound_checks = 0;
+int64_t ConvexHullDetector<D, T>::stats_bound_checks = 0;
 
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_under_clause_length = 0;
+int64_t ConvexHullDetector<D, T>::stats_under_clause_length = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_over_clause_length = 0;
+int64_t ConvexHullDetector<D, T>::stats_over_clause_length = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_under_clauses = 0;
+int64_t ConvexHullDetector<D, T>::stats_under_clauses = 0;
 template<unsigned int D, class T>
-long ConvexHullDetector<D, T>::stats_over_clauses = 0;
+int64_t ConvexHullDetector<D, T>::stats_over_clauses = 0;
 
 template<unsigned int D, class T>
 ConvexHullDetector<D, T>::ConvexHullDetector(int detectorID, PointSet<D, T> & under, PointSet<D, T> & over,

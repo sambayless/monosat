@@ -99,7 +99,7 @@ public:
 	double stats_flow_calc_time = 0;
 	double stats_flow_recalc_time = 0;
 	double stats_redecide_time = 0;
-	long stats_heuristic_recomputes=0;
+	int64_t stats_heuristic_recomputes=0;
 	Lit last_decision_lit = lit_Undef;
 
 	//vec<Lit> decisions;
