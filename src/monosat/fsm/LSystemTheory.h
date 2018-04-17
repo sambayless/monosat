@@ -417,7 +417,7 @@ public:
 		dbg_sync();
 
 	};
-	virtual bool supportsDecisions() {
+	bool supportsDecisions() override{
 		return true;
 	}
 	Lit decideTheory(CRef & decision_reason) override {

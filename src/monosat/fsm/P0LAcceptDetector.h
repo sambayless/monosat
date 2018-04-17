@@ -165,7 +165,7 @@ public:
 		
 	}
 	
-	const char* getName() {
+	const char* getName() override {
 		return "P0-LSystem Accepts Detector";
 	}
 

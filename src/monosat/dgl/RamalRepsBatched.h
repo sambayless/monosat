@@ -493,11 +493,11 @@ public:
     }
 
     long num_updates = 0;
-    int numUpdates() const {
+    int numUpdates() const override {
         return num_updates;
     }
 
-    void update() {
+    void update() override {
 
         if (g.outfile) {
             fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
