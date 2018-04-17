@@ -28,16 +28,11 @@
 #include <cstdint>
 #include <sstream>
 #include <cstdio>
+#include "Graph.h"
 
 namespace dgl {
-
-class DynamicGraphAlgorithm{
-public:
-	virtual ~DynamicGraphAlgorithm(){}
-
-	virtual void updateHistory()=0;
-};
-
+template<typename Weight>
+class DynamicBackGraph;
 /**
  * A dynamic graph.
  * It supports efficiently recomputing graph properties as edges are added and removed ('enabled' and 'disabled').
@@ -52,8 +47,13 @@ public:
  * Most algorithms in the library are optimized for moderate sized, sparsely connected graphs (<10,000 edges/nodes).
  */
 template<typename Weight>
-class DynamicGraph {
-
+class DynamicGraph:public Graph<Weight> {
+public:
+	friend DynamicBackGraph<Weight>;
+	typedef typename Graph<Weight>::Edge Edge;
+	typedef typename Graph<Weight>::FullEdge FullEdge;
+	typedef typename Graph<Weight>::EdgeChange EdgeChange;
+private:
 	std::vector<bool> edge_status;
 	std::vector<bool> edge_status_const;
 	std::vector<Weight> weights;
@@ -67,6 +67,7 @@ class DynamicGraph {
 	int64_t history_offset=0;
 
 public:
+
 	bool disable_history_clears=false;
 	int dynamic_history_clears=0;
 
@@ -80,26 +81,12 @@ public:
 	int64_t previous_history_size=0;
 	int64_t historyclears=0;
 	int64_t skipped_historyclears=0;
-	struct Edge {
-		int node;
-		int id;
-	};
+
 	std::vector<std::vector<Edge> > adjacency_list;
 	std::vector<std::vector<Edge> > inverted_adjacency_list;
 	std::vector<std::vector<Edge> > adjacency_undirected_list;
 public:
-	struct FullEdge {
-		int from;
-		int to;
-		int id;
-		//int weight;
-		FullEdge() :
-				from(-1), to(-1), id(-1) {
-		} //,weight(1){}
-		FullEdge(int from, int to, int id) :
-				from(from), to(to), id(id) {
-		} //,weight(weight){}
-	};
+
 
 private:
 #ifdef DEBUG_DGL
@@ -107,38 +94,30 @@ private:
 #endif
 	std::vector<FullEdge> all_edges;
 public:
-	struct EdgeChange {
-		bool addition;
-		bool deletion;
-		bool weight_increase;
-		bool weight_decrease;
-		int id;
-		int mod;
-		int prev_mod;
-	};
+
 private:
 	std::vector<EdgeChange> history;
 public:
 	//Logfile information if recording is enabled.
 	FILE * outfile=nullptr;
 
-	DynamicGraph() {
+	DynamicGraph(){
 	}
 
 	~DynamicGraph() {
 
 	}
 
-	void addNodes(int n) {
+	void addNodes(int n) override {
 		for (int i = 0; i < n; i++)
 			addNode();
 	}
 	//Returns true iff the edge exists and is a self loop
-	inline bool selfLoop(int edgeID)  {
+	inline bool selfLoop(int edgeID) override {
 		return hasEdge(edgeID) && getEdge(edgeID).from == getEdge(edgeID).to;
 	}
 	//SLOW!
-	bool hasEdge(int from, int to) const {
+	bool hasEdge(int from, int to) const override{
 		for (int i = 0; i < adjacency_list[from].size(); i++) {
 			if (adjacency_list[from][i].node == to && edgeEnabled(adjacency_list[from][i].id)) {
 				return true;
@@ -147,7 +126,7 @@ public:
 		return false;
 	}
 	//SLOW! Returns -1 if there is no edge
-	int getEdge(int from, int to) const {
+	int getEdge(int from, int to) const override{
 		for (int i = 0; i < adjacency_list[from].size(); i++) {
 			if (adjacency_list[from][i].node == to && edgeEnabled(adjacency_list[from][i].id)) {
 				return adjacency_list[from][i].id;
@@ -155,7 +134,7 @@ public:
 		}
 		return -1;
 	}
-	bool hasEdgeUndirected(int from, int to) const {
+	bool hasEdgeUndirected(int from, int to) const override{
 		for (int i = 0; i < adjacency_undirected_list[from].size(); i++) {
 			if (adjacency_undirected_list[from][i].node == to && edgeEnabled(adjacency_undirected_list[from][i].id)) {
 				return true;
@@ -164,7 +143,7 @@ public:
 		return false;
 	}
 
-	int addNode() {
+	int addNode() override{
 
 		adjacency_list.push_back( { }); //adj list
 		adjacency_undirected_list.push_back( { });
@@ -185,26 +164,26 @@ public:
 		return num_nodes++;
 	}
 	//true iff the edge's current assignment will never be altered.
-	bool isConstant(int edgeID) const{
+	bool isConstant(int edgeID) const override{
 		return edge_status_const[edgeID];
 	}
 
-	void makeEdgeAssignmentConstant(int edgeID){
+	void makeEdgeAssignmentConstant(int edgeID)override{
 		edge_status_const[edgeID]=true;
 	}
 
-	bool edgeEnabled(int edgeID) const {
+	bool edgeEnabled(int edgeID) const override{
 		assert(edgeID < edge_status.size());
 		return edge_status[edgeID];
 	}
-	bool isEdge(int edgeID) const {
+	bool isEdge(int edgeID) const override{
 		return edgeID < all_edges.size() && all_edges[edgeID].id == edgeID;
 	}
-	bool hasEdge(int edgeID) const {
+	bool hasEdge(int edgeID) const override{
 		return isEdge(edgeID);
 	}
 	//Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
-	int addEdge(int from, int to, int id = -1, Weight weight=1){
+	int addEdge(int from, int to, int id = -1, Weight weight=1)override{
 		assert(from < num_nodes);
 		assert(to < num_nodes);
 		assert(from >= 0);
@@ -255,18 +234,18 @@ public:
 
 		return id;
 	}
-	int nEdgeIDs() {
+	int nEdgeIDs() override{
 		assert(num_edges == all_edges.size());
 		return num_edges;		//all_edges.size();
 	}
-	inline int nodes() const {
+	inline int nodes() const override{
 		return num_nodes;
 	}
-	inline int edges() const {
+	inline int edges() const override{
 		return num_edges;
 	}
 
-	inline int nIncident(int node, bool undirected = false) {
+	inline int nIncident(int node, bool undirected = false) override{
 		assert(node >= 0);
 		assert(node < nodes());
 		if (undirected) {
@@ -276,7 +255,7 @@ public:
 		}
 	}
 
-	inline int nDirectedEdges(int node, bool incoming) {
+	inline int nDirectedEdges(int node, bool incoming) override{
 		assert(node >= 0);
 		assert(node < nodes());
 		if (incoming) {
@@ -285,7 +264,7 @@ public:
 			return nIncident(node, false);
 		}
 	}
-	inline Edge & directedEdges(int node, int i, bool is_incoming) {
+	inline Edge & directedEdges(int node, int i, bool is_incoming) override{
 		if (is_incoming) {
 			return incoming(node, i, false);
 		} else {
@@ -293,7 +272,7 @@ public:
 		}
 	}
 
-	inline int nIncoming(int node, bool undirected = false) {
+	inline int nIncoming(int node, bool undirected = false)override {
 		assert(node >= 0);
 		assert(node < nodes());
 		if (undirected) {
@@ -303,7 +282,7 @@ public:
 		}
 	}
 
-	inline Edge & incident(int node, int i, bool undirected = false) {
+	inline Edge & incident(int node, int i, bool undirected = false) override{
 		assert(node >= 0);
 		assert(node < nodes());
 		assert(i < nIncident(node, undirected));
@@ -313,7 +292,7 @@ public:
 			return adjacency_list[node][i];
 		}
 	}
-	inline Edge & incoming(int node, int i, bool undirected = false) {
+	inline Edge & incoming(int node, int i, bool undirected = false) override {
 		assert(node >= 0);
 		assert(node < nodes());
 		assert(i < nIncoming(node, undirected));
@@ -323,25 +302,25 @@ public:
 			return inverted_adjacency_list[node][i];
 		}
 	}
-	std::vector<FullEdge> & getEdges(){
+	std::vector<FullEdge> & getEdges()override{
 		return all_edges;
 	}
 
-	std::vector<Weight> & getWeights(){
+	std::vector<Weight> & getWeights()override{
 		return weights;
 	}
 /*	 Weight getWeight(int edgeID){
 		 return weights[edgeID];
 	 //return all_edges[edgeID].weight;
 	 }*/
-	Weight  getWeight(int edgeID){
+	Weight  getWeight(int edgeID)override{
 		return weights[edgeID];
 		//return all_edges[edgeID].weight;
 	}
-	FullEdge & getEdge(int id)  {
+	FullEdge & getEdge(int id) override {
 		return all_edges[id];
 	}
-	void setEdgeEnabled(int id, bool enable){
+	void setEdgeEnabled(int id, bool enable)override{
 		if(enable){
 			enableEdge(id);
 		}else{
@@ -349,13 +328,13 @@ public:
 		}
 	}
 
-	void enableEdge(int id) {
+	void enableEdge(int id) override{
 		enableEdge(all_edges[id].from, all_edges[id].to, id);
 	}
-	void disableEdge(int id) {
+	void disableEdge(int id) override{
 		disableEdge(all_edges[id].from, all_edges[id].to, id);
 	}
-	void enableEdge(int from, int to, int id) {
+	void enableEdge(int from, int to, int id)override {
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
@@ -376,7 +355,7 @@ public:
 		}
 	}
 
-	bool undoEnableEdge(int id) {
+	bool undoEnableEdge(int id)override {
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
@@ -403,7 +382,7 @@ public:
 		return false;
 	}
 
-	void disableEdge(int from, int to, int id) {
+	void disableEdge(int from, int to, int id) override{
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
@@ -423,7 +402,7 @@ public:
 		}
 	}
 
-	bool undoDisableEdge(int id) {
+	bool undoDisableEdge(int id) override{
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
@@ -447,10 +426,10 @@ public:
 		}
 		return false;
 	}
-	inline Weight  getEdgeWeight(int edgeID){
+	inline Weight  getEdgeWeight(int edgeID)override{
 		return getWeight(edgeID);
 	}
-	void setEdgeWeight(int id,const Weight & w) {
+	void setEdgeWeight(int id,const Weight & w) override{
 		assert(id >= 0);
 		assert(id < edge_status.size());
 		assert(isEdge(id));
@@ -480,7 +459,7 @@ public:
 	}
 
 
-	void drawFull(bool showWeights = false, bool force_draw=false) {
+	void drawFull(bool showWeights = false, bool force_draw=false)override {
 #ifndef DEBUG_DGL
 		if(!force_draw)
 			return;
@@ -514,7 +493,7 @@ public:
 
 	}
 
-	bool rewindHistory(int steps) {
+	bool rewindHistory(int steps)override {
 
 		int cur_modifications = modifications;
 		for (int i = 0; i < steps; i++) {
@@ -536,14 +515,14 @@ public:
 	/**
 	 * Returns a unique identifier for this algorithm.
 	 */
-	int addDynamicAlgorithm(DynamicGraphAlgorithm*alg){
+	int addDynamicAlgorithm(DynamicGraphAlgorithm*alg)override{
 		dynamic_algs.push_back(alg);
 		dynamic_history_pos.push_back(0);
 		//n_dynamic_algs_updtodate+= (historySize()==0);
 		return dynamic_algs.size()-1;
 	}
 
-	void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos){
+	void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos)override{
 		assert(dynamic_algs[algorithmID]==alg);//sanity check
 		//bool was_uptodate = dynamic_history_pos[algorithmID]==historySize();
 		dynamic_history_pos[algorithmID]=historyPos;
@@ -552,23 +531,23 @@ public:
 		}*/
 	}
 
-	EdgeChange & getChange(int64_t historyPos){
+	EdgeChange & getChange(int64_t historyPos)override{
 		assert(historyPos-history_offset>=0);
 		assert(historyPos-history_offset<history.size());
 		return history[historyPos-history_offset];
 	}
 
-	int historySize(){
+	int historySize()override{
 		return history.size() + history_offset;
 	}
 
-	int getCurrentHistory() {
+	int getCurrentHistory() override{
 		return modifications;
 	}
 
 
 
-	void clearHistory(bool forceClear = false) {
+	void clearHistory(bool forceClear = false)override {
 		//int64_t expect=std::max(1000,historyClearInterval*edges());
 		//check whether we can do a cheap history cleanup (without resetting all the dynamic algorithms)
 		if(disable_history_clears)
@@ -618,7 +597,7 @@ public:
 		}
 	}
 	//force a new modification
-	void invalidate() {
+	void invalidate() override{
 		modifications++;
 		additions = modifications;
 		modifications++;
@@ -631,10 +610,10 @@ public:
 		}
 
 	}
-	int64_t getPreviousHistorySize()const{
+	int64_t getPreviousHistorySize()const override{
 		return previous_history_size;
 	}
-	void markChanged() {
+	void markChanged()override {
 		is_changed = true;
 
 		if (outfile) {
@@ -643,11 +622,11 @@ public:
 		}
 
 	}
-	bool changed() {
+	bool changed() override{
 		return is_changed;
 	}
 
-	void clearChanged() {
+	void clearChanged() override{
 		is_changed = false;
 
 		if (outfile) {
@@ -657,7 +636,7 @@ public:
 
 	}
 
-	void clear(){
+	void clear()override{
 		edge_status.clear();
 		num_nodes=0;
 		num_edges=0;
@@ -687,6 +666,7 @@ public:
 
 
 	}
+
 
 };
 

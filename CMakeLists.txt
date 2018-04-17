@@ -116,6 +116,8 @@ set(SOURCE_FILES
         src/monosat/dgl/DynamicConnectivity.h
         src/monosat/dgl/DynamicConnectivityImpl.h
         src/monosat/dgl/DynamicGraph.h
+        src/monosat/dgl/DynamicBackGraph.h
+        src/monosat/dgl/Graph.h
         src/monosat/dgl/DynamicNodes.h
         src/monosat/dgl/EdmondsKarp.h
         src/monosat/dgl/EdmondsKarpAdj.h
