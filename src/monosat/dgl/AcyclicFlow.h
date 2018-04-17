@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <cassert>
+#include "Graph.h"
 #include "DFSCycle.h"
 #include "EdmondsKarpAdj.h"
 //#include "MaxFlow.h"
@@ -35,7 +36,7 @@ namespace dgl {
 //Implementation of the acyclic flow algorithm from Sleator and Tarjan (1983)
 template<typename Weight> //, class Flow=MaxFlow<Weight> >
 class AcyclicFlow{
-	DynamicGraph<Weight>& g;
+	Graph<Weight>& g;
 	LinkCutCost<Weight> forest;
 	std::vector<Weight> new_flow;
 	//This stores, for each node in the tree, the edge of g connecting it to its parent (or -1 if there is no such edge)
@@ -43,7 +44,7 @@ class AcyclicFlow{
 	std::vector<int> parents;
 	//std::vector<int> disabled_edges;//disabled internally to the acyclic flow algorithm, to keep them from being revisited
 public:
-	AcyclicFlow(DynamicGraph<Weight>& g):g(g){
+	AcyclicFlow(Graph<Weight>& g):g(g){
 
 	}
 
@@ -53,21 +54,21 @@ public:
 			return;
 		}
 
-		if (g.outfile) {
-			fprintf(g.outfile, "acyclic_flow %d %d:  ",s,t);
+		if (g.outfile()) {
+			fprintf(g.outfile(), "acyclic_flow %d %d:  ",s,t);
 			std::stringstream ss;
 			for (int i = 0;i<g.edges();i++){
 				ss<< " " << flow_store[i] << " ";
 			}
-			fprintf(g.outfile, "%s\n",ss.str().c_str());
+			fprintf(g.outfile(), "%s\n",ss.str().c_str());
 		}
 
 #ifdef DEBUG_DGL
 
 		Weight expected_flow=-1;
 		{
-			DynamicGraph<Weight> test;
-			//test.outfile = fopen("/tmp/TEST_ACYCLIC_FLOW", "w");
+			Graph<Weight> test;
+			//test.outfile() = fopen("/tmp/TEST_ACYCLIC_FLOW", "w");
 			test.addNodes(g.nodes());
 			for (int i = 0;i<flow_store.size();i++){
 				if(i==4025){
@@ -243,8 +244,8 @@ public:
 						flow_store[i]=new_flow[i];
 #ifdef DEBUG_DGL
 					//verify that no cycle remains
-					DynamicGraph<Weight> test;
-					//test.outfile = fopen("/tmp/TEST_ACYCLIC_FLOW", "w");
+					Graph<Weight> test;
+					//test.outfile() = fopen("/tmp/TEST_ACYCLIC_FLOW", "w");
 					test.addNodes(g.nodes());
 					for (int i = 0;i<flow_store.size();i++){
 						if(i==4025){
@@ -264,12 +265,12 @@ public:
 					//test.drawFull(true);
 					DFSCycle<Weight> cycle(test);
 					if(cycle.hasDirectedCycle()){
-						//fflush(g.outfile);
+						//fflush(g.outfile());
 			     		throw std::logic_error( "Cycle remains in acyclic flow" );
 					}
 					EdmondsKarpAdj<Weight> mf(test,s,t);
 					if(expected_flow>=0 && mf.maxFlow(s,t)!=expected_flow){
-						//fflush(g.outfile);
+						//fflush(g.outfile());
 						throw std::logic_error( "Flow is altered by cycle removal");
 					}
 
@@ -298,7 +299,7 @@ public:
 							if (v==t && sum_in-sum_out==expected_flow){
 								continue;
 							}
-							//fflush(g.outfile);
+							//fflush(g.outfile());
 							throw std::logic_error("Bad flow after acyclic removal");
 						}
 					}

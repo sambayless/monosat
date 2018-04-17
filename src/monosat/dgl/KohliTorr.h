@@ -25,6 +25,7 @@
 //Wrapper around Kohli and Torr's  Dynamic Graph Cuts algorithm (version 2)
 //Note that the Kohli Torr implementation itself is under the GPL (Version 2); only this wrapper code is MIT licensed.
 
+#include "Graph.h"
 #include "DynamicGraph.h"
 #include "MaxFlow.h"
 #include <vector>
@@ -47,7 +48,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	Weight static_maxflow=-1;//the maximum possible flow in the graph.
 	Weight source_max = 0;
 	Weight dest_max = 0;
-	DynamicGraph<Weight>& g;
+	Graph<Weight>& g;
 	DynamicGraph<Weight> * flow_graph=nullptr;//optional graph that can be used to record the edges in the actual flow
 	/**
 	 * Note: The Kohli Torr implementation does _not_ support multiple edges between the same nodes.
@@ -127,7 +128,7 @@ public:
 	int64_t stats_inits=0;
 	int64_t stats_reinits=0;
 	bool same_source_sink = false;//if the sink and source are the same node, flow is infinite, and lots of logic is bypassed to avoid putting KT in a bad state.
-	KohliTorr(DynamicGraph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
+	KohliTorr(Graph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
 			g(g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0)
 	{
 		curflow = 0;
@@ -156,7 +157,7 @@ public:
 		return sink;
 	}
 
-	DynamicGraph<Weight> * getFlowGraph() override{
+	Graph<Weight> * getFlowGraph() override{
 		if(!flow_graph){
 			flow_graph = new DynamicGraph<Weight>();
 			while(flow_graph->nodes()<g.nodes()){
@@ -227,7 +228,7 @@ public:
 				}
 			}
 			max_capacity = new_max_capacity;
-			last_modification = g.modifications - 1;
+			last_modification = g.getCurrentHistory() - 1;
 		}
 		flow_needs_recalc = true;
 		needs_recompute=true;
@@ -284,7 +285,7 @@ public:
 		}
 		needs_recompute=true;
 		source = s;
-		last_modification = g.modifications - 1;
+		last_modification = g.getCurrentHistory() - 1;
 		flow_needs_recalc = true;
 		updateSourceSink();
 	}
@@ -365,7 +366,7 @@ public:
 		}
 		sink = t;
 		needs_recompute=true;
-		last_modification = std::min(last_modification, g.modifications - 1);
+		last_modification = std::min(last_modification, g.getCurrentHistory() - 1);
 		flow_needs_recalc = true;
 		updateSourceSink();
 	}
@@ -604,14 +605,14 @@ public:
 			int a = 1;
 		}
 
-		if (g.outfile) {
-			fprintf(g.outfile, "f %d %d\n", s, t);
-			fflush(g.outfile);
+		if (g.outfile()) {
+			fprintf(g.outfile(), "f %d %d\n", s, t);
+			fflush(g.outfile());
 		}
 
 		//C.resize(g.nodes());
 		bool any_changed=false;
-		if (!needs_recompute && last_modification > 0 && g.modifications == last_modification) {
+		if (!needs_recompute && last_modification > 0 && g.getCurrentHistory() == last_modification) {
 #ifdef DEBUG_MAXFLOW2
 			EdmondsKarpDynamic<Weight> ek(g,source,sink);
             Weight expected_flow =ek.maxFlow(source,sink);
@@ -622,11 +623,11 @@ public:
 		} else if (!kt || last_modification <= 0 || kt->get_node_num() != g.nodes()
 				   || edge_enabled.size() != g.edges()) {
 			initKT();
-		} else if(! g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize() ){
+		} else if(! g.changed() && last_history_clear>=0 && last_history_clear == g.nHistoryClears()-1 && history_qhead==g.getPreviousHistorySize() ){
 			//no information was lost in the history clear
 			history_qhead = 0;
-			last_history_clear = g.historyclears;
-		}else if (g.historyclears != last_history_clear || g.changed()) {
+			last_history_clear = g.nHistoryClears();
+		}else if (g.nHistoryClears() != last_history_clear || g.changed()) {
 			stats_reinits++;
 
 			for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
@@ -753,13 +754,13 @@ public:
 		dbg_check_flow(s, t);
 		curflow = f;
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 
 		if(flow_graph){
 			getChangedEdges();//keep the flow graph up to date, if it is defined
@@ -1068,9 +1069,9 @@ public:
 		int s = source;
 		int t = sink;
 
-		if (g.outfile) {
-			fprintf(g.outfile, "m %d %d\n", s, t);
-			fflush(g.outfile);
+		if (g.outfile()) {
+			fprintf(g.outfile(), "m %d %d\n", s, t);
+			fflush(g.outfile());
 		}
 
 		cut.clear();
@@ -1273,7 +1274,7 @@ public:
     int64_t stats_flow_calcs = 0;
     int64_t stats_inits=0;
     int64_t stats_reinits=0;
-	KohliTorr(DynamicGraph<Weight>& g,  int source, int sink,bool kt_preserve_order) :EdmondsKarpDynamic<Weight>(g,source,sink){
+	KohliTorr(Graph<Weight>& g,  int source, int sink,bool kt_preserve_order) :EdmondsKarpDynamic<Weight>(g,source,sink){
 
 	}
     const Weight update() override {

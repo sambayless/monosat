@@ -23,7 +23,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "MinimumSpanningTree.h"
 #include <limits>
@@ -34,7 +34,7 @@ template<class Status, typename Weight = int>
 class Prim: public MinimumSpanningTree<Weight> {
 public:
 
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 
 	Status & status;
 	int last_modification;
@@ -93,7 +93,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	Prim(DynamicGraph<Weight> & graph,  Status & _status, int _reportPolarity = 0) :
+	Prim(Graph<Weight> & graph,  Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 			0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), Q(VertLt(keys)) {
 
@@ -129,19 +129,19 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 
-		if (g.outfile) {
-			fprintf(g.outfile, "m\n");
-			fflush(g.outfile);
+		if (g.outfile()) {
+			fprintf(g.outfile(), "m\n");
+			fflush(g.outfile());
 		}
 
-		if (g.modifications == 89) {
+		if (g.getCurrentHistory() == 89) {
 			int a = 1;
 		}
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
-		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
+		if (last_modification <= 0 || g.changed() || last_history_clear != g.nHistoryClears()) {
 			INF = 1;	//g.nodes()+1;
 
 			for (auto & w : g.getWeights())
@@ -149,7 +149,7 @@ public:
 		}
 		stats_full_updates++;
 
-		if (last_deletion == g.deletions) {
+		if (last_deletion == g.nDeletions()) {
 			stats_num_skipable_deletions++;
 		}
 
@@ -236,12 +236,12 @@ public:
 		}
 		assert(dbg_uptodate());
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 
 		;
 	}

@@ -24,7 +24,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/dgl/alg/EulerTree.h"
 #include "monosat/dgl/alg/TreapCustom.h"
 #include "monosat/core/Config.h"
@@ -37,7 +37,7 @@ template<typename Weight, class Status>
 class DynamicConnectivity: public Reach, public AllPairs, public ConnectedComponents {
 public:
 
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -87,7 +87,7 @@ public:
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
 
-	DynamicConnectivity(DynamicGraph<Weight> & graph, Status & status, int _reportPolarity = 0) :
+	DynamicConnectivity(Graph<Weight> & graph, Status & status, int _reportPolarity = 0) :
 			g(graph), status(status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 			0), INF(0), reportPolarity(_reportPolarity) {
 		default_source = -1;
@@ -284,7 +284,7 @@ public:
 
 		int local_it = ++iteration;
 
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
@@ -311,8 +311,8 @@ public:
 
 		assert(transitive_closure[0][sources[0]].reachable);
 
-		if (last_modification <= 0 || g.historyclears != last_history_clear) {
-			last_history_clear = g.historyclears;
+		if (last_modification <= 0 || g.nHistoryClears() != last_history_clear) {
+			last_history_clear = g.nHistoryClears();
 			history_qhead = 0;
 
 			//initialize the transitive closure.
@@ -436,12 +436,12 @@ public:
 		assert(dbg_sets.NumSets() == t.numComponents());
 #endif
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 
 		//stats_full_update_time+=cpuTime()-startdupdatetime;;
 	}

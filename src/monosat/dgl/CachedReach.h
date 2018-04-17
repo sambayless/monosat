@@ -26,7 +26,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "Reach.h"
 #include "alg/IntMap.h"
@@ -37,7 +37,7 @@ template<typename Weight,class Status = typename Distance<Weight>::NullStatus, b
 class CachedReach: public Reach {
 public:
 
-    DynamicGraph<Weight> & g;
+    Graph<Weight> & g;
     Status & status;
     int last_modification=-1;
     int last_addition=-1;
@@ -66,11 +66,11 @@ public:
 public:
 
 
-    CachedReach(Reach * reach,DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
+    CachedReach(Reach * reach,Graph<Weight> & graph,Status & status, int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
             g(graph),status(status), reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }
-    CachedReach(Reach * reach, DynamicGraph<Weight> & graph,int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
+    CachedReach(Reach * reach, Graph<Weight> & graph,int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
             g(graph), status(Distance<Weight>::nullStatus),reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }
@@ -196,19 +196,19 @@ public:
         }
 
         num_updates++;
-        last_modification = g.modifications;
-        last_deletion = g.deletions;
-        last_addition = g.additions;
+        last_modification = g.getCurrentHistory();
+        last_deletion = g.nDeletions();
+        last_addition = g.nAdditions();
 
         history_qhead = g.historySize();
 
-        last_history_clear = g.historyclears;
+        last_history_clear = g.nHistoryClears();
     }
     void update() override{
         static int iteration = 0;
         int local_it = ++iteration;
 
-        if (!needs_recompute && last_modification > 0 && g.modifications == last_modification){
+        if (!needs_recompute && last_modification > 0 && g.getCurrentHistory() == last_modification){
             return;
         }
 
@@ -227,14 +227,14 @@ public:
 
         }
 
-        if (!needs_recompute && last_history_clear != g.historyclears) {
-            if (!g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize()){
+        if (!needs_recompute && last_history_clear != g.nHistoryClears()) {
+            if (!g.changed() && last_history_clear>=0 && last_history_clear == g.nHistoryClears()-1 && history_qhead==g.getPreviousHistorySize()){
                 //no information was lost in the history clear
                 history_qhead = 0;
-                last_history_clear = g.historyclears;
+                last_history_clear = g.nHistoryClears();
             }else {
                 history_qhead = g.historySize();
-                last_history_clear = g.historyclears;
+                last_history_clear = g.nHistoryClears();
                 for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
                     if (g.edgeEnabled(edgeid)) {
                         if(has_non_reach_destinations){
@@ -278,13 +278,13 @@ public:
 
 
         num_updates++;
-        last_modification = g.modifications;
-        last_deletion = g.deletions;
-        last_addition = g.additions;
+        last_modification = g.getCurrentHistory();
+        last_deletion = g.nDeletions();
+        last_addition = g.nAdditions();
 
         history_qhead = g.historySize();
 
-        last_history_clear = g.historyclears;
+        last_history_clear = g.nHistoryClears();
 
     }
 
@@ -295,11 +295,11 @@ public:
         return has_path_to[t];
     }
     bool connected_unchecked(int t) override {
-        assert(last_modification == g.modifications && ! needs_recompute);
+        assert(last_modification == g.getCurrentHistory() && ! needs_recompute);
         return connected_unsafe(t);
     }
     bool connected(int t) override {
-        //if (last_modification != g.modifications)
+        //if (last_modification != g.getCurrentHistory())
         update();
         return has_path_to[t];
     }
@@ -316,12 +316,12 @@ public:
             return -1;
     }
     int incomingEdge(int t) override {
-        assert(last_modification == g.modifications && ! needs_recompute);
+        assert(last_modification == g.getCurrentHistory() && ! needs_recompute);
         assert(previous_edge[t]>=0);
         return previous_edge[t]; //reach->incomingEdge(t);
     }
     int previous(int t) override {
-        assert(last_modification == g.modifications && ! needs_recompute);
+        assert(last_modification == g.getCurrentHistory() && ! needs_recompute);
         if (previous_edge[t]<0){
         	return -1;
         }

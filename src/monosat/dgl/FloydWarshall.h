@@ -24,7 +24,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "AllPairs.h"
 #include "monosat/mtl/Sort.h"
@@ -35,7 +35,7 @@ template<typename Weight, class Status = AllPairs::NullStatus>
 class FloydWarshall: public AllPairs {
 public:
 	
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -67,7 +67,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	FloydWarshall(DynamicGraph<Weight> & graph, Status & _status = AllPairs::nullStatus, int _reportPolarity = 0) :
+	FloydWarshall(Graph<Weight> & graph, Status & _status = AllPairs::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0), reportPolarity(0) {
 		
@@ -130,12 +130,12 @@ public:
 		
 		stats_full_updates++;
 		
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
 		
-		if (last_deletion == g.deletions) {
+		if (last_deletion == g.nDeletions()) {
 			stats_num_skipable_deletions++;
 		}
 		
@@ -201,12 +201,12 @@ public:
 		}
 		assert(dbg_uptodate());
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		
 	}
 	
@@ -272,11 +272,11 @@ public:
 		return dist[from][t] < INF;
 	}
 	bool connected_unchecked(int from, int t) override {
-		assert(last_modification == g.modifications);
+		assert(last_modification == g.getCurrentHistory());
 		return connected_unsafe(from, t);
 	}
 	bool connected(int from, int t) override {
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 		
 		assert(dbg_uptodate());

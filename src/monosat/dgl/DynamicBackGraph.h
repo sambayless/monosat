@@ -55,7 +55,9 @@ public:
 
 	}
 
-
+	FILE*outfile()override{
+		return base.outfile();
+	};
      void addNodes(int n)  override {base.addNodes(n);};
     //Returns true iff the edge exists and is a self loop
      bool selfLoop(int edgeID) override {return base.selfLoop(edgeID);};
@@ -140,9 +142,22 @@ public:
      };
 
      int historySize() override {return base.historySize();};
-
-     int getCurrentHistory()  override {return base.getCurrentHistory();};
-
+	 int nHistoryClears()const override{
+			return base.nHistoryClears();
+	 }
+     int getCurrentHistory()  const override {return base.getCurrentHistory();};
+	int nDeletions()const override{
+		return base.nDeletions();
+	};
+	int nAdditions()const override{
+		return base.nAdditions();
+	}
+    int lastEdgeIncrease()const override{
+        return base.lastEdgeIncrease();
+    }
+    int lastEdgeDecrease()const override{
+        return base.lastEdgeDecrease();
+    }
 
      void clearHistory(bool forceClear)  override {base.clearHistory();};
 

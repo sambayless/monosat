@@ -24,7 +24,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "ConnectedComponents.h"
 #include "monosat/dgl/alg/DisjointSets.h"
@@ -34,7 +34,7 @@ template<typename Weight, class Status = ConnectedComponents::NullConnectedCompo
 class DisjointSetsConnectedComponents: public ConnectedComponents {
 public:
 	
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	Status & status;
 	int last_modification;
 
@@ -71,13 +71,13 @@ public:
 	double stats_fast_update_time = 0;
 
 public:
-	DisjointSetsConnectedComponents(DynamicGraph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
+	DisjointSetsConnectedComponents(Graph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0), reportPolarity(_reportPolarity) {
 		
 	}
 	
-	DisjointSetsConnectedComponents(DynamicGraph<Weight> & graph, int _reportPolarity = 0) :
+	DisjointSetsConnectedComponents(Graph<Weight> & graph, int _reportPolarity = 0) :
 			g(graph), status(nullConnectedComponentsStatus), last_modification(-1), last_addition(-1), last_deletion(
 					-1), history_qhead(0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
 		
@@ -100,13 +100,13 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 		
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
 		stats_full_updates++;
 		
-		if (last_deletion == g.deletions) {
+		if (last_deletion == g.nDeletions()) {
 			stats_num_skipable_deletions++;
 		}
 		hasParents = false;
@@ -134,12 +134,12 @@ public:
 			}
 		}
 		
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 	}
 	
 	bool connected(int from, int to) {

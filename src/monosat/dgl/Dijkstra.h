@@ -24,7 +24,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "Reach.h"
 #include <monosat/dgl/alg/Rnd.h>
 #include "Distance.h"
@@ -37,7 +37,7 @@ class Dijkstra: public Distance<Weight> {
 	using Distance<Weight>::inf;
 	using Distance<Weight>::unreachable;
 public:
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 
 	Status & status;
 	int reportPolarity;
@@ -79,14 +79,14 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	Dijkstra(int s, DynamicGraph<Weight> & graph, Status & status, int reportPolarity = 0) :
+	Dijkstra(int s, Graph<Weight> & graph, Status & status, int reportPolarity = 0) :
 			g(graph), status(status), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
 	
-	Dijkstra(int s, DynamicGraph<Weight>  & graph,  int reportPolarity = 0) :
+	Dijkstra(int s, Graph<Weight>  & graph,  int reportPolarity = 0) :
 			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity),  source(s), q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
@@ -116,14 +116,14 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 		
-		if (last_modification > 0 && g.modifications == last_modification)
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification)
 			return;
 		
-		if (last_addition == g.additions && last_edge_inc==g.edge_increases  && last_edge_dec==g.edge_decreases  && last_modification > 0) {
+		if (last_addition == g.nAdditions() && last_edge_inc==g.lastEdgeIncrease()  && last_edge_dec==g.lastEdgeDecrease()  && last_modification > 0) {
 			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
-			if (last_history_clear != g.historyclears) {
+			if (last_history_clear != g.nHistoryClears()) {
 				history_qhead = 0;
-				last_history_clear = g.historyclears;
+				last_history_clear = g.nHistoryClears();
 			}
 			bool need_recompute = false;
 			//ok, now check if any of the added edges allow for a decrease in distance.
@@ -148,13 +148,13 @@ public:
 			if (!need_recompute) {
 				//none of these deletions touched any shortest paths, so we can ignore them.
 				
-				last_modification = g.modifications;
-				last_deletion = g.deletions;
-				last_addition = g.additions;
-				last_edge_inc = g.edge_increases;
-				last_edge_dec = g.edge_decreases;
+				last_modification = g.getCurrentHistory();
+				last_deletion = g.nDeletions();
+				last_addition = g.nAdditions();
+				last_edge_inc = g.lastEdgeIncrease();
+				last_edge_dec = g.lastEdgeDecrease();
 				history_qhead = g.historySize();
-				last_history_clear = g.historyclears;
+				last_history_clear = g.nHistoryClears();
 				
 				assert(dbg_uptodate());
 				stats_skip_deletes++;
@@ -220,13 +220,13 @@ public:
 			}
 		}
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
-		last_edge_inc = g.edge_increases;
-		last_edge_dec = g.edge_decreases;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
+		last_edge_inc = g.lastEdgeIncrease();
+		last_edge_dec = g.lastEdgeDecrease();
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		
 	}
 	bool dbg_path(int to) {
@@ -253,7 +253,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 		return true;
-		/*	DynamicGraph gdbg;
+		/*	Graph gdbg;
 		 for(int i = 0;i<g.nodes();i++){
 		 gdbg.addNode();
 		 }
@@ -280,11 +280,11 @@ public:
 		return t < dist.size() && dist[t] < inf();
 	}
 	bool connected_unchecked(int t) override{
-		assert(last_modification == g.modifications);
+		assert(last_modification == g.getCurrentHistory());
 		return connected_unsafe(t);
 	}
 	bool connected(int t)override {
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 		
 		assert(dbg_uptodate());
@@ -292,7 +292,7 @@ public:
 		return dist[t] < inf();
 	}
 	Weight & distance(int t) override{
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 		if (connected_unsafe(t))
 			return dist[t];
@@ -393,7 +393,7 @@ class UnweightedDijkstra: public Distance<int> {
 	using Distance<int>::inf;
 	using Distance<int>::unreachable;
 public:
-	DynamicGraph<Weight>  & g;
+	Graph<Weight>  & g;
 	Status & status;
 	int reportPolarity;
 
@@ -432,14 +432,14 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	UnweightedDijkstra(int s, DynamicGraph<Weight>  & graph, Status & status, int reportPolarity = 0) :
+	UnweightedDijkstra(int s, Graph<Weight>  & graph, Status & status, int reportPolarity = 0) :
 			g(graph), status(status), reportPolarity(reportPolarity),source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
 	
-	UnweightedDijkstra(int s, DynamicGraph<Weight>  & graph, int reportPolarity = 0) :
+	UnweightedDijkstra(int s, Graph<Weight>  & graph, int reportPolarity = 0) :
 			g(graph), status(Distance<int>::nullStatus), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
@@ -467,14 +467,14 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 		
-		if (last_modification > 0 && g.modifications == last_modification)
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification)
 			return;
 		
-		if (last_addition == g.additions && last_modification > 0) {
+		if (last_addition == g.nAdditions() && last_modification > 0) {
 			//if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
-			if (last_history_clear != g.historyclears) {
+			if (last_history_clear != g.nHistoryClears()) {
 				history_qhead = 0;
-				last_history_clear = g.historyclears;
+				last_history_clear = g.nHistoryClears();
 			}
 			bool need_recompute = false;
 			//ok, now check if any of the added edges allow for a decrease in distance.
@@ -499,12 +499,12 @@ public:
 			if (!need_recompute) {
 				//none of these deletions touched any shortest paths, so we can ignore them.
 				
-				last_modification = g.modifications;
-				last_deletion = g.deletions;
-				last_addition = g.additions;
+				last_modification = g.getCurrentHistory();
+				last_deletion = g.nDeletions();
+				last_addition = g.nAdditions();
 				
 				history_qhead = g.historySize();
-				last_history_clear = g.historyclears;
+				last_history_clear = g.nHistoryClears();
 				
 				assert(dbg_uptodate());
 				stats_skip_deletes++;
@@ -512,10 +512,10 @@ public:
 			}
 		}
 		
-		/*if(last_deletion==g.deletions && last_modification>0  ){
+		/*if(last_deletion==g.nDeletions() && last_modification>0  ){
 		 //Don't need to do anything at all.
-		 if(last_addition==g.additions){
-		 last_modification = g.modifications;
+		 if(last_addition==g.nAdditions()){
+		 last_modification = g.getCurrentHistory();
 		 stats_skipped_updates++;
 		 assert(dbg_uptodate());
 		 return;
@@ -585,12 +585,12 @@ public:
 			}
 		}
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		
 	}
 	bool dbg_path(int to) {
@@ -617,7 +617,7 @@ public:
 #ifdef DEBUG_DIJKSTRA
 		if(last_modification<=0)
 		return true;
-		/*	DynamicGraph gdbg;
+		/*	Graph gdbg;
 		 for(int i = 0;i<g.nodes();i++){
 		 gdbg.addNode();
 		 }
@@ -644,11 +644,11 @@ public:
 		return t < dist.size() && dist[t] < inf();
 	}
 	bool connected_unchecked(int t) override {
-		assert(last_modification == g.modifications);
+		assert(last_modification == g.getCurrentHistory());
 		return connected_unsafe(t);
 	}
 	bool connected(int t) override {
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 		
 		assert(dbg_uptodate());
@@ -656,7 +656,7 @@ public:
 		return dist[t] < inf();
 	}
 	int & distance(int t) override {
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 		if (connected_unsafe(t))
 			return dist[t];

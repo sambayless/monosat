@@ -24,7 +24,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "Reach.h"
 #include "Distance.h"
@@ -34,7 +34,7 @@ template<typename Weight, class Status = Reach::NullStatus, bool undirected = fa
 class BFSReachability: public Reach {
 public:
 	
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -74,7 +74,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	BFSReachability(int s, DynamicGraph<Weight> & graph, Status & _status = Reach::nullStatus, int _reportPolarity = 0) :
+	BFSReachability(int s, Graph<Weight> & graph, Status & _status = Reach::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), reportPolarity(_reportPolarity) {
 		
@@ -104,9 +104,9 @@ public:
 	 stats_fast_updates++;
 	 
 
-	 assert(last_deletion==g.deletions);
-	 last_modification=g.modifications;
-	 last_addition=g.additions;
+	 assert(last_deletion==g.nDeletions());
+	 last_modification=g.getCurrentHistory();
+	 last_addition=g.nAdditions();
 	 INF=g.nodes()+1;
 	 seen.resize(g.nodes());
 	 prev.resize(g.nodes());
@@ -298,8 +298,8 @@ public:
 	}
 	bool update_additions() {
 		
-		if (g.historyclears != last_history_clear) {
-			last_history_clear = g.historyclears;
+		if (g.nHistoryClears() != last_history_clear) {
+			last_history_clear = g.nHistoryClears();
 			history_qhead = 0;
 		}
 		
@@ -350,20 +350,20 @@ public:
 		
 		assert(dbg_uptodate());
 		
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		
 		return true;
 	}
 	
 	bool incrementalUpdate() {
 		
-		if (g.historyclears != last_history_clear) {
-			last_history_clear = g.historyclears;
+		if (g.nHistoryClears() != last_history_clear) {
+			last_history_clear = g.nHistoryClears();
 			history_qhead = 0;
 		}
 		
@@ -418,12 +418,12 @@ public:
 		
 		assert(dbg_uptodate());
 		
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		
 		return true;
 	}
@@ -436,20 +436,20 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 		
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			assert(dbg_uptodate());
 			return;
 		}
 		
-		if (last_modification > 0 && last_deletion == g.deletions) {
+		if (last_modification > 0 && last_deletion == g.nDeletions()) {
 			stats_num_skipable_deletions++;
 			if (opt_skip_deletions && reportPolarity < 1) {
 				assert(dbg_uptodate());
 				return;			//I don't trust the correctness of these shortcuts
 			}
 		}
-		if (last_modification > 0 && last_addition == g.additions) {
+		if (last_modification > 0 && last_addition == g.nAdditions()) {
 			if (opt_skip_additions && reportPolarity > -1) {
 				assert(dbg_uptodate());
 				return;			//I don't trust the correctness of these shortcuts
@@ -458,15 +458,15 @@ public:
 		
 		setNodes(g.nodes());
 		
-		if (g.historyclears != last_history_clear) {
-			last_history_clear = g.historyclears;
+		if (g.nHistoryClears() != last_history_clear) {
+			last_history_clear = g.nHistoryClears();
 			history_qhead = 0;
-		} else if (opt_inc_graph && last_modification > 0 && (g.historyclears <= (last_history_clear + 1))) {// && (g.historySize()-history_qhead < g.edges()*mod_percentage)){
+		} else if (opt_inc_graph && last_modification > 0 && (g.nHistoryClears() <= (last_history_clear + 1))) {// && (g.historySize()-history_qhead < g.edges()*mod_percentage)){
 			if (opt_dec_graph == 2) {
 				if (incrementalUpdate())
 					return;
 			} else {
-				if (opt_dec_graph == 1 && last_deletion < g.deletions) {
+				if (opt_dec_graph == 1 && last_deletion < g.nDeletions()) {
 					
 					//scan through the deletions and check if any of them matter..
 					bool safe = true;
@@ -489,12 +489,12 @@ public:
 						}
 					}
 					if (safe) {
-						last_deletion = g.deletions;
+						last_deletion = g.nDeletions();
 					}
 					
 				}
 				
-				if (last_deletion == g.deletions) {
+				if (last_deletion == g.nDeletions()) {
 					if (update_additions())
 						return;
 				}
@@ -542,12 +542,12 @@ public:
 		}
 		assert(dbg_uptodate());
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		
 		;
 	}
@@ -633,11 +633,11 @@ public:
 		return t < seen.size() && seen[t];
 	}
 	bool connected_unchecked(int t) override {
-		assert(last_modification == g.modifications);
+		assert(last_modification == g.getCurrentHistory());
 		return connected_unsafe(t);
 	}
 	bool connected(int t) override {
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 		
 		assert(dbg_uptodate());
@@ -681,7 +681,7 @@ class UnweightedBFS: public Distance<int> {
 	using Distance<int>::unreachable;
 public:
 	
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -719,7 +719,7 @@ public:
 
 public:
 	
-	UnweightedBFS(int s, DynamicGraph<Weight> & graph, int _reportPolarity = 0) :
+	UnweightedBFS(int s, Graph<Weight> & graph, int _reportPolarity = 0) :
 			g(graph), status(Distance<int>::nullStatus), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 					0), last_history_clear(0), source(s), reportPolarity(_reportPolarity) {
 		maxDistance = -1;
@@ -734,7 +734,7 @@ public:
 		stats_fast_failed_updates = 0;
 	}
 	
-	UnweightedBFS(int s, DynamicGraph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
+	UnweightedBFS(int s, Graph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s),  reportPolarity(_reportPolarity) {
 		maxDistance = -1;
@@ -782,20 +782,20 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 		
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
 		stats_full_updates++;
 		
-		if (last_deletion == g.deletions) {
+		if (last_deletion == g.nDeletions()) {
 			stats_num_skipable_deletions++;
 		}
 		
 		setNodes(g.nodes());
 		
-		if (g.historyclears != last_history_clear) {
-			last_history_clear = g.historyclears;
+		if (g.nHistoryClears() != last_history_clear) {
+			last_history_clear = g.nHistoryClears();
 			history_qhead = 0;
 		}
 		
@@ -839,12 +839,12 @@ public:
 		}
 		assert(dbg_uptodate());
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		
 		;
 	}
@@ -920,11 +920,11 @@ public:
 		return t < dist.size() && dist[t] <  inf();
 	}
 	bool connected_unchecked(int t) override {
-		assert(last_modification == g.modifications);
+		assert(last_modification == g.getCurrentHistory());
 		return connected_unsafe(t);
 	}
 	bool connected(int t) override {
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 		
 		assert(dbg_uptodate());

@@ -24,7 +24,7 @@
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
 #include "monosat/mtl/Sort.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "MinimumSpanningTree.h"
 #include "monosat/dgl/alg/DisjointSets.h"
@@ -36,7 +36,7 @@ template<class Status, typename Weight = int>
 class Kruskal: public MinimumSpanningTree<Weight> {
 public:
 
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 
 	Status & status;
 	int last_modification;
@@ -126,7 +126,7 @@ public:
 #endif
 
 	}
-	Kruskal(DynamicGraph<Weight> & graph, Status & _status =
+	Kruskal(Graph<Weight> & graph, Status & _status =
 	MinimumSpanningTree<Weight>::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 			0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity), edge_heap(EdgeLt(g.getWeights())) {
@@ -155,23 +155,23 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 
-		if (g.outfile) {
-			fprintf(g.outfile, "m\n");
-			fflush(g.outfile);
+		if (g.outfile()) {
+			fprintf(g.outfile(), "m\n");
+			fflush(g.outfile());
 		}
 
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
 		stats_full_updates++;
 
-		if (last_deletion == g.deletions) {
+		if (last_deletion == g.nDeletions()) {
 			stats_num_skipable_deletions++;
 		}
 		hasParents = false;
 		sets.Reset();
-		if (last_modification <= 0 || g.changed() || last_history_clear != g.historyclears) {
+		if (last_modification <= 0 || g.changed() || last_history_clear != g.nHistoryClears()) {
 			INF = 1; //g.nodes()+1;
 
 			for (auto & w : g.getWeights())
@@ -233,12 +233,12 @@ public:
 		//}
 
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 
 		assert(dbg_uptodate());
 

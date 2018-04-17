@@ -137,7 +137,7 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
     if(opt_record){
         std::string t = (const char*)opt_record_file;
         t+="/LOG_LEARN_GRAPH" +std::to_string(getID());
-        learn_graph.outfile = fopen(t.c_str(), "w");
+        learn_graph._outfile = fopen(t.c_str(), "w");
     }
 
     first_reach_var = var_Undef;
@@ -429,23 +429,23 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
     if(outer->bvTheory){
         outer->bvTheory->analyze(conflict);
     }
-    if (g_under.outfile) {
+    if (g_under.outfile()) {
         std::sort(conflict.begin(), conflict.end());
-        fprintf(g_under.outfile, "toohigh ");
+        fprintf(g_under.outfile(), "toohigh ");
         for (int i = 0; i < conflict.size(); i++) {
-            fprintf(g_under.outfile, "%d,", dimacs(conflict[i]));
+            fprintf(g_under.outfile(), "%d,", dimacs(conflict[i]));
         }
-        fprintf(g_under.outfile, "\n");
-        fflush(g_under.outfile);
+        fprintf(g_under.outfile(), "\n");
+        fflush(g_under.outfile());
     }
-    if (g_over.outfile) {
+    if (g_over.outfile()) {
         std::sort(conflict.begin(), conflict.end());
-        fprintf(g_over.outfile, "toohigh ");
+        fprintf(g_over.outfile(), "toohigh ");
         for (int i = 0; i < conflict.size(); i++) {
-            fprintf(g_over.outfile, "%d,", dimacs(conflict[i]));
+            fprintf(g_over.outfile(), "%d,", dimacs(conflict[i]));
         }
-        fprintf(g_over.outfile, "\n");
-        fflush(g_over.outfile);
+        fprintf(g_over.outfile(), "\n");
+        fflush(g_over.outfile());
     }
 
     stats_under_conflicts++;
@@ -802,23 +802,23 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 
 
 
-    if (g_under.outfile) {
+    if (g_under.outfile()) {
         std::sort(conflict.begin(), conflict.end());
-        fprintf(g_under.outfile, "toolow ");
+        fprintf(g_under.outfile(), "toolow ");
         for (int i = 0; i < conflict.size(); i++) {
-            fprintf(g_under.outfile, "%d,", dimacs(conflict[i]));
+            fprintf(g_under.outfile(), "%d,", dimacs(conflict[i]));
         }
-        fprintf(g_under.outfile, "\n");
-        fflush(g_under.outfile);
+        fprintf(g_under.outfile(), "\n");
+        fflush(g_under.outfile());
     }
-    if (g_over.outfile) {
+    if (g_over.outfile()) {
         std::sort(conflict.begin(), conflict.end());
-        fprintf(g_over.outfile, "toolow ");
+        fprintf(g_over.outfile(), "toolow ");
         for (int i = 0; i < conflict.size(); i++) {
-            fprintf(g_over.outfile, "%d,", dimacs(conflict[i]));
+            fprintf(g_over.outfile(), "%d,", dimacs(conflict[i]));
         }
-        fprintf(g_over.outfile, "\n");
-        fflush(g_over.outfile);
+        fprintf(g_over.outfile(), "\n");
+        fflush(g_over.outfile());
     }
 
     outer->num_learnt_cuts++;
@@ -903,13 +903,13 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
         int a = 1;
     }
 
-    if (g_under.outfile) {
-        fprintf(g_under.outfile, "iter %d\n", iter1);
-        fflush(g_under.outfile);
+    if (g_under.outfile()) {
+        fprintf(g_under.outfile(), "iter %d\n", iter1);
+        fflush(g_under.outfile());
     }
-    if (g_over.outfile) {
-        fprintf(g_over.outfile, "iter %d\n", iter1);
-        fflush(g_over.outfile);
+    if (g_over.outfile()) {
+        fprintf(g_over.outfile(), "iter %d\n", iter1);
+        fflush(g_over.outfile());
     }
     if(n_satisfied_lits==flow_lits.size()) {
         stats_skipped_satisfied_updates++;

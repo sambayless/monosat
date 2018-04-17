@@ -23,7 +23,7 @@
 #define EDMONDS_KARP_DYNAMIC_H
 
 //dynamic edmonds_karp, implemented by Sam, following http://cstheory.stackexchange.com/questions/9938/incremental-maximum-flow-in-dynamic-graphs
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "MaxFlow.h"
 #include <vector>
 #include "EdmondsKarp.h"
@@ -58,7 +58,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	std::vector<Weight> M;
 	std::vector<int> changed_edges;
 	std::vector<bool> changed;
-	DynamicGraph<Weight>& g;
+	Graph<Weight>& g;
 
 	bool allow_flow_cycles = true; //actually, this flag doesn't appear to work - spurious flow cycles are still sometimes produced.
 	int source = -1;
@@ -146,7 +146,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	}
 
 public:
-	EdmondsKarpDynamic(DynamicGraph<Weight>& _g,  int source, int sink) :
+	EdmondsKarpDynamic(Graph<Weight>& _g,  int source, int sink) :
 			g(_g),  source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,cap,source,sink)
@@ -198,9 +198,9 @@ public:
 			int a = 1;
 		}
 
-		if (g.outfile) {
-			fprintf(g.outfile, "f %d %d\n", s, t);
-			fflush(g.outfile);
+		if (g.outfile()) {
+			fprintf(g.outfile(), "f %d %d\n", s, t);
+			fflush(g.outfile());
 		}
 
 
@@ -217,7 +217,7 @@ public:
 			ek.setCapacity(from,to,cap);
 		}
 #endif
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 #ifdef DEBUG_MAXFLOW
 			Weight expected_flow =ek.maxFlow(s,t);
 #endif
@@ -226,7 +226,7 @@ public:
 			assert(curflow==expected_flow);
 #endif
 			return curflow;
-		} else if (last_modification <= 0 || g.historyclears != last_history_clear || g.changed()) {
+		} else if (last_modification <= 0 || g.nHistoryClears() != last_history_clear || g.changed()) {
 			F.clear();
 			F.resize(g.edges());
 			changed.resize(g.nEdgeIDs());
@@ -387,13 +387,13 @@ public:
 
 		curflow = f;
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		return f;
 	}
 	void updateHistory(){
@@ -422,7 +422,7 @@ private:
 	Weight maxFlow_residual(int s, int t, Weight & bound) {
 		/*
 		 #ifdef DEBUG_DGL
-		 DynamicGraph d;
+		 Graph d;
 		 d.addNodes(g.nodes());
 		 std::vector<Weight> weights;
 		 for(int i = 0;i<g.edges();i++){
@@ -666,7 +666,7 @@ private:
 		//
 		Weight newFlow = 0;
 #ifdef DEBUG_DGL
-		/*    	 	DynamicGraph d;
+		/*    	 	Graph d;
 		 d.addNodes(g.nodes());
 		 //std::vector<int> R;
 		 for(int i = 0;i<g.edges();i++){

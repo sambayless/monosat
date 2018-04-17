@@ -29,7 +29,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "Reach.h"
 #include <algorithm>
@@ -40,7 +40,7 @@ template<typename Weight>
 class PKToplogicalSort: public Cycle,public DynamicGraphAlgorithm {
 public:
 
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	DFSCycle<Weight,true,false> dfs_cycle;
 
 	std::vector<bool> is_strict_scc;
@@ -108,7 +108,7 @@ public:
 		force_dag=true;
 	}
 
-	PKToplogicalSort(DynamicGraph<Weight> & graph, int _reportPolarity = 0) :
+	PKToplogicalSort(Graph<Weight> & graph, int _reportPolarity = 0) :
 			g(graph),dfs_cycle(g),INF(0), reportPolarity(_reportPolarity),ord_lt(ord) {
 		alg_id=g.addDynamicAlgorithm(this);
 
@@ -506,7 +506,7 @@ public:
 		static int iteration = 0;
 
 
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			//reportPolarity(undirected_cycle,directed_cycle);
 			return;
@@ -516,7 +516,7 @@ public:
 		if(local_it==5){
 			int a=1;
 		}
-		if(last_modification<=0 || g.historyclears != last_history_clear  || g.changed()){
+		if(last_modification<=0 || g.nHistoryClears() != last_history_clear  || g.changed()){
 			setNodes(g.nodes());
 			cycleComputed=false;
 			has_cycle=false;
@@ -545,13 +545,13 @@ public:
 			}
 		}
 		dbg_check_topo();
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 
 	}
 

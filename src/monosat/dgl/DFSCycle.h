@@ -33,7 +33,7 @@ template <typename Weight,bool directed=true, bool undirected=false>
 class DFSCycle: public Cycle {
 public:
 
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 
 	int last_modification=0;
 	int last_addition=0;
@@ -232,7 +232,7 @@ public:
 
 public:
 
-	DFSCycle(DynamicGraph<Weight> & graph, bool _directed = true, int _reportPolarity = 0) :
+	DFSCycle(Graph<Weight> & graph, bool _directed = true, int _reportPolarity = 0) :
 			g(graph),  last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 			0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
 
@@ -243,7 +243,7 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 
-		if (last_modification > 0 && g.modifications == last_modification ) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification ) {
 			stats_skipped_updates++;
 			//reportPolarity(undirected_cycle,directed_cycle);
 			return;
@@ -261,12 +261,12 @@ public:
 
 		computeCycles();
 
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		;
 	}
 

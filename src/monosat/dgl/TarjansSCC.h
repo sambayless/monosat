@@ -11,7 +11,6 @@
 
  The above copyright notice and this permission notice shall be included in all copies or
  substantial portions of the Software.
-
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
  NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
@@ -24,7 +23,7 @@
 
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "ConnectedComponents.h"
 #include "monosat/dgl/alg/DisjointSets.h"
@@ -36,7 +35,7 @@ template<typename Weight, class Status = ConnectedComponents::NullConnectedCompo
 class TarjansSCC: public ConnectedComponents {
 public:
 	
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	Status & status;
 	int last_modification;
 
@@ -86,13 +85,13 @@ public:
 	double stats_fast_update_time = 0;
 
 public:
-	TarjansSCC(DynamicGraph<Weight> & graph) :
+	TarjansSCC(Graph<Weight> & graph) :
 			g(graph), status(nullConnectedComponentsStatus), last_modification(-1), last_addition(-1), last_deletion(
 					-1), history_qhead(0), last_history_clear(0), INF(0) {
 		
 	}
 	
-	TarjansSCC(DynamicGraph<Weight> & graph, Status & _status) :
+	TarjansSCC(Graph<Weight> & graph, Status & _status) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0) {
 		
@@ -196,13 +195,13 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 		
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
 		stats_full_updates++;
 		
-		if (last_deletion == g.deletions) {
+		if (last_deletion == g.nDeletions()) {
 			stats_num_skipable_deletions++;
 		}
 		
@@ -222,12 +221,12 @@ public:
 		}
 		
 		status.setComponents(scc_set.size());
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		;
 	}
 	
@@ -293,7 +292,7 @@ public:
 
 	//Compute the SCC for a single node.
 	//This is faster for one-shot scc computations from a single source than doing a full update().
-	static void getSCC(int node, DynamicGraph<Weight> & graph, std::vector<int>&scc) {
+	static void getSCC(int node, Graph<Weight> & graph, std::vector<int>&scc) {
 		TarjansSCC<Weight> s(graph);
 		s.setNodes(graph.nodes());
 		int index = 0;

@@ -692,17 +692,17 @@ public:
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
 			t+="/LOG_GRAPH_UNDER" +std::to_string(S->getTheories().size());
-			g_under.outfile = fopen(t.c_str(), "w");
+			g_under._outfile = fopen(t.c_str(), "w");
 		}
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
 			t+="/LOG_GRAPH_OVER" +std::to_string(S->getTheories().size());
-			g_over.outfile = fopen(t.c_str(), "w");
+			g_over._outfile = fopen(t.c_str(), "w");
 		}
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
 			t+="/LOG_GRAPH_CUT" +std::to_string(S->getTheories().size());
-			cutGraph.outfile = fopen(t.c_str(), "w");
+			cutGraph._outfile= fopen(t.c_str(), "w");
 		}
 
 		g_under.disable_history_clears=opt_disable_history_clears;
@@ -2130,16 +2130,16 @@ public:
 			}
 		}
 
-		if (g_under.outfile) {
-			fprintf(g_under.outfile, "enqueue %d\n", dimacs(l));
+		if (g_under.outfile()) {
+			fprintf(g_under.outfile(), "enqueue %d\n", dimacs(l));
 			
-			fprintf(g_under.outfile, "\n");
-			fflush(g_under.outfile);
+			fprintf(g_under.outfile(), "\n");
+			fflush(g_under.outfile());
 		}
-		if (g_over.outfile) {
-			fprintf(g_over.outfile, "enqueue %d\n", dimacs(l));
-			fprintf(g_over.outfile, "\n");
-			fflush(g_over.outfile);
+		if (g_over.outfile()) {
+			fprintf(g_over.outfile(), "enqueue %d\n", dimacs(l));
+			fprintf(g_over.outfile(), "\n");
+			fflush(g_over.outfile());
 		}
 
 		assert(!onTrail(var(l)));
@@ -3018,26 +3018,26 @@ public:
 			cutGraph.disableEdge(from, to, index * 2);
 
 
-			if (g_under.outfile) {
+			if (g_under.outfile()) {
 
-				fprintf(g_under.outfile, "edge_bv_weight %d", index);
+				fprintf(g_under.outfile(), "edge_bv_weight %d", index);
 				for(Var v:bitVector)
-					fprintf(g_under.outfile," %d", v+1);
-				fprintf(g_under.outfile,"\n");
-				fflush(g_under.outfile);
+					fprintf(g_under.outfile()," %d", v+1);
+				fprintf(g_under.outfile(),"\n");
+				fflush(g_under.outfile());
 			}
-			if (g_over.outfile) {
-				fprintf(g_over.outfile, "edge_bv_weight %d", index);
+			if (g_over.outfile()) {
+				fprintf(g_over.outfile(), "edge_bv_weight %d", index);
 				for(Var v:bitVector)
-					fprintf(g_over.outfile," %d", v+1);
-				fprintf(g_over.outfile,"\n");
-				fflush(g_over.outfile);
+					fprintf(g_over.outfile()," %d", v+1);
+				fprintf(g_over.outfile(),"\n");
+				fflush(g_over.outfile());
 			}
-			if (cutGraph.outfile) {
+			if (cutGraph.outfile()) {
 
-			//	fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2, 1);
-			//	fprintf(cutGraph.outfile, "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
-				fflush(cutGraph.outfile);
+			//	fprintf(cutGraph.outfile(), "edge_weight %d %d\n", index * 2, 1);
+			//	fprintf(cutGraph.outfile(), "edge_weight %d %d\n", index * 2 + 1, 0xFFFF);
+				fflush(cutGraph.outfile());
 			}
 
 			return mkLit(v, false);

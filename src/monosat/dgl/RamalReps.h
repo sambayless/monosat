@@ -25,7 +25,7 @@
 #include <monosat/dgl/alg/Heap.h>
 #include <monosat/dgl/Dijkstra.h>
 #include <monosat/dgl/Distance.h>
-#include <monosat/dgl/DynamicGraph.h>
+#include <monosat/dgl/Graph.h>
 #include <monosat/dgl/Reach.h>
 //#include "monosat/core/Config.h"
 //#include <algorithm>
@@ -45,7 +45,7 @@ template<typename Weight = int, class Status = typename Distance<Weight>::NullSt
 class RamalReps: public Distance<Weight>, public DynamicGraphAlgorithm {
 public:
 	static bool ever_warned_about_zero_weights;
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	std::vector<Weight> & weights;
 	std::vector<Weight> local_weights;
 	Status & status;
@@ -134,7 +134,7 @@ public:
 
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
-	RamalReps(int s, DynamicGraph<Weight> & graph,Status & status, int reportPolarity = 0,
+	RamalReps(int s, Graph<Weight> & graph,Status & status, int reportPolarity = 0,
 			  bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
@@ -143,7 +143,7 @@ public:
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
 	}
-	RamalReps(int s, DynamicGraph<Weight> & graph,int reportPolarity = 0, bool reportDistance = false) :
+	RamalReps(int s, Graph<Weight> & graph,int reportPolarity = 0, bool reportDistance = false) :
 			g(graph), weights(g.getWeights()), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
 			0), q(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,status,reportPolarity) {
@@ -828,9 +828,9 @@ public:
 
 	void update() override{
 
-		if (g.outfile) {
-			fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
-			//fprintf(g.outfile, "r %d\n", getSource());
+		if (g.outfile()) {
+			fprintf(g.outfile(), "r %d %d %d %d %d\n", getSource(),last_modification, g.getCurrentHistory(),g.changed(), g.historySize() );
+			//fprintf(g.outfile(), "r %d\n", getSource());
 		}
 
 		static int iteration = 0;
@@ -839,7 +839,7 @@ public:
 			int a = 1;
 		}
 		stats_all_updates++;
-		if (last_modification > 0 && g.modifications == last_modification)
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification)
 			return;
 		stats_updates++;
 		if (last_modification <= 0 || g.changed()) {
@@ -893,14 +893,14 @@ public:
 			dijkstras.update();
 		}else{
 
-			if (last_history_clear != g.historyclears) {
-				if (!g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize()){
+			if (last_history_clear != g.nHistoryClears()) {
+				if (!g.changed() && last_history_clear>=0 && last_history_clear == g.nHistoryClears()-1 && history_qhead==g.getPreviousHistorySize()){
 					//no information was lost in the history clear
 					history_qhead = 0;
-					last_history_clear = g.historyclears;
+					last_history_clear = g.nHistoryClears();
 				}else {
 					history_qhead = g.historySize();
-					last_history_clear = g.historyclears;
+					last_history_clear = g.nHistoryClears();
 					for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 						if (g.edgeEnabled(edgeid)) {
 							if(weights[edgeid]<local_weights[edgeid]){
@@ -984,12 +984,12 @@ public:
 		assert(dbg_uptodate());
 
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 
 #ifdef DEBUG_RAMAL
 		for(int edgeID = 0;edgeID<weights.size();edgeID++){
@@ -1083,7 +1083,7 @@ public:
 		return t < dist.size() && dist[t] < INF;
 	}
 	bool connected_unchecked(int t) override{
-		assert(last_modification == g.modifications);
+		assert(last_modification == g.getCurrentHistory());
 		return connected_unsafe(t);
 	}
 	bool connected(int t)override {
@@ -1192,7 +1192,7 @@ public:
 template<typename Weight, class Status= typename Distance<Weight>::NullStatus>
 class UnweightedRamalReps: public Distance<int>, public DynamicGraphAlgorithm {
 public:
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	Status & status;
 	int reportPolarity;
 	bool reportDistance;
@@ -1246,7 +1246,7 @@ public:
 
 	double stats_full_update_time=0;
 	double stats_fast_update_time=0;
-	UnweightedRamalReps(int s, DynamicGraph<Weight> & graph, Status & status, int reportPolarity = 0,
+	UnweightedRamalReps(int s, Graph<Weight> & graph, Status & status, int reportPolarity = 0,
 						bool reportDistance = true) :
 			g(graph), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
@@ -1255,7 +1255,7 @@ public:
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
 	}
-	UnweightedRamalReps(int s, DynamicGraph<Weight> & graph, int reportPolarity = 0,
+	UnweightedRamalReps(int s, Graph<Weight> & graph, int reportPolarity = 0,
 						bool reportDistance = true) :
 			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
 			-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
@@ -1844,11 +1844,11 @@ public:
 
 	void update() override {
 
-		if (g.outfile) {
-			fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
+		if (g.outfile()) {
+			fprintf(g.outfile(), "r %d %d %d %d %d\n", getSource(),last_modification, g.getCurrentHistory(),g.changed(), g.historySize() );
 		}
 		stats_all_updates++;
-		if (last_modification > 0 && g.modifications == last_modification){
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification){
 			return;
 		}
 		stats_updates++;
@@ -1889,14 +1889,14 @@ public:
 			}
 		}
 
-		if (last_history_clear != g.historyclears) {
-			if (!g.changed() && last_history_clear>=0 && last_history_clear == g.historyclears-1 && history_qhead==g.getPreviousHistorySize()){
+		if (last_history_clear != g.nHistoryClears()) {
+			if (!g.changed() && last_history_clear>=0 && last_history_clear == g.nHistoryClears()-1 && history_qhead==g.getPreviousHistorySize()){
 				//no information was lost in the history clear
 				history_qhead = 0;
-				last_history_clear = g.historyclears;
+				last_history_clear = g.nHistoryClears();
 			}else {
 				history_qhead = g.historySize();
-				last_history_clear = g.historyclears;
+				last_history_clear = g.nHistoryClears();
 				for (int edgeid = 0; edgeid < g.edges(); edgeid++) {
 					if (g.edgeEnabled(edgeid)) {
 						AddEdge(edgeid);
@@ -1934,13 +1934,13 @@ public:
 		//}
 		dbg_delta();
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
 		g.updateAlgorithmHistory(this,alg_id,history_qhead);
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		assert(dbg_uptodate());
 
 	}
@@ -2022,7 +2022,7 @@ public:
 		return t < dist.size() && dist[t] < INF;
 	}
 	bool connected_unchecked(int t) override {
-		assert(last_modification == g.modifications);
+		assert(last_modification == g.getCurrentHistory());
 		return connected_unsafe(t);
 	}
 	bool connected(int t) override {

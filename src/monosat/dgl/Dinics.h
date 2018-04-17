@@ -22,7 +22,7 @@
 #ifndef DINICS_H
 #define DINICS_H
 
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "MaxFlow.h"
 #include <vector>
 #include "monosat/core/Config.h"
@@ -59,7 +59,7 @@ public:
 	std::vector<int> dist;
 	std::vector<int> pos; //position in the combined forward and backward adjacency list of each node in the DFS.
 	std::vector<bool> changed;
-	DynamicGraph<Weight>& g;
+	Graph<Weight>& g;
 
 
 	int src=-1;
@@ -76,7 +76,7 @@ public:
 #endif
 
 public:
-	Dinitz(DynamicGraph<Weight> & _g,int source = -1, int sink = -1) :
+	Dinitz(Graph<Weight> & _g,int source = -1, int sink = -1) :
 			g(_g),  source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
 	,ek(_g,cap,source,sink)
@@ -381,23 +381,23 @@ public:
 			return;
 		}
 		source = s;
-		last_modification = g.modifications - 1;
+		last_modification = g.getCurrentHistory() - 1;
 	}
 	void setSink(int t) override{
 		if (sink == t) {
 			return;
 		}
 		sink = t;
-		last_modification = g.modifications - 1;
+		last_modification = g.getCurrentHistory() - 1;
 	}
 	const Weight maxFlow(int s, int t) override{
 		Weight f = 0;
-		if (g.outfile) {
-			fprintf(g.outfile, "f %d %d\n", s, t);
-			fflush(g.outfile);
+		if (g.outfile()) {
+			fprintf(g.outfile(), "f %d %d\n", s, t);
+			fflush(g.outfile());
 		}
 
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			return curflow;
 		}
 		
@@ -446,12 +446,12 @@ public:
 		//dbg_print_graph(s,t);
 		curflow = f;
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 		
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		return f;
 	}
 	

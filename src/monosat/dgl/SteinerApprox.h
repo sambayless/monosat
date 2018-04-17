@@ -25,7 +25,7 @@
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
 #include "monosat/mtl/Sort.h"
-#include "DynamicGraph.h"
+#include "Graph.h"
 #include "monosat/core/Config.h"
 #include "MinimumSpanningTree.h"
 #include "SteinerTree.h"
@@ -41,7 +41,7 @@ template<class TerminalSet, class Status, typename Weight = int>
 class SteinerApprox: public SteinerTree<Weight> {
 public:
 
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 
 	TerminalSet & terminals;
 	Status & status;
@@ -73,7 +73,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SteinerApprox(DynamicGraph<Weight> & graph,  TerminalSet & terminals, Status & _status,
+	SteinerApprox(Graph<Weight> & graph,  TerminalSet & terminals, Status & _status,
 				  int _reportPolarity = 0) :
 			g(graph),terminals(terminals), status(_status), last_modification(-1), last_addition(-1), last_deletion(
 			-1), history_qhead(0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
@@ -99,18 +99,18 @@ public:
 		static int iteration = 0;
 		int local_it = ++iteration;
 
-		if (g.outfile) {
-			fprintf(g.outfile, "m\n");
-			fflush(g.outfile);
+		if (g.outfile()) {
+			fprintf(g.outfile(), "m\n");
+			fflush(g.outfile());
 		}
 
-		if (last_modification > 0 && g.modifications == last_modification) {
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification) {
 			stats_skipped_updates++;
 			return;
 		}
 		stats_full_updates++;
 
-		if (last_deletion == g.deletions) {
+		if (last_deletion == g.nDeletions()) {
 			stats_num_skipable_deletions++;
 		}
 
@@ -204,12 +204,12 @@ public:
 			status.setMinimumSteinerTree(min_weight);
 		}
 
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 		//dbg_drawSteiner();
 		assert(dbg_uptodate());
 	}

@@ -27,7 +27,7 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "DynamicGraph.h"
+#include "Graph.h"
 
 namespace dgl {
 
@@ -39,7 +39,7 @@ struct ForceReason {
 template<typename Weight,class EdgeStatus>
 class Chokepoint {
 	
-	DynamicGraph<Weight> & g;
+	Graph<Weight> & g;
 	EdgeStatus & status;
 	int source;
 	std::vector<int> current;
@@ -52,7 +52,7 @@ class Chokepoint {
 	static const int UNDEF = -2;
 	static const int EMPTY = -1;
 public:
-	Chokepoint(EdgeStatus & _status, DynamicGraph<Weight> & _graph, int _source) :
+	Chokepoint(EdgeStatus & _status, Graph<Weight> & _graph, int _source) :
 			g(_graph), status(_status), source(_source) {
 		
 	}

@@ -24,7 +24,7 @@
 #include <iostream>
 #include <climits>
 #include <vector>
-#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/Graph.h"
 #include "monosat/dgl/alg/IntMap.h"
 namespace dgl {
 struct MaxFlowEdge {
@@ -68,7 +68,7 @@ public:
 
 	}
 
-	virtual DynamicGraph<Weight> * getFlowGraph(){
+	virtual Graph<Weight> * getFlowGraph(){
 		return nullptr;
 	}
 	virtual void printStats() {

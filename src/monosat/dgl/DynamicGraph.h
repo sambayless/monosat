@@ -99,7 +99,7 @@ private:
 	std::vector<EdgeChange> history;
 public:
 	//Logfile information if recording is enabled.
-	FILE * outfile=nullptr;
+	FILE * _outfile=nullptr;
 
 	DynamicGraph(){
 	}
@@ -107,7 +107,9 @@ public:
 	~DynamicGraph() {
 
 	}
-
+    FILE*outfile()override{
+        return _outfile;
+    };
 	void addNodes(int n) override {
 		for (int i = 0; i < n; i++)
 			addNode();
@@ -156,9 +158,9 @@ public:
 		markChanged();
 		clearHistory(true);
 
-		if (outfile) {
-			fprintf(outfile, "node %d\n", num_nodes);
-			fflush(outfile);
+		if (_outfile) {
+			fprintf(_outfile, "node %d\n", num_nodes);
+			fflush(_outfile);
 		}
 
 		return num_nodes++;
@@ -221,12 +223,12 @@ public:
 		markChanged();
 
 
-		if (outfile) {
-			fprintf(outfile, "edge %d %d %d %d\n", from, to, 1, id + 1);
+		if (_outfile) {
+			fprintf(_outfile, "edge %d %d %d %d\n", from, to, 1, id + 1);
 			std::stringstream ss;
 			ss<<weight;
-			fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
-			fflush(outfile);
+			fprintf(_outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
+			fflush(_outfile);
 		}
 
 //		history.push_back({true,id,modifications});
@@ -346,10 +348,10 @@ public:
 			additions = modifications;
 			history.push_back( { true,false,false,false, id, modifications, additions });
 
-			if (outfile) {
+			if (_outfile) {
 
-				fprintf(outfile, "%d\n", id + 1);
-				fflush(outfile);
+				fprintf(_outfile, "%d\n", id + 1);
+				fflush(_outfile);
 			}
 
 		}
@@ -366,12 +368,12 @@ public:
 			//edge_status.setStatus(id,false);
 			edge_status[id] = false;
 
-			if (outfile) {
+			if (_outfile) {
 				if (id + 1 == 89486) {
 					int a = 1;
 				}
-				fprintf(outfile, "-%d\n", id + 1);
-				fflush(outfile);
+				fprintf(_outfile, "-%d\n", id + 1);
+				fflush(_outfile);
 			}
 
 			modifications--;
@@ -390,9 +392,9 @@ public:
 			//edge_status.setStatus(id,false);
 			edge_status[id] = false;
 
-			if (outfile) {
-				fprintf(outfile, "-%d\n", id + 1);
-				fflush(outfile);
+			if (_outfile) {
+				fprintf(_outfile, "-%d\n", id + 1);
+				fflush(_outfile);
 			}
 
 			modifications++;
@@ -413,10 +415,10 @@ public:
 			//edge_status.setStatus(id,true);
 			edge_status[id] = true;
 
-			if (outfile) {
+			if (_outfile) {
 
-				fprintf(outfile, "%d\n", id + 1);
-				fflush(outfile);
+				fprintf(_outfile, "%d\n", id + 1);
+				fflush(_outfile);
 			}
 
 			modifications--;
@@ -448,11 +450,11 @@ public:
 		}
 		weights[id]=w;
 
-		if (outfile) {
+		if (_outfile) {
 			std::stringstream ss;
 			ss<<w;
-			fprintf(outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
-			fflush(outfile);
+			fprintf(_outfile, "edge_weight %d %s\n", id + 1, ss.str().c_str());
+			fflush(_outfile);
 		}
 
 
@@ -541,7 +543,7 @@ public:
 		return history.size() + history_offset;
 	}
 
-	int getCurrentHistory() override{
+	int getCurrentHistory() const override{
 		return modifications;
 	}
 
@@ -589,9 +591,9 @@ public:
 			history.clear();
 			historyclears++;
 
-			if (outfile) {
-				fprintf(outfile, "clearHistory\n");
-				fflush(outfile);
+			if (_outfile) {
+				fprintf(_outfile, "clearHistory\n");
+				fflush(_outfile);
 			}
 
 		}
@@ -604,21 +606,37 @@ public:
 		deletions = modifications;
 		is_changed = true;
 
-		if (outfile) {
-			fprintf(outfile, "invalidate\n");
-			fflush(outfile);
+		if (_outfile) {
+			fprintf(_outfile, "invalidate\n");
+			fflush(_outfile);
 		}
 
+	}
+	int nHistoryClears()const override{
+	    return historyclears;
 	}
 	int64_t getPreviousHistorySize()const override{
 		return previous_history_size;
 	}
+	int nDeletions()const override{
+		return deletions;
+	};
+	int nAdditions()const override{
+		return additions;
+	}
+	int lastEdgeIncrease()const override{
+		return edge_increases;
+	}
+	int lastEdgeDecrease()const override{
+		return edge_decreases;
+	}
+
 	void markChanged()override {
 		is_changed = true;
 
-		if (outfile) {
-			fprintf(outfile, "markChanged\n");
-			fflush(outfile);
+		if (_outfile) {
+			fprintf(_outfile, "markChanged\n");
+			fflush(_outfile);
 		}
 
 	}
@@ -629,9 +647,9 @@ public:
 	void clearChanged() override{
 		is_changed = false;
 
-		if (outfile) {
-			fprintf(outfile, "clearChanged\n");
-			fflush(outfile);
+		if (_outfile) {
+			fprintf(_outfile, "clearChanged\n");
+			fflush(_outfile);
 		}
 
 	}

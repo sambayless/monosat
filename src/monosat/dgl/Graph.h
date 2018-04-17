@@ -80,7 +80,7 @@ public:
 	virtual ~Graph() {
 
 	}
-
+	virtual FILE*outfile()=0;
 	virtual void addNodes(int n) =0;
 	//Returns true iff the edge exists and is a self loop
 	virtual bool selfLoop(int edgeID)=0;
@@ -146,9 +146,12 @@ public:
 	virtual EdgeChange & getChange(int64_t historyPos)=0;
 
 	virtual int historySize()=0;
-
-	virtual int getCurrentHistory() =0;
-
+    virtual int nHistoryClears() const =0;
+	virtual int getCurrentHistory()const =0;
+    virtual int nDeletions()const=0;
+    virtual int nAdditions()const=0;
+	virtual int lastEdgeIncrease()const=0;
+	virtual int lastEdgeDecrease()const=0;
 
 	virtual void clearHistory(bool forceClear = false) =0;
 	//force a new modification
