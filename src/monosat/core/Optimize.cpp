@@ -275,13 +275,13 @@ int64_t optimize_linear_bv(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 			printf("Testing bv%d %s %ld...\n",bvID, invert? ">=":"<=",value);
 		}
 
-		int conflict_limit = S->getConflictBudget();
+		int64_t conflict_limit = S->getConflictBudget();
 		if(conflict_limit<0)
 			conflict_limit=INT32_MAX;
-		int opt_lim = opt_limit_optimization_conflicts;
+        int64_t opt_lim = opt_limit_optimization_conflicts;
 		if(opt_lim<=0)
 			opt_lim=INT32_MAX;
-		int limit = std::min(opt_lim,conflict_limit);
+        int64_t limit = std::min(opt_lim,conflict_limit);
 		if(limit>= INT32_MAX){
 			limit=-1;//disable limit.
 		}
@@ -410,7 +410,7 @@ int evalPB(SimpSolver & S,const Objective & o, bool over_approx, bool eval_at_le
 	}
 	return sum_val;
 }
-int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes, const Objective & o , bool & hit_cutoff, int64_t & n_solves, bool & found_model){
+int optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes, const Objective & o , bool & hit_cutoff, int64_t & n_solves, bool & found_model){
 	hit_cutoff=false;
 
 	vec<Lit> discarded_pb_constraints;
@@ -563,7 +563,7 @@ int64_t optimize_linear_pb(Monosat::SimpSolver * S, PB::PBConstraintSolver * pbS
 }
 
 
-int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes,const Objective & o,  bool & hit_cutoff, int64_t & n_solves, bool & found_model){
+int optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pbSolver, bool invert, const vec<Lit> & assumes,const Objective & o,  bool & hit_cutoff, int64_t & n_solves, bool & found_model){
 	hit_cutoff=false;
 
 	vec<Lit> discarded_pb_constraints;
@@ -598,10 +598,10 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 		suggested_next_midpoint =	underapprox_sat_val;
 
 	bool first_round=true;
-	int64_t last_decision_value=max_val;
+    int last_decision_value=max_val;
 	//Lit last_decision_lit =  lit_Undef;//  pbSolver->addConditionalConstr(o.pb_lits, o.pb_weights,max_val, PB::Ineq::LEQ); //bvTheory->toSolver(bvTheory->newComparison(Comparison::leq,bvID,max_val,var_Undef,opt_decide_optimization_lits));
 	while(lt(min_val, max_val,invert) && !hit_cutoff){
-		int64_t mid_point = min_val + (max_val - min_val) / 2;
+		int mid_point = min_val + (max_val - min_val) / 2;
 
 		if (geq(mid_point, max_val,invert))
 			mid_point = invert ? max_val+1 : max_val - 1;//can this ever happen?
@@ -617,13 +617,13 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 			assume.push(~l);
 		}
 		{
-			int conflict_limit = S->getConflictBudget();
+            int64_t conflict_limit = S->getConflictBudget();
 			if(conflict_limit<0)
 				conflict_limit=INT32_MAX;
-			int opt_lim = opt_limit_optimization_conflicts;
+            int64_t opt_lim = opt_limit_optimization_conflicts;
 			if(opt_lim<=0)
 				opt_lim=INT32_MAX;
-			int limit = std::min(opt_lim,conflict_limit);
+            int64_t limit = std::min(opt_lim,conflict_limit);
 			if(limit>= INT32_MAX){
 				limit=-1;//disable limit.
 			}
@@ -677,7 +677,7 @@ int64_t optimize_binary_pb(Monosat::SimpSolver * S,  PB::PBConstraintSolver * pb
 			if(geq(new_value,max_val,invert)){
 				throw std::runtime_error("Error in optimization (minimum values are inconsistent with model)");
 			}
-			int64_t underapprox_sat_val =  evalPB(*S, o, invert); //bvTheory->getUnderApprox(bvID);
+			int underapprox_sat_val =  evalPB(*S, o, invert); //bvTheory->getUnderApprox(bvID);
 			if(lt(underapprox_sat_val,max_val,invert))
 				suggested_next_midpoint =	underapprox_sat_val;
 			assert(leq(new_value,mid_point,invert));
@@ -1467,7 +1467,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 					if (opt_verb >= 1 || opt_verb_optimize>=1) {
 						printf("%s pb (%d of %d)\n",objectives[i].maximize ? "Maximizing": "Minimizing", i + 1, objectives.size());
 					}
-					int64_t val=0;
+					int val=0;
 					if (opt_optimization_search_type==1) {
 						val = optimize_linear_pb(&S, pbSolver,objectives[i].maximize, assume, objectives[i], hit_cutoff, n_solves, ever_solved);
 					} else if (opt_optimization_search_type==0) {

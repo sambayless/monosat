@@ -6626,7 +6626,7 @@ public:
 			}
 
 			assert(altered_bvs.last()==bvID);
-			assert(alteredBV[bvID]==true);
+			assert(alteredBV[bvID]);
 			altered_bvs.pop();
 			alteredBV[bvID]=false;
 		}

@@ -7,12 +7,12 @@ if(NOT NO_GIT_VERSION)
     set (SHOW_GIT_VERSION 1)
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT -DDEBUG_CORE " ) #  -DDEBUG_GRAPH -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -g3 -DDEBUG_MONOSAT -DDEBUG_CORE " ) #  -DDEBUG_GRAPH -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG -O2") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG") #it is _critically_ important that release builds specify -DNDEBUG!
 
-set( CMAKE_VERBOSE_MAKEFILE on )
+set( CMAKE_VERBOSE_MAKEFILE ON )
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to 'Release' as none was specified.\nUse cmake -DCMAKE_BUILD_TYPE=Debug to select Debug release.")
@@ -302,7 +302,7 @@ if (GPL)
 endif()
 
 
-if (${SHOW_GIT_VERSION})
+if (SHOW_GIT_VERSION)
     #only attempt to load the git version if the git repo is found in the source directory
     if( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" )
         MESSAGE( STATUS "Found git repo" )
@@ -312,12 +312,11 @@ if (${SHOW_GIT_VERSION})
         add_custom_command(
                 OUTPUT
                 ${CMAKE_CURRENT_BINARY_DIR}/__Version.cpp #fake file to force that Version.cpp is always rebuilt
-                ${CMAKE_CURRENT_SOURCE_DIR}/src/monosat/Version.cpp
                 COMMAND echo
                 ARGS \"MonoSAT ${CMAKE_BUILD_TYPE} build, version: $\(shell git describe --abbrev=4 --dirty --always --tags\)\"
         )
     endif()
-endif (${SHOW_GIT_VERSION})
+endif (SHOW_GIT_VERSION)
 
 add_executable(monosat ${SOURCE_FILES})
 set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)

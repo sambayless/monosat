@@ -163,21 +163,21 @@ Lit FSMAcceptDetector::decide(int level){
 				for(NFATransition & t:decision_path){
 					int edgeID = t.edgeID;
 					int input = t.input;
-					Lit l  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
-					if(outer->value(l)==l_Undef)
-						to_decide.push(l);
+					Lit l2  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
+					if(outer->value(l2)==l_Undef)
+						to_decide.push(l2);
 				}
 
 
 				if (to_decide.size() && last_decision_status == overapprox_detector->numUpdates()) {
 					while (to_decide.size()) {
-						Lit l = to_decide.last();
+						Lit l2 = to_decide.last();
 						to_decide.pop();
-						if (outer->value(l) == l_Undef) {
+						if (outer->value(l2) == l_Undef) {
 							/*if(opt_verb>1){
-                                printf("fsm decide %d\n",dimacs(l));
+                                printf("fsm decide %d\n",dimacs(l2));
                             }*/
-							return l;
+							return l2;
 						}
 					}
 				}
@@ -197,13 +197,13 @@ Lit FSMAcceptDetector::decide(int level){
 				for(NFATransition & t:decision_path){
 					int edgeID = t.edgeID;
 					int input = t.input;
-					Lit l  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
-					if(outer->value(l)==l_Undef) {
-						//to_decide.push(l);
+					Lit l2  = mkLit(outer->getTransitionVar(g_over.getID(),edgeID,input,0));
+					if(outer->value(l2)==l_Undef) {
+						//to_decide.push(l2);
 						/*	if(opt_verb>1){
-								printf("fsm decide %d\n",dimacs(l));
+								printf("fsm decide %d\n",dimacs(l2));
 							}*/
-						return l;
+						return l2;
 					}
 				}
 
@@ -438,7 +438,7 @@ bool FSMAcceptDetector::checkSymmetryConstraintsBitVec(vec<Lit> & conflict) {
 			Bitset & curUnder = _bitvec2;
 			curUnder.zero();
 			//if i is < j, then the number of enabled transitions in i must be <= the number in j
-			int pos = 0;
+			int pos2 = 0;
 			for(int k = 0;k<g_under.nIncident(j);k++){
 				int edgeID = g_under.incident(j,k).id;
 				for(int l = 0;l< g_under.inAlphabet();l++ ){
@@ -447,7 +447,7 @@ bool FSMAcceptDetector::checkSymmetryConstraintsBitVec(vec<Lit> & conflict) {
 
 						curUnder.set(pos);
 					}
-					pos++;
+					pos2++;
 				}
 			}
 			if (curUnder.GreaterThan(prevOver)){
