@@ -155,13 +155,13 @@ public:
         alg_id=g.addDynamicAlgorithm(this);
     }
 
-    void setSource(int s) {
+    void setSource(int s) override {
         source = s;
         last_modification = -1;
         last_addition = -1;
         last_deletion = -1;
     }
-    int getSource() {
+    int getSource()override {
         return source;
     }
 
@@ -495,11 +495,11 @@ public:
     }
 
     long num_updates = 0;
-    int numUpdates() const {
+    int numUpdates() const override{
         return num_updates;
     }
 
-    void update() {
+    void update() override{
 
         if (g.outfile) {
             fprintf(g.outfile, "r %d %d %d %d %d\n", getSource(),last_modification, g.modifications,g.changed(), g.historySize() );
@@ -858,7 +858,7 @@ public:
     }
 
 
-    void printStats(){
+    void printStats()override{
         printf("Updates: %ld (+%ld skipped), %ld restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);
     }
     void updateHistory() override {
@@ -936,18 +936,18 @@ public:
         return true;
     }
 
-    bool connected_unsafe(int t) {
+    bool connected_unsafe(int t) override{
         //dbg_uptodate();
         if(has_zero_weights){
             return dijkstras.connected_unsafe(t);
         }
         return t < dist.size() && dist[t] < INF;
     }
-    bool connected_unchecked(int t) {
+    bool connected_unchecked(int t)override {
         assert(last_modification == g.modifications);
         return connected_unsafe(t);
     }
-    bool connected(int t) {
+    bool connected(int t)override {
 
         update();
 
@@ -957,7 +957,7 @@ public:
         }
         return dist[t] < INF;
     }
-    Weight & distance(int t) {
+    Weight & distance(int t)override {
 
         update();
         if(has_zero_weights){
@@ -977,7 +977,7 @@ public:
         else
             return this->unreachable();
     }
-    int incomingEdge(int t) {
+    int incomingEdge(int t) override{
         if(has_zero_weights){
             return dijkstras.incomingEdge(t);
         }
@@ -1015,7 +1015,7 @@ public:
         assert(prev_edgeID!=-1);
         return prev_edgeID;
     }
-    int previous(int t) {
+    int previous(int t) override{
         if(has_zero_weights){
             return dijkstras.previous(t);
         }

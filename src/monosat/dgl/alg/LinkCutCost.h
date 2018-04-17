@@ -27,7 +27,7 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
-
+#include <gmpxx.h>
 
 #ifdef DEBUG_DGL
 #define DEBUG_DGL_LINKCUT
@@ -823,6 +823,22 @@ public:
 	}
 
 };
+
+
+template<typename Weight>
+const Weight LinkCutCost<Weight>::INF = std::numeric_limits<Weight>::max()/2;
+
+template<>
+const int LinkCutCost<int>::INF;
+template<>
+const int64_t LinkCutCost<int64_t>::INF;
+template<>
+const mpq_class LinkCutCost<mpq_class>::INF;
+template<>
+const double LinkCutCost<double>::INF;
+template<>
+const float LinkCutCost<float>::INF;
+
 
 
 
