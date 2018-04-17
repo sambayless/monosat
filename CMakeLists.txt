@@ -169,7 +169,6 @@ set(SOURCE_FILES
         src/monosat/geometry/cevans/typedefs.h
         src/monosat/geometry/cevans/typeop.h
         src/monosat/geometry/cevans/zero.h
-        src/monosat/geometry/polypartition/polypartition.cpp
         src/monosat/geometry/polypartition/polypartition.h
         src/monosat/geometry/ConvexHull.h
         src/monosat/geometry/ConvexHullCollisionDetection.cpp
