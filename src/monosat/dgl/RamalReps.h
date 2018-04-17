@@ -37,8 +37,8 @@
 #include <string>
 #include <vector>
 #ifndef NDEBUG
-#define DEBUG_RAMAL
-#define DEBUG_RAMAL2
+//#define DEBUG_RAMAL
+//#define DEBUG_RAMAL2
 #endif
 namespace dgl {
 template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
@@ -1971,8 +1971,8 @@ public:
 	bool dbg_uptodate() {
 //#ifdef DEBUG_GRAPH
 #ifdef DEBUG_RAMAL2
-		if(last_modification<0)
-		return true;
+	if(last_modification<0)
+	return true;
 		dbg_delta();
 		UnweightedDijkstra<Weight> d(source,g);
 

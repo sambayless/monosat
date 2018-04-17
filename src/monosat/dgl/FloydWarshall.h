@@ -82,7 +82,7 @@ public:
 		stats_fast_failed_updates = 0;
 	}
 	
-	void addSource(int s) {
+	void addSource(int s) override {
 		assert(!std::count(sources.begin(), sources.end(), s));
 		sources.push_back(s);
 		
@@ -122,11 +122,11 @@ public:
 	};
 
 	long num_updates = 0;
-	int numUpdates() const {
+	int numUpdates() const override {
 		return num_updates;
 	}
 	
-	void update() {
+	void update() override {
 		
 		stats_full_updates++;
 		
@@ -210,7 +210,7 @@ public:
 		
 	}
 	
-	void getPath(int from, int to, std::vector<int> & path) {
+	void getPath(int from, int to, std::vector<int> & path) override {
 		update();
 		path.push_back(from);
 		getPath_private(from, to, path);
@@ -268,14 +268,14 @@ public:
 		return true;
 	}
 	
-	bool connected_unsafe(int from, int t) {
+	bool connected_unsafe(int from, int t) override {
 		return dist[from][t] < INF;
 	}
-	bool connected_unchecked(int from, int t) {
+	bool connected_unchecked(int from, int t) override {
 		assert(last_modification == g.modifications);
 		return connected_unsafe(from, t);
 	}
-	bool connected(int from, int t) {
+	bool connected(int from, int t) override {
 		if (last_modification != g.modifications)
 			update();
 		
@@ -283,13 +283,13 @@ public:
 		
 		return dist[from][t] < INF;
 	}
-	int distance(int from, int t) {
+	int distance(int from, int t) override {
 		if (connected(from, t))
 			return dist[from][t];
 		else
 			return INF;
 	}
-	int distance_unsafe(int from, int t) {
+	int distance_unsafe(int from, int t) override {
 		if (connected_unsafe(from, t))
 			return dist[from][t];
 		else

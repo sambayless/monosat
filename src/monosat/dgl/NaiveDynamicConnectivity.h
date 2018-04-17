@@ -78,18 +78,18 @@ public:
 		nodes = 0;
 	}
 
-	bool connected(int u, int v) {
+	bool connected(int u, int v) override {
 		if (needsRebuild) {
 			rebuild();
 		}
 		return sets.FindSet(u) == sets.FindSet(v);
 	}
 
-	int numComponents() {
+	int numComponents() override {
 		return sets.NumSets();
 	}
 
-	void dbg_print() {
+	void dbg_print() override {
 #ifdef DEBUG_DGL
 		std::vector<bool> seen;
 		seen.resize(nodes);
@@ -123,13 +123,13 @@ public:
 #endif
 	}
 
-	void addNode() {
+	void addNode() override {
 		nodes++;
 		edges.push_back( { });
 		sets.AddElements(1);
 	}
 
-	void addEdge(int from, int to, int edgeID) {
+	void addEdge(int from, int to, int edgeID) override {
 		if (edges.size() <= edgeID)
 			edges.resize(edgeID + 1);
 		edges[edgeID].from = from;
@@ -137,11 +137,11 @@ public:
 		edges[edgeID].enabled = false;
 	}
 
-	bool edgeEnabled(int edgeid) const {
+	bool edgeEnabled(int edgeid) const override {
 		return edges[edgeid].enabled;
 	}
 
-	bool setEdgeEnabled(int from, int to, int edgeid, bool enabled) {
+	bool setEdgeEnabled(int from, int to, int edgeid, bool enabled) override {
 		if (enabled && !edges[edgeid].enabled) {
 			edges[edgeid].enabled = true;
 			insert(edgeid);

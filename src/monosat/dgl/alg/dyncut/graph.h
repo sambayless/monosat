@@ -82,10 +82,10 @@
 #ifndef __KOHLI_TORR_GRAPH_H__
 #define __KOHLI_TORR_GRAPH_H__
 #include <vector>
-#include <string.h>
+#include <cstring>
 #include "block.h"
 #include <cstdlib>
-#include <assert.h>
+#include <cassert>
 #include <new>
 #include <algorithm>
 #include <stdexcept>
