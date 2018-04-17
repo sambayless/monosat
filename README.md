@@ -21,6 +21,12 @@ If you get compilation errors along the lines of "error: could not convert â€˜xâ
 
 If you build MonoSAT without using the provided cmake/makefiles, it is critically important to compile with `NDEBUG` set (*i.e.,* `-DNDEBUG`), as otherwise many very expensive debugging assertions will be enabled. 
 
+#### Building on OSX
+
+If brew installed your GMP in /opt/local/lib, the `make` step above will fail. You'll need the following command to build the dynamic and static libraries.
+
+   DYLD_LIBRARY_PATH=/opt/local/lib LIBRARY_PATH=/opt/local/lib make
+
 ### Install the Python Library
 
 To install the Python library (system-wide), first build monosat (see above), cd into 'src/monosat/api/python', and then use Python's setuptools to install the Python library (see below).
