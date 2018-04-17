@@ -68,8 +68,8 @@ public:
 	int sink = -1;
 	Weight INF;
 	std::vector<int> Q;
-	long stats_augmenting_rounds = 0;
-	long stats_rounds = 0;
+	int64_t stats_augmenting_rounds = 0;
+	int64_t stats_rounds = 0;
 #ifdef DEBUG_MAXFLOW
 	std::vector<int> dbg_pos;
 	EdmondsKarpAdj<Capacity,Weight> ek;
@@ -91,13 +91,13 @@ public:
 		last_history_clear = -1;
 		//setAllEdgeCapacities(1);
 	}
-	int getSource() const {
+	int getSource() const override{
 		return source;
 	}
-	int getSink() const {
+	int getSink() const override {
 		return sink;
 	}
-	void printStats() {
+	void printStats() override{
 		printf("Dinics :\n");
 
 		printf("Rounds: %ld, Augmenting Rounds: %ld\n", stats_rounds, stats_augmenting_rounds);
@@ -356,10 +356,10 @@ public:
 		return maxFlow(source, sink);
 	}
 	std::vector<int> changed_edges;
-	std::vector<int> & getChangedEdges() {
+	std::vector<int> & getChangedEdges()override {
 		return changed_edges;
 	}
-	void clearChangedEdges() {
+	void clearChangedEdges()override {
 		for (int edgeID : changed_edges) {
 			assert(changed[edgeID]);
 			changed[edgeID] = false;
@@ -376,21 +376,21 @@ private:
 		}
 	}
 public:
-	void setSource(int s) {
+	void setSource(int s) override{
 		if (source == s) {
 			return;
 		}
 		source = s;
 		last_modification = g.modifications - 1;
 	}
-	void setSink(int t) {
+	void setSink(int t) override{
 		if (sink == t) {
 			return;
 		}
 		sink = t;
 		last_modification = g.modifications - 1;
 	}
-	const Weight maxFlow(int s, int t) {
+	const Weight maxFlow(int s, int t) override{
 		Weight f = 0;
 		if (g.outfile) {
 			fprintf(g.outfile, "f %d %d\n", s, t);
@@ -457,7 +457,7 @@ public:
 	
 	std::vector<bool> seen;
 	std::vector<bool> visited;
-	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
+	const Weight minCut(std::vector<MaxFlowEdge> & cut) override{
 		return minCut(source, sink, cut);
 	}
 	const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut) {
@@ -519,15 +519,15 @@ public:
 #endif
 		return f;
 	}
-	const Weight getEdgeCapacity(int id) {
+	const Weight getEdgeCapacity(int id) override{
 		assert(g.edgeEnabled(id));
 		return g.getWeight(id);
 	}
-	const Weight getEdgeFlow(int id) {
+	const Weight getEdgeFlow(int id) override{
 		assert(g.edgeEnabled(id));
 		return F[id];    	// reserve(id);
 	}
-	const Weight getEdgeResidualCapacity(int id) {
+	const Weight getEdgeResidualCapacity(int id) override{
 		assert(g.edgeEnabled(id));
 		return g.getWeight(id) - F[id];    	// reserve(id);
 	}
