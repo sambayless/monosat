@@ -1801,7 +1801,7 @@ Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
         int edgeID = order_heap.removeMin();
         Lit l = mkLit(outer->getEdgeVar(edgeID), false);
 
-        if ((outer->decidable(l) || (opt_decide_graph_bv && outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID)) ) && over->getEdgeFlow(edgeID) > 0)) {
+        if ((outer->decidable(l) || (opt_decide_graph_bv && outer->edgeWeightDecidable(edgeID, DetectorComparison::geq,  overapprox_conflict_detector->getEdgeFlow(edgeID))) ) && over->getEdgeFlow(edgeID) > 0) {
             n_stats_vsids_decisions++;
             double post_time = rtime(2);
             stats_decide_time += post_time - startdecidetime;
