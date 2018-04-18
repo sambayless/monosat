@@ -15,18 +15,16 @@ class TestOutput(unittest.TestCase):
 
         #trivial contradition, so result should be UNSAT
         result = monosat.Solve()
-        print(result)
+        self.assertFalse(result)
 
         monosat.Monosat().newSolver() #create a new solver, this time without any output file set.
         #solver now has no constraints, so it should be SAT
-        print(monosat.Solve())
+        self.assertTrue(monosat.Solve())
 
         # read in the previously saved constraints (these can also be read in on the command line, eg ./monosat tutorial.gnf
         monosat.Monosat().readGNF("test.gnf")
-
         result2 = monosat.Solve()
-        print(result2)
-        assert(result==result2)
+        self.assertEqual(result,result2)
 
 
 
