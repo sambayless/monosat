@@ -62,7 +62,7 @@ public final class Logic {
     public static Lit not(Lit a) {
         //don't need the solver for this call
         //so avoid the thread local access of using getSolver()
-        return a.negate();
+        return a.not();
     }
 
     public static Lit nand(Lit... args) {

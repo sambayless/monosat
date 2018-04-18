@@ -399,9 +399,9 @@ public class Graph {
         validateNode(to);
         switch (comparison) {
             case GEQ:
-                return solver.toLit(MonosatJNI.shortestPath_lt_const(solver.solverPtr, graphPtr, from, to, compareTo)).negate();
+                return solver.toLit(MonosatJNI.shortestPath_lt_const(solver.solverPtr, graphPtr, from, to, compareTo)).not();
             case GT:
-                return solver.toLit(MonosatJNI.shortestPath_leq_const(solver.solverPtr, graphPtr, from, to, compareTo)).negate();
+                return solver.toLit(MonosatJNI.shortestPath_leq_const(solver.solverPtr, graphPtr, from, to, compareTo)).not();
             case LEQ:
                 return solver.toLit(MonosatJNI.shortestPath_leq_const(solver.solverPtr, graphPtr, from, to, compareTo));
             case LT:
@@ -425,9 +425,9 @@ public class Graph {
         validateNode(to);
         switch (comparison) {
             case GEQ:
-                return solver.toLit(MonosatJNI.shortestPath_lt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).negate();
+                return solver.toLit(MonosatJNI.shortestPath_lt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).not();
             case GT:
-                return solver.toLit(MonosatJNI.shortestPath_leq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).negate();
+                return solver.toLit(MonosatJNI.shortestPath_leq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).not();
             case LEQ:
                 return solver.toLit(MonosatJNI.shortestPath_leq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id));
             case LT:
@@ -486,9 +486,9 @@ public class Graph {
             case GT:
                 return solver.toLit(MonosatJNI.maximumFlow_gt(solver.solverPtr, graphPtr, from, to, compareTo));
             case LEQ:
-                return solver.toLit(MonosatJNI.maximumFlow_gt(solver.solverPtr, graphPtr, from, to, compareTo)).negate();
+                return solver.toLit(MonosatJNI.maximumFlow_gt(solver.solverPtr, graphPtr, from, to, compareTo)).not();
             case LT:
-                return solver.toLit(MonosatJNI.maximumFlow_geq(solver.solverPtr, graphPtr, from, to, compareTo)).negate();
+                return solver.toLit(MonosatJNI.maximumFlow_geq(solver.solverPtr, graphPtr, from, to, compareTo)).not();
             case EQ: {
                 Lit l1 = solver.toLit(MonosatJNI.maximumFlow_geq(solver.solverPtr, graphPtr, from, to, compareTo));
                 Lit l2 = solver.toLit(MonosatJNI.maximumFlow_gt(solver.solverPtr, graphPtr, from, to, compareTo));
@@ -521,9 +521,9 @@ public class Graph {
             case GT:
                 return solver.toLit(MonosatJNI.maximumFlow_gt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id));
             case LEQ:
-                return solver.toLit(MonosatJNI.maximumFlow_gt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).negate();
+                return solver.toLit(MonosatJNI.maximumFlow_gt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).not();
             case LT:
-                return solver.toLit(MonosatJNI.maximumFlow_geq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).negate();
+                return solver.toLit(MonosatJNI.maximumFlow_geq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id)).not();
             case EQ: {
                 Lit l1 = solver.toLit(MonosatJNI.maximumFlow_geq_bv(solver.solverPtr, graphPtr, from, to, compareTo.id));
                 Lit l2 = solver.toLit(MonosatJNI.maximumFlow_gt_bv(solver.solverPtr, graphPtr, from, to, compareTo.id));

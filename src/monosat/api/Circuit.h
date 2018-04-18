@@ -84,8 +84,7 @@ class Circuit{
 public:
 
 	Circuit(Solver & S):S(S){
-		lit_True = mkLit(S.newVar());
-		S.addClause(lit_True);
+		lit_True = S.True();
 	}
 
 	Lit newLit(bool decisionLit=true){

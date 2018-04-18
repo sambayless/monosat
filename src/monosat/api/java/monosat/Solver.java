@@ -283,7 +283,7 @@ public class Solver implements Closeable {
     }
 
     public Lit False() {
-        return true_lit.negate();
+        return true_lit.not();
     }
 
     public void disallowSimplification(Lit l) {
@@ -526,7 +526,7 @@ public class Solver implements Closeable {
         return lits.get(literal);
        /* Lit l = lits.get(var);
         if ((literal & 1) == 1) {
-            return l.negate();
+            return l.not();
         } else {
             return l;
         }*/
@@ -857,7 +857,7 @@ public class Solver implements Closeable {
         if (args.length == 0) {
             return this.toLit(MonosatJNI.Nands(this.solverPtr, getBuffer(0,0),0));
         } else if (args.length == 1) {
-            return args[0].negate();
+            return args[0].not();
         } else if (args.length == 2) {
 
             return this.toLit(MonosatJNI.Nand(this.solverPtr, args[0].l, args[1].l));
@@ -882,7 +882,7 @@ public class Solver implements Closeable {
         if (args.length == 0) {
             return this.toLit(MonosatJNI.Xors(this.solverPtr, getBuffer(0,0),0));
         } else if (args.length == 1) {
-            return args[0].negate();
+            return args[0].not();
         } else if (args.length == 2) {
 
             return this.toLit(MonosatJNI.Xor(this.solverPtr, args[0].l, args[1].l));
@@ -911,7 +911,7 @@ public class Solver implements Closeable {
 
     public void assertFalse(Lit a) {
         validate(a);
-        MonosatJNI.Assert(this.solverPtr, a.negate().l);
+        MonosatJNI.Assert(this.solverPtr, a.not().l);
     }
 
     public void assertAnd(Lit... args) {
@@ -944,7 +944,7 @@ public class Solver implements Closeable {
         if (args.length == 0) {
             MonosatJNI.AssertNands(this.solverPtr, getBuffer(0,0), 0);
         } else if (args.length == 1) {
-            assertTrue(args[0].negate());
+            assertTrue(args[0].not());
         } else if (args.length == 2) {
             MonosatJNI.AssertNand(this.solverPtr, args[0].l, args[1].l);
         }
@@ -956,7 +956,7 @@ public class Solver implements Closeable {
         if (args.length == 0) {
             MonosatJNI.AssertNors(this.solverPtr, getBuffer(0,0), 0);
         } else if (args.length == 1) {
-            assertTrue(args[0].negate());
+            assertTrue(args[0].not());
         } else if (args.length == 2) {
             MonosatJNI.AssertNor(this.solverPtr, args[0].l, args[1].l);
         }
@@ -993,7 +993,7 @@ public class Solver implements Closeable {
     }
     public void assertImplies(Lit a, Lit b) {
         validate(a,b);
-        assertOr(a.negate(), b);
+        assertOr(a.not(), b);
     }
     //Multi-Literal constructs
     public Lit and(Collection<Lit> args) {
@@ -1027,7 +1027,7 @@ public class Solver implements Closeable {
     }
     public Lit implies(Lit a, Lit b){
         validate(a,b);
-        return or(a.negate(), b);
+        return or(a.not(), b);
     }
 
     //assertion forms

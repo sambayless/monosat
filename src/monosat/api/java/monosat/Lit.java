@@ -87,7 +87,7 @@ final public class Lit {
         return (l & 1) == 1;
     }
 
-    public Lit negate() {
+    public Lit not() {
         return solver.not(this);
     }
 
