@@ -220,7 +220,7 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 		
 		if (outer->value(undirected_acyclic_lit) !=l_False && underapprox_undirected_cycle_detector->hasUndirectedCycle()) {
 
-			Lit l = ~directed_acyclic_lit;
+			Lit l = ~undirected_acyclic_lit;
 			
 			if (outer->value(l) == l_True) {
 				//do nothing
