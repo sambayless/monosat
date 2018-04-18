@@ -26,6 +26,8 @@
 #include "monosat/dgl/KohliTorr.h"
 #include "monosat/dgl/EdmondsKarpDynamic.h"
 #include "monosat/dgl/Dinics.h"
+#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/Graph.h"
 #include "monosat/dgl/DinicsLinkCut.h"
 #include "monosat/graph/WeightedDistanceDetector.h"
 #include "monosat/graph/GraphTheory.h"
@@ -53,7 +55,7 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 
 	if (opt_use_random_path_for_decisions) {
 		rnd_weight.clear();
-		rnd_path = new WeightedDijkstra<Weight,double>(from, _antig, rnd_weight);
+		rnd_path = new WeightedDijkstra<Weight,DynamicGraph<Weight>,double>(from, _antig, rnd_weight);
 		for (int i = 0; i < outer->edge_list.size(); i++) {
 			double w = drand(rnd_seed);
 

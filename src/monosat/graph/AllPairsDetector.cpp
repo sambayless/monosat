@@ -23,29 +23,29 @@
 #include "monosat/dgl/FloydWarshall.h"
 #include "monosat/dgl/DijkstraAllPairs.h"
 using namespace Monosat;
-template<typename Weight>
-AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight> &_g,
-		DynamicGraph<Weight> &_antig, double seed) :
+template<typename Weight,typename Graph>
+AllPairsDetector<Weight,Graph>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph &_g,
+		Graph &_antig, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_reach_detector(
         nullptr), overapprox_reach_detector(
         nullptr), underapprox_path_detector(nullptr), positiveReachStatus(nullptr), negativeReachStatus(nullptr) {
 	
-	positiveReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this, true);
-	negativeReachStatus = new AllPairsDetector<Weight>::ReachStatus(*this, false);
+	positiveReachStatus = new AllPairsDetector<Weight,Graph>::ReachStatus(*this, true);
+	negativeReachStatus = new AllPairsDetector<Weight,Graph>::ReachStatus(*this, false);
 	if (allpairsalg == AllPairsAlg::ALG_FLOYDWARSHALL) {
-		underapprox_reach_detector = new FloydWarshall<Weight,AllPairsDetector<Weight>::ReachStatus>(_g,
+		underapprox_reach_detector = new FloydWarshall<Weight,Graph,AllPairsDetector<Weight,Graph>::ReachStatus>(_g,
 				*(positiveReachStatus), 1);
-		overapprox_reach_detector = new FloydWarshall<Weight,AllPairsDetector<Weight>::ReachStatus>(_antig,
+		overapprox_reach_detector = new FloydWarshall<Weight,Graph,AllPairsDetector<Weight,Graph>::ReachStatus>(_antig,
 				*(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_reach_detector;
 	}/*else if (allpairsalg==ALG_THORUP_ALLPAIRS){
-	 positive_reach_detector = new DynamicConnectivity<AllPairsDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
-	 negative_reach_detector = new DynamicConnectivity<AllPairsDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
+	 positive_reach_detector = new DynamicConnectivity<AllPairsDetector<Weight,Graph>::ReachStatus>(_g,*(positiveReachStatus),1);
+	 negative_reach_detector = new DynamicConnectivity<AllPairsDetector<Weight,Graph>::ReachStatus>(_antig,*(negativeReachStatus),-1);
 	 positive_path_detector = positive_reach_detector;
 	 }*/else {
-		underapprox_reach_detector = new DijkstraAllPairs<Weight,DynamicGraph<Weight>,AllPairsDetector<Weight>::ReachStatus>(_g,
+		underapprox_reach_detector = new DijkstraAllPairs<Weight,Graph,AllPairsDetector<Weight,Graph>::ReachStatus>(_g,
 				*(positiveReachStatus), 1);
-		overapprox_reach_detector = new DijkstraAllPairs<Weight,DynamicGraph<Weight>,AllPairsDetector<Weight>::ReachStatus>(_antig,
+		overapprox_reach_detector = new DijkstraAllPairs<Weight,Graph,AllPairsDetector<Weight,Graph>::ReachStatus>(_antig,
 				*(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_reach_detector;
 	}
@@ -53,8 +53,8 @@ AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<We
 	 reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
 #ifdef DEBUG_ALLPAIRS
 	{	
-		dbg_positive_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight>::IgnoreStatus>(_g,ignoreStatus,1);
-		dbg_negative_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight>::IgnoreStatus>(_antig,ignoreStatus,-1);
+		dbg_positive_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight,Graph>::IgnoreStatus>(_g,ignoreStatus,1);
+		dbg_negative_reach_detector = new DijkstraAllPairs<AllPairsDetector<Weight,Graph>::IgnoreStatus>(_antig,ignoreStatus,-1);
 	}
 #endif
 	first_reach_var = var_Undef;
@@ -63,8 +63,8 @@ AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<We
 	
 }
 
-template<typename Weight>
-void AllPairsDetector<Weight>::addLit(int from, int to, Var outer_reach_var, int within_steps) {
+template<typename Weight,typename Graph>
+void AllPairsDetector<Weight,Graph>::addLit(int from, int to, Var outer_reach_var, int within_steps) {
 	g_under.invalidate();
 	g_over.invalidate();
 	
@@ -125,8 +125,8 @@ void AllPairsDetector<Weight>::addLit(int from, int to, Var outer_reach_var, int
 	}
 
 }
-template<typename Weight>
-void AllPairsDetector<Weight>::ReachStatus::setReachable(int from, int u, bool reachable) {
+template<typename Weight,typename Graph>
+void AllPairsDetector<Weight,Graph>::ReachStatus::setReachable(int from, int u, bool reachable) {
 	/*	if(polarity==reachable && u<detector.reach_lits.size()){
 	 Lit l = detector.reach_lits[u];
 	 if(l!=lit_Undef){
@@ -137,8 +137,8 @@ void AllPairsDetector<Weight>::ReachStatus::setReachable(int from, int u, bool r
 	 }
 	 }*/
 }
-template<typename Weight>
-void AllPairsDetector<Weight>::ReachStatus::setMininumDistance(int from, int u, bool reachable, int distance) {
+template<typename Weight,typename Graph>
+void AllPairsDetector<Weight,Graph>::ReachStatus::setMininumDistance(int from, int u, bool reachable, int distance) {
 	assert(reachable == (distance < detector.g_under.nodes()));
 	if (distance <= detector.g_under.nodes()) {
 		setReachable(from, u, reachable);
@@ -171,8 +171,8 @@ void AllPairsDetector<Weight>::ReachStatus::setMininumDistance(int from, int u, 
 	
 }
 
-template<typename Weight>
-void AllPairsDetector<Weight>::buildReachReason(int source, int to, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void AllPairsDetector<Weight,Graph>::buildReachReason(int source, int to, vec<Lit> & conflict) {
 	//drawFull();
 	AllPairs & d = *underapprox_path_detector;
 	static int iter = 0;
@@ -218,8 +218,8 @@ void AllPairsDetector<Weight>::buildReachReason(int source, int to, vec<Lit> & c
 	outer->pathtime += elapsed;
 	
 }
-template<typename Weight>
-void AllPairsDetector<Weight>::buildNonReachReason(int source, int node, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void AllPairsDetector<Weight,Graph>::buildNonReachReason(int source, int node, vec<Lit> & conflict) {
 	static int it = 0;
 	++it;
 	int u = node;
@@ -283,8 +283,8 @@ void AllPairsDetector<Weight>::buildNonReachReason(int source, int node, vec<Lit
 	
 }
 
-template<typename Weight>
-void AllPairsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+template<typename Weight,typename Graph>
+void AllPairsDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	
 	if (marker == underprop_marker) {
 		reason.push(p);
@@ -330,8 +330,8 @@ void AllPairsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker
 	}
 	outer->toSolver(reason);
 }
-template<typename Weight>
-bool AllPairsDetector<Weight>::propagate(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+bool AllPairsDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 	
 	double startdreachtime = rtime(2);
 	getChanged().clear();
@@ -448,8 +448,8 @@ bool AllPairsDetector<Weight>::propagate(vec<Lit> & conflict) {
 #endif
 	return true;
 }
-template<typename Weight>
-bool AllPairsDetector<Weight>::checkSatisfied() {
+template<typename Weight,typename Graph>
+bool AllPairsDetector<Weight,Graph>::checkSatisfied() {
 	for (int m = 0; m < sources.size(); m++) {
 		int s = sources[m];
 		for (int j = 0; j < dist_lits[s].size(); j++) {
@@ -483,12 +483,12 @@ bool AllPairsDetector<Weight>::checkSatisfied() {
 	}
 	return true;
 }
-template<typename Weight>
-Lit AllPairsDetector<Weight>::decide(CRef &decision_reason) {
+template<typename Weight,typename Graph>
+Lit AllPairsDetector<Weight,Graph>::decide(CRef &decision_reason) {
 	
-	//AllPairs * over = (FloydWarshall<AllPairsDetector<Weight>::ReachStatus>*) negative_reach_detector;
+	//AllPairs * over = (FloydWarshall<AllPairsDetector<Weight,Graph>::ReachStatus>*) negative_reach_detector;
 	
-	//FloydWarshall<AllPairsDetector<Weight>::ReachStatus> * under = (FloydWarshall<AllPairsDetector<Weight>::ReachStatus>*)positive_reach_detector;
+	//FloydWarshall<AllPairsDetector<Weight,Graph>::ReachStatus> * under = (FloydWarshall<AllPairsDetector<Weight,Graph>::ReachStatus>*)positive_reach_detector;
 	
 	//we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 	
@@ -592,3 +592,7 @@ template class Monosat::AllPairsDetector<int64_t> ;
 template class Monosat::AllPairsDetector<double> ;
 template class Monosat::AllPairsDetector<mpq_class> ;
 
+template class Monosat::AllPairsDetector<int,DynamicBackGraph<int>> ;
+template class Monosat::AllPairsDetector<int64_t,DynamicBackGraph<int64_t>> ;
+template class Monosat::AllPairsDetector<double,DynamicBackGraph<double>> ;
+template class Monosat::AllPairsDetector<mpq_class,DynamicBackGraph<mpq_class>> ;

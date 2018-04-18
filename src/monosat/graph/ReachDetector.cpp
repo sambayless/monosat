@@ -32,10 +32,10 @@
 #include "monosat/graph/MaxflowDetector.h"
 #include "monosat/dgl/CachedReach.h"
 using namespace Monosat;
-template<typename Weight>
-ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g,
-									 DynamicGraph<Weight>  &_antig, int from, double seed) :
-		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), within(-1), source(from), rnd_seed(seed) { //,chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){
+template<typename Weight,typename Graph>
+ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &g_under,
+									 Graph  &g_over, int from, double seed) :
+		Detector(_detectorID), outer(_outer), g_under(g_under), g_over(g_over), within(-1), source(from), rnd_seed(seed) {
 
 	//opt_path=nullptr;
 	chokepoint_detector = nullptr;
@@ -57,14 +57,14 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		//negative_reach_detector = new ReachDetector::CNFReachability(*this,true);
 
-		underapprox_path_detector = new UnweightedBFS<Weight,DynamicGraph<Weight>,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
-		overapprox_path_detector = new UnweightedBFS<Weight,DynamicGraph<Weight>,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+		underapprox_path_detector = new UnweightedBFS<Weight,Graph,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 1);
+		overapprox_path_detector = new UnweightedBFS<Weight,Graph,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
 		underapprox_fast_detector = underapprox_path_detector;
 		return;
 	}
 
 	if (opt_decide_graph_chokepoints) {
-		chokepoint_detector = new DFSReachability<Weight,DynamicGraph<Weight>, Reach::NullStatus>(from, _antig, Reach::nullStatus, 1);
+		chokepoint_detector = new DFSReachability<Weight,Graph, Reach::NullStatus>(from, g_over, Reach::nullStatus, 1);
 
 	}
 	if (opt_shrink_theory_conflicts) {
@@ -74,21 +74,21 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 
 	/* if(opt_use_optimal_path_for_decisions){
-	 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,_antig,opt_weight);
+	 opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,g_over,opt_weight);
 	 }*/
-	positiveReachStatus = new ReachDetector<Weight>::ReachStatus(*this, true);
-	negativeReachStatus = new ReachDetector<Weight>::ReachStatus(*this, false);
+	positiveReachStatus = new ReachDetector<Weight,Graph>::ReachStatus(*this, true);
+	negativeReachStatus = new ReachDetector<Weight,Graph>::ReachStatus(*this, false);
 	if (reachalg == ReachAlg::ALG_BFS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new BFSReachability<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new BFSReachability<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																								  *(positiveReachStatus), 1);
 		} else {
-			underapprox_fast_detector = new BFSReachability<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new BFSReachability<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																									   *(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		overapprox_reach_detector = new BFSReachability<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _antig,
+		overapprox_reach_detector = new BFSReachability<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_over,
 																								   *(negativeReachStatus), -1);
 
 		underapprox_path_detector = underapprox_detector;
@@ -96,45 +96,45 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	} else if (reachalg == ReachAlg::ALG_DFS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new DFSReachability<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new DFSReachability<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																								  *(positiveReachStatus), 1);
 		} else {
-			underapprox_fast_detector = new DFSReachability<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new DFSReachability<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																									   *(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		overapprox_reach_detector = new DFSReachability<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _antig,
+		overapprox_reach_detector = new DFSReachability<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_over,
 																								   *(negativeReachStatus), -1);
 		if (opt_conflict_shortest_path)
-			underapprox_path_detector = new UnweightedBFS<Weight,DynamicGraph<Weight>,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
+			underapprox_path_detector = new UnweightedBFS<Weight,Graph,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 1);
 		else
 			underapprox_path_detector = underapprox_detector;
 
-		negative_distance_detector = new UnweightedBFS<Weight,DynamicGraph<Weight>,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+		negative_distance_detector = new UnweightedBFS<Weight,Graph,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
 		overapprox_path_detector = overapprox_reach_detector;
 	} else if (reachalg == ReachAlg::ALG_DISTANCE) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedBFS<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedBFS<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																								*(positiveReachStatus), 1);
 		} else {
-			underapprox_fast_detector = new UnweightedBFS<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedBFS<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																									 *(positiveReachStatus), 1);
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 
-		overapprox_reach_detector = new UnweightedBFS<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _antig,
+		overapprox_reach_detector = new UnweightedBFS<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_over,
 																								 *(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_detector;
 		overapprox_path_detector = overapprox_reach_detector;
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	} else if (reachalg == ReachAlg::ALG_RAMAL_REPS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedRamalReps<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedRamalReps<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																									  *(positiveReachStatus), 1, false);
 			underapprox_path_detector=underapprox_detector;
 		} else {
-			underapprox_fast_detector = new UnweightedRamalReps<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedRamalReps<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																										   *(positiveReachStatus), 1, false);
 			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
@@ -142,28 +142,28 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 		if (outer->assignEdgesToWeight()){
 			//need to use weighted over approx detector to take advantage of the assignEdgesToZeroWeight heuristic
-			overapprox_reach_detector = new  RamalReps<Weight,DynamicGraph<Weight>, ReachDetector<Weight>::ReachStatus>(from,
-																								   _antig,
+			overapprox_reach_detector = new  RamalReps<Weight,Graph, ReachDetector<Weight,Graph>::ReachStatus>(from,
+																								   g_over,
 																								   *(negativeReachStatus),
 																								   -1, false);
 		}else {
-			overapprox_reach_detector = new UnweightedRamalReps<Weight,DynamicGraph<Weight>, ReachDetector<Weight>::ReachStatus>(from,
-																											_antig,
+			overapprox_reach_detector = new UnweightedRamalReps<Weight,Graph, ReachDetector<Weight,Graph>::ReachStatus>(from,
+																											g_over,
 																											*(negativeReachStatus),
 																											-1, false);
 		}
 		overapprox_path_detector=overapprox_reach_detector;
 		//RamalReps now supports finding paths
-		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
-		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 1);
+		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	}else if (reachalg == ReachAlg::ALG_RAMAL_REPS_BATCHED) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedRamalRepsBatched<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedRamalRepsBatched<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																											 *(positiveReachStatus), 1, false);
 			underapprox_path_detector=underapprox_detector;
 		} else {
-			underapprox_fast_detector = new UnweightedRamalRepsBatched<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedRamalRepsBatched<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																												  *(positiveReachStatus), 1, false);
 			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
@@ -171,28 +171,28 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 		if (outer->assignEdgesToWeight()){
 			//need to use weighted over approx detector to take advantage of the assignEdgesToZeroWeight heuristic
-			overapprox_reach_detector = new  RamalRepsBatched<Weight,DynamicGraph<Weight>, ReachDetector<Weight>::ReachStatus>(from,
-																										  _antig,
+			overapprox_reach_detector = new  RamalRepsBatched<Weight,Graph, ReachDetector<Weight,Graph>::ReachStatus>(from,
+																										  g_over,
 																										  *(negativeReachStatus),
 																										  -1, false);
 		}else {
-			overapprox_reach_detector = new UnweightedRamalRepsBatched<Weight,DynamicGraph<Weight>, ReachDetector<Weight>::ReachStatus>(from,
-																												   _antig,
+			overapprox_reach_detector = new UnweightedRamalRepsBatched<Weight,Graph, ReachDetector<Weight,Graph>::ReachStatus>(from,
+																												   g_over,
 																												   *(negativeReachStatus),
 																												   -1, false);
 		}
 		overapprox_path_detector=overapprox_reach_detector;
 		//RamalReps now supports finding paths
-		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
-		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 1);
+		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	}else if (reachalg == ReachAlg::ALG_RAMAL_REPS_BATCHED2) {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedRamalRepsBatchedUnified<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedRamalRepsBatchedUnified<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																													*(positiveReachStatus), 1, false);
 			underapprox_path_detector=underapprox_detector;
 		} else {
-			underapprox_fast_detector = new UnweightedRamalRepsBatchedUnified<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedRamalRepsBatchedUnified<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																														 *(positiveReachStatus), 1, false);
 			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
@@ -200,47 +200,47 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 		if (outer->assignEdgesToWeight()){
 			//need to use weighted over approx detector to take advantage of the assignEdgesToZeroWeight heuristic
-			overapprox_reach_detector = new  RamalRepsBatchedUnified<Weight,DynamicGraph<Weight>, ReachDetector<Weight>::ReachStatus>(from,
-																												 _antig,
+			overapprox_reach_detector = new  RamalRepsBatchedUnified<Weight,Graph, ReachDetector<Weight,Graph>::ReachStatus>(from,
+																												 g_over,
 																												 *(negativeReachStatus),
 																												 -1, false);
 		}else {
-			overapprox_reach_detector = new UnweightedRamalRepsBatchedUnified<Weight,DynamicGraph<Weight>, ReachDetector<Weight>::ReachStatus>(from,
-																														  _antig,
+			overapprox_reach_detector = new UnweightedRamalRepsBatchedUnified<Weight,Graph, ReachDetector<Weight,Graph>::ReachStatus>(from,
+																														  g_over,
 																														  *(negativeReachStatus),
 																														  -1, false);
 		}
 		overapprox_path_detector=overapprox_reach_detector;
 		//RamalReps now supports finding paths
-		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _g, Distance<int>::nullStatus, 1);
-		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, _antig, Distance<int>::nullStatus, -1);
+		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 1);
+		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
 		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
 
-	 positive_reach_detector = new DynamicConnectivity<ReachDetector<Weight>::ReachStatus>(_g,*(positiveReachStatus),1);
-	 negative_reach_detector = new DynamicConnectivity<ReachDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
+	 positive_reach_detector = new DynamicConnectivity<ReachDetector<Weight,Graph>::ReachStatus>(g_under,*(positiveReachStatus),1);
+	 negative_reach_detector = new DynamicConnectivity<ReachDetector<Weight,Graph>::ReachStatus>(g_over,*(negativeReachStatus),-1);
 	 positive_path_detector = positive_reach_detector;
 	 if(opt_conflict_shortest_path)
-	 positive_path_detector = new Distance<NullEdgeStatus>(from,_g,nullEdgeStatus,1);
+	 positive_path_detector = new Distance<NullEdgeStatus>(from,g_under,nullEdgeStatus,1);
 	 else
 	 positive_path_detector =positive_reach_detector;
 	 }*/else {
 		if (!opt_encode_reach_underapprox_as_sat) {
-			underapprox_detector = new UnweightedDijkstra<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_detector = new UnweightedDijkstra<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																									 *positiveReachStatus, 1);
 			underapprox_path_detector=underapprox_detector;
 		} else {
-			underapprox_fast_detector = new UnweightedDijkstra<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _g,
+			underapprox_fast_detector = new UnweightedDijkstra<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
 																										  *positiveReachStatus, 1);
 			underapprox_path_detector=underapprox_fast_detector;
 			//positive_reach_detector = new ReachDetector::CNFReachability(*this,false);
 		}
 		if (outer->assignEdgesToWeight()){
-			overapprox_reach_detector = new Dijkstra<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _antig,
+			overapprox_reach_detector = new Dijkstra<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_over,
 																								*negativeReachStatus, -1);
 		}else{
-			overapprox_reach_detector = new UnweightedDijkstra<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(from, _antig,
+			overapprox_reach_detector = new UnweightedDijkstra<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_over,
 																										  *negativeReachStatus, -1);
 		}
 
@@ -277,23 +277,23 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 	if(opt_graph_cache_propagation){
 		if(underapprox_detector){
 			Reach* original_underapprox_detector = underapprox_detector;
-			underapprox_detector = new CachedReach<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(original_underapprox_detector, _g,*(positiveReachStatus),1,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
+			underapprox_detector = new CachedReach<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(original_underapprox_detector, g_under,*(positiveReachStatus),1,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 			if(opt_graph_use_cache_for_decisions>=1) {
 				if (underapprox_path_detector == original_underapprox_detector) {
 					underapprox_path_detector = underapprox_detector;
 				} else {
-					underapprox_path_detector = new CachedReach<Weight>(underapprox_path_detector, _g,0,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
+					underapprox_path_detector = new CachedReach<Weight,Graph>(underapprox_path_detector, g_under,0,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 				}
 			}
 		}
 		if(overapprox_reach_detector){
 			Reach* original_overapprox_detector = overapprox_reach_detector;
-			overapprox_reach_detector = new CachedReach<Weight,DynamicGraph<Weight>,ReachDetector<Weight>::ReachStatus>(original_overapprox_detector, _antig,*(negativeReachStatus),-1,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
+			overapprox_reach_detector = new CachedReach<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(original_overapprox_detector, g_over,*(negativeReachStatus),-1,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 			if(opt_graph_use_cache_for_decisions>=1) {
 				if (overapprox_path_detector == original_overapprox_detector) {
 					overapprox_path_detector = overapprox_reach_detector;
 				} else {
-					overapprox_path_detector = new CachedReach<Weight>(overapprox_path_detector, _antig,0,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
+					overapprox_path_detector = new CachedReach<Weight,Graph>(overapprox_path_detector, g_over,0,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 				}
 			}
 		}
@@ -311,8 +311,8 @@ ReachDetector<Weight>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> 
 
 
 }
-template<typename Weight>
-void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within_steps) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int within_steps) {
 	if (within_steps < 0)
 		within_steps = g_under.nodes();
 	if (within_steps > g_under.nodes())
@@ -518,19 +518,19 @@ void ReachDetector<Weight>::buildSATConstraints(bool onlyUnderApprox, int within
 
 }
 
-template<typename Weight>
+template<typename Weight,typename Graph>
 class CombinedReachHeuristic : public GraphHeuristic<Weight>{
 
 };
 
-template<typename Weight>
+template<typename Weight,typename Graph>
 class ReachHeuristic : public GraphHeuristic<Weight>{
 
-	ReachDetector<Weight> * r;
+	ReachDetector<Weight,Graph> * r;
 
 	LSet to_decide;
 
-	WeightedDijkstra<Weight,double> * rnd_path = nullptr;
+	WeightedDijkstra<Weight,Graph,double> * rnd_path = nullptr;
 	std::vector<double> rnd_weight;
 	GraphTheorySolver<Weight> *outer;
 	Lit reach_lit = lit_Undef;
@@ -546,8 +546,8 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
 	int last_under_addition=-1;
 	int last_under_deletion=-1;
 
-	DynamicGraph<Weight> & g_over;
-	DynamicGraph<Weight> & g_under;
+	Graph & g_over;
+	Graph & g_under;
 	IntSet<int> path_edges;
 	bool path_is_cut=false;
 	int dest_node=-1;
@@ -558,11 +558,11 @@ class ReachHeuristic : public GraphHeuristic<Weight>{
 	double randomShortestPathFrequency=0;//With this probability, select a random (but still shortest) path
 	double randomShortestEdgeFrequency =0;
 public:
-	ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight> * r, Lit reach_lit,int dest_node,double randomShortestPathFrequency,double randomShortestEdgeFrequency, double random_seed): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit),g_over(r->g_over),g_under(r->g_under),dest_node(dest_node),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed) {
+	ReachHeuristic(GraphTheorySolver<Weight> * outer, ReachDetector<Weight,Graph> * r, Lit reach_lit,int dest_node,double randomShortestPathFrequency,double randomShortestEdgeFrequency, double random_seed): GraphHeuristic<Weight>(outer,r), r(r),outer(outer),reach_lit(reach_lit),g_over(r->g_over),g_under(r->g_under),dest_node(dest_node),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed) {
 		this->setPriority(outer->getSolver()->getDecisionPriority(var(outer->toSolver(reach_lit))));
 		if (opt_use_random_path_for_decisions) {
 			rnd_weight.clear();
-			rnd_path = new WeightedDijkstra<Weight,double>(r->source, r->g_over, rnd_weight);
+			rnd_path = new WeightedDijkstra<Weight,Graph,double>(r->source, r->g_over, rnd_weight);
 			for (int i = 0; i < outer->edge_list.size(); i++) {
 				double w = drand(r->rnd_seed);
 
@@ -776,7 +776,7 @@ public:
 
 
 		//check if any edges on the path have been removed since the last update
-		if (last_over_modification > 0 && g_over.modifications == last_over_modification && last_under_modification > 0 && g_under.modifications == last_under_modification){
+		if (last_over_modification > 0 && g_over.getCurrentHistory() == last_over_modification && last_under_modification > 0 && g_under.getCurrentHistory() == last_under_modification){
 			return false;
 		}
 		if (last_over_modification <= 0 || g_over.changed() || last_under_modification <= 0 || g_under.changed()) {//Note for the future: there is probably room to improve this further.
@@ -787,11 +787,11 @@ public:
 			return true;
 		}
 
-		if (last_over_history_clear != g_over.historyclears || last_under_history_clear != g_under.historyclears) {
+		if (last_over_history_clear != g_over.nHistoryClears() || last_under_history_clear != g_under.nHistoryClears()) {
 			over_history_qhead = g_over.historySize();
-			last_over_history_clear = g_over.historyclears;
+			last_over_history_clear = g_over.nHistoryClears();
 			under_history_qhead = g_under.historySize();
-			last_under_history_clear = g_under.historyclears;
+			last_under_history_clear = g_under.nHistoryClears();
 			to_decide.clear();
 			for(int edgeID:path_edges){
 				if(!path_is_cut) {
@@ -869,17 +869,17 @@ public:
 			}
 		}
 
-		last_over_modification = g_over.modifications;
-		last_over_deletion = g_over.deletions;
-		last_over_addition = g_over.additions;
+		last_over_modification = g_over.getCurrentHistory();
+		last_over_deletion = g_over.nDeletions();
+		last_over_addition = g_over.nAdditions();
 		over_history_qhead = g_over.historySize();
-		last_over_history_clear = g_over.historyclears;
+		last_over_history_clear = g_over.nHistoryClears();
 
-		last_under_modification = g_under.modifications;
-		last_under_deletion = g_under.deletions;
-		last_under_addition = g_under.additions;
+		last_under_modification = g_under.getCurrentHistory();
+		last_under_deletion = g_under.nDeletions();
+		last_under_addition = g_under.nAdditions();
 		under_history_qhead = g_under.historySize();
-		last_under_history_clear = g_under.historyclears;
+		last_under_history_clear = g_under.nHistoryClears();
 		return false;
 	}
 
@@ -926,17 +926,17 @@ public:
 			r->stats_heuristic_recomputes++;
 			computePath();
 
-			last_over_modification = g_over.modifications;
-			last_over_deletion = g_over.deletions;
-			last_over_addition = g_over.additions;
+			last_over_modification = g_over.getCurrentHistory();
+			last_over_deletion = g_over.nDeletions();
+			last_over_addition = g_over.nAdditions();
 			over_history_qhead = g_over.historySize();
-			last_over_history_clear = g_over.historyclears;
+			last_over_history_clear = g_over.nHistoryClears();
 
-			last_under_modification = g_under.modifications;
-			last_under_deletion = g_under.deletions;
-			last_under_addition = g_under.additions;
+			last_under_modification = g_under.getCurrentHistory();
+			last_under_deletion = g_under.nDeletions();
+			last_under_addition = g_under.nAdditions();
 			under_history_qhead = g_under.historySize();
-			last_under_history_clear = g_under.historyclears;
+			last_under_history_clear = g_under.nHistoryClears();
 
 		}
 #ifdef DEBUG_GRAPH
@@ -991,8 +991,8 @@ public:
 };
 
 
-template<typename Weight>
-void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::addLit(int from, int to, Var outer_reach_var) {
 	while (reach_lits.size() < g_under.nodes())
 		reach_lits.push(lit_Undef);
 	while (original_reach_lits.size() < g_under.nodes())
@@ -1049,7 +1049,7 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		buildSATConstraints(false);
 	}
 	if(opt_decide_theories && opt_allow_reach_decisions && overapprox_reach_detector){
-		Heuristic * h = new ReachHeuristic<Weight>(outer,this,reachLit,to,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
+		Heuristic * h = new ReachHeuristic<Weight,Graph>(outer,this,reachLit,to,opt_rnd_shortest_path,opt_rnd_shortest_edge,drand(rnd_seed));
 		reach_heuristics.growTo(to+1,nullptr);
 		reach_heuristics[to]=h;
 		all_reach_heuristics.push(h);
@@ -1096,8 +1096,8 @@ void ReachDetector<Weight>::addLit(int from, int to, Var outer_reach_var) {
 		}
 	}
 }
-template<typename Weight>
-void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::ReachStatus::setReachable(int u, bool reachable) {
 
 	if (polarity == reachable && u < detector.reach_lits.size()) {
 		Lit l = detector.reach_lits[u];
@@ -1116,8 +1116,8 @@ void ReachDetector<Weight>::ReachStatus::setReachable(int u, bool reachable) {
 		}
 	}
 }
-template<typename Weight>
-void ReachDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachable, Weight distance) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::ReachStatus::setMininumDistance(int u, bool reachable, Weight distance) {
 	/*assert(reachable ==(distance<detector.outer->g.nodes()));
 	 setReachable(u,reachable);
 
@@ -1142,28 +1142,28 @@ void ReachDetector<Weight>::ReachStatus::setMininumDistance(int u, bool reachabl
 	 }
 	 }*/
 }
-/*template<typename Weight>
- bool ReachDetector<Weight>::ChokepointStatus::mustReach(int node){
+/*template<typename Weight,typename Graph>
+ bool ReachDetector<Weight,Graph>::ChokepointStatus::mustReach(int node){
  Lit l =  detector.reach_lits[node];
  if(l!=lit_Undef){
  return detector.outer->value(l)==l_True;
  }
  return false;
  }
- template<typename Weight>
- bool ReachDetector<Weight>::ChokepointStatus::operator() (int edge_id){
+ template<typename Weight,typename Graph>
+ bool ReachDetector<Weight,Graph>::ChokepointStatus::operator() (int edge_id){
  return detector.outer->value(detector.outer->edge_list[ edge_id].v)==l_Undef;
  }*/
-template<typename Weight>
-void ReachDetector<Weight>::preprocess() {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::preprocess() {
 	is_changed_under.growTo(g_under.nodes());
 	is_changed_over.growTo(g_over.nodes());
 	//vec<bool> pure;
 	//pure.growTo(reach_lits.size());
 	//can check if all reach lits appear in only one polarity in the solver constraints; if so, then we can disable either check_positive or check_negative
 }
-template<typename Weight>
-void ReachDetector<Weight>::buildReachReason(int node, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::buildReachReason(int node, vec<Lit> & conflict) {
 	//drawFull();
 	Reach & d = *underapprox_path_detector;
 	double starttime = rtime(2);
@@ -1216,8 +1216,8 @@ void ReachDetector<Weight>::buildReachReason(int node, vec<Lit> & conflict) {
 	outer->pathtime += elapsed;
 	stats_under_conflict_time += elapsed;
 }
-template<typename Weight>
-void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, bool force_maxflow) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & conflict, bool force_maxflow) {
 	static int it = 0;
 	++it;
 	if (it == 4) {
@@ -1483,8 +1483,8 @@ void ReachDetector<Weight>::buildNonReachReason(int node, vec<Lit> & conflict, b
  * The reason is that _IF_ that edge is false, THEN there is a cut of disabled edges between source and target
  * So, create the graph that has that edge (temporarily) assigned false, and find a min-cut in it...
  */
-template<typename Weight>
-void ReachDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::buildForcedEdgeReason(int reach_node, int forced_edge_id, vec<Lit> & conflict) {
 	static int it = 0;
 	++it;
 
@@ -1605,8 +1605,8 @@ void ReachDetector<Weight>::buildForcedEdgeReason(int reach_node, int forced_edg
 	outer->mctime += elapsed;
 
 }
-template<typename Weight>
-void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	if (marker == underprop_marker) {
 		reason.push(p);
 		//	double startpathtime = rtime(2);
@@ -1656,8 +1656,8 @@ void ReachDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	}
 	outer->toSolver(reason);
 }
-template<typename Weight>
-bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+bool ReachDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
 	if (++iter == 18) {
 		int a = 1;
@@ -1815,8 +1815,8 @@ bool ReachDetector<Weight>::propagate(vec<Lit> & conflict) {
 	return true;
 }
 
-template<typename Weight>
-void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::printSolution(std::ostream & write_to) {
 
 	vec<bool> to_show;
 	to_show.growTo(g_under.nodes());
@@ -1859,11 +1859,11 @@ void ReachDetector<Weight>::printSolution(std::ostream & write_to) {
 	}
 
 }
-template<typename Weight>
-bool ReachDetector<Weight>::checkSatisfied() {
+template<typename Weight,typename Graph>
+bool ReachDetector<Weight,Graph>::checkSatisfied() {
 
-	UnweightedDijkstra<Weight> under(source, g_under);
-	UnweightedDijkstra<Weight> over(source, g_over);
+	UnweightedDijkstra<Weight,Graph> under(source, g_under);
+	UnweightedDijkstra<Weight,Graph> over(source, g_over);
 	under.update();
 	over.update();
 
@@ -1893,8 +1893,8 @@ bool ReachDetector<Weight>::checkSatisfied() {
 	return true;
 }
 
-template<typename Weight>
-bool ReachDetector<Weight>::isConnected(int node, bool overapprox){
+template<typename Weight,typename Graph>
+bool ReachDetector<Weight,Graph>::isConnected(int node, bool overapprox){
 	if(overapprox){
 		assert(overapprox_reach_detector);
 		return overapprox_reach_detector->connected(node);
@@ -1903,8 +1903,8 @@ bool ReachDetector<Weight>::isConnected(int node, bool overapprox){
 		return underapprox_fast_detector->connected(node);
 	}
 }
-template<typename Weight>
-int ReachDetector<Weight>::getReachNode(Lit reachLit) {
+template<typename Weight,typename Graph>
+int ReachDetector<Weight,Graph>::getReachNode(Lit reachLit) {
 	if(var(reachLit)>=first_reach_var && var(reachLit) - first_reach_var<reach_lit_map.size()) {
 		int node = reach_lit_map[var(reachLit) - first_reach_var];
 		return node;
@@ -1914,8 +1914,8 @@ int ReachDetector<Weight>::getReachNode(Lit reachLit) {
 	}
 }
 
-template<typename Weight>
-bool ReachDetector<Weight>::isConnected(Lit reachLit, bool overapprox){
+template<typename Weight,typename Graph>
+bool ReachDetector<Weight,Graph>::isConnected(Lit reachLit, bool overapprox){
 	if(var(reachLit)>=first_reach_var && var(reachLit) - first_reach_var<reach_lit_map.size()) {
 		int node = reach_lit_map[var(reachLit) - first_reach_var];
 		return isConnected(node,overapprox);
@@ -1925,8 +1925,8 @@ bool ReachDetector<Weight>::isConnected(Lit reachLit, bool overapprox){
 	}
 }
 
-template<typename Weight>
-void ReachDetector<Weight>::dbg_sync_reachability() {
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::dbg_sync_reachability() {
 #ifdef DEBUG_GRAPH
 	if (!underapprox_detector)
 		return;
@@ -1947,7 +1947,7 @@ void ReachDetector<Weight>::dbg_sync_reachability() {
 }
 
 /*
- int ReachDetector<Weight>::OptimalWeightEdgeStatus::operator [] (int edge) const {
+ int ReachDetector<Weight,Graph>::OptimalWeightEdgeStatus::operator [] (int edge) const {
  Var v = detector.outer->edge_list[edge].v;
  lbool val = detector.outer->value(v);
  if(val==l_False){
@@ -1959,20 +1959,20 @@ void ReachDetector<Weight>::dbg_sync_reachability() {
  return 1;
  }
  }
- int ReachDetector<Weight>::OptimalWeightEdgeStatus::size()const{
+ int ReachDetector<Weight,Graph>::OptimalWeightEdgeStatus::size()const{
  return detector.outer->edge_list.size();
  }*/
 
-template<typename Weight>
-Lit ReachDetector<Weight>::decide(CRef &decision_reason) {
+template<typename Weight,typename Graph>
+Lit ReachDetector<Weight,Graph>::decide(CRef &decision_reason) {
 	return lit_Undef;
 
 }
 ;
 
 //Return the path (in terms of nodes)
-template<typename Weight>
-bool ReachDetector<Weight>::getModel_Path(int node, std::vector<int> & store_path){
+template<typename Weight,typename Graph>
+bool ReachDetector<Weight,Graph>::getModel_Path(int node, std::vector<int> & store_path){
 	store_path.clear();
 	Reach & d = *underapprox_path_detector;
 	d.update();
@@ -1994,8 +1994,8 @@ bool ReachDetector<Weight>::getModel_Path(int node, std::vector<int> & store_pat
 	return true;
 }
 
-template<typename Weight>
-bool ReachDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path){
+template<typename Weight,typename Graph>
+bool ReachDetector<Weight,Graph>::getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path){
 	store_path.clear();
 	Reach & d = *underapprox_path_detector;
 	d.update();
@@ -2016,14 +2016,20 @@ bool ReachDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & 
 	std::reverse(store_path.begin(),store_path.end());
 	return true;
 }
-template<typename Weight>
-void ReachDetector<Weight>::attachSubHeuristic(Heuristic * h, int to){
+template<typename Weight,typename Graph>
+void ReachDetector<Weight,Graph>::attachSubHeuristic(Heuristic * h, int to){
 	assert(to<reach_heuristics.size() && to>=0 && reach_heuristics[to]);
-	((ReachHeuristic<Weight>*) reach_heuristics[to])->setSubHeuristic(h);
+	((ReachHeuristic<Weight,Graph>*) reach_heuristics[to])->setSubHeuristic(h);
 }
 
 template class Monosat::ReachDetector<int> ;
 template class Monosat::ReachDetector<int64_t> ;
 template class Monosat::ReachDetector<double> ;
+
+template class Monosat::ReachDetector<int, DynamicBackGraph<int>> ;
+template class Monosat::ReachDetector<int64_t, DynamicBackGraph<int64_t>> ;
+template class Monosat::ReachDetector<double, DynamicBackGraph<double>> ;
+
 #include <gmpxx.h>
 template class Monosat::ReachDetector<mpq_class> ;
+template class Monosat::ReachDetector<mpq_class, DynamicBackGraph<mpq_class>> ;

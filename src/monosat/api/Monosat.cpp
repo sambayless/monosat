@@ -1442,6 +1442,24 @@ int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int f
 	G->implementConstraints();
 	return toInt(l);
 }
+int reachesBackward(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to){
+	Var v = newVar(S);
+	Lit l =mkLit(v);
+
+	write_out(S,"reach_backward %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l));
+	G->reachesBackward(from, to, v);
+	G->implementConstraints();
+	return toInt(l);
+}
+int onPath(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int nodeOnPath){
+	Var v = newVar(S);
+	Lit l =mkLit(v);
+
+	write_out(S,"on_path %d %d %d %d %d, %d\n",G->getGraphID(),from,to, nodeOnPath, dimacs(l));
+	G->onPath(from, to,nodeOnPath, v);
+	G->implementConstraints();
+	return toInt(l);
+}
 int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
 	Var v = newVar(S);
 	Lit l =mkLit(v);

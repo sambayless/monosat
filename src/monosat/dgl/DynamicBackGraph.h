@@ -28,13 +28,14 @@
 #include <cstdint>
 #include <sstream>
 #include <cstdio>
+#include "Graph.h"
 #include "DynamicGraph.h"
 
 namespace dgl {
 
 
 /**
- * A thin wrapper around a dynamic graph, which reverses all the edges in that graph.
+ * A thin wrapper around a dynamic graph, which reverses all the edges in the original graph.
  */
 template<typename Weight>
 class DynamicBackGraph final :public  Graph<Weight>{
@@ -47,7 +48,7 @@ private:
 	std::vector<FullEdge> all_back_edges;
 public:
 
-	DynamicBackGraph(DynamicGraph  & base):base(base) {
+	DynamicBackGraph(DynamicGraph<Weight>  & base):base(base) {
 
 	}
 
@@ -64,7 +65,7 @@ public:
     //SLOW!
      bool hasEdge(int from, int to) const  override {return base.hasEdge(to,from);};
     //SLOW! Returns -1 if there is no edge
-     int getEdge(int from, int to) const  override {return base.getEdge(to,from)};
+     int getEdge(int from, int to) const  override {return base.getEdge(to,from);};
 
      bool hasEdgeUndirected(int from, int to) const  override {return base.hasEdgeUndirected(to,from);};
 
@@ -80,7 +81,7 @@ public:
 
      int addEdge(int from, int to, int id , Weight weight=1) override {
      	int edgeID = base.addEdge(to,from,id,weight);
-     	assert(all_back_edges.size()==base.all_edges.size()-1);
+     	assert(all_back_edges.size()==base.nEdgeIDs()-1);
 		 if (all_back_edges.size() <= id)
 			 all_back_edges.resize(id + 1);
 		 all_back_edges[id]= {from,to,id}; //,weight};

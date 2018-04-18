@@ -32,10 +32,10 @@
 
 using namespace dgl;
 
-template<class GraphWeight, class Weight = double, bool undirected = false>
+template<class GraphWeight, typename Graph = DynamicGraph<GraphWeight>, class Weight = double, bool undirected = false>
 class WeightedDijkstra: public Distance<Weight> {
 public:
-	DynamicGraph<GraphWeight> & g;
+	Graph & g;
 	std::vector<Weight> & weights;
 	int last_modification;
 	int last_addition;
@@ -77,7 +77,7 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	WeightedDijkstra(int s, DynamicGraph<GraphWeight> & graph, std::vector<Weight> & weights) :
+	WeightedDijkstra(int s, Graph & graph, std::vector<Weight> & weights) :
 			g(graph), weights(weights), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 			0), source(s), INF(0), q(DistCmp(dist)) {
 
@@ -101,10 +101,10 @@ public:
 	}
 	void updateFast() {
 		stats_fast_updates++;
-		assert(last_deletion == g.deletions);
+		assert(last_deletion == g.nDeletions());
 		num_updates++;
-		last_modification = g.modifications;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_addition = g.nAdditions();
 
 		dist.resize(g.nodes());
 		prev.resize(g.nodes());
@@ -113,9 +113,9 @@ public:
 		}
 
 		q.clear();
-		if (last_history_clear != g.historyclears) {
+		if (last_history_clear != g.nHistoryClears()) {
 			history_qhead = 0;
-			last_history_clear = g.historyclears;
+			last_history_clear = g.nHistoryClears();
 		}
 		//ok, now check if any of the added edges allow for a decrease in distance.
 		for (int i = history_qhead; i < g.historySize(); i++) {
@@ -207,17 +207,17 @@ public:
 		if (local_it == 17513) {
 			int a = 1;
 		}
-		if (last_modification > 0 && g.modifications == last_modification)
+		if (last_modification > 0 && g.getCurrentHistory() == last_modification)
 			return;
 		assert(weights.size() >= g.edges());
 		/*		while(weight.size()<=g.nodes()){
 		 weight.push_back(1);
 		 }*/
-		/*if (last_addition==g.additions && last_modification>0){
+		/*if (last_addition==g.nAdditions() && last_modification>0){
 		 //if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
-		 if(last_history_clear!=g.historyclears){
+		 if(last_history_clear!=g.nHistoryClears()){
 		 history_qhead=0;
-		 last_history_clear=g.historyclears;
+		 last_history_clear=g.nHistoryClears();
 		 }
 		 bool need_recompute = false;
 		 //ok, now check if any of the added edges allow for a decrease in distance.
@@ -235,12 +235,12 @@ public:
 		 if(!need_recompute){
 		 //none of these deletions touched any shortest paths, so we can ignore them.
 
-		 last_modification=g.modifications;
-		 last_deletion = g.deletions;
-		 last_addition=g.additions;
+		 last_modification=g.getCurrentHistory();
+		 last_deletion = g.nDeletions();
+		 last_addition=g.nAdditions();
 
 		 history_qhead=g.history.size();
-		 last_history_clear=g.historyclears;
+		 last_history_clear=g.nHistoryClears();
 
 		 assert(dbg_uptodate());
 		 stats_skip_deletes++;
@@ -248,10 +248,10 @@ public:
 		 }
 		 }*/
 
-		/*if(last_deletion==g.deletions && last_modification>0  ){
+		/*if(last_deletion==g.nDeletions() && last_modification>0  ){
 		 //Don't need to do anything at all.
-		 if(last_addition==g.additions){
-		 last_modification = g.modifications;
+		 if(last_addition==g.nAdditions()){
+		 last_modification = g.getCurrentHistory();
 		 stats_skipped_updates++;
 		 assert(dbg_uptodate());
 		 return;
@@ -313,12 +313,12 @@ public:
 		//}
 		assert(dbg_uptodate());
 		num_updates++;
-		last_modification = g.modifications;
-		last_deletion = g.deletions;
-		last_addition = g.additions;
+		last_modification = g.getCurrentHistory();
+		last_deletion = g.nDeletions();
+		last_addition = g.nAdditions();
 
 		history_qhead = g.historySize();
-		last_history_clear = g.historyclears;
+		last_history_clear = g.nHistoryClears();
 
 		;
 	}
@@ -351,11 +351,11 @@ public:
 		return t < dist.size() && dist[t] < INF;
 	}
 	bool connected_unchecked(int t) {
-		assert(last_modification == g.modifications);
+		assert(last_modification == g.getCurrentHistory());
 		return connected_unsafe(t);
 	}
 	bool connected(int t) {
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 
 		assert(dbg_uptodate());
@@ -363,7 +363,7 @@ public:
 		return dist[t] < INF;
 	}
 	Weight & distance(int t) {
-		if (last_modification != g.modifications)
+		if (last_modification != g.getCurrentHistory())
 			update();
 		return dist[t];
 	}

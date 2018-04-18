@@ -31,11 +31,11 @@
 
 namespace dgl {
 
-template<typename Weight, class Status = AllPairs::NullStatus>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status = AllPairs::NullStatus>
 class FloydWarshall: public AllPairs {
 public:
 	
-	Graph<Weight> & g;
+	Graph  & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -67,7 +67,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	FloydWarshall(Graph<Weight> & graph, Status & _status = AllPairs::nullStatus, int _reportPolarity = 0) :
+	FloydWarshall(Graph & graph, Status & _status = AllPairs::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), INF(0), reportPolarity(0) {
 		

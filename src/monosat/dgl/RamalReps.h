@@ -242,7 +242,7 @@ public:
 				 }*/
 			}
 		}
-        Dijkstra<Weight> d2(source,g);
+        Dijkstra<Weight,Graph> d2(source,g);
 		for (int u = 0; u < g.nodes(); u++) {
 			Weight & d = dist[u];
             if(d2.connected(u)) {
@@ -1030,7 +1030,7 @@ public:
 			return true;
 		update();
 		dbg_delta();
-		Dijkstra<Weight> d(source,g);
+		Dijkstra<Weight,Graph> d(source,g);
 
 		for(int i = 0;i<g.nodes();i++){
 			Weight dis = dist[i];
@@ -1055,7 +1055,7 @@ public:
 		if(last_modification<0 || has_zero_weights)
 		 return true;
 		 dbg_delta();
-		 Dijkstra<Weight> d(source,g);
+		 Dijkstra<Weight,Graph> d(source,g);
 
 		 for(int i = 0;i<g.nodes();i++){
 		 Weight dis = dist[i];
@@ -1974,7 +1974,7 @@ public:
 	if(last_modification<0)
 	return true;
 		dbg_delta();
-		UnweightedDijkstra<Weight> d(source,g);
+		UnweightedDijkstra<Weight,Graph> d(source,g);
 
 		for(int i = 0;i<g.nodes();i++) {
 			int dis = dist[i];

@@ -37,12 +37,12 @@ using namespace dgl;
 namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
-template<typename Weight>
+template<typename Weight,typename Graph = DynamicGraph<Weight>>
 class AllPairsDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
-	DynamicGraph<Weight>  &g_under;
-	DynamicGraph<Weight>  &g_over;
+	Graph  &g_under;
+	Graph  &g_over;
 	int within = 0;
 
 	double rnd_seed;
@@ -148,7 +148,7 @@ public:
 	bool checkSatisfied() override;
 	Lit decide(CRef &decision_reason) override;
 	void addLit(int from, int to, Var reach_var, int within_steps = -1);
-	AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
+	AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &_g, Graph  &_antig,
 			double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
     ~AllPairsDetector() override {
 		if (underapprox_path_detector && underapprox_path_detector!=overapprox_reach_detector){

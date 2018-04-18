@@ -44,12 +44,12 @@ using namespace dgl;
 namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
-template<typename Weight>
+template<typename Weight,typename Graph = DynamicGraph<Weight>>
 class ReachDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
-	DynamicGraph<Weight> &g_under;
-	DynamicGraph<Weight> &g_over;
+	Graph &g_under;
+	Graph &g_over;
 	DynamicGraph<Weight> cutgraph;
 	int within;
 	int source;
@@ -327,8 +327,8 @@ public:
 	void preprocess() override;
 	void dbg_sync_reachability();
 
-	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig,
-				  int _source, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL),chokepoint_status(*this),chokepoint(chokepoint_status, _antig,source){}
+	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &g_under, Graph  &g_over,
+				  int _source, double seed = 1);
 	~ReachDetector() override {
 
 		if (chokepoint_detector)
@@ -376,7 +376,7 @@ public:
 		return "Reachability Detector";
 	}
 
-	bool dbg_cut(std::vector<MaxFlowEdge> & cut, DynamicGraph<Weight>  & graph, int source, int node) {
+	bool dbg_cut(std::vector<MaxFlowEdge> & cut, Graph  & graph, int source, int node) {
 #ifdef DEBUG_GRAPH
 
 		DynamicGraph<int>  t;

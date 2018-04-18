@@ -68,7 +68,7 @@ DistanceDetector<Weight>::DistanceDetector(int _detectorID, GraphTheorySolver<We
 	
 	if (opt_use_random_path_for_decisions) {
 		rnd_weight.clear();
-		rnd_path = new WeightedDijkstra<Weight,double>(from, _antig, rnd_weight);
+		rnd_path = new WeightedDijkstra<Weight,DynamicGraph<Weight>,double>(from, _antig, rnd_weight);
 		for (int i = 0; i < outer->edge_list.size(); i++) {
 			double w = drand(rnd_seed);
 			

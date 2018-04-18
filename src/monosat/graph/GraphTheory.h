@@ -33,6 +33,7 @@
 #include "monosat/mtl/Map.h"
 #include "monosat/dgl/MaxFlow.h"
 #include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/DynamicBackGraph.h"
 #include "monosat/dgl/EdmondsKarp.h"
 #include "monosat/dgl/EdmondsKarpAdj.h"
 #include "monosat/dgl/EdmondsKarpDynamic.h"
@@ -69,7 +70,6 @@
 using namespace dgl;
 namespace Monosat {
 
-
 template<typename Weight>
 class GraphTheorySolver: public Theory, public TheorySolver, public BVTheory{
 public:
@@ -94,6 +94,7 @@ public:
 		int to;
 		int distance;
 		Var reach_var;
+		bool backward;
 	};
 
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
@@ -128,6 +129,9 @@ public:
 
 	DynamicGraph<Weight> g_under;
 	DynamicGraph<Weight> g_over;
+	//Graphs with reversed edges
+	DynamicBackGraph<Weight> g_under_back;
+	DynamicBackGraph<Weight> g_over_back;
 	bool using_neg_weights = false;
 	DynamicGraph<Weight> g_under_weights_over;
 	DynamicGraph<Weight> g_over_weights_under;
@@ -516,12 +520,14 @@ public:
 	vec<ReachInfo> weighted_dist_info;
 	vec<ReachInfo> dist_info;
 	vec<ReachInfo> reach_info;
+    vec<ReachInfo> backward_reach_info;
 	vec<ReachInfo> connect_info;
 public:
 	vec<Theory*> theories;
 	vec<bool> satisfied_detectors;
 	vec<Detector*> detectors;
 	vec<ReachDetector<Weight>*> reach_detectors;
+    vec<ReachDetector<Weight,DynamicBackGraph<Weight>>*> reach_back_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
 	vec<WeightedDistanceDetector<Weight>*> weighted_distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
@@ -687,7 +693,7 @@ public:
         return theories;
     }
 	GraphTheorySolver(Solver * S_) :
-			S(S_), cutStatus(*this), propCutStatus(*this){
+			S(S_), cutStatus(*this), propCutStatus(*this),g_under_back(g_under),g_over_back(g_over){
 
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
@@ -3178,7 +3184,7 @@ public:
 /*	Weight getWeight(int edgeID) {
 		return edge_weights[edgeID];
 	}*/
-	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps) {
+	void reachesWithinSteps(int from, int to, Var reach_var, int within_steps, bool backward) {
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();
 		}
@@ -3227,6 +3233,10 @@ public:
 				g_over_weights_under.setEdgeWeight(i, g_under.getWeight(i));
 			}
 		}
+	}
+
+	void implementPathConstraint(int from, int to, int nodeOnPath, Var onPath){
+	    //to do
 	}
 
 	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance, bool strictComparison) {
@@ -3354,13 +3364,13 @@ public:
 		if (opt_allpairs_percentage >= 1) {
 			for (int i = 0; i < unimplemented_reachability_constraints.size(); i++) {
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
-				reaches_private(c.from, c.to, c.reach_var, c.distance);
+				reaches_private(c.from, c.to, c.reach_var, c.distance,c.backward);
 			}
 			
 		} else if (opt_allpairs_percentage == 0) {
 			for (int i = 0; i < unimplemented_reachability_constraints.size(); i++) {
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
-				allpairs(c.from, c.to, c.reach_var, c.distance);
+				allpairs(c.from, c.to, c.reach_var, c.distance,c.backward);
 			}
 		} else {
 			{
@@ -3384,9 +3394,9 @@ public:
 				for (int i = 0; i < unimplemented_reachability_constraints.size(); i++) {
 					ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 					if (frac >= opt_allpairs_percentage)
-						allpairs(c.from, c.to, c.reach_var, c.distance);
+						allpairs(c.from, c.to, c.reach_var, c.distance,c.backward);
 					else
-						reaches_private(c.from, c.to, c.reach_var, c.distance);
+						reaches_private(c.from, c.to, c.reach_var, c.distance,c.backward);
 				}
 			}
 		}
@@ -3411,7 +3421,7 @@ public:
 		
 	}
 	
-	void allpairs(int from, int to, Var reach_var, int within_steps = -1) {
+	void allpairs(int from, int to, Var reach_var, int within_steps = -1, bool backward=false) {
 		//for now, reachesWithinSteps to be called instead
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();
@@ -3419,68 +3429,115 @@ public:
 		assert(from < g_under.nodes());
 		if (within_steps > g_under.nodes())
 			within_steps = -1;
-		
-		if (reach_info[from].source < 0) {
-			
-			addDetector((new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed))));
-			//reach_detectors.push(reach_detectors.last());
-			
-			assert(detectors.last()->getID() == detectors.size() - 1);
-			
-			//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
-			//reach_detectors.last()->source=from;
-			
-			reach_info[from].source = from;
-			reach_info[from].detector = detectors.last();
-			
-			//reach_detectors.last()->within=within_steps;
-			
+		if(!backward) {
+			if (reach_info[from].source < 0) {
+
+				addDetector((new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed))));
+				//reach_detectors.push(reach_detectors.last());
+
+				assert(detectors.last()->getID() == detectors.size() - 1);
+
+				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
+				//reach_detectors.last()->source=from;
+
+				reach_info[from].source = from;
+				reach_info[from].detector = detectors.last();
+
+				//reach_detectors.last()->within=within_steps;
+
+			}
+
+			AllPairsDetector<Weight> *d = (AllPairsDetector<Weight> *) reach_info[from].detector;
+			assert(d);
+
+			d->addLit(from, to, reach_var, within_steps);
+		}else{
+			if (backward_reach_info[from].source < 0) {
+
+				addDetector((new AllPairsDetector<Weight,DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back, g_over_back, drand(rnd_seed))));
+				//reach_detectors.push(reach_detectors.last());
+
+				assert(detectors.last()->getID() == detectors.size() - 1);
+
+				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
+				//reach_detectors.last()->source=from;
+
+				backward_reach_info[from].source = from;
+				backward_reach_info[from].detector = detectors.last();
+
+				//reach_detectors.last()->within=within_steps;
+
+			}
+
+			AllPairsDetector<Weight,DynamicBackGraph<Weight>> *d = (AllPairsDetector<Weight,DynamicBackGraph<Weight>> *) reach_info[from].detector;
+			assert(d);
+
+			d->addLit(from, to, reach_var, within_steps);
 		}
-		
-		AllPairsDetector<Weight> * d = (AllPairsDetector<Weight>*) reach_info[from].detector;
-		assert(d);
-		
-		d->addLit(from, to, reach_var, within_steps);
-		
 	}
 	
-	void reaches_private(int from, int to, Var reach_var, int within_steps = -1) {
+	void reaches_private(int from, int to, Var reach_var, int within_steps, bool backward) {
 		//for now, reachesWithinSteps to be called instead
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();
 		}
 		if (within_steps >= 0 || opt_force_distance_solver) {
-			reachesWithinSteps(from, to, reach_var, within_steps);
+			reachesWithinSteps(from, to, reach_var, within_steps, backward);
 			return;
 		}
 		
 		assert(from < g_under.nodes());
 		if (within_steps > g_under.nodes())
 			within_steps = -1;
-		
-		if (reach_info[from].source < 0) {
-			
-			ReachDetector<Weight>*rd = new ReachDetector<Weight>(detectors.size(), this, g_under, g_over, from,
-					drand(rnd_seed));
-			addDetector(rd);
-			reach_detectors.push(rd);
-			
-			assert(detectors.last()->getID() == detectors.size() - 1);
-			
-			//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
-			//reach_detectors.last()->source=from;
-			
-			reach_info[from].source = from;
-			reach_info[from].detector = detectors.last();
-			
-			//reach_detectors.last()->within=within_steps;
-			
+		if(!backward) {
+			if (reach_info[from].source < 0) {
+
+				ReachDetector<Weight> *rd = new ReachDetector<Weight>(detectors.size(), this, g_under, g_over, from,
+																	  drand(rnd_seed));
+				addDetector(rd);
+				reach_detectors.push(rd);
+
+				assert(detectors.last()->getID() == detectors.size() - 1);
+
+				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
+				//reach_detectors.last()->source=from;
+
+				reach_info[from].source = from;
+				reach_info[from].detector = detectors.last();
+
+				//reach_detectors.last()->within=within_steps;
+
+			}
+
+			ReachDetector<Weight> *d = (ReachDetector<Weight> *) reach_info[from].detector;
+			assert(d);
+			assert(within_steps == -1);
+			d->addLit(from, to, reach_var);
+		}else{
+			if (backward_reach_info[from].source < 0) {
+
+				ReachDetector<Weight,DynamicBackGraph<Weight>> *rd = new ReachDetector<Weight,DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back, g_over_back, from,
+																	  drand(rnd_seed));
+				addDetector(rd);
+				reach_back_detectors.push(rd);
+
+				assert(detectors.last()->getID() == detectors.size() - 1);
+
+				//reach_detectors.last()->negative_dist_detector = new Dijkstra(from,antig);
+				//reach_detectors.last()->source=from;
+
+				backward_reach_info[from].source = from;
+				backward_reach_info[from].detector = detectors.last();
+
+				//reach_detectors.last()->within=within_steps;
+
+			}
+
+			ReachDetector<Weight,DynamicBackGraph<Weight>> *d = (ReachDetector<Weight,DynamicBackGraph<Weight>> *) backward_reach_info[from].detector;
+			assert(d);
+			assert(within_steps == -1);
+			d->addLit(from, to, reach_var);
 		}
-		
-		ReachDetector<Weight> * d = (ReachDetector<Weight>*) reach_info[from].detector;
-		assert(d);
-		assert(within_steps == -1);
-		d->addLit(from, to, reach_var);
 		
 	}
 	
@@ -3489,6 +3546,16 @@ public:
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
+
+    void reachesBackward(int from, int to, Var reach_var, int within_steps = -1) {
+        unimplemented_reachability_constraints.push( { from, to, within_steps, reach_var,true});
+    }
+
+    //True iff there exists a path from 'from' to 'to' that crosses the node 'nodeOnPath'
+    void onPath(int from, int to, int nodeOnPath, Var on_path_var) {
+        reaches(from,nodeOnPath,on_path_var);
+        reachesBackward(to,nodeOnPath,on_path_var);
+    }
 	void distance(int from, int to, Var reach_var,  Weight distance_lt,bool inclusive) {
 		unimplemented_distance_constraints.push( { from, to, distance_lt, reach_var,!inclusive });
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,

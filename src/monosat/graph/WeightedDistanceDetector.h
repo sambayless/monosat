@@ -161,7 +161,7 @@ public:
 
 	std::vector<double> rnd_weight;
 
-	WeightedDijkstra<Weight,double> * rnd_path;
+	WeightedDijkstra<Weight,DynamicGraph<Weight>,double> * rnd_path;
 
 
 

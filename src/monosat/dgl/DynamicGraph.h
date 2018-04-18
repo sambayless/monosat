@@ -31,8 +31,7 @@
 #include "Graph.h"
 
 namespace dgl {
-template<typename Weight>
-class DynamicBackGraph;
+
 /**
  * A dynamic graph.
  * It supports efficiently recomputing graph properties as edges are added and removed ('enabled' and 'disabled').
@@ -50,8 +49,8 @@ template<typename Weight>
 class DynamicGraph final:public Graph<Weight> {
 	//Note: It is important that DynamicGraph is 'final', as
 	//this may enable devirtualization of function calls in some cases.
+    //For the same reason, most DGL classes accept the graph type as a template parameter, rather than just expecting a Graph<>.
 public:
-	friend DynamicBackGraph<Weight>;
 	typedef typename Graph<Weight>::Edge Edge;
 	typedef typename Graph<Weight>::FullEdge FullEdge;
 	typedef typename Graph<Weight>::EdgeChange EdgeChange;
