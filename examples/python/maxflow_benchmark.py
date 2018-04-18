@@ -39,7 +39,7 @@ if args.seed is None:
     args.seed = random.randint(1,1000000)
 print("Random seed: %d"%(args.seed))
 random.seed(args.seed)
-Monosat().init("-verb=1 -rnd-seed=%d -theory-order-vsids -vsids-both %s   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf "%(args.seed, "-decide-theories" if args.decide_theories else "-no-decide-theories" ))
+Monosat().newSolver("-verb=1 -rnd-seed=%d -theory-order-vsids -vsids-both %s   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf "%(args.seed, "-decide-theories" if args.decide_theories else "-no-decide-theories" ))
 g= Graph()
 
 source = g.addNode()

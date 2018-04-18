@@ -8,8 +8,8 @@ import random
 import sys
 
 def run(seed,filename):
+    Monosat().newSolver(filename)
     if filename is not None:
-        Monosat().setOutputFile(filename)
         print("Writing to %s"%(filename))
     
     

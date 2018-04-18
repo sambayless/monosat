@@ -56,7 +56,7 @@ def verbose(s, level):
 
 print( "GRID_SIZE: %d" % GRID_SIZE )
 
-Monosat().init("-no-decide-theories")
+Monosat().newSolver("-no-decide-theories")
 
 # the graph representing the terrain grid
 graph = Graph()

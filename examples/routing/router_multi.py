@@ -66,7 +66,7 @@ def route_multi(filename, monosat_args, maxflow_enforcement_level, flowgraph_sep
     if (len(monosat_args) > 0):
         args = " ".join(monosat_args)
         print("Monosat args: " + args)
-        Monosat().init(args)
+        Monosat().newSolver(args)
 
     if draw_solution:
         #the dicts here are only used to print the solution at the end. Disable for benchmarking.

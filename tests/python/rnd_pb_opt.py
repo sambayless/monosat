@@ -9,21 +9,18 @@ import random
 import sys
 import itertools
 
-Monosat().init("") #-debug-bounds
+filename=None
 if __name__ == "__main__":
     seed = random.randint(1,100000)
-    filename=None
-
     if len(sys.argv)>1:
         filename=sys.argv[1]
     if len(sys.argv)>2:
         seed=int(sys.argv[2])
 
+Monosat().newSolver(filename)
 
 print("begin encode");
-#seed = random.randint(1,100000) # 3538
-if filename is not None:
-    Monosat().setOutputFile(filename)
+
 random.seed(seed)
 print("RandomSeed=" + str(seed))
 #

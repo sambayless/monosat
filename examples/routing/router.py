@@ -51,7 +51,7 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
     if(len(monosat_args)>0):
         args = " ".join(monosat_args)
         print("MonoSAT args: " + args)
-        Monosat().init(args)
+        Monosat().newSolver(args)
 
     g = Graph()
 

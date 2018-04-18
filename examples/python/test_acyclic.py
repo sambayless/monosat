@@ -12,8 +12,8 @@ random.seed(seed)
 print("RandomSeed=" + str(seed))
 
 size =6
-filename="/tmp/test.gnf"
-#Monosat().init("-decide-graph-bv -no-decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf ")
+
+#Monosat().newSolver("-decide-graph-bv -no-decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf ")
 
 
 

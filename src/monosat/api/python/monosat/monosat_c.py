@@ -136,7 +136,7 @@ class Ineq(Enum):
     GT=2
 
 class Solver():
-    def __init__(self,monosat_c,arguments=None):
+    def __init__(self,monosat_c,arguments=None,output_file=None):
         self.elapsed_time=0
         if arguments is None:
             arguments=[]
@@ -144,17 +144,12 @@ class Solver():
             #split this up by whitespace
             arguments=arguments.split()
         self.arguments=arguments
-        #arguments=["monosat"]+arguments
         arr = "monosat " + " ".join(arguments)
-        #for i,arg in enumerate(arguments):
-        #    arr[i]=(bytes(arg, 'utf-8'))
-
-        #In the future, allow multiple solvers to be instantiated...
-        self.comments=[]
 
         self._ptr = monosat_c.newSolver_arg(bytes(arr, 'utf-8'))
+        if output_file is not None and len(output_file)>0:
+            monosat_c.setOutputFile(self._ptr,c_char_p(output_file.encode('ascii')))
         self.bvtheory=  monosat_c.initBVTheory(self._ptr)
-        self.output=None
         self.arguments=None
         self.symbolmap=dict()  
         self.graphs = []
@@ -497,10 +492,10 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.graph_setAssignEdgesToWeight.argtypes=[c_solver_p,c_graph_p,c_long]
 
 
-
+        self.solver=None
         self.newSolver()
         #For many (but not all) instances, the following settings may give good performance: 
-        #self.init("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
+        #self.newSolver("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
 
     def getGID(self,graph):
         return self.solver.graph_ids[graph]
@@ -518,47 +513,21 @@ class Monosat(metaclass=Singleton):
     def setSolver(self,solver):
         self.solver=solver
     
-    #Convenience method to re-initialize monosat with new solver
-    def init(self,arguments=None):
-        if self.solver is not None:
-            self.solver.delete()        
-        return self.newSolver(arguments)
-    
+
     def getVersion(self):
         return self.monosat_c.getVersion()
 
-    #Until a better system is created, this can be used to re-initialize Monosat with a new configuration.
     def newSolver(self,arguments=None,output_file=None):
-        self.solver = Solver(self.monosat_c,arguments)
-        if output_file is not None:
-            self.monosat_c.setOutputFile(self.solver._ptr,c_char_p(output_file.encode('ascii')))
+        if self.solver is not None:
+            self.solver.delete()
+        self.solver = Solver(self.monosat_c,arguments,output_file)
         self.solver._true = self.getTrue()
         return self.solver
 
 
     def readGNF(self, filename):
         self.monosat_c.readGNF(self.solver._ptr,c_char_p(filename.encode('ascii')))
-    
-    def getOutputFile(self):
-        return self.solver.output
-    
-    #def setOutputFile(self, filename):
-    #    self.monosat_c.setOutputFile(self.solver._ptr,c_char_p(filename.encode('ascii')))
-    # self.solver.output=file
-    # if file is not None:#Otherwise, this unit clause will have been skipped in the output file
-    #     if self.solver.arguments is not None:
-    #         self._echoOutput("c monosat " + " ".join(self.solver.arguments) +"\n")
-    #     self.addUnitClause(self.solver._true)
 
-    def _echoOutput(self,line):
-        if self.solver.output:
-            self.solver.output.write(line)
-    
-    def comment(self,c):
-        self.solver.has_comments=True
-        self.solver.comments.append(c)
-        if self.solver.output:
-            self._echoOutput("c " + c +"\n")           
 
     def getEmptyIntArray(self,length):                 
         if length>len(self._int_array):
@@ -656,9 +625,6 @@ class Monosat(metaclass=Singleton):
 
         lp = self.getIntArray(assumptions)
 
-        if self.solver.output:
-            self._echoOutput("solve" + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
-            self.solver.output.flush()
         return self.monosat_c.solveAssumptions(self.solver._ptr,lp,len(assumptions))
         
     def solveLimited(self,assumptions=None):
@@ -667,11 +633,7 @@ class Monosat(metaclass=Singleton):
             assumptions=[]
             
         lp = self.getIntArray(assumptions)
-        
 
-        if self.solver.output:
-            self._echoOutput("solve " + " ".join((str(dimacs(c)) for c in assumptions))+"\n")
-            self.solver.output.flush()
         r= self.monosat_c.solveAssumptionsLimited(self.solver._ptr,lp,len(assumptions))
 
         if r==0:
@@ -683,27 +645,18 @@ class Monosat(metaclass=Singleton):
             return None  
     
     def backtrack(self):
-        if self.solver.output:
-            self.solver.output.flush()
         return self.monosat_c.backtrack(self.solver._ptr)        
     
     def addUnitClause(self,clause):
 
         if isinstance(clause, int ):
-            if self.solver.output:
-                self._echoOutput("%d 0\n"%(dimacs(clause)))            
             self.monosat_c.addUnitClause(self.solver._ptr,clause)
         elif len(clause)==1:
-            if self.solver.output:     
-                self._echoOutput("%d 0\n"%(dimacs(clause[0])))       
             self.monosat_c.addUnitClause(self.solver._ptr,clause[0])
         else:
             assert(False)
 
     def addBinaryClause(self,l0,l1):
-
-        if self.solver.output:       
-            self._echoOutput(" ".join((str(dimacs(c)) for c in (l0,l1)))+" 0\n")    
         self.monosat_c.addBinaryClause(self.solver._ptr,l0,l1)
 
     #clauses should be a list of pairs of literals, each of which will be added as a binary clause
@@ -720,9 +673,6 @@ class Monosat(metaclass=Singleton):
 
 
     def addTertiaryClause(self,l0,l1,l2):
-
-        if self.solver.output:   
-            self._echoOutput(" ".join((str(dimacs(c)) for c in (l0,l1,l2)))+" 0\n")      
         self.monosat_c.addTertiaryClause(self.solver._ptr,l0,l1,l2)  
 
     
@@ -735,27 +685,17 @@ class Monosat(metaclass=Singleton):
             self.addBinaryClause(clause[0],clause[1])            
         elif len(clause)==3:            
             self.addTertiaryClause(clause[0],clause[1],clause[2])  
-        else:         
-
-            if self.solver.output:
-                self._echoOutput(" ".join((str(dimacs(c)) for c in clause))+" 0\n")
+        else:
             lp = self.getIntArray(clause)
             self.monosat_c.addClause(self.solver._ptr,lp,len(clause))
 
     def clearOptimizationObjectives(self):
-        if self.solver.output:
-            self._echoOutput("clear_opt\n")
         self.monosat_c.clearOptimizationObjectives(self.solver._ptr)
 
     def maximizeBV(self, bvID):
-        if self.solver.output:
-            self._echoOutput("maximize bv %d\n"%(bvID))
-
         self.monosat_c.maximizeBV(self.solver._ptr, self.solver.bvtheory, c_int(bvID))
 
     def minimizeBV(self, bvID):
-        if self.solver.output:
-            self._echoOutput("minimize bv %d\n"%(bvID))
         self.monosat_c.minimizeBV(self.solver._ptr, self.solver.bvtheory, c_int(bvID))
 
     def maximizeLits(self, lits):
@@ -850,9 +790,7 @@ class Monosat(metaclass=Singleton):
                 self.addBinaryClause(self.Not(l), l2)
                 self.addBinaryClause(self.Not(l2), l)
                 newclause.append(l2)
-                
-        if self.solver.output:
-            self._echoOutput("amo " + " ".join((str(dimacs(c)) for c in newclause))+" 0\n")
+
         lp = self.getIntArray(newclause)        
         for i in range(len(newclause)):
             l = lp[i]
@@ -881,8 +819,6 @@ class Monosat(metaclass=Singleton):
         lp2 = self.getIntArray2(coefs)
         crhs = c_int(rhs)
         assert(len(lits) == len(coefs))
-        if self.solver.output:
-            self._echoOutput("pb " + self.pbOpToStr(op) + " %d %d "%(rhs, len(lits))   + " ".join((str(dimacs(c)) for c in lits)) + " " + str(len(lits)) + " " +  " ".join((str(w) for w in coefs)))
         if op==Ineq.LT:
             self.monosat_c.assertPB_lt(self.solver._ptr,crhs,len(lits),lp,lp2)
         elif op==Ineq.LEQ:
@@ -905,15 +841,11 @@ class Monosat(metaclass=Singleton):
     def newBitvector_anon(self,width):
         self.backtrack()
         bvID = self.monosat_c.newBitvector_anon(self.solver._ptr,self.solver.bvtheory, width)
-        if self.solver.output:
-            self._echoOutput("bv anon %d %d"%(bvID, width)+"\n" )   
         return bvID        
     
     def newBitvector_const(self, width,val):
         self.backtrack()
         bvID = self.monosat_c.newBitvector_const(self.solver._ptr,self.solver.bvtheory, width, c_long(val))
-        if self.solver.output:
-            self._echoOutput("bv const %d %d "%(bvID, width) + str((val)) +"\n" )   
         return bvID
     
     
@@ -925,8 +857,6 @@ class Monosat(metaclass=Singleton):
         arr = self.getIntArray(bits)
         bvID = self.monosat_c.newBitvector(self.solver._ptr,self.solver.bvtheory,arr,c_int(len(bits)))
         self._num_bvs=bvID+1
-        if self.solver.output:       
-            self._echoOutput("bv %d %d "%(bvID, len(bits)) + " ".join((str(l+1) for l in bits)) +"\n" )   
         return bvID
     
     def getTrue(self):
@@ -940,172 +870,113 @@ class Monosat(metaclass=Singleton):
     def newBVComparison_const_lt(self, bvID, val):
         self.backtrack()
         l = self.monosat_c.newBVComparison_const_lt(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_long(val))
-        if self.solver.output:
-            self._echoOutput("bv const < %d %d %d\n"%(dimacs(l),bvID, val))
         return l
         
     def newBVComparison_bv_lt(self, bvID1, bvID2):
         self.backtrack()
         l= self.monosat_c.newBVComparison_bv_lt(self.solver._ptr, self.solver.bvtheory, c_bvID(bvID1), c_bvID(bvID2))
-        if self.solver.output:
-            self._echoOutput("bv < %d %d %d\n"%(dimacs(l),bvID1,bvID2))
         return l
 
     def newBVComparison_const_leq(self, bvID, val):
         self.backtrack()
         l= self.monosat_c.newBVComparison_const_leq(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_long(val))
-        if self.solver.output:
-            self._echoOutput("bv const <= %d %d %d\n"%(dimacs(l),bvID, val))
         return l
     
     def newBVComparison_bv_leq(self, bvID1, bvID2):
         self.backtrack()
         l= self.monosat_c.newBVComparison_bv_leq(self.solver._ptr, self.solver.bvtheory, c_bvID(bvID1), c_bvID(bvID2))
-        if self.solver.output:
-            self._echoOutput("bv <= %d %d %d\n"%(dimacs(l),bvID1,bvID2))
         return l
     
     def newBVComparison_const_gt(self, bvID, val):
         self.backtrack()
         l= self.monosat_c.newBVComparison_const_gt(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_long(val))
-        if self.solver.output:
-            self._echoOutput("bv const > %d %d %d\n"%(dimacs(l),bvID, val))
         return l
     
     def newBVComparison_bv_gt(self, bvID1, bvID2):
         self.backtrack()
         l= self.monosat_c.newBVComparison_bv_gt(self.solver._ptr, self.solver.bvtheory, c_bvID(bvID1), c_bvID(bvID2))
-        if self.solver.output:
-            self._echoOutput("bv > %d %d %d\n"%(dimacs(l),bvID1,bvID2))
         return l
     
     def newBVComparison_const_geq(self, bvID, val):
         self.backtrack()
         l= self.monosat_c.newBVComparison_const_geq(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_long(val))
-        if self.solver.output:
-            self._echoOutput("bv const >= %d %d %d\n"%(dimacs(l),bvID, val))
         return l
     
     def newBVComparison_bv_geq(self, bvID1, bvID2):
         self.backtrack()
         l= self.monosat_c.newBVComparison_bv_geq(self.solver._ptr, self.solver.bvtheory, c_bvID(bvID1), c_bvID(bvID2))
-        if self.solver.output:
-            self._echoOutput("bv >= %d %d %d\n"%(dimacs(l),bvID1,bvID2))
         return l
         
     def bv_addition(self, aID,bID, resultID):
         self.backtrack()
         self.monosat_c.bv_addition(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID), c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv + %d %d %d\n"%(resultID,aID,bID))
 
     def bv_subtraction(self, aID,bID, resultID):
         self.backtrack()
         self.monosat_c.bv_subtraction(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID), c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv - %d %d %d\n"%(resultID,aID,bID))
 
     def bv_multiply(self, aID,bID, resultID):
         self.backtrack()
         self.monosat_c.bv_multiply(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID), c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv * %d %d %d\n"%(resultID,aID,bID))
 
     def bv_divide(self, aID,bID, resultID):
         self.backtrack()
         self.monosat_c.bv_divide(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID), c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv / %d %d %d\n"%(resultID,aID,bID))
 
     def bv_ite(self, condition_lit, thnID,elsID, resultID):
         self.backtrack()
         self.monosat_c.bv_ite(self.solver._ptr, self.solver.bvtheory,condition_lit, c_bvID(thnID), c_bvID(elsID), c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv ite %d %d %d %d\n"%(dimacs(condition_lit),thnID,elsID,resultID))
     
     def bv_min(self, args, resultID):
         self.backtrack()        
         lp = self.getIntArray(args)                
         self.monosat_c.bv_min(self.solver._ptr, self.solver.bvtheory,lp, len(args), c_bvID(resultID))
-        if self.solver.output:            
-            argstr = " ".join((str(a) for a in args))
-            self._echoOutput("bv min %d %d %s\n"%(resultID,len(args),argstr))
 
     def bv_max(self, args, resultID):
         self.backtrack()        
         lp = self.getIntArray(args)                
         self.monosat_c.bv_max(self.solver._ptr, self.solver.bvtheory, lp,len(args), c_bvID(resultID))
-        if self.solver.output:            
-            argstr = " ".join((str(a) for a in args))
-            self._echoOutput("bv max %d %d %s\n"%(resultID,len(args),argstr))
-
     
     def bv_not(self, aID,resultID):
         self.backtrack()
         self.monosat_c.bv_not(self.solver._ptr, self.solver.bvtheory, c_bvID(aID),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv not %d %d\n"%(aID,resultID))    
     
     def bv_and(self, aID,bID,resultID):
         self.backtrack()
         self.monosat_c.bv_and(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv and %d %d %d \n"%(aID,bID,resultID))
-        
     
     def bv_nand(self, aID,bID,resultID):
         self.backtrack()
         self.monosat_c.bv_nand(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv nand %d %d %d \n"%(aID,bID,resultID))
-     
     
     def bv_or(self, aID,bID,resultID):
         self.backtrack()
         self.monosat_c.bv_or(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv or %d %d %d \n"%(aID,bID,resultID))
- 
     
     def bv_nor(self, aID,bID,resultID):
         self.backtrack()
         self.monosat_c.bv_nor(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv nor %d %d %d \n"%(aID,bID,resultID))
 
-        
     def bv_xor(self, aID,bID,resultID):
         self.backtrack()
         self.monosat_c.bv_xor(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv xor %d %d %d \n"%(aID,bID,resultID))
 
-    
     def bv_xnor(self, aID,bID,resultID):
         self.backtrack()
         self.monosat_c.bv_xnor(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv xnor %d %d %d \n"%(aID,bID,resultID))
-
 
     def bv_concat(self, aID,bID,resultID):
         self.backtrack()
         self.monosat_c.bv_concat(self.solver._ptr, self.solver.bvtheory, c_bvID(aID), c_bvID(bID),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv concat %d %d %d\n"%(aID,bID,resultID))
 
     def bv_bitblast(self,bvID):
         self.backtrack();
         self.monosat_c.bv_bitblast(self.solver._ptr, self.solver.bvtheory, c_bvID(bvID))
-        if self.solver.output:
-            self._echoOutput("bv bitblast %d\n"%(bvID))
 
     def bv_slice(self, aID,lower, upper,resultID):
         self.backtrack()
         self.monosat_c.bv_slice(self.solver._ptr, self.solver.bvtheory, c_bvID(aID),lower,upper,c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv slice %d %d %d %d\n"%(aID,lower,upper, resultID))
-            
+
     def bv_popcount(self,args,resultID):
         self.backtrack()         
         newargs=[]
@@ -1125,9 +996,6 @@ class Monosat(metaclass=Singleton):
         
         lp = self.getIntArray(newargs)          
         self.monosat_c.bv_popcount(self.solver._ptr, self.solver.bvtheory,lp,len(newargs),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv popcount %d %d %s\n"%(resultID, len(newargs)," ".join((str(dimacs(l)) for l in newargs))))
-
 
     def bv_unary(self,args,resultID):
         self.backtrack()
@@ -1148,8 +1016,6 @@ class Monosat(metaclass=Singleton):
 
         lp = self.getIntArray(newargs)
         self.monosat_c.bv_unary(self.solver._ptr, self.solver.bvtheory,lp,len(newargs),c_bvID(resultID))
-        if self.solver.output:
-            self._echoOutput("bv unary %d %d %s\n"%(resultID, len(newargs)," ".join((str(dimacs(l)) for l in newargs))))
 
     #Monosat fsm interface
 
@@ -1185,9 +1051,7 @@ class Monosat(metaclass=Singleton):
         gid = len(self.solver.graphs)
         self.solver.graphs.append(g)
         self.solver.graph_ids[g]=gid
-        if self.solver.output:
-            self._echoOutput("digraph 0 0 %d\n"%(gid)) 
-        
+
         return g
 
     def getGraph(self,id):
@@ -1212,29 +1076,20 @@ class Monosat(metaclass=Singleton):
     def newEdge(self, graph, u,v, weight):
         #self.backtrack()
         l = self.monosat_c.newEdge(self.solver._ptr,graph,c_int(u),c_int(v),c_long(weight))
-        if self.solver.output:
-            self._echoOutput("edge " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " +  str(dimacs(l)) + " " + str((weight))  + "\n")
         return l
     
     def newEdge_double(self, graph, u,v, weight):
         self.backtrack()
         l = self.monosat_c.newEdge_double(self.solver._ptr,graph,c_int(u),c_int(v),c_double(weight))
-        if self.solver.output:
-            self._echoOutput("edge " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " +  str(dimacs(l)) + " " + str((weight))  + "\n")
         return l
         
     def newEdge_bv(self, graph, u,v, bvID):
         self.backtrack()
         l= self.monosat_c.newEdge_bv(self.solver._ptr,graph,c_int(u),c_int(v),c_bvID(bvID))
-        if self.solver.output:
-            self._echoOutput("edge_bv " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " +  str(dimacs(l)) + " " + str((bvID))  + "\n")
         return l
 
     def newEdgeSet(self,graph,edges,enforceEdgeAssignments=True):
         self.backtrack()
-        if self.solver.output:
-            edgestr = "edge_set %d %d "%(self.getGID(graph), len(edges))
-            self._echoOutput(edgestr + " ".join((str(dimacs(c)) for c in edges))+"\n")
         lp = self.getIntArray(edges)
         self.monosat_c.newEdgeSet(self.solver._ptr,graph,lp,len(edges), c_bool(enforceEdgeAssignments))
 
@@ -1256,8 +1111,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.reaches(self.solver._ptr,graph,c_int(u),c_int(v))
-        if self.solver.output:
-            self._echoOutput("reach " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + "\n" );
         return l
 
     def reachesBackward(self, graph, u,v):
@@ -1265,8 +1118,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.reachesBackward(self.solver._ptr,graph,c_int(u),c_int(v))
-        if self.solver.output:
-            self._echoOutput("reach_back " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + "\n" );
         return l
 
     def onPath(self, graph, u,v,nodeOnPath):
@@ -1275,8 +1126,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,nodeOnPath);
         self.backtrack()
         l= self.monosat_c.onPath(self.solver._ptr,graph,c_int(u),c_int(v),c_int(nodeOnPath))
-        if self.solver.output:
-            self._echoOutput("on_path " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(nodeOnPath)  + " " + str(dimacs(l)) + "\n" );
         return l
 
     def shortestPathUnweighted_lt_const(self, graph, u,v,dist):
@@ -1284,8 +1133,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.shortestPathUnweighted_lt_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
-        if self.solver.output:
-            self._echoOutput("distance_lt " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + " " + str((dist)) + "\n" );
         return l
     
     def shortestPathUnweighted_leq_const(self, graph, u,v,dist):
@@ -1293,8 +1140,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.shortestPathUnweighted_leq_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
-        if self.solver.output:
-            self._echoOutput("distance_leq " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + " " + str((dist)) + "\n" );
         return l
 
     def shortestPath_lt_const(self, graph, u,v,dist):
@@ -1302,8 +1147,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.shortestPath_lt_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
-        if self.solver.output:
-            self._echoOutput("weighted_distance_lt " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + " " + str((dist)) + "\n" );
         return l
     
     def shortestPath_leq_const(self, graph, u,v,dist):
@@ -1311,8 +1154,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,v);
         self.backtrack()
         l= self.monosat_c.shortestPath_leq_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
-        if self.solver.output:
-            self._echoOutput("weighted_distance_leq " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + " " + str((dist)) + "\n" );
         return l
     
     def shortestPath_lt_bv(self, graph, u,v,bvID):
@@ -1321,8 +1162,6 @@ class Monosat(metaclass=Singleton):
         self.checkBV(bvID);
         self.backtrack()
         l= self.monosat_c.shortestPath_lt_bv(self.solver._ptr,graph,c_int(u),c_int(v),c_bvID(bvID))
-        if self.solver.output:
-            self._echoOutput("weighted_distance_bv_lt " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + " " + str((bvID)) + "\n" );
         return l
                   
     def shortestPath_leq_bv(self, graph, u,v,bvID):
@@ -1331,8 +1170,6 @@ class Monosat(metaclass=Singleton):
         self.checkBV(bvID);
         self.backtrack()
         l= self.monosat_c.shortestPath_leq_bv(self.solver._ptr,graph,c_int(u),c_int(v),c_bvID(bvID))
-        if self.solver.output:
-            self._echoOutput("weighted_distance_bv_leq " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + " " + str((bvID)) + "\n" );
         return l
     
     def maximumFlow_geq(self, graph, s,t,flow):
@@ -1340,8 +1177,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,t);
         self.backtrack()
         l= self.monosat_c.maximumFlow_geq(self.solver._ptr,graph,c_int(s),c_int(t),c_long(flow))
-        if self.solver.output:  
-            self._echoOutput("maximum_flow_geq " + str(self.getGID(graph)) + " " + str(s) + " " + str(t) + " " + str(dimacs(l)) + " " + str((flow)) + "\n" );
         return l
     
     def maximumFlow_gt(self, graph, s,t,flow):
@@ -1349,8 +1184,6 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,t);
         self.backtrack()
         l= self.monosat_c.maximumFlow_gt(self.solver._ptr,graph,c_int(s),c_int(t),c_long(flow))
-        if self.solver.output: 
-            self._echoOutput("maximum_flow_gt " + str(self.getGID(graph)) + " " + str(s) + " " + str(t) + " " + str(dimacs(l)) + " " + str((flow)) + "\n" );
         return l
                
     def maximumFlow_geq_bv(self, graph, s,t,bvID):
@@ -1359,8 +1192,6 @@ class Monosat(metaclass=Singleton):
         self.checkBV(bvID)
         self.backtrack()
         l= self.monosat_c.maximumFlow_geq_bv(self.solver._ptr,graph,c_int(s),c_int(t),c_bvID(bvID))
-        if self.solver.output:
-            self._echoOutput("maximum_flow_bv_geq " + str(self.getGID(graph)) + " " + str(s) + " " + str(t) + " " + str(dimacs(l)) + " " + str((bvID)) + "\n" );
         return l
     
     def maximumFlow_gt_bv(self, graph, s,t,bvID):
@@ -1369,36 +1200,26 @@ class Monosat(metaclass=Singleton):
         self.checkBV(bvID)
         self.backtrack()
         l= self.monosat_c.maximumFlow_gt_bv(self.solver._ptr,graph,c_int(s),c_int(t),c_bvID(bvID))
-        if self.solver.output:
-            self._echoOutput("maximum_flow_bv_gt " + str(self.getGID(graph)) + " " + str(s) + " " + str(t) + " " + str(dimacs(l)) + " " + str((bvID)) + "\n" );
         return l
     
     def minimumSpanningTree_leq(self, graph,weight):
         self.backtrack()
         l= self.monosat_c.minimumSpanningTree_leq(self.solver._ptr,graph,c_long(weight))
-        if self.solver.output:      
-            self._echoOutput("mst_weight_leq " + str(self.getGID(graph)) + " " +  str(dimacs(l)) + " " + str((weight)) + "\n" );
         return l
             
     def minimumSpanningTree_lt(self, graph,weight):
         self.backtrack()
         l= self.monosat_c.minimumSpanningTree_lt(self.solver._ptr,graph,c_long(weight))
-        if self.solver.output:      
-            self._echoOutput("mst_weight_lt " + str(self.getGID(graph)) + " " +  str(dimacs(l)) + " " + str((weight)) + "\n" );
         return l    
     
     def acyclic_undirected(self, graph):
         self.backtrack()
         l= self.monosat_c.acyclic_undirected(self.solver._ptr,graph)
-        if self.solver.output:  
-            self._echoOutput("forest " + str(self.getGID(graph)) + " " +  str(dimacs(l)) + "\n" );
         return l  
                  
     def acyclic_directed(self, graph):
         self.backtrack()
         l= self.monosat_c.acyclic_directed(self.solver._ptr,graph)
-        if self.solver.output:                      
-            self._echoOutput("acyclic " + str(self.getGID(graph)) + " " +  str(dimacs(l)) + "\n" );
         return l  
   
     #0 = true, 1=false, 2=unassigned

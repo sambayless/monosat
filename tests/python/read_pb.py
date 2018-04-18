@@ -12,7 +12,7 @@ import sys
 import itertools
 import bz2
 #note: for testing purposes, not recommended for practical pb solving!
-Monosat().init("-verb=1 -pb-verb=1")
+Monosat().newSolver("-verb=1 -pb-verb=1",output_file="/tmp/monosat_pb.gnf")
 
 
 
@@ -29,7 +29,7 @@ random.seed(seed)
 if filename is None:
     print("Usage: python3 read_pb.py <filename.opb>")
     sys.exit(0)
-Monosat().setOutputFile("/tmp/monosat_pb.gnf")
+
 used_vars = dict()
 
 goal = []
