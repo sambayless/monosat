@@ -37,7 +37,7 @@ namespace dgl {
  * A thin wrapper around a dynamic graph, which reverses all the edges in that graph.
  */
 template<typename Weight>
-class DynamicBackGraph :public  Graph<Weight>{
+class DynamicBackGraph final :public  Graph<Weight>{
 public:
 	typedef typename Graph<Weight>::Edge Edge;
 	typedef typename Graph<Weight>::FullEdge FullEdge;

@@ -47,7 +47,9 @@ class DynamicBackGraph;
  * Most algorithms in the library are optimized for moderate sized, sparsely connected graphs (<10,000 edges/nodes).
  */
 template<typename Weight>
-class DynamicGraph:public Graph<Weight> {
+class DynamicGraph final:public Graph<Weight> {
+	//Note: It is important that DynamicGraph is 'final', as
+	//this may enable devirtualization of function calls in some cases.
 public:
 	friend DynamicBackGraph<Weight>;
 	typedef typename Graph<Weight>::Edge Edge;
