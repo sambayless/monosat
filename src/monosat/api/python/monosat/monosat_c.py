@@ -27,6 +27,7 @@ import platform
 from monosat.singleton import Singleton
 from os import path
 from enum import Enum
+import warnings
 module_path = os.path.abspath(path.dirname(__file__))
 # If use_cython is true, then monosat will attempt to load the faster cython libraries first, falling back on ctypes if
 # the cython interface is not available
@@ -516,6 +517,15 @@ class Monosat(metaclass=Singleton):
 
     def getVersion(self):
         return self.monosat_c.getVersion()
+
+
+    def init(self,arguments=None,output_file=None):
+        warnings.warn("Monosat().init() is deprecated, use Monosat().newSolver() instead",DeprecationWarning)
+        return self.newSolver(arguments,output_file)
+
+    def setOutputFile(self,output_file=None):
+        warnings.warn("Monosat().setOutputFile() is deprecated, use Monosat().newSolver(output_file=filename) instead",DeprecationWarning)
+        self.newSolver(arguments=self.solver.arguments, output_file=output_file)
 
     def newSolver(self,arguments=None,output_file=None):
         if self.solver is not None:

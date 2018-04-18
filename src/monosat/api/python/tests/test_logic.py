@@ -34,6 +34,18 @@ class TestLogic(unittest.TestCase):
         monosat.Monosat().newSolver()
         self.assertTrue(monosat.solver.Solve())
 
+    def test_deprecated_init(self):
+        monosat.Monosat().newSolver()
+        #tests the deprecated init function
+        monosat.Monosat().init("-decide-theories")
+        self.assertTrue(monosat.solver.Solve())
+        self.assertTrue(monosat.solver.Solve())
+        monosat.logic.AssertTrue(monosat.logic.true())
+        self.assertTrue(monosat.solver.Solve())
+        monosat.logic.AssertFalse(monosat.logic.true())
+        self.assertFalse(monosat.solver.Solve())
+        monosat.Monosat().newSolver()
+        self.assertTrue(monosat.solver.Solve())
 
 
 
