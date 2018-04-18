@@ -105,7 +105,7 @@ public class LogicTest {
         assertEquals(Logic.not(solver.True()), solver.False());
         Lit a = solver.newLit();
         assertNotEquals(Logic.not(a), a);
-        assertEquals(Logic.not(a), a.negate());
+        assertEquals(Logic.not(a), a.not());
     }
 
     @Test
@@ -484,7 +484,7 @@ public class LogicTest {
         assertEquals(solver.solve(a, b), false);
         assertEquals(solver.solve(b, c), false);
         assertEquals(solver.solve(a, c), false);
-        assertEquals(solver.solve(a, b.negate()), true);
+        assertEquals(solver.solve(a, b.not()), true);
         assertEquals(solver.solve(b), true);
         assertEquals(solver.solve(c),true);
     }
@@ -498,9 +498,9 @@ public class LogicTest {
         Lit c = solver.newLit();
         Lit d = solver.newLit();
         Lit x = Logic.equal(a, b);
-        Lit y = Logic.equal(b, c.negate());
+        Lit y = Logic.equal(b, c.not());
         Lit z = Logic.equal(c, a);
-        Lit w = Logic.equal(b, d.negate());
+        Lit w = Logic.equal(b, d.not());
         Lit q = Logic.equal(d, a);
         assertEquals(solver.solve(), true);
         assertEquals(solver.solve(x, y,z,w,q), false);
@@ -509,7 +509,7 @@ public class LogicTest {
         ArrayList<Lit> test = new ArrayList<>();
         for(Lit l:conflict){
             assert(!l.sign());
-            test.add(l.negate());
+            test.add(l.not());
         }
         assertEquals(solver.solve(test), false);
 
@@ -520,7 +520,7 @@ public class LogicTest {
         ArrayList<Lit> test2 = new ArrayList<>();
         for(Lit l:conflict2){
             assert(!l.sign());
-            test2.add(l.negate());
+            test2.add(l.not());
         }
         assertEquals(solver.solve(test2), false);
         assertEquals(solver.solve(), true);

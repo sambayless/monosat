@@ -158,29 +158,31 @@ public:
 			}
 		}
 
-		if(undirected && !has_undirected_cycle){
+		if(undirected && !has_undirected_cycle) {
 			path.clear();
 			q.clear();
 			for (int i = 0; i < g.nodes(); i++) {
-
-				ever_seen[i]=false;
-				processed[i]=0;
-				undirected_prev[i]=-1;
+				seen[i]=false;
+				ever_seen[i] = false;
+				processed[i] = 0;
+				undirected_prev[i] = -1;
 			}
 
 			for (int k = 0; k < g.nodes(); k++) { //to handle disconnected graph
 				if (ever_seen[k])
 					continue;
 				q.push_back(k);
-				ever_seen[k]=true;
-
+				ever_seen[k] = true;
+				seen[k] = true;
 				while (q.size()) { //dfs
 					int u = q.back();
 					assert(processed[u]<=g.nIncident(u,true));
 					if (processed[u]==g.nIncident(u,true)) {
 						q.pop_back();
-						if(u!=k)
+						if (u != k)
 							path.pop_back();
+						seen[u] = false;
+
 						continue;
 					}
 					int fromEdge = -1;
@@ -190,7 +192,9 @@ public:
 					}
 					assert(ever_seen[u]);
 
-					for (;u == q.back() && processed[u] < g.nIncident(u,true); processed[u]++) {
+					assert(seen[u]);
+
+					for (; u == q.back() && processed[u] < g.nIncident(u,true); processed[u]++) {
 						int i = processed[u];
 
 						int id = g.incident(u, i,true).id;
@@ -198,32 +202,36 @@ public:
 							continue;
 						}
 						int v = g.incident(u, i,true).node;
-						if (!ever_seen[v]) {
-							ever_seen[v]=true;
+						if (!seen[v]) {
+							seen[v] = true;
+							ever_seen[v] = true;
 							q.push_back(v);
 							path.push_back(id);
 							continue;
-						}else{
-							//a directed cycle is also an undirected cycle.
-							has_undirected_cycle=true;
+						} else {
+
+							has_undirected_cycle = true;
+							undirected_cycle.push_back(id);
 							assert(path.size() == q.size() - 1);
-							bool found=false;
+							//find the to node in the q
+							bool found = false;
 							int start = 0;
-							for(start =0;start<q.size();start++){
-								if(q[start]==v){
-									found=true;
+							for (start = 0; start < q.size(); start++) {
+								if (q[start] == v) {
+									found = true;
 									break;
 								}
 							}
 							assert(found);
 
-							for (int j = start+1; j < q.size(); j++) {
+							for (int j = start + 1; j < q.size(); j++) {
 								if (seen[q[j]]) {
 									undirected_cycle.push_back(path[j - 1]);
 								}
 							}
 							return;
 						}
+
 					}
 				}
 			}

@@ -44,7 +44,7 @@ object Bindings {
     def apply(i: Int):Lit = self.getBits().get(i)
   }
   implicit class ExtendedLit(val self: Lit) extends AnyVal{
-    def unary_~():Lit = self.negate()
+    def unary_~():Lit = self.not()
   }
 }
 

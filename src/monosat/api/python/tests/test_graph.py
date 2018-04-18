@@ -162,7 +162,7 @@ class TestGraph(unittest.TestCase):
         #create a directed square graph with two diagonal edges
         #
         #0 *--* 1
-        #  |/ |
+        #  |/\|
         #2 *--* 3
 
         e_0_1 = g.addEdge(0,1)
@@ -200,7 +200,7 @@ class TestGraph(unittest.TestCase):
         #create a directed square graph with two diagonal edges
         #
         #0 *--* 1
-        #  |/ |
+        #  |/\|
         #2 *--* 3
 
         e_0_1 = g.addEdge(0,1)
@@ -211,20 +211,22 @@ class TestGraph(unittest.TestCase):
         e_3_0 = g.addEdge(3,0)
 
         r = g.acyclic(False)
-        #self.assertTrue(monosat.Solve(r))
-        #self.assertTrue(monosat.Solve(r, e_0_1.Not(), e_2_3.Not()))
-        #self.assertTrue(monosat.Solve(r, e_0_2.Not(), e_1_3.Not()))
-        #self.assertTrue(monosat.Solve(r, e_0_2.Not(), e_1_3.Not(), e_2_3.Not()))
+        self.assertTrue(monosat.Solve(r))
+        self.assertTrue(monosat.Solve(r, e_0_1.Not(), e_2_3.Not()))
+        self.assertTrue(monosat.Solve(r, e_0_2.Not(), e_1_3.Not()))
+        self.assertTrue(monosat.Solve(r, e_0_2.Not(), e_1_3.Not(), e_2_3.Not()))
         self.assertFalse(monosat.Solve(r, e_0_1, e_1_2, e_2_3, e_3_0))
-        #self.assertTrue(monosat.Solve(r))
+        self.assertTrue(monosat.Solve(r))
     
-        #self.assertTrue(monosat.Solve(r.Not()))
-        #self.assertFalse(monosat.Solve(r.Not(), e_0_1.Not(), e_2_3.Not()))
-        #self.assertTrue(monosat.Solve(r.Not(), e_0_2.Not(), e_1_3.Not()))
-        #self.assertFalse(monosat.Solve(r.Not(), e_0_2.Not(), e_1_3.Not(), e_2_3.Not()))
-        #self.assertTrue(monosat.Solve(r.Not(), e_0_1, e_1_2, e_2_3, e_3_0))
-        #self.assertTrue(monosat.Solve(r.Not()))
-        #self.assertTrue(monosat.Solve(r))
+        self.assertTrue(monosat.Solve(r.Not()))
+        #valid undirected cycle: e_3_0 -> e_0_2 -> e_1_2 -> e_1_3
+        self.assertTrue(monosat.Solve(r.Not(), e_0_1.Not(), e_2_3.Not()))
+        self.assertFalse(monosat.Solve(r.Not(), e_0_1.Not(), e_2_3.Not(), e_1_3.Not()))
+        self.assertTrue(monosat.Solve(r.Not(), e_0_2.Not(), e_1_3.Not()))
+        self.assertFalse(monosat.Solve(r.Not(), e_0_2.Not(), e_1_3.Not(), e_2_3.Not()))
+        self.assertTrue(monosat.Solve(r.Not(), e_0_1, e_1_2, e_2_3, e_3_0))
+        self.assertTrue(monosat.Solve(r.Not()))
+        self.assertTrue(monosat.Solve(r))
 
 
 
