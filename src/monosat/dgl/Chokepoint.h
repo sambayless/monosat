@@ -28,7 +28,8 @@
  **************************************************************************************************/
 
 #include "Graph.h"
-
+#include "DynamicGraph.h"
+#include "Reach.h"
 namespace dgl {
 
 struct ForceReason {
@@ -36,10 +37,10 @@ struct ForceReason {
 	int node;
 };
 
-template<typename Weight,class EdgeStatus>
+template<typename Weight, typename Graph = DynamicGraph<Weight>,class EdgeStatus= typename Reach::NullStatus>
 class Chokepoint {
 	
-	Graph<Weight> & g;
+	Graph & g;
 	EdgeStatus & status;
 	int source;
 	std::vector<int> current;
@@ -52,7 +53,7 @@ class Chokepoint {
 	static const int UNDEF = -2;
 	static const int EMPTY = -1;
 public:
-	Chokepoint(EdgeStatus & _status, Graph<Weight> & _graph, int _source) :
+	Chokepoint(EdgeStatus & _status, Graph & _graph, int _source) :
 			g(_graph), status(_status), source(_source) {
 		
 	}

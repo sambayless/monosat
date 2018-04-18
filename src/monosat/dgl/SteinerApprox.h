@@ -26,6 +26,8 @@
 #include "monosat/dgl/alg/Heap.h"
 #include "monosat/mtl/Sort.h"
 #include "Graph.h"
+#include "DynamicGraph.h"
+#include "DynamicNodes.h"
 #include "monosat/core/Config.h"
 #include "MinimumSpanningTree.h"
 #include "SteinerTree.h"
@@ -37,11 +39,11 @@
 #include "Distance.h"
 
 namespace dgl {
-template<class TerminalSet, class Status, typename Weight = int>
+template<typename Weight, typename Graph=DynamicGraph<Weight>,class TerminalSet=DynamicNodes, class Status=typename SteinerTree<Weight>::NullStatus>
 class SteinerApprox: public SteinerTree<Weight> {
 public:
 
-	Graph<Weight> & g;
+	Graph & g;
 
 	TerminalSet & terminals;
 	Status & status;
@@ -73,7 +75,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	SteinerApprox(Graph<Weight> & graph,  TerminalSet & terminals, Status & _status,
+	SteinerApprox(Graph & graph,  TerminalSet & terminals, Status & _status,
 				  int _reportPolarity = 0) :
 			g(graph),terminals(terminals), status(_status), last_modification(-1), last_addition(-1), last_deletion(
 			-1), history_qhead(0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
@@ -136,7 +138,7 @@ public:
 
 			//This can be made much more efficient...
 			for (int i = 0; i < terminals.nodes(); i++) {
-				reaches.push_back(new Dijkstra<Weight>(i, g));
+				reaches.push_back(new Dijkstra<Weight,Graph>(i, g));
 			};
 			for (int i = 0; i < terminals.nodes(); i++) {
 				if (terminals.nodeEnabled(i)) {

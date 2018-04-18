@@ -30,11 +30,11 @@
 
 namespace dgl {
 
-template<typename Weight,class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight,typename Graph = DynamicGraph<Weight>,class Status = Reach::NullStatus, bool undirected = false>
 class DFSReachability: public Reach {
 public:
 	
-	Graph<Weight> & g;
+	Graph & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -74,11 +74,11 @@ public:
 public:
 
 
-	DFSReachability(int s, Graph<Weight> & graph, Status & _status= Reach::nullStatus, int _reportPolarity = 0) :
+	DFSReachability(int s, Graph & graph, Status & _status= Reach::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), reportPolarity(_reportPolarity) {
 	}
-	DFSReachability(Graph<Weight> & graph,Status & _status= Reach::nullStatus, int _reportPolarity = 0):			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
+	DFSReachability(Graph & graph,Status & _status= Reach::nullStatus, int _reportPolarity = 0):			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 			0), source(0), INF(0), reportPolarity(_reportPolarity) {
 	}
 	//Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};

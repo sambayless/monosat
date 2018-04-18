@@ -29,11 +29,11 @@
 #include "Reach.h"
 #include "Cycle.h"
 namespace dgl {
-template <typename Weight,bool directed=true, bool undirected=false>
+template <typename Weight, typename Graph = DynamicGraph<Weight>,bool directed=true, bool undirected=false>
 class DFSCycle: public Cycle {
 public:
 
-	Graph<Weight> & g;
+	Graph & g;
 
 	int last_modification=0;
 	int last_addition=0;
@@ -232,7 +232,7 @@ public:
 
 public:
 
-	DFSCycle(Graph<Weight> & graph, bool _directed = true, int _reportPolarity = 0) :
+	DFSCycle(Graph & graph, bool _directed = true, int _reportPolarity = 0) :
 			g(graph),  last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 			0), last_history_clear(0), INF(0), reportPolarity(_reportPolarity) {
 

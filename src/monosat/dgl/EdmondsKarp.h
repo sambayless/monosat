@@ -25,9 +25,10 @@
 #include "MaxFlow.h"
 #include <vector>
 #include <algorithm>
+#include "DynamicGraph.h"
 #include "Graph.h"
 namespace dgl {
-template<typename Weight = int>
+template<typename Weight = int, typename Graph = DynamicGraph<Weight>>
 class EdmondsKarp: public MaxFlow<Weight> {
 public:
 
@@ -46,7 +47,7 @@ public:
 	int last_history_clear;
 	int source = -1;
 	int sink = -1;
-	Graph<Weight>& g;
+	Graph& g;
 	Weight INF;
 
 	std::vector<int> Q;
@@ -106,7 +107,7 @@ public:
 
 	}
 public:
-	EdmondsKarp(Graph<Weight>& _g, int source = -1, int sink = -1) :
+	EdmondsKarp(Graph & _g, int source = -1, int sink = -1) :
 			g(_g), source(source), sink(sink), INF(0xF0F0F0) {
 		curflow = -1;
 

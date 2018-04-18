@@ -71,25 +71,25 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 		printf("Note: falling back on Dijkstra for shortest paths, because edge weights are bitvectors\n");
 		//ramel reps doesn't support bvs yet
 		underapprox_weighted_distance_detector =
-				new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
+				new Dijkstra<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
 																								*positiveDistanceStatus, 0);
-		overapprox_weighted_distance_detector = new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(
+		overapprox_weighted_distance_detector = new Dijkstra<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(
 				from, _antig,  *negativeDistanceStatus, 0);
 		underapprox_weighted_path_detector = underapprox_weighted_distance_detector;
 	}else if (  distalg == DistAlg::ALG_RAMAL_REPS) {
 
 		underapprox_weighted_distance_detector =
-				new RamalReps<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
+				new RamalReps<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
 																								 *(positiveDistanceStatus), -2);
 		overapprox_weighted_distance_detector =
-				new RamalReps<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _antig,
+				new RamalReps<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _antig,
 																								 *(negativeDistanceStatus), -2);
 		underapprox_weighted_path_detector =underapprox_weighted_distance_detector; //new Dijkstra<Weight>(from, _g);
 	} else {
 		underapprox_weighted_distance_detector =
-				new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
+				new Dijkstra<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
 																								*positiveDistanceStatus, 0);
-		overapprox_weighted_distance_detector = new Dijkstra<Weight, typename WeightedDistanceDetector<Weight>::DistanceStatus>(
+		overapprox_weighted_distance_detector = new Dijkstra<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(
 				from, _antig,  *negativeDistanceStatus, 0);
 		underapprox_weighted_path_detector = underapprox_weighted_distance_detector;
 	}

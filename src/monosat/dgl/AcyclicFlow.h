@@ -25,6 +25,7 @@
 #include <vector>
 #include <cassert>
 #include "Graph.h"
+#include "DynamicGraph.h"
 #include "DFSCycle.h"
 #include "EdmondsKarpAdj.h"
 //#include "MaxFlow.h"
@@ -34,9 +35,9 @@
 namespace dgl {
 
 //Implementation of the acyclic flow algorithm from Sleator and Tarjan (1983)
-template<typename Weight> //, class Flow=MaxFlow<Weight> >
+template<typename Weight, typename Graph = DynamicGraph<Weight>> //, class Flow=MaxFlow<Weight> >
 class AcyclicFlow{
-	Graph<Weight>& g;
+	Graph& g;
 	LinkCutCost<Weight> forest;
 	std::vector<Weight> new_flow;
 	//This stores, for each node in the tree, the edge of g connecting it to its parent (or -1 if there is no such edge)
@@ -44,7 +45,7 @@ class AcyclicFlow{
 	std::vector<int> parents;
 	//std::vector<int> disabled_edges;//disabled internally to the acyclic flow algorithm, to keep them from being revisited
 public:
-	AcyclicFlow(Graph<Weight>& g):g(g){
+	AcyclicFlow(Graph & g):g(g){
 
 	}
 
@@ -67,7 +68,7 @@ public:
 
 		Weight expected_flow=-1;
 		{
-			Graph<Weight> test;
+			Graph test;
 			//test.outfile() = fopen("/tmp/TEST_ACYCLIC_FLOW", "w");
 			test.addNodes(g.nodes());
 			for (int i = 0;i<flow_store.size();i++){
@@ -244,7 +245,7 @@ public:
 						flow_store[i]=new_flow[i];
 #ifdef DEBUG_DGL
 					//verify that no cycle remains
-					Graph<Weight> test;
+					Graph test;
 					//test.outfile() = fopen("/tmp/TEST_ACYCLIC_FLOW", "w");
 					test.addNodes(g.nodes());
 					for (int i = 0;i<flow_store.size();i++){

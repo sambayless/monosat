@@ -36,12 +36,12 @@
 #include "TarjansSCC.h"
 #include "DFSCycle.h"
 namespace dgl {
-template<typename Weight>
+template<typename Weight, typename Graph = DynamicGraph<Weight>>
 class PKToplogicalSort: public Cycle,public DynamicGraphAlgorithm {
 public:
 
-	Graph<Weight> & g;
-	DFSCycle<Weight,true,false> dfs_cycle;
+	Graph & g;
+	DFSCycle<Weight,Graph,true,false> dfs_cycle;
 
 	std::vector<bool> is_strict_scc;
 	std::vector<int> strict_sccs;
@@ -108,7 +108,7 @@ public:
 		force_dag=true;
 	}
 
-	PKToplogicalSort(Graph<Weight> & graph, int _reportPolarity = 0) :
+	PKToplogicalSort(Graph & graph, int _reportPolarity = 0) :
 			g(graph),dfs_cycle(g),INF(0), reportPolarity(_reportPolarity),ord_lt(ord) {
 		alg_id=g.addDynamicAlgorithm(this);
 

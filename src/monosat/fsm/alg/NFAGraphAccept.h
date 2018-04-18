@@ -84,7 +84,7 @@ class NFAGraphAccept:public NFAAcceptor{
 				outer(_outer) {
 		}
 	};
-	UnweightedRamalReps<int,NFAReachStatus> * rr=nullptr;
+	UnweightedRamalReps<int,DynamicGraph<int>,NFAReachStatus> * rr=nullptr;
 
 public:
 	NFAGraphAccept(DynamicFSM & f,int source, vec<vec<int>> & strings,Status & status=fsmNullStatus, bool trackUsedTransitions=false):f(f),status(status),source(source),strings(strings),checkUsed(trackUsedTransitions){
@@ -159,7 +159,7 @@ private:
 				}
 			}
 			positiveReachStatus = new NFAReachStatus(*this);
-			rr = new UnweightedRamalReps<int,NFAReachStatus> (root->states[source], g,*positiveReachStatus,0,false);
+			rr = new UnweightedRamalReps<int,DynamicGraph<int>,NFAReachStatus> (root->states[source], g,*positiveReachStatus,0,false);
 		}
 
 

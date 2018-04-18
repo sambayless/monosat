@@ -43,9 +43,9 @@ AllPairsDetector<Weight>::AllPairsDetector(int _detectorID, GraphTheorySolver<We
 	 negative_reach_detector = new DynamicConnectivity<AllPairsDetector<Weight>::ReachStatus>(_antig,*(negativeReachStatus),-1);
 	 positive_path_detector = positive_reach_detector;
 	 }*/else {
-		underapprox_reach_detector = new DijkstraAllPairs<Weight,AllPairsDetector<Weight>::ReachStatus>(_g,
+		underapprox_reach_detector = new DijkstraAllPairs<Weight,DynamicGraph<Weight>,AllPairsDetector<Weight>::ReachStatus>(_g,
 				*(positiveReachStatus), 1);
-		overapprox_reach_detector = new DijkstraAllPairs<Weight,AllPairsDetector<Weight>::ReachStatus>(_antig,
+		overapprox_reach_detector = new DijkstraAllPairs<Weight,DynamicGraph<Weight>,AllPairsDetector<Weight>::ReachStatus>(_antig,
 				*(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_reach_detector;
 	}

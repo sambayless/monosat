@@ -33,18 +33,18 @@ CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> 
 	
 
 	if(cyclealg==CycleAlg::ALG_DFS_CYCLE){
-		underapprox_directed_cycle_detector = new DFSCycle<Weight,true,true>(g_under, detect_directed_cycles, 1);
-		overapprox_directed_cycle_detector = new DFSCycle<Weight,true,true>(g_over, detect_directed_cycles, 1);
+		underapprox_directed_cycle_detector = new DFSCycle<Weight,DynamicGraph<Weight>,true,true>(g_under, detect_directed_cycles, 1);
+		overapprox_directed_cycle_detector = new DFSCycle<Weight,DynamicGraph<Weight>,true,true>(g_over, detect_directed_cycles, 1);
 
 		overapprox_undirected_cycle_detector=overapprox_directed_cycle_detector;
 		underapprox_undirected_cycle_detector=underapprox_directed_cycle_detector;
 
 	}else if(cyclealg==CycleAlg::ALG_PK_CYCLE){
-		underapprox_directed_cycle_detector = new PKToplogicalSort<Weight>(g_under,  1);
-		overapprox_directed_cycle_detector = new PKToplogicalSort<Weight>(g_over,  1);
+		underapprox_directed_cycle_detector = new PKToplogicalSort<Weight,DynamicGraph<Weight>>(g_under,  1);
+		overapprox_directed_cycle_detector = new PKToplogicalSort<Weight,DynamicGraph<Weight>>(g_over,  1);
 
-		underapprox_undirected_cycle_detector = new DFSCycle<Weight,false,true>(g_under, false, 1);
-		overapprox_undirected_cycle_detector = new DFSCycle<Weight,false,true>(g_over, false, 1);
+		underapprox_undirected_cycle_detector = new DFSCycle<Weight,DynamicGraph<Weight>,false,true>(g_under, false, 1);
+		overapprox_undirected_cycle_detector = new DFSCycle<Weight,DynamicGraph<Weight>,false,true>(g_over, false, 1);
 	}
 	directed_cycle_marker = outer->newReasonMarker(getID());
 	no_directed_cycle_marker = outer->newReasonMarker(getID());
@@ -254,8 +254,8 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 }
 template<typename Weight>
 bool CycleDetector<Weight>::checkSatisfied() {
-	DFSCycle<Weight,true,false> checkDirected (g_under, true, 1);
-	DFSCycle<Weight,false,true> checkUndirected(g_under, false, 1);
+	DFSCycle<Weight,DynamicGraph<Weight>,true,false> checkDirected (g_under, true, 1);
+	DFSCycle<Weight,DynamicGraph<Weight>,false,true> checkUndirected(g_under, false, 1);
 	if(directed_acyclic_lit != lit_Undef){
 		if(outer->value(directed_acyclic_lit)==l_True && checkDirected.hasDirectedCycle()){
 			return false;

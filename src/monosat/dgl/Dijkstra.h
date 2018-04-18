@@ -25,6 +25,7 @@
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
 #include "Graph.h"
+#include "DynamicGraph.h"
 #include "Reach.h"
 #include <monosat/dgl/alg/Rnd.h>
 #include "Distance.h"
@@ -32,12 +33,12 @@
 #include <limits>
 namespace dgl {
 
-template<typename Weight = int64_t, class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
+template<typename Weight = int64_t, typename Graph = DynamicGraph<Weight>, class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
 class Dijkstra: public Distance<Weight> {
 	using Distance<Weight>::inf;
 	using Distance<Weight>::unreachable;
 public:
-	Graph<Weight> & g;
+	Graph & g;
 
 	Status & status;
 	int reportPolarity;
@@ -79,14 +80,14 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	Dijkstra(int s, Graph<Weight> & graph, Status & status, int reportPolarity = 0) :
+	Dijkstra(int s, Graph & graph, Status & status, int reportPolarity = 0) :
 			g(graph), status(status), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
 	
-	Dijkstra(int s, Graph<Weight>  & graph,  int reportPolarity = 0) :
+	Dijkstra(int s, Graph  & graph,  int reportPolarity = 0) :
 			g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity),  source(s), q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
@@ -388,12 +389,12 @@ public:
 
 };
 
-template<typename Weight, class Status =typename Distance<int>::NullStatus, bool undirected = false>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status =typename Distance<int>::NullStatus, bool undirected = false>
 class UnweightedDijkstra: public Distance<int> {
 	using Distance<int>::inf;
 	using Distance<int>::unreachable;
 public:
-	Graph<Weight>  & g;
+	Graph  & g;
 	Status & status;
 	int reportPolarity;
 
@@ -432,14 +433,14 @@ public:
 
 	double stats_full_update_time = 0;
 	double stats_fast_update_time = 0;
-	UnweightedDijkstra(int s, Graph<Weight>  & graph, Status & status, int reportPolarity = 0) :
+	UnweightedDijkstra(int s, Graph  & graph, Status & status, int reportPolarity = 0) :
 			g(graph), status(status), reportPolarity(reportPolarity),source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;
 		
 	}
 	
-	UnweightedDijkstra(int s, Graph<Weight>  & graph, int reportPolarity = 0) :
+	UnweightedDijkstra(int s, Graph  & graph, int reportPolarity = 0) :
 			g(graph), status(Distance<int>::nullStatus), reportPolarity(reportPolarity), source(s),  q(DistCmp(dist)) {
 		
 		mod_percentage = 0.2;

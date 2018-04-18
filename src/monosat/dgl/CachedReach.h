@@ -27,17 +27,19 @@
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
 #include "Graph.h"
+#include "DynamicGraph.h"
+
 #include "monosat/core/Config.h"
 #include "Reach.h"
 #include "alg/IntMap.h"
 #include "alg/Rnd.h"
 namespace dgl {
 
-template<typename Weight,class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
+template<typename Weight, typename Graph = DynamicGraph<Weight>,class Status = typename Distance<Weight>::NullStatus, bool undirected = false>
 class CachedReach: public Reach {
 public:
 
-    Graph<Weight> & g;
+    Graph & g;
     Status & status;
     int last_modification=-1;
     int last_addition=-1;
@@ -66,11 +68,11 @@ public:
 public:
 
 
-    CachedReach(Reach * reach,Graph<Weight> & graph,Status & status, int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
+    CachedReach(Reach * reach,Graph & graph,Status & status, int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
             g(graph),status(status), reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }
-    CachedReach(Reach * reach, Graph<Weight> & graph,int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
+    CachedReach(Reach * reach, Graph & graph,int reportPolarity = 0,double randomShortestPathFrequency=0,double randomShortestEdgeFrequency=0, double random_seed=0) :
             g(graph), status(Distance<Weight>::nullStatus),reach(reach),reportPolarity(reportPolarity),randomShortestPathFrequency(randomShortestPathFrequency),randomShortestEdgeFrequency(randomShortestEdgeFrequency),random_seed(random_seed){
 
     }

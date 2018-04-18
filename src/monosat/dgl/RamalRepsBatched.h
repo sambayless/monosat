@@ -43,11 +43,11 @@
 #define DEBUG_RAMAL2
 #endif*/
 namespace dgl {
-template<typename Weight = int, class Status = typename Distance<Weight>::NullStatus>
+template<typename Weight = int, typename Graph = DynamicGraph<Weight>, class Status = typename Distance<Weight>::NullStatus>
 class RamalRepsBatched: public Distance<Weight>, public DynamicGraphAlgorithm {
 public:
     static bool ever_warned_about_zero_weights;
-    Graph<Weight> & g;
+    Graph & g;
     std::vector<Weight> & weights;
     std::vector<Weight> local_weights;
     Status & status;
@@ -124,7 +124,7 @@ public:
                 outer(_outer) {
         }
     } local_distance_status;
-    Dijkstra<Weight,Status> dijkstras;
+    Dijkstra<Weight,Graph,Status> dijkstras;
     bool has_zero_weights=false;
 public:
 
@@ -138,7 +138,7 @@ public:
 
     double stats_full_update_time=0;
     double stats_fast_update_time=0;
-    RamalRepsBatched(int s, Graph<Weight> & graph,Status & status, int reportPolarity = 0,
+    RamalRepsBatched(int s, Graph & graph,Status & status, int reportPolarity = 0,
                      bool reportDistance = false) :
             g(graph), weights(g.getWeights()), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
             -1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
@@ -147,7 +147,7 @@ public:
         mod_percentage = 0.2;
         alg_id=g.addDynamicAlgorithm(this);
     }
-    RamalRepsBatched(int s, Graph<Weight> & graph,int reportPolarity = 0, bool reportDistance = false) :
+    RamalRepsBatched(int s, Graph & graph,int reportPolarity = 0, bool reportDistance = false) :
             g(graph), weights(g.getWeights()), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
             -1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
             0), q_dec(DistCmp(dist)), q_inc(DistCmp(dist)),local_distance_status(*this),dijkstras(s,graph,status,reportPolarity) {
@@ -1211,10 +1211,10 @@ public:
     }
 };
 
-template<typename Weight, class Status= typename Distance<Weight>::NullStatus>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status= typename Distance<Weight>::NullStatus>
 class UnweightedRamalRepsBatched: public Distance<int>, public DynamicGraphAlgorithm {
 public:
-    Graph<Weight> & g;
+    Graph & g;
     Status & status;
     int reportPolarity;
     bool reportDistance;
@@ -1273,7 +1273,7 @@ public:
 
     double stats_full_update_time=0;
     double stats_fast_update_time=0;
-    UnweightedRamalRepsBatched(int s, Graph<Weight> & graph, Status & status, int reportPolarity = 0,
+    UnweightedRamalRepsBatched(int s, Graph & graph, Status & status, int reportPolarity = 0,
                                bool reportDistance = true) :
             g(graph), status(status), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
             -1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
@@ -1282,7 +1282,7 @@ public:
         mod_percentage = 0.2;
         alg_id=g.addDynamicAlgorithm(this);
     }
-    UnweightedRamalRepsBatched(int s, Graph<Weight> & graph, int reportPolarity = 0,
+    UnweightedRamalRepsBatched(int s, Graph & graph, int reportPolarity = 0,
                                bool reportDistance = true) :
             g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), reportDistance(reportDistance), last_modification(
             -1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(0), source(s), INF(
@@ -2384,8 +2384,8 @@ public:
         return prev;
     }
 };
-template<typename Weight, class Status>
-bool RamalRepsBatched<Weight,Status>::ever_warned_about_zero_weights = false;
+template<typename Weight,typename Graph, class Status>
+bool RamalRepsBatched<Weight,Graph,Status>::ever_warned_about_zero_weights = false;
 }
 ;
 #endif

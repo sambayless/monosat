@@ -35,9 +35,9 @@ SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weigh
 	negativeStatus = new SteinerDetector<Weight>::SteinerStatus(*this, false);
 
 	//NOTE: the terminal sets are intentionally swapped, in order to preserve monotonicity
-	underapprox_detector = new SteinerApprox<DynamicNodes, SteinerDetector<Weight>::SteinerStatus, Weight>(g,
+	underapprox_detector = new SteinerApprox<Weight, DynamicGraph<Weight>, DynamicNodes, SteinerDetector<Weight>::SteinerStatus>(g,
 																										   overTerminalSet, *positiveStatus, 1); //new SpiraPan<SteinerDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
-	overapprox_detector = new SteinerApprox<DynamicNodes, SteinerDetector<Weight>::SteinerStatus, Weight>(antig,
+	overapprox_detector = new SteinerApprox<Weight, DynamicGraph<Weight>,DynamicNodes, SteinerDetector<Weight>::SteinerStatus>(antig,
 																										  underTerminalSet, *negativeStatus, -1);
 
 	underprop_marker = outer->newReasonMarker(getID());
@@ -394,9 +394,9 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 
 	assert(underTerminalSet.numEnabled() == overTerminalSet.numEnabled());
 
-	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> positive_checker(g_under,
+	SteinerApprox<Weight, DynamicGraph<Weight>, DynamicNodes, typename SteinerTree<Weight>::NullStatus> positive_checker(g_under,
 																								   overTerminalSet, SteinerTree<Weight>::nullStatus, 0);
-	SteinerApprox<DynamicNodes, typename SteinerTree<Weight>::NullStatus, Weight> negative_checker(g_over,
+	SteinerApprox<Weight, DynamicGraph<Weight>, DynamicNodes, typename SteinerTree<Weight>::NullStatus> negative_checker(g_over,
 																								   underTerminalSet, SteinerTree<Weight>::nullStatus, 0);
 	positive_checker.update();
 	negative_checker.update();

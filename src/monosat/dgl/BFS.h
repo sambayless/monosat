@@ -25,16 +25,17 @@
 #include <vector>
 #include "monosat/dgl/alg/Heap.h"
 #include "Graph.h"
+#include "DynamicGraph.h"
 #include "monosat/core/Config.h"
 #include "Reach.h"
 #include "Distance.h"
 namespace dgl {
 
-template<typename Weight, class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status = Reach::NullStatus, bool undirected = false>
 class BFSReachability: public Reach {
 public:
 	
-	Graph<Weight> & g;
+	Graph & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -74,7 +75,7 @@ public:
 	double stats_full_update_time;
 	double stats_fast_update_time;
 
-	BFSReachability(int s, Graph<Weight> & graph, Status & _status = Reach::nullStatus, int _reportPolarity = 0) :
+	BFSReachability(int s, Graph & graph, Status & _status = Reach::nullStatus, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s), INF(0), reportPolarity(_reportPolarity) {
 		
@@ -675,13 +676,13 @@ public:
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<typename Weight,class Status = Distance<int>::NullStatus, bool undirected = false>
+template<typename Weight,typename Graph = DynamicGraph<Weight>, class Status = Distance<int>::NullStatus, bool undirected = false>
 class UnweightedBFS: public Distance<int> {
 	using Distance<int>::inf;
 	using Distance<int>::unreachable;
 public:
 	
-	Graph<Weight> & g;
+	Graph & g;
 	Status & status;
 	int last_modification;
 	int last_addition;
@@ -719,7 +720,7 @@ public:
 
 public:
 	
-	UnweightedBFS(int s, Graph<Weight> & graph, int _reportPolarity = 0) :
+	UnweightedBFS(int s, Graph & graph, int _reportPolarity = 0) :
 			g(graph), status(Distance<int>::nullStatus), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(
 					0), last_history_clear(0), source(s), reportPolarity(_reportPolarity) {
 		maxDistance = -1;
@@ -734,7 +735,7 @@ public:
 		stats_fast_failed_updates = 0;
 	}
 	
-	UnweightedBFS(int s, Graph<Weight> & graph, Status & _status, int _reportPolarity = 0) :
+	UnweightedBFS(int s, Graph & graph, Status & _status, int _reportPolarity = 0) :
 			g(graph), status(_status), last_modification(-1), last_addition(-1), last_deletion(-1), history_qhead(0), last_history_clear(
 					0), source(s),  reportPolarity(_reportPolarity) {
 		maxDistance = -1;
