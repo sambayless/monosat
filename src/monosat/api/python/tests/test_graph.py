@@ -82,6 +82,55 @@ class TestGraph(unittest.TestCase):
         self.assertTrue(monosat.Solve(r))
 
 
+    def test_reachesBack(self):
+        monosat.Monosat().newSolver(output_file="/tmp/test.gnf")
+        g = monosat.Graph()
+        for i in range(4):
+            g.addNode()
+
+
+        #create a directed square graph with one diagonal edge
+        #
+        #0 *--* 1
+        #  |/ |
+        #2 *--* 3
+
+        e_0_1 = g.addEdge(0,1)
+        e_0_2 = g.addEdge(0,2)
+        e_1_3 = g.addEdge(1,3)
+        e_1_2 = g.addEdge(1,2)
+        e_2_3 = g.addEdge(2,3)
+
+        r = g.reachesBackward(3,0)
+        r2 = g.reachesBackward(0,3)
+        self.assertTrue(monosat.Solve(r))
+        self.assertFalse(monosat.Solve(r2))
+        self.assertTrue(monosat.Solve(r))
+        self.assertFalse(monosat.Solve(r, e_0_1.Not(), e_2_3.Not()))
+        self.assertTrue(monosat.Solve(r, e_0_2.Not(), e_1_3.Not()))
+
+        self.assertFalse(monosat.Solve(r, e_0_2.Not(), e_1_3.Not(), e_2_3.Not()))
+
+        self.assertTrue(monosat.Solve(r, e_0_2.Not(), e_1_3.Not()))
+        #There should only be one solution to this: 0->1, 1->2, 2->3
+        nodes = g.getPath(r,False)
+        edges = g.getPath(r,True)
+        self.assertEqual(len(edges), 3)
+        self.assertEqual(len(nodes), 4)
+
+        self.assertEqual(edges[2], e_0_1)
+        self.assertEqual(edges[1], e_1_2)
+        self.assertEqual(edges[0], e_2_3)
+        self.assertTrue(e_0_1.value())
+        self.assertTrue(e_1_2.value())
+        self.assertTrue(e_2_3.value())
+        self.assertFalse(e_0_2.value())
+        self.assertFalse(e_1_3.value())
+
+        self.assertTrue(monosat.Solve(r))
+
+
+
     def test_maximumFlow_geq(self):
         monosat.Monosat().newSolver()
         g = monosat.Graph()
@@ -191,7 +240,7 @@ class TestGraph(unittest.TestCase):
 
 
     def test_acyclicUndirected(self):
-        monosat.Monosat().newSolver(output_file="/tmp/test.gnf")
+        monosat.Monosat().newSolver()
         g = monosat.Graph()
         for i in range(4):
             g.addNode()

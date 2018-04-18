@@ -3842,25 +3842,26 @@ public:
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
 		//this is awful, fix this!!
-		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
-		if(!r){
-			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
-			if(!dist){
-				WeightedDistanceDetector<Weight> * dist = dynamic_cast<WeightedDistanceDetector<Weight>*>(d);
-				if(!dist){
-					assert(false);
-					return false;
-				}else{
-					int node = dist->getNode(v);
-					return dist->getModel_Path(node,store_path);
-				}
-			}else{
-				int node = dist->getNode(v);
-				return dist->getModel_Path(node,store_path);
-			}
+
+		if(ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d)){
+			int node = r->getNode(v);
+			return r->getModel_Path(node,store_path);
 		}
-		int node = r->getNode(v);
-		return r->getModel_Path(node,store_path);
+		if(ReachDetector<Weight,DynamicBackGraph<Weight>> * rback = dynamic_cast<ReachDetector<Weight,DynamicBackGraph<Weight>>*>(d)){
+			int node = rback->getNode(v);
+			return rback->getModel_Path(node,store_path);
+		}
+
+		if(DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d)) {
+			int node = dist->getNode(v);
+			return dist->getModel_Path(node, store_path);
+		}
+		if(WeightedDistanceDetector<Weight> * dist2 = dynamic_cast<WeightedDistanceDetector<Weight>*>(d)) {
+			int node = dist2->getNode(v);
+			return dist2->getModel_Path(node, store_path);
+		}
+		return false;
+
 	 }
 	 //Get a valid path, in terms of edges, (from a reachability or shortest path constraint)
 	 //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
@@ -3869,25 +3870,26 @@ public:
 		store_path.clear();
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
-		ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d);
-		if(!r){
-			DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d);
-			if(!dist){
-				WeightedDistanceDetector<Weight> * dist = dynamic_cast<WeightedDistanceDetector<Weight>*>(d);
-				if(!dist){
-					assert(false);
-					return false;
-				}else{
-					int node = dist->getNode(v);
-					return dist->getModel_PathByEdgeLit(node,store_path);
-				}
-			}else{
-				int node = dist->getNode(v);
-				return dist->getModel_PathByEdgeLit(node,store_path);
-			}
-		}
-		int node = r->getNode(v);
-		return r->getModel_PathByEdgeLit(node,store_path);
+
+
+		 if(ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d)){
+			 int node = r->getNode(v);
+			 return r->getModel_PathByEdgeLit(node,store_path);
+		 }
+		 if(ReachDetector<Weight,DynamicBackGraph<Weight>> * rback = dynamic_cast<ReachDetector<Weight,DynamicBackGraph<Weight>>*>(d)){
+			 int node = rback->getNode(v);
+			 return rback->getModel_PathByEdgeLit(node,store_path);
+		 }
+
+		 if(DistanceDetector<Weight> * dist = dynamic_cast<DistanceDetector<Weight>*>(d)) {
+			 int node = dist->getNode(v);
+			 return dist->getModel_PathByEdgeLit(node, store_path);
+		 }
+		 if(WeightedDistanceDetector<Weight> * dist2 = dynamic_cast<WeightedDistanceDetector<Weight>*>(d)) {
+			 int node = dist2->getNode(v);
+			 return dist2->getModel_PathByEdgeLit(node, store_path);
+		 }
+		 return false;
 	}
 };
 

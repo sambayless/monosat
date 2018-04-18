@@ -522,8 +522,20 @@ class Graph():
                 self.queryLookup[(start,i,n)]=v
 
         return reaches
-    
 
+    def reachesBackward(self,start,to):
+        """
+        A reaches query that traverses edges backwards (eg, u reaches v if the edge v->u is in the graph)
+        """
+        v = Var(self._monosat.reachesBackward(self.graph,start,to))
+        return v
+
+    def onPath(self,start,to,nodeOnPath):
+        """
+        True iff there exists a path from start to nodeOnPath, AND there exists a path from nodeOnPath to 'to'
+        """
+        v = Var(self._monosat.onPath(self.graph,start,to,nodeOnPath))
+        return v
     
     def minimumSpanningTreeLessEq(self,minweight):
         v = Var(self._monosat.minimumSpanningTree_leq(self.graph,minweight))

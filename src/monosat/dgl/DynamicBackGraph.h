@@ -46,6 +46,15 @@ public:
 private:
 	DynamicGraph<Weight> & base;
 	std::vector<FullEdge> all_back_edges;
+	void updateEdges(){
+		for(int id = all_back_edges.size();id<base.nEdgeIDs();id++){
+			auto & forward_edge = base.getEdge(id);
+			all_back_edges.push_back({forward_edge.to,forward_edge.from,forward_edge.id});
+			assert(all_back_edges[id].id==id);
+		}
+		assert(nEdgeIDs()==base.nEdgeIDs());
+		assert(all_back_edges.size()==base.nEdgeIDs());
+	}
 public:
 
 	DynamicBackGraph(DynamicGraph<Weight>  & base):base(base) {
@@ -80,6 +89,7 @@ public:
      bool hasEdge(int edgeID) const  override {return base.hasEdge(edgeID);};
 
      int addEdge(int from, int to, int id , Weight weight=1) override {
+		updateEdges();
      	int edgeID = base.addEdge(to,from,id,weight);
      	assert(all_back_edges.size()==base.nEdgeIDs()-1);
 		 if (all_back_edges.size() <= id)
@@ -111,12 +121,21 @@ public:
      Edge & incoming(int node, int i, bool undirected = false)  override {
      	return base.incident(node,i,undirected);
      };
-     std::vector<FullEdge> & getEdges() override {return all_back_edges;};
+     std::vector<FullEdge> & getEdges() override {
+     	updateEdges();
+     	return all_back_edges;
+     };
 
      std::vector<Weight> & getWeights() override {return base.getWeights();};
 
      Weight  getWeight(int edgeID) override {return base.getWeight(edgeID);};
-     FullEdge & getEdge(int id)   override {return all_back_edges[id];};
+     FullEdge & getEdge(int id)   override {
+     	updateEdges();
+ 		assert(all_back_edges.size()==base.nEdgeIDs());
+ 		assert(all_back_edges.size()>id);
+ 		assert(all_back_edges[id].id==id);
+     	return all_back_edges[id];
+     };
      void setEdgeEnabled(int id, bool enable) override {base.setEdgeEnabled(id,enable);};
 
      void enableEdge(int id)  override {base.enableEdge(id);};
