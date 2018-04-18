@@ -28,9 +28,10 @@ from monosat.singleton import Singleton
 from os import path
 from enum import Enum
 module_path = os.path.abspath(path.dirname(__file__))
-
+# If use_cython is true, then monosat will attempt to load the faster cython libraries first, falling back on ctypes if
+# the cython interface is not available
 # Set use_cython to false to force use of the ctypes api, rather than cython
-use_cython=True
+use_cython=False
 try:
     if not use_cython:
         raise Exception("Load ctypes")
@@ -378,6 +379,12 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.reaches.argtypes=[c_solver_p,c_graph_p, c_int, c_int]
             self.monosat_c.reaches.restype=c_literal
 
+            self.monosat_c.reachesBackward.argtypes=[c_solver_p,c_graph_p, c_int, c_int]
+            self.monosat_c.reachesBackward.restype=c_literal
+
+            self.monosat_c.onPath.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_int]
+            self.monosat_c.onPath.restype=c_literal
+
             self.monosat_c.shortestPathUnweighted_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
             self.monosat_c.shortestPathUnweighted_lt_const.restype=c_literal
 
@@ -521,8 +528,10 @@ class Monosat(metaclass=Singleton):
         return self.monosat_c.getVersion()
 
     #Until a better system is created, this can be used to re-initialize Monosat with a new configuration.
-    def newSolver(self,arguments=None):
+    def newSolver(self,arguments=None,output_file=None):
         self.solver = Solver(self.monosat_c,arguments)
+        if output_file is not None:
+            self.monosat_c.setOutputFile(self.solver._ptr,c_char_p(output_file.encode('ascii')))
         self.solver._true = self.getTrue()
         return self.solver
 
@@ -533,14 +542,14 @@ class Monosat(metaclass=Singleton):
     def getOutputFile(self):
         return self.solver.output
     
-    def setOutputFile(self, filename):
-        self.monosat_c.setOutputFile(self.solver._ptr,c_char_p(filename.encode('ascii')))
-        # self.solver.output=file
-        # if file is not None:#Otherwise, this unit clause will have been skipped in the output file
-        #     if self.solver.arguments is not None:
-        #         self._echoOutput("c monosat " + " ".join(self.solver.arguments) +"\n")
-        #     self.addUnitClause(self.solver._true)
-    
+    #def setOutputFile(self, filename):
+    #    self.monosat_c.setOutputFile(self.solver._ptr,c_char_p(filename.encode('ascii')))
+    # self.solver.output=file
+    # if file is not None:#Otherwise, this unit clause will have been skipped in the output file
+    #     if self.solver.arguments is not None:
+    #         self._echoOutput("c monosat " + " ".join(self.solver.arguments) +"\n")
+    #     self.addUnitClause(self.solver._true)
+
     def _echoOutput(self,line):
         if self.solver.output:
             self.solver.output.write(line)
@@ -1249,6 +1258,25 @@ class Monosat(metaclass=Singleton):
         l= self.monosat_c.reaches(self.solver._ptr,graph,c_int(u),c_int(v))
         if self.solver.output:
             self._echoOutput("reach " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + "\n" );
+        return l
+
+    def reachesBackward(self, graph, u,v):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
+        self.backtrack()
+        l= self.monosat_c.reachesBackward(self.solver._ptr,graph,c_int(u),c_int(v))
+        if self.solver.output:
+            self._echoOutput("reach_back " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(dimacs(l)) + "\n" );
+        return l
+
+    def onPath(self, graph, u,v,nodeOnPath):
+        self.checkNode(graph,u);
+        self.checkNode(graph,v);
+        self.checkNode(graph,nodeOnPath);
+        self.backtrack()
+        l= self.monosat_c.onPath(self.solver._ptr,graph,c_int(u),c_int(v),c_int(nodeOnPath))
+        if self.solver.output:
+            self._echoOutput("on_path " + str(self.getGID(graph)) + " " + str(u) + " " + str(v) + " " + str(nodeOnPath)  + " " + str(dimacs(l)) + "\n" );
         return l
 
     def shortestPathUnweighted_lt_const(self, graph, u,v,dist):

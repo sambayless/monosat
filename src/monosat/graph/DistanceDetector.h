@@ -43,13 +43,13 @@ namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
 
-template<typename Weight>
+template<typename Weight,typename Graph = DynamicGraph<Weight>>
 class DistanceDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 
-	DynamicGraph<Weight>  &g_under;
-	DynamicGraph<Weight>  &g_over;
+	Graph  &g_under;
+	Graph  &g_over;
 	//int within;
 	int source;
 	double rnd_seed;
@@ -117,7 +117,7 @@ public:
 
 	std::vector<double> rnd_weight;
 
-	WeightedDijkstra<Weight,DynamicGraph<Weight>,double> * rnd_path;
+	WeightedDijkstra<Weight,Graph,double> * rnd_path;
 
 
 
@@ -257,7 +257,7 @@ public:
 	bool getModel_Path(int node, std::vector<int> & store_path);
 	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-			DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+			Graph  &g_under, Graph  &g_over, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
     ~DistanceDetector() override {
 
 		if (overapprox_unweighted_distance_detector)

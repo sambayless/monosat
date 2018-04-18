@@ -124,6 +124,8 @@ from monosat_header cimport newString as _newString_monosat
 from monosat_header cimport newTransition as _newTransition_monosat
 from monosat_header cimport newVar as _newVar_monosat
 from monosat_header cimport reaches as _reaches_monosat
+from monosat_header cimport reachesBackward as _reachesBackward_monosat
+from monosat_header cimport onPath as _onPath_monosat
 from monosat_header cimport readGNF as _readGNF_monosat
 from monosat_header cimport setConflictLimit as _setConflictLimit_monosat
 from monosat_header cimport setDecisionPolarity as _setDecisionPolarity_monosat
@@ -1342,11 +1344,29 @@ def reaches( S ,  G ,  _from ,  to ):
     
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
-
-
-
-
     cdef int _r = _reaches_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to))
+    py_result = <int>_r
+    return py_result
+
+def reachesBackward( S ,  G ,  _from ,  to ):
+    """Cython signature: int reaches(void* S, void* G, int _from, int to)"""
+
+
+    assert isinstance(_from, (int, long)), 'arg _from wrong type'
+    assert isinstance(to, (int, long)), 'arg to wrong type'
+    cdef int _r = _reachesBackward_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to))
+    py_result = <int>_r
+    return py_result
+
+
+def onPath( S ,  G ,  _from ,  to,nodeOnPath ):
+    """Cython signature: int reaches(void* S, void* G, int _from, int to, int nodeOnPath)"""
+
+
+    assert isinstance(_from, (int, long)), 'arg _from wrong type'
+    assert isinstance(to, (int, long)), 'arg to wrong type'
+    assert isinstance(nodeOnPath, (int, long)), 'arg to wrong type'
+    cdef int _r = _onPath_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>nodeOnPath))
     py_result = <int>_r
     return py_result
 

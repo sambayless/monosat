@@ -348,7 +348,13 @@ class Graph():
         
     def numEdges(self):
         return self.numedges
-        
+
+    def nNodes(self):
+        return self.nodes
+
+    def nEdges(self):
+        return self.numedges
+
     def getNodes(self):
         return range(self.nodes)
     

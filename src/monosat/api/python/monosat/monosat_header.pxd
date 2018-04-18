@@ -202,6 +202,10 @@ cdef extern from "monosat/api/Monosat.h":
 
     int reaches(SolverPtr S, GraphTheorySolver_long G, int _from, int to)
 
+    int reachesBackward(SolverPtr S, GraphTheorySolver_long G, int _from, int to)
+
+    int onPath(SolverPtr S, GraphTheorySolver_long G, int _from, int to, int nodeOnPath)
+
     int shortestPathUnweighted_lt_const(SolverPtr S, GraphTheorySolver_long G, int _from, int to, int steps)
 
     int shortestPathUnweighted_leq_const(SolverPtr S, GraphTheorySolver_long G, int _from, int to, int steps)

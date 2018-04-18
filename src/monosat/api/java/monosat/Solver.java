@@ -64,17 +64,34 @@ public class Solver implements Closeable {
         this(collectArgs(args), false);
     }
 
-    public Solver(ArrayList<String> args, boolean enable_preprocessing) {
-        this(collectArgs(args), enable_preprocessing);
+    public Solver(ArrayList<String> args, String outputFile) {
+        this(collectArgs(args), false,outputFile);
     }
 
-    public Solver(String args, boolean enable_preprocessing) {
+    public Solver(ArrayList<String> args, boolean enable_preprocessing) {
+        this(collectArgs(args), enable_preprocessing,"");
+    }
+    public Solver(ArrayList<String> args, boolean enable_preprocessing, String outputFile) {
+        this(collectArgs(args), enable_preprocessing,outputFile);
+    }
+    public Solver(String args, boolean enable_preprocessing){
+        this(args,enable_preprocessing,"");
+    }
+    public Solver(String args, String outputFule){
+        this(args,false,outputFule);
+    }
+    public Solver(String args, boolean enable_preprocessing,String outputFile) {
         if (args != null && args.length() > 0) {
             solverPtr = MonosatJNI.newSolver(args);
         } else {
             solverPtr = MonosatJNI.newSolver();
         }
-        assert (solverPtr != 0);
+        if (solverPtr==0){
+            throw new RuntimeException("Failed to created solver");
+        }
+        if(outputFile!=null && outputFile.length()>0){
+            MonosatJNI.setOutputFile(solverPtr, outputFile);
+        }
         if (!enable_preprocessing) {
             disablePreprocessing();
         }
@@ -167,9 +184,7 @@ public class Solver implements Closeable {
         assert (bvPtr != 0);
     }
 
-    public void setOutputFile(String file) {
-        MonosatJNI.setOutputFile(solverPtr, file);
-    }
+
 
 
     protected void validate(Lit... args){

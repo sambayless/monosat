@@ -7,8 +7,8 @@ import shutil
 import sys
 from distutils.core import setup
 monosat_path ="../../../../src/"
-#Set to False to disable compiling cython modules, set to True to eanble cython
-use_cython=True
+#Set to False to disable compiling cython modules, set to True to enable cython
+use_cython=False
 
 if use_cython:
     # attempt to load the cython modules

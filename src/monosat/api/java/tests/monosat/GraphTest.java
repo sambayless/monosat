@@ -26,6 +26,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class GraphTest {
 
@@ -128,13 +130,13 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3);
 
         Lit r = g.reaches(0, 3);
-        assertEquals(s.solve(r), true);
-        assertEquals(s.solve(r, e_0_1.negate(), e_2_3.negate()), false);
-        assertEquals(s.solve(r, e_0_2.negate(), e_1_3.negate()), true);
+        assertTrue(s.solve(r));
+        assertFalse(s.solve(r, e_0_1.negate(), e_2_3.negate()));
+        assertTrue(s.solve(r, e_0_2.negate(), e_1_3.negate()));
 
-        assertEquals(s.solve(r, e_0_2.negate(), e_1_3.negate(), e_2_3.negate()), false);
+        assertFalse(s.solve(r, e_0_2.negate(), e_1_3.negate(), e_2_3.negate()));
 
-        assertEquals(s.solve(r, e_0_2.negate(), e_1_3.negate()), true);
+        assertTrue(s.solve(r, e_0_2.negate(), e_1_3.negate()));
         //There should only be one solution to this: 0->1, 1->2, 2->3
         ArrayList<Integer> nodes = g.getPathNodes(r);
         ArrayList<Lit> edges = g.getPathEdges(r);
@@ -144,13 +146,13 @@ public class GraphTest {
         assertEquals(edges.get(0), e_0_1);
         assertEquals(edges.get(1), e_1_2);
         assertEquals(edges.get(2), e_2_3);
-        assertEquals(s.getValue(e_0_1), true);
-        assertEquals(s.getValue(e_1_2), true);
-        assertEquals(s.getValue(e_2_3), true);
-        assertEquals(s.getValue(e_0_2), false);
-        assertEquals(s.getValue(e_1_3), false);
+        assertTrue(s.getValue(e_0_1));
+        assertTrue(s.getValue(e_1_2));
+        assertTrue(s.getValue(e_2_3));
+        assertFalse(s.getValue(e_0_2));
+        assertFalse(s.getValue(e_1_3));
 
-        assertEquals(s.solve(r), true);
+        assertTrue(s.solve(r));
 
     }
 
@@ -162,7 +164,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
   
           0 *--* 1
@@ -178,14 +180,14 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
         BitVector cmp = s.bv(4);
         Lit f = g.compareMaximumFlow(0, 3, cmp, Comparison.GEQ);
-        assertEquals(s.solve(f), true);
-        assertEquals(s.solve(f, cmp.eq(3)), false);
-        assertEquals(s.solve(f, cmp.eq(2)), true);
-        assertEquals(s.solve(f, cmp.eq(1)), true);
-        assertEquals(s.solve(f, e_0_1.negate(), e_2_3.negate()), true);
-        assertEquals(s.solve(f, e_0_1.negate(), e_2_3.negate(), cmp.eq(1)), false);
-        assertEquals(s.solve(f, e_0_2.negate(), e_1_3.negate()), true);
-        assertEquals(s.solve(f), true);
+        assertTrue(s.solve(f));
+        assertFalse(s.solve(f, cmp.eq(3)));
+        assertTrue(s.solve(f, cmp.eq(2)));
+        assertTrue(s.solve(f, cmp.eq(1)));
+        assertTrue(s.solve(f, e_0_1.negate(), e_2_3.negate()));
+        assertFalse(s.solve(f, e_0_1.negate(), e_2_3.negate(), cmp.eq(1)));
+        assertTrue(s.solve(f, e_0_2.negate(), e_1_3.negate()));
+        assertTrue(s.solve(f));
     }
 
     @Test
@@ -196,7 +198,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -231,7 +233,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -269,7 +271,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -308,7 +310,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -350,7 +352,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -390,7 +392,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -431,7 +433,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -473,7 +475,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -515,7 +517,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -558,7 +560,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -576,20 +578,20 @@ public class GraphTest {
         BitVector dist = s.bv(4);
         Lit d = g.compareDistance(0, 3, dist, Comparison.LEQ);
         s.assertTrue(d);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), false);
-        assertEquals(s.solve(dist.eq(1)), false);
-        assertEquals(s.solve(dist.eq(2)), true);
-        assertEquals(s.solve(dist.eq(3)), true);
+        assertTrue(s.solve(dist.gt(0)));
+        assertFalse(s.solve(dist.eq(0)));
+        assertFalse(s.solve(dist.eq(1)));
+        assertTrue(s.solve(dist.eq(2)));
+        assertTrue(s.solve(dist.eq(3)));
 
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), true);
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.negate(), e_2_3.negate()), false);
-        assertEquals(s.solve(e_0_2.negate(), e_1_3.negate()), true);
-        assertEquals(s.solve(e_0_2.negate(), e_1_3.negate(), e_2_3.negate(), dist.eq(1)), false);
+        assertFalse(s.solve(e_0_1.negate(), e_2_3.negate()));
+        assertTrue(s.solve(e_0_2.negate(), e_1_3.negate()));
+        assertFalse(s.solve(e_0_2.negate(), e_1_3.negate(), e_2_3.negate(), dist.eq(1)));
 
     }
 
@@ -601,7 +603,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -644,7 +646,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -687,7 +689,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -731,7 +733,7 @@ public class GraphTest {
         for (int i = 0; i < 4; i++) {
             g.addNode();
         }
-        //create a directed square graph with one diagonal edges
+        //create a directed square graph withone diagonal edge
           /*
 
           0 *--* 1
@@ -785,20 +787,20 @@ public class GraphTest {
         Lit e_3_0 = g.addEdge(3, 0);
 
         Lit r = g.acyclic();
-        assertEquals(s.solve(r), true);
-        assertEquals(s.solve(r, e_0_1.negate(), e_2_3.negate()), true);
-        assertEquals(s.solve(r, e_0_2.negate(), e_1_3.negate()), true);
-        assertEquals(s.solve(r, e_0_2.negate(), e_1_3.negate(), e_2_3.negate()), true);
-        assertEquals(s.solve(r, e_0_1, e_1_2, e_2_3, e_3_0), false);
-        assertEquals(s.solve(r), true);
+        assertTrue(s.solve(r));
+        assertTrue(s.solve(r, e_0_1.negate(), e_2_3.negate()));
+        assertTrue(s.solve(r, e_0_2.negate(), e_1_3.negate()));
+        assertTrue(s.solve(r, e_0_2.negate(), e_1_3.negate(), e_2_3.negate()));
+        assertFalse(s.solve(r, e_0_1, e_1_2, e_2_3, e_3_0));
+        assertTrue(s.solve(r));
 
-        assertEquals(s.solve(r.negate()), true);
-        assertEquals(s.solve(r.negate(), e_0_1.negate(), e_2_3.negate()), false);
-        assertEquals(s.solve(r.negate(), e_0_2.negate(), e_1_3.negate()), true);
-        assertEquals(s.solve(r.negate(), e_0_2.negate(), e_1_3.negate(), e_2_3.negate()), false);
-        assertEquals(s.solve(r.negate(), e_0_1, e_1_2, e_2_3, e_3_0), true);
-        assertEquals(s.solve(r.negate()), true);
-        assertEquals(s.solve(r), true);
+        assertTrue(s.solve(r.negate()));
+        assertFalse(s.solve(r.negate(), e_0_1.negate(), e_2_3.negate()));
+        assertTrue(s.solve(r.negate(), e_0_2.negate(), e_1_3.negate()));
+        assertFalse(s.solve(r.negate(), e_0_2.negate(), e_1_3.negate(), e_2_3.negate()));
+        assertTrue(s.solve(r.negate(), e_0_1, e_1_2, e_2_3, e_3_0));
+        assertTrue(s.solve(r.negate()));
+        assertTrue(s.solve(r));
 
     }
 
@@ -822,20 +824,20 @@ public class GraphTest {
         Lit e_3_0 = g.addEdge(3, 0);
 
         Lit r = g.acyclic();
-        assertEquals(s.solve(r), true);
-        assertEquals(s.solve(r, e_0_1.negate(), e_2_3.negate()), true);
-        assertEquals(s.solve(r, e_0_2.negate(), e_1_3.negate()), true);
-        assertEquals(s.solve(r, e_0_2.negate(), e_1_3.negate(), e_2_3.negate()), true);
-        assertEquals(s.solve(r, e_0_1, e_1_2, e_2_3, e_3_0), false);
-        assertEquals(s.solve(r), true);
+        assertTrue(s.solve(r));
+        assertTrue(s.solve(r, e_0_1.negate(), e_2_3.negate()));
+        assertTrue(s.solve(r, e_0_2.negate(), e_1_3.negate()));
+        assertTrue(s.solve(r, e_0_2.negate(), e_1_3.negate(), e_2_3.negate()));
+        assertFalse(s.solve(r, e_0_1, e_1_2, e_2_3, e_3_0));
+        assertTrue(s.solve(r));
 
-        assertEquals(s.solve(r.negate()), true);
-        assertEquals(s.solve(r.negate(), e_0_1.negate(), e_2_3.negate()), false);
-        assertEquals(s.solve(r.negate(), e_0_2.negate(), e_1_3.negate()), true);
-        assertEquals(s.solve(r.negate(), e_0_2.negate(), e_1_3.negate(), e_2_3.negate()), false);
-        assertEquals(s.solve(r.negate(), e_0_1, e_1_2, e_2_3, e_3_0), true);
-        assertEquals(s.solve(r.negate()), true);
-        assertEquals(s.solve(r), true);
+        assertTrue(s.solve(r.negate()));
+        assertFalse(s.solve(r.negate(), e_0_1.negate(), e_2_3.negate()));
+        assertTrue(s.solve(r.negate(), e_0_2.negate(), e_1_3.negate()));
+        assertFalse(s.solve(r.negate(), e_0_2.negate(), e_1_3.negate(), e_2_3.negate()));
+        assertTrue(s.solve(r.negate(), e_0_1, e_1_2, e_2_3, e_3_0));
+        assertTrue(s.solve(r.negate()));
+        assertTrue(s.solve(r));
 
     }
 

@@ -519,6 +519,7 @@ public:
 	};
 	vec<ReachInfo> weighted_dist_info;
 	vec<ReachInfo> dist_info;
+	vec<ReachInfo> backward_dist_info;
 	vec<ReachInfo> reach_info;
     vec<ReachInfo> backward_reach_info;
 	vec<ReachInfo> connect_info;
@@ -529,6 +530,7 @@ public:
 	vec<ReachDetector<Weight>*> reach_detectors;
     vec<ReachDetector<Weight,DynamicBackGraph<Weight>>*> reach_back_detectors;
 	vec<DistanceDetector<Weight>*> distance_detectors;
+	vec<DistanceDetector<Weight,DynamicBackGraph<Weight>>*> distance_back_detectors;
 	vec<WeightedDistanceDetector<Weight>*> weighted_distance_detectors;
 	vec<MaxflowDetector<Weight>*> flow_detectors;
 	ConnectedComponentsDetector<Weight>* component_detector = nullptr;
@@ -1256,8 +1258,10 @@ public:
 		inv_adj.push();
 		undirected_adj.push();
 		reach_info.push();
+		backward_reach_info.push();
 		connect_info.push();
 		dist_info.push();
+		backward_dist_info.push();
 		weighted_dist_info.push();
 		g_over.addNode();
 		cutGraph.addNode();
@@ -3198,24 +3202,41 @@ public:
 		}
 		if (within_steps <= -1)
 			within_steps = g_under.nodes();
-		
-		if (dist_info[from].source < 0) {
-			DistanceDetector<Weight> * d = new DistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
-					from, drand(rnd_seed));
+		if(!backward) {
+			if (dist_info[from].source < 0) {
+				DistanceDetector<Weight> *d = new DistanceDetector<Weight>(detectors.size(), this, g_under, g_over,
+																		   from, drand(rnd_seed));
 
-			addDetector(d);
+				addDetector(d);
 
-			distance_detectors.push(d);
-			assert(detectors.last()->getID() == detectors.size() - 1);
-			dist_info[from].source = from;
-			dist_info[from].detector = detectors.last();
+				distance_detectors.push(d);
+				assert(detectors.last()->getID() == detectors.size() - 1);
+				dist_info[from].source = from;
+				dist_info[from].detector = detectors.last();
+			}
+
+			DistanceDetector<Weight> *d = (DistanceDetector<Weight> *) dist_info[from].detector;
+			assert(d);
+
+			d->addUnweightedShortestPathLit(from, to, reach_var, within_steps);
+		}else{
+			if (backward_dist_info[from].source < 0) {
+				DistanceDetector<Weight,DynamicBackGraph<Weight>> *d = new DistanceDetector<Weight,DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back, g_over_back,
+																		   from, drand(rnd_seed));
+
+				addDetector(d);
+
+				distance_back_detectors.push(d);
+				assert(detectors.last()->getID() == detectors.size() - 1);
+				backward_dist_info[from].source = from;
+				backward_dist_info[from].detector = detectors.last();
+			}
+
+			DistanceDetector<Weight,DynamicBackGraph<Weight>> *d = (DistanceDetector<Weight,DynamicBackGraph<Weight>> *) dist_info[from].detector;
+			assert(d);
+
+			d->addUnweightedShortestPathLit(from, to, reach_var, within_steps);
 		}
-		
-		DistanceDetector<Weight> * d = (DistanceDetector<Weight>*) dist_info[from].detector;
-		assert(d);
-		
-		d->addUnweightedShortestPathLit(from, to, reach_var, within_steps);
-		
 	}
 
 	void enableNegativeWeights(){
@@ -3542,7 +3563,7 @@ public:
 	}
 	
 	void reaches(int from, int to, Var reach_var, int within_steps = -1) {
-		unimplemented_reachability_constraints.push( { from, to, within_steps, reach_var });
+		unimplemented_reachability_constraints.push( { from, to, within_steps, reach_var,false });
 		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
 		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
 	}
@@ -3554,7 +3575,9 @@ public:
     //True iff there exists a path from 'from' to 'to' that crosses the node 'nodeOnPath'
     void onPath(int from, int to, int nodeOnPath, Var on_path_var) {
         reaches(from,nodeOnPath,on_path_var);
-        reachesBackward(to,nodeOnPath,on_path_var);
+        Var v =  S->newVar(false,false);
+        makeEqual(mkLit(v),mkLit(on_path_var));
+        reachesBackward(to,nodeOnPath,v);
     }
 	void distance(int from, int to, Var reach_var,  Weight distance_lt,bool inclusive) {
 		unimplemented_distance_constraints.push( { from, to, distance_lt, reach_var,!inclusive });
