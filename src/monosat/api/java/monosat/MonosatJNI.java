@@ -314,6 +314,11 @@ public class MonosatJNI {
     //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
     public native static int getModel_Literal(long solverPtr, int lit);
 
+    //Check if a literal is known to be a constant by the solver (eg, if it has an assignment at decision level 0).
+    //For a given literal (not variable!), returns 0 for if the literal is a true constant, 1 if it is a false constant,
+    //or 2 is it not assigned at level 0.
+    public native static int getConstantModel_Literal(long solverPtr, int lit);
+
     //Get an assignment to a bitvector in the model. The model may find a range of satisfying assignments to the bitvector;
     //If getMaximumValue is true, this function returns the maximum satisfying assignment to the bitvector in the model; else it returns the smallest.
     public native static long getModel_BV(long solverPtr, long bvPtr, int bvID, boolean getMaximumValue);

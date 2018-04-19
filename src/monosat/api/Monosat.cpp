@@ -1751,7 +1751,7 @@ bool hasModel(Monosat::SimpSolver * S){
 //Returns 0 for true, 1 for false, 2 for unassigned.
 int getModel_Literal(Monosat::SimpSolver * S,int lit){
 	Lit l = toLit(lit);
-	//if (var(l)>=S->model.size())
+
     if(var(l)<0 || var(l)>=S->nVars())
 		api_errorf("Variable %d is undefined",dimacs(l));
     else if (var(l) >= S->model.size()){
@@ -1769,6 +1769,21 @@ int getModel_Literal(Monosat::SimpSolver * S,int lit){
 	}
 	return toInt(val);//toInt(S->value(toLit(lit)));
 }
+//Returns 0 for true, 1 for false, 2 for unassigned, at level 0.
+int getConstantModel_Literal(Monosat::SimpSolver * S,int lit){
+    Lit l = toLit(lit);
+
+    if(var(l)<0 || var(l)>=S->nVars())
+        api_errorf("Variable %d is undefined",dimacs(l));
+
+    if(!S->isConstant(var(l)))
+        return toInt(l_Undef);
+
+    lbool val = S->value(l);
+    assert(val==l_True || val==l_False || val==l_Undef);
+    return toInt(val);
+}
+
 int64_t getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, bool getMaximumValue){
 	if(getMaximumValue){
 		return bv->getOverApprox(bvID);

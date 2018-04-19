@@ -795,6 +795,27 @@ public class Solver implements Closeable {
         }
     }
     /**
+    * Sometimes the solver may prove that a literal must always be true, or must always be false, in any satisfying assignment.
+    * If the solver has already proven that literal l must always be true, or always false, returns LBool.True or LBool.False.
+    * Otherwise, returns LBool.Undef.
+    *
+    * Note that as constraints are added to the solver, and after solve calls, the solver may learn that new literals are constant.
+    * This function will not attempt to prove that l is constant, if the solver does not already know this.
+    * You can attempt to discover whether a literal is constant using the assumption mechanism, eg:
+    * if(~solve(l)){
+    *   //l must be constant false, because the constraints are UNSAT if l is true.
+    * }
+    *
+    */
+     public LBool getConstantValue(Lit l) {
+            validate(l);
+            /*if (!MonosatJNI.hasModel(solverPtr)) {
+                throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
+            }*/
+            LBool val = LBool.toLbool(MonosatJNI.getConstantModel_Literal(solverPtr, l.l));
+            return val;
+        }
+    /**
      * Return the value of this bitvector from the solver.
      * Sometimes, a range of values may be determined by the solver to be satisfying.
      * If getMaximumValue is true, then largest value in that range will be returned,

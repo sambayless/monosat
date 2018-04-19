@@ -291,6 +291,10 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   bool hasModel(SolverPtr S);
   //For a given literal (not variable!), returns 0 for true, 1 for false, 2 for unassigned.
   int getModel_Literal(SolverPtr S,int lit);
+  //Check if a literal is known to be a constant by the solver (eg, if it has an assignment at decision level 0).
+  //For a given literal (not variable!), returns 0 for if the literal is a true constant, 1 if it is a false constant,
+  //or 2 is it not assigned at level 0.
+  int getConstantModel_Literal(SolverPtr S,int lit);
   //Get an assignment to a bitvector in the model. The model may find a range of satisfying assignments to the bitvector;
   //If getMaximumValue is true, this function returns the maximum satisfying assignment to the bitvector in the model; else it returns the smallest.
   Weight getModel_BV(SolverPtr S, BVTheoryPtr bv, int bvID, bool getMaximumValue);
@@ -307,6 +311,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
 
   int getModel_Path_EdgeLits_Length(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal);
   int getModel_Path_EdgeLits(SolverPtr S,GraphTheorySolver_long G,int reach_or_distance_literal, int store_length, int * store);
+
 
 
 #ifdef __cplusplus
