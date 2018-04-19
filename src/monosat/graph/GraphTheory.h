@@ -81,6 +81,7 @@ private:
 	int local_q = 0;
 	bool lazy_backtracking_enabled=false;
 	vec<Theory*> propagation_required_theories;
+
 public:
 	int n_satisfied_detectors=0;
 	bool all_edges_unit = true;
@@ -135,6 +136,9 @@ public:
 	bool using_neg_weights = false;
 	DynamicGraph<Weight> g_under_weights_over;
 	DynamicGraph<Weight> g_over_weights_under;
+
+    VMap<Var> pathForwardMap;
+    VMap<Var> pathBackMap;
 
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
@@ -3256,9 +3260,7 @@ public:
 		}
 	}
 
-	void implementPathConstraint(int from, int to, int nodeOnPath, Var onPath){
-	    //to do
-	}
+
 
 	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance, bool strictComparison) {
 		if(to >= g_under.nodes()){
@@ -3573,11 +3575,16 @@ public:
     }
 
     //True iff there exists a path from 'from' to 'to' that crosses the node 'nodeOnPath'
-    void onPath(int from, int to, int nodeOnPath, Var on_path_var) {
-        reaches(from,nodeOnPath,on_path_var);
-        Var v =  S->newVar(false,false);
-        makeEqual(mkLit(v),mkLit(on_path_var));
-        reachesBackward(to,nodeOnPath,v);
+    void onPath(int nodeOnPath,int from, int to, Var on_path_var) {
+
+        Var v1 =  S->newVar(false,false);
+        Var v2 =  S->newVar(false,false);
+        makeEqualInSolver(mkLit(v1),mkLit(on_path_var));
+        makeEqualInSolver(mkLit(v2),mkLit(on_path_var));
+        reaches(from,nodeOnPath,v1);
+        reachesBackward(to,nodeOnPath,v2);
+        pathForwardMap.insert(on_path_var,v1);
+        pathBackMap.insert(on_path_var,v2);
     }
 	void distance(int from, int to, Var reach_var,  Weight distance_lt,bool inclusive) {
 		unimplemented_distance_constraints.push( { from, to, distance_lt, reach_var,!inclusive });
@@ -3832,20 +3839,36 @@ public:
 	}
 
 
-
-
 	//Get a valid path, in terms of nodes, (from a reachability or shortest path constraint)
 	//store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
 	//Or, return false if there is no such path
-	bool getModel_Path(Lit theoryLit, std::vector<int> & store_path){
+	bool getModel_Path(Lit solverLit, std::vector<int> & store_path){
 		store_path.clear();
-		Var v = var(theoryLit);
+
+
+		if(pathForwardMap.has(var(solverLit))){
+		    assert(pathBackMap.has(var(solverLit)));
+            //if the forward node has an associated
+            Var v1 = pathForwardMap[var(solverLit)];
+            Var v2 = pathBackMap[var(solverLit)];
+
+            std::vector<int> store_backward;
+            bool r1 = getModel_Path(mkLit(v1),store_path);
+            bool r2 = getModel_Path(mkLit(v2),store_backward);
+            for(int i = store_backward.size()-2;i>=0;i--){
+                store_path.push_back(store_backward[i]);
+            }
+		    return r1&& r2;
+		}
+
+        Lit theoryLit = S->getTheoryLit(solverLit);
+        Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
 		//this is awful, fix this!!
 
 		if(ReachDetector<Weight> * r = dynamic_cast<ReachDetector<Weight>*>(d)){
 			int node = r->getNode(v);
-			return r->getModel_Path(node,store_path);
+            return r->getModel_Path(node, store_path);
 		}
 		if(ReachDetector<Weight,DynamicBackGraph<Weight>> * rback = dynamic_cast<ReachDetector<Weight,DynamicBackGraph<Weight>>*>(d)){
 			int node = rback->getNode(v);
@@ -3866,9 +3889,27 @@ public:
 	 //Get a valid path, in terms of edges, (from a reachability or shortest path constraint)
 	 //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
 	//Or, return false if there is no such path
-	bool getModel_PathByEdgeLit(Lit theoryLit, std::vector<Lit> & store_path){
+	bool getModel_PathByEdgeLit(Lit solverLit, std::vector<Lit> & store_path){
 		store_path.clear();
-		Var v = var(theoryLit);
+
+
+         if(pathForwardMap.has(var(solverLit))){
+             assert(pathBackMap.has(var(solverLit)));
+             //if the forward node has an associated
+             Var v1 = pathForwardMap[var(solverLit)];
+             Var v2 = pathBackMap[var(solverLit)];
+
+             std::vector<Lit> store_backward;
+             bool r1 = getModel_PathByEdgeLit(mkLit(v1),store_path);
+             bool r2 = getModel_PathByEdgeLit(mkLit(v2),store_backward);
+             for(int i = store_backward.size()-1;i>=0;i--){
+                 store_path.push_back(store_backward[i]);
+             }
+             return r1&& r2;
+         }
+
+         Lit theoryLit =  S->getTheoryLit(solverLit);
+         Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
 
 

@@ -374,13 +374,12 @@ void printStats(SimpSolver* solver) {
 	printf("CPU time              : %g s\n", cpu_time);
 }
 
-
-//Supporting function for throwing parse errors
 inline void write_out(Monosat::SimpSolver * S, const char *fmt, ...) {
 	MonosatData * d = (MonosatData*) S->_external_data;
 	if (!d || !d->outfile){
 		return;
 	}
+
 	va_list args;
 	va_start(args, fmt);
 	if( vfprintf(d->outfile,fmt,args)<0){
@@ -1437,7 +1436,7 @@ int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int f
 	Var v = newVar(S);
 	Lit l =mkLit(v);
 
-	write_out(S,"reach %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l));
+	write_out(S,"reach %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l));
 	G->reaches(from, to, v);
 	G->implementConstraints();
 	return toInt(l);
@@ -1446,24 +1445,23 @@ int reachesBackward(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> 
 	Var v = newVar(S);
 	Lit l =mkLit(v);
 
-	write_out(S,"reach_backward %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l));
+	write_out(S,"reach_backward %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l));
 	G->reachesBackward(from, to, v);
 	G->implementConstraints();
 	return toInt(l);
 }
-int onPath(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int nodeOnPath){
+int onPath(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int nodeOnPath,int from, int to){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-
-	write_out(S,"on_path %d %d %d %d %d, %d\n",G->getGraphID(),from,to, nodeOnPath, dimacs(l));
-	G->onPath(from, to,nodeOnPath, v);
+	write_out(S,"on_path %d %d %d %d %d\n",G->getGraphID(),nodeOnPath,from,to, dimacs(l));
+	G->onPath(nodeOnPath,from, to, v);
 	G->implementConstraints();
 	return toInt(l);
 }
 int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	write_out(S,"distance_lt %d %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),steps);
+	write_out(S,"distance_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),steps);
 	G->reaches(from, to, v,steps-1);
 	G->implementConstraints();
 	return toInt(l);
@@ -1482,7 +1480,7 @@ int shortestPathUnweighted_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySol
 int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
 	Var v = newVar(S);
 	Lit l =mkLit(v);
-	write_out(S,"distance_leq %d %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),steps);
+	write_out(S,"distance_leq %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),steps);
 	G->reaches(from, to, v,steps);
 	G->implementConstraints();
 	return toInt(l);
@@ -1796,7 +1794,7 @@ int64_t getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * 
 int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal){
 	Lit l = toLit(reach_or_distance_literal);
 	std::vector<int> store_path;
-	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
+	if(! G->getModel_Path(l,store_path)){
 		return -1;
 	}else{
 		return store_path.size();
@@ -1805,7 +1803,7 @@ int getModel_Path_Nodes_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolve
 int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal, int store_length, int * store){
 	Lit l = toLit(reach_or_distance_literal);
 	std::vector<int> store_path;
-	if(! G->getModel_Path(S->getTheoryLit(l),store_path)){
+	if(! G->getModel_Path(l,store_path)){
 		return -1;
 	}else if (store_length<store_path.size()) {
 		return store_path.size();
@@ -1819,7 +1817,7 @@ int getModel_Path_Nodes(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64
 int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal){
 	Lit l = toLit(reach_or_distance_literal);
 	std::vector<Lit> store_path;
-	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
+	if(! G->getModel_PathByEdgeLit(l,store_path)){
 		return -1;
 	}else{
 		return store_path.size();
@@ -1828,7 +1826,7 @@ int getModel_Path_EdgeLits_Length(Monosat::SimpSolver * S,Monosat::GraphTheorySo
 int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_distance_literal, int store_length, int * store){
 	Lit l = toLit(reach_or_distance_literal);
 	std::vector<Lit> store_path;
-	if(! G->getModel_PathByEdgeLit(S->getTheoryLit(l),store_path)){
+	if(! G->getModel_PathByEdgeLit(l,store_path)){
 		return -1;
 	}else if (store_length<store_path.size()) {
 		return store_path.size();

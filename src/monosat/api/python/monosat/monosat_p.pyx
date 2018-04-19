@@ -1359,14 +1359,14 @@ def reachesBackward( S ,  G ,  _from ,  to ):
     return py_result
 
 
-def onPath( S ,  G ,  _from ,  to,nodeOnPath ):
-    """Cython signature: int reaches(void* S, void* G, int _from, int to, int nodeOnPath)"""
+def onPath( S ,  G , nodeOnPath, _from ,  to ):
+    """Cython signature: int reaches(void* S, void* G, int nodeOnPath,int _from, int to)"""
 
 
     assert isinstance(_from, (int, long)), 'arg _from wrong type'
     assert isinstance(to, (int, long)), 'arg to wrong type'
     assert isinstance(nodeOnPath, (int, long)), 'arg to wrong type'
-    cdef int _r = _onPath_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int>nodeOnPath))
+    cdef int _r = _onPath_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>nodeOnPath), (<int>_from), (<int>to))
     py_result = <int>_r
     return py_result
 

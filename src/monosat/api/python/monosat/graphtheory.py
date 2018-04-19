@@ -530,11 +530,11 @@ class Graph():
         v = Var(self._monosat.reachesBackward(self.graph,start,to))
         return v
 
-    def onPath(self,start,to,nodeOnPath):
+    def onPath(self,nodeOnPath,start,to):
         """
         True iff there exists a path from start to nodeOnPath, AND there exists a path from nodeOnPath to 'to'
         """
-        v = Var(self._monosat.onPath(self.graph,start,to,nodeOnPath))
+        v = Var(self._monosat.onPath(self.graph,nodeOnPath,start,to))
         return v
     
     def minimumSpanningTreeLessEq(self,minweight):

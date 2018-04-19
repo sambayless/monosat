@@ -387,10 +387,10 @@ private:
 		++in;
 
 		int graphID = parseInt(in);
-		int from = parseInt(in);
-
-		int to = parseInt(in);
 		int nodeOnPath = parseInt(in);
+		int from = parseInt(in);
+		int to = parseInt(in);
+
 		int reachVar = parseInt(in) - 1;
 		if (graphID < 0 || graphID >= graphs.size()) {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
@@ -402,11 +402,11 @@ private:
 		reachVar= mapVar(S,reachVar);
 
 		if (graphs[graphID]) {
-			graphs[graphID]->onPath(from, to,nodeOnPath, reachVar);
+			graphs[graphID]->onPath(nodeOnPath,from, to, reachVar);
 		} else if (graphs_float[graphID]) {
-			graphs_float[graphID]->onPath(from, to,nodeOnPath, reachVar);
+			graphs_float[graphID]->onPath(nodeOnPath,from, to, reachVar);
 		} else if (graphs_rational[graphID]) {
-			graphs_rational[graphID]->onPath(from, to,nodeOnPath, reachVar);
+			graphs_rational[graphID]->onPath(nodeOnPath,from, to, reachVar);
 		} else {
 			parse_errorf("PARSE ERROR! Undeclared graph identifier %d\n", graphID);
 

@@ -1130,12 +1130,12 @@ class Monosat(metaclass=Singleton):
         l= self.monosat_c.reachesBackward(self.solver._ptr,graph,c_int(u),c_int(v))
         return l
 
-    def onPath(self, graph, u,v,nodeOnPath):
+    def onPath(self, graph,nodeOnPath, u,v):
         self.checkNode(graph,u);
         self.checkNode(graph,v);
         self.checkNode(graph,nodeOnPath);
         self.backtrack()
-        l= self.monosat_c.onPath(self.solver._ptr,graph,c_int(u),c_int(v),c_int(nodeOnPath))
+        l= self.monosat_c.onPath(self.solver._ptr,graph,c_int(nodeOnPath),c_int(u),c_int(v))
         return l
 
     def shortestPathUnweighted_lt_const(self, graph, u,v,dist):

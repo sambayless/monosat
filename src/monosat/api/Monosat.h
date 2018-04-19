@@ -251,7 +251,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int nEdges(SolverPtr S,GraphTheorySolver_long G);
   int reaches(SolverPtr S,GraphTheorySolver_long G,int from, int to);
   int reachesBackward(SolverPtr S,GraphTheorySolver_long G,int from, int to);
-  int onPath(SolverPtr S,GraphTheorySolver_long G,int from, int to, int nodeOnPath);
+  int onPath(SolverPtr S,GraphTheorySolver_long G,int nodeOnPath,int from, int to);
   int shortestPathUnweighted_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int steps);
   int shortestPathUnweighted_leq_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, int steps);
   int shortestPath_lt_const(SolverPtr S,GraphTheorySolver_long G,int from, int to, Weight dist);
