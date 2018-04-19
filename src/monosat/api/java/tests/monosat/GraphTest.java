@@ -231,7 +231,10 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3);
 
         Lit r =  g.onPath(1,0,3);
+        Lit r2 =  g.onPath(1,0,3);
         assertTrue(s.solve(r));
+        assertTrue(r.value());
+        assertTrue(r2.value());
         assertFalse(s.solve(r, e_0_1.not(), e_2_3.not()));
         assertTrue(s.solve(r, e_0_2.not(), e_1_3.not()));
 
@@ -253,6 +256,9 @@ public class GraphTest {
         assertFalse(s.getValue(e_0_2));
         assertFalse(s.getValue(e_1_3));
 
+        ArrayList<Integer> nodes2 = g.getPathNodes(r2);
+        ArrayList<Lit> edges2 = g.getPathEdges(r2);
+        assert(nodes2.size()==nodes.size());
         assertTrue(s.solve(r));
 
     }
