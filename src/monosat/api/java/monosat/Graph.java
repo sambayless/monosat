@@ -393,7 +393,26 @@ public class Graph {
         validateNode(to);
         return solver.toLit(MonosatJNI.reaches(solver.solverPtr, graphPtr, from, to));
     }
-
+    /**
+    * True if there exists a backwards path from -> to.
+    * For example, if there is an edge u->v enabled in the graph,
+    * then there is a backwards path from v to u.
+    */
+    public Lit reachesBackward(int from, int to) {
+        validateNode(from);
+        validateNode(to);
+        return solver.toLit(MonosatJNI.reachesBackward(solver.solverPtr, graphPtr, from, to));
+    }
+    /**
+    * True if there exists a path from 'from' to nodeOnPath, and a path from 'nodeOnPath' to 'to'
+    * This constraint is logically equivalent to And(g.reaches(from,nodeOnPath),g.reaches(nodeOnPath,to)),
+    * but may be more efficient if lots of nodeOnPath checks are made between the same 'from' and 'to' nodes.
+    */
+    public Lit onPath(int nodeOnPath,int from, int to) {
+        validateNode(from);
+        validateNode(to);
+        return solver.toLit(MonosatJNI.onPath(solver.solverPtr, graphPtr, nodeOnPath,from, to));
+    }
     public Lit compareDistance(int from, int to, long compareTo, Comparison comparison) {
         validateNode(from);
         validateNode(to);

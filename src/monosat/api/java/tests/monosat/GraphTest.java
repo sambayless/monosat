@@ -156,6 +156,107 @@ public class GraphTest {
 
     }
 
+    @Test
+    public void reachesBack() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for (int i = 0; i < 4; i++) {
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+        /*
+
+        0 *--* 1
+          |/ |
+        2 *--* 3
+
+         */
+        Lit e_0_1 = g.addEdge(0, 1);
+        Lit e_0_2 = g.addEdge(0, 2);
+        Lit e_1_3 = g.addEdge(1, 3);
+        Lit e_1_2 = g.addEdge(1, 2);
+        Lit e_2_3 = g.addEdge(2, 3);
+
+        Lit r = g.reachesBackward(3,0);
+        Lit r2 = g.reachesBackward(0,3);
+
+        assertTrue(s.solve(r));
+        assertFalse(s.solve(r2));
+        assertTrue(s.solve(r));
+        assertFalse(s.solve(r, e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(r, e_0_2.not(), e_1_3.not()));
+
+        assertFalse(s.solve(r, e_0_2.not(), e_1_3.not(), e_2_3.not()));
+
+        assertTrue(s.solve(r, e_0_2.not(), e_1_3.not()));
+        //There should only be one solution to this: 0->1, 1->2, 2->3
+        ArrayList<Integer> nodes = g.getPathNodes(r);
+        ArrayList<Lit> edges = g.getPathEdges(r);
+        assertEquals(edges.size(), 3);
+        assertEquals(nodes.size(), 4);
+
+        assertEquals(edges.get(2), e_0_1);
+        assertEquals(edges.get(1), e_1_2);
+        assertEquals(edges.get(0), e_2_3);
+        assertTrue(s.getValue(e_0_1));
+        assertTrue(s.getValue(e_1_2));
+        assertTrue(s.getValue(e_2_3));
+        assertFalse(s.getValue(e_0_2));
+        assertFalse(s.getValue(e_1_3));
+
+        assertTrue(s.solve(r));
+
+    }
+
+
+    @Test
+    public void onPath() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for (int i = 0; i < 4; i++) {
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+        /*
+
+        0 *--* 1
+          |/ |
+        2 *--* 3
+
+         */
+        Lit e_0_1 = g.addEdge(0, 1);
+        Lit e_0_2 = g.addEdge(0, 2);
+        Lit e_1_3 = g.addEdge(1, 3);
+        Lit e_1_2 = g.addEdge(1, 2);
+        Lit e_2_3 = g.addEdge(2, 3);
+
+        Lit r =  g.onPath(1,0,3);
+        assertTrue(s.solve(r));
+        assertFalse(s.solve(r, e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(r, e_0_2.not(), e_1_3.not()));
+
+        assertFalse(s.solve(r, e_0_2.not(), e_1_3.not(), e_2_3.not()));
+
+        assertTrue(s.solve(r, e_0_2.not(), e_1_3.not()));
+        //There should only be one solution to this: 0->1, 1->2, 2->3
+        ArrayList<Integer> nodes = g.getPathNodes(r);
+        ArrayList<Lit> edges = g.getPathEdges(r);
+        assertEquals(edges.size(), 3);
+        assertEquals(nodes.size(), 4);
+
+        assertEquals(edges.get(0), e_0_1);
+        assertEquals(edges.get(1), e_1_2);
+        assertEquals(edges.get(2), e_2_3);
+        assertTrue(s.getValue(e_0_1));
+        assertTrue(s.getValue(e_1_2));
+        assertTrue(s.getValue(e_2_3));
+        assertFalse(s.getValue(e_0_2));
+        assertFalse(s.getValue(e_1_3));
+
+        assertTrue(s.solve(r));
+
+    }
+
 
     @Test
     public void maximumFlow_geq() {

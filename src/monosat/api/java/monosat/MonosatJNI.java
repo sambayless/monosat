@@ -269,6 +269,10 @@ public class MonosatJNI {
 
     public native static int reaches(long solverPtr, long graphPtr, int from, int to);
 
+    public native static int reachesBackward(long solverPtr, long graphPtr, int from, int to);
+
+    public native static int onPath(long solverPtr, long graphPtr,int nodeOnPath,int from, int to);
+
     public native static int shortestPathUnweighted_lt_const(long solverPtr, long graphPtr, int from, int to, int steps);
 
     public native static int shortestPathUnweighted_leq_const(long solverPtr, long graphPtr, int from, int to, int steps);

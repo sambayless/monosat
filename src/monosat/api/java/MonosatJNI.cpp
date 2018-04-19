@@ -947,6 +947,24 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
     javaThrow(env);
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reachesBackward
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(reachesBackward(solver, graph, from, to));
+}catch(...) {
+    javaThrow(env);
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_onPath
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr,jint nodeOnPath, jint from, jint to) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(onPath(solver, graph,nodeOnPath, from, to));
+}catch(...) {
+    javaThrow(env);
+}
+
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1lt_1const
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jint steps) try {

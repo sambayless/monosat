@@ -777,6 +777,22 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    reachesBackward
+ * Signature: (JJII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reachesBackward
+  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    onPath
+ * Signature: (JJIII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_onPath
+  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    shortestPathUnweighted_lt_const
  * Signature: (JJIII)I
  */
