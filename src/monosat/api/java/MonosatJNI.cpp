@@ -1148,6 +1148,13 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
     javaThrow(env);
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConstantModel_1Literal
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint literal) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return jint(getConstantModel_Literal(solver, literal));
+}catch(...) {
+    javaThrow(env);
+}
 
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jboolean getMaximumValue) try {

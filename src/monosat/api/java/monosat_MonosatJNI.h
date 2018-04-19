@@ -937,6 +937,14 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    getConstantModel_Literal
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConstantModel_1Literal
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    getModel_BV
  * Signature: (JJIZ)J
  */

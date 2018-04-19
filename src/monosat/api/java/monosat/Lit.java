@@ -160,6 +160,30 @@ final public class Lit {
     public LBool possibleValue(){
         return getSolver().getPossibleValue(this);
     }
+    /**
+     * If a literal is known to the solver to be a constant (either true or false),
+     * this returns that value. Otherwise, returns LBool.Undef
+     */
+    public LBool constantValue(){
+        return getSolver().getConstantValue(this);
+    }
 
+    /**
+     * If a literal is known to the solver to be a constant (either true or false),
+     * this returns True.
+     * Note that even if this function returns false, the literal may still in fact be a constant,
+     * but this may not yet be known to the solver. As constraints are added, or after calls to solve(),
+     * the solver may discover that a literal is constant, and so this return value may change over time.
+     * @return True if the literal is known to the solver to be either always true, or always false, in any satisfying model.
+     */
+    public boolean isConst(){
+        return getSolver().getConstantValue(this)!=LBool.Undef;
+    }
 
+    public boolean isConstTrue(){
+        return getSolver().getConstantValue(this)==LBool.True;
+    }
+    public boolean isConstFalse(){
+        return getSolver().getConstantValue(this)==LBool.False;
+    }
 }
