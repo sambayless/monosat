@@ -859,20 +859,30 @@ public:
 		assert(vars[v].isEdge);
 		return v;
 	}
-	
-	void makeEqual(Lit l1, Lit l2) {
+    LMap<Lit> litLinkMap;
+	bool hasCanonicalSolverLit(Lit solverLit){
+	    return litLinkMap.has(solverLit) && (litLinkMap[solverLit]!=lit_Undef);
+	}
+	//If the same graph property is instantiated multiple times with different lits (eg,r1= g.reaches(1,3), r2 = g.reaches(1,3))
+    //then in most cases the graph theory will de-duplicate them underlying property detectors, and just assert those literals equal in the solver
+    //in such a case, the original literal can be recovered using getCanonicalSolverLit,
+    //which may be required to lookup the graph model for the de-duplicated property lit.
+	Lit getCanonicalSolverLit(Lit solverLit){
+	    while(hasCanonicalSolverLit(solverLit)){
+	        solverLit = litLinkMap[solverLit];
+	    }
+	    return solverLit;
+	}
+	Lit getCanonicalTheoryLit(Lit theoryLit){
+	    return S->getTheoryLit(getCanonicalSolverLit(toSolver(theoryLit)));
+	}
+	void makeEqual(Lit l1, Lit l2, bool linkSolverLit = false) {
 		Lit o1 = toSolver(l1);
 		Lit o2 = toSolver(l2);
-		tmp_clause.clear();
-		tmp_clause.push(~o1);
-		tmp_clause.push(o2);
-		S->addClauseSafely(tmp_clause);
-		tmp_clause.clear();
-		tmp_clause.push(o1);
-		tmp_clause.push(~o2);
-		S->addClauseSafely(tmp_clause);
+		makeEqualInSolver(o1,o2,linkSolverLit);
 	}
-	void makeEqualInSolver(Lit o1, Lit o2) {
+
+	void makeEqualInSolver(Lit o1, Lit o2, bool linkSolverLit = false) {
 		tmp_clause.clear();
 		tmp_clause.push(~o1);
 		tmp_clause.push(o2);
@@ -881,6 +891,12 @@ public:
 		tmp_clause.push(o1);
 		tmp_clause.push(~o2);
 		S->addClauseSafely(tmp_clause);
+		if(linkSolverLit){
+		    assert(!hasCanonicalSolverLit(o1));
+		    S->disableElimination(var(o1));
+		    litLinkMap.insert(o1,o2,lit_Undef);
+            assert(hasCanonicalSolverLit(o1));
+		}
 	}
 	bool addClause(Lit l1) override {
 		Lit o1 = toSolver(l1);
@@ -990,7 +1006,9 @@ public:
 		assert(bitvector_data[bvID].detectorID<0);
 		bitvector_data[bvID].detectorID = detectorID;
 	}
-
+	void disableElimination(Var v) override{
+		S->disableElimination(toSolver(v));
+	}
 	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar) override {
 
 
@@ -3577,14 +3595,21 @@ public:
     //True iff there exists a path from 'from' to 'to' that crosses the node 'nodeOnPath'
     void onPath(int nodeOnPath,int from, int to, Var on_path_var) {
 
-        Var v1 =  S->newVar(false,false);
-        Var v2 =  S->newVar(false,false);
-        makeEqualInSolver(mkLit(v1),mkLit(on_path_var));
-        makeEqualInSolver(mkLit(v2),mkLit(on_path_var));
+        Var v1 =  S->newVar();
+        Var v2 =  S->newVar();
+        //normally, we would add this literal as a theory var, which would
+		//prevent it's elimination.
+		//however, since we are not turning this var into a theory var, we need
+		//to explicitly prevent its elimination here.
+		S->disableElimination(on_path_var);
+        //on_path_var is true iff v1 AND v2 are true
+        S->addClause(mkLit(v1),~mkLit(on_path_var));
+        S->addClause(mkLit(v2),~mkLit(on_path_var));
+        S->addClause(~mkLit(v1),~mkLit(v2),mkLit(on_path_var));
         reaches(from,nodeOnPath,v1);
         reachesBackward(to,nodeOnPath,v2);
-        pathForwardMap.insert(on_path_var,v1);
-        pathBackMap.insert(on_path_var,v2);
+        pathForwardMap.insert(on_path_var,v1,var_Undef);
+        pathBackMap.insert(on_path_var,v2,var_Undef);
     }
 	void distance(int from, int to, Var reach_var,  Weight distance_lt,bool inclusive) {
 		unimplemented_distance_constraints.push( { from, to, distance_lt, reach_var,!inclusive });
@@ -3802,7 +3827,9 @@ public:
 		return !requiresPropagation;
 	}
 	Weight getModel_MaximumFlow(Lit theoryLit){
+	    theoryLit = getCanonicalTheoryLit(theoryLit);
 		Var v = var(theoryLit);
+
 		Detector * d= detectors[getDetector(v)];
 		MaxflowDetector<Weight> * mf = dynamic_cast<MaxflowDetector<Weight>*>(d);
 		if(!mf)
@@ -3810,6 +3837,7 @@ public:
 		return mf->getModel_Maxflow();
 	}
 	Weight getModel_MaximumFlow_EdgeFlow(Lit theoryLit, Lit edgeLit){
+        theoryLit = getCanonicalTheoryLit(theoryLit);
 		Var v = var(theoryLit);
 		assert(isEdgeVar(var(edgeLit)));
 		int edgeID =  getEdgeID(var(edgeLit));
@@ -3820,6 +3848,7 @@ public:
 		return mf->getModel_EdgeFlow(edgeID);
 	}
 	Weight getModel_MaximumFlow_AcyclicEdgeFlow(Lit theoryLit, Lit edgeLit){
+        theoryLit = getCanonicalTheoryLit(theoryLit);
 		Var v = var(theoryLit);
 		assert(isEdgeVar(var(edgeLit)));
 		int edgeID =  getEdgeID(var(edgeLit));
@@ -3830,6 +3859,7 @@ public:
 		return mf->getModel_AcyclicEdgeFlow(edgeID);
 	}
 	Weight getModel_MinimumSpanningWeight(Lit theoryLit){
+        theoryLit = getCanonicalTheoryLit(theoryLit);
 		Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
 		MSTDetector<Weight> * mst = dynamic_cast<MSTDetector<Weight>*>(d);
@@ -3844,9 +3874,9 @@ public:
 	//Or, return false if there is no such path
 	bool getModel_Path(Lit solverLit, std::vector<int> & store_path){
 		store_path.clear();
+        solverLit = getCanonicalSolverLit(solverLit);
 
-
-		if(pathForwardMap.has(var(solverLit))){
+		if(pathForwardMap.has(var(solverLit)) && pathForwardMap[var(solverLit)]!=var_Undef){
 		    assert(pathBackMap.has(var(solverLit)));
             //if the forward node has an associated
             Var v1 = pathForwardMap[var(solverLit)];
@@ -3891,9 +3921,9 @@ public:
 	//Or, return false if there is no such path
 	bool getModel_PathByEdgeLit(Lit solverLit, std::vector<Lit> & store_path){
 		store_path.clear();
+         solverLit= getCanonicalSolverLit(solverLit);
 
-
-         if(pathForwardMap.has(var(solverLit))){
+         if(pathForwardMap.has(var(solverLit)) && pathForwardMap[var(solverLit)]!=var_Undef){
              assert(pathBackMap.has(var(solverLit)));
              //if the forward node has an associated
              Var v1 = pathForwardMap[var(solverLit)];

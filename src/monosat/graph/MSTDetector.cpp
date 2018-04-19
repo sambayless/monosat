@@ -90,7 +90,7 @@ void MSTDetector<Weight>::addWeightLit(Var outer_weight_var, Weight & min_weight
 			found = true;
 			Lit r = weight_lits[i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->makeEqual(r, reachLit);
+			outer->makeEqual(reachLit,r,true);
 			/*outer->S->addClause(~r, reachLit);
 			 outer->S->addClause(r, ~reachLit);*/
 		}
@@ -143,7 +143,7 @@ void MSTDetector<Weight>::addTreeEdgeLit(int edge_id, Var outer_reach_var) {
 		found = true;
 		Lit r = tree_edge_lits[edge_id].l;
 		//force equality between the new lit and the old reach lit, in the SAT solver
-		outer->makeEqual(r, reachLit);
+		outer->makeEqual(reachLit,r,true);
 		/*		outer->S->addClause(~r, reachLit);
 		 outer->S->addClause(r, ~reachLit);*/
 	} else {

@@ -109,7 +109,7 @@ void AllPairsDetector<Weight,Graph>::addLit(int from, int to, Var outer_reach_va
 			found = true;
 			Lit r = dist_lits[from][to][i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->makeEqual(r, reachLit);
+			outer->makeEqual(reachLit,r,true);
 		}
 	}
 	if (!found) {

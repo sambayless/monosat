@@ -64,7 +64,7 @@ void CycleDetector<Weight>::addAcyclicLit(bool directed, Var outer_reach_var) {
 			undirected_acyclic_lit = l;
 			
 		} else {
-			outer->makeEqual(undirected_acyclic_lit, l);
+			outer->makeEqual(l,undirected_acyclic_lit,true);
 			/*outer->S->addClause(undirected_cycle_lit, ~l);
 			 outer->S->addClause(~undirected_cycle_lit, l);*/
 		}
@@ -73,7 +73,7 @@ void CycleDetector<Weight>::addAcyclicLit(bool directed, Var outer_reach_var) {
 			directed_acyclic_lit = l;
 			
 		} else {
-			outer->makeEqual(directed_acyclic_lit, l);
+			outer->makeEqual(l,directed_acyclic_lit,true);
 			/*			outer->S->addClause(directed_cycle_lit, ~l);
 			 outer->S->addClause(~directed_cycle_lit, l);*/
 		}

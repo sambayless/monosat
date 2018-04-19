@@ -77,6 +77,9 @@ public:
 	bool addClause(Lit p, Lit q, Lit r) override;                    // Add a ternary clause to the solver.
 	bool addClause_(vec<Lit>& ps, bool is_derived_clause=false);           // Add a clause to the solver without making superflous internal copy. Will
 
+	void disableElimination(Var v) override{
+		//do nothing
+	}
 
 	void setDecisionPriority(Var v, unsigned int p) {
 		priority[v] = p;

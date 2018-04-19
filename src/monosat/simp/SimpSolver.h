@@ -57,6 +57,11 @@ public:
 		setFrozen(solverVar, true);
 		Solver::setTheoryVar(solverVar, theory, theoryVar);
 	}
+	void disableElimination(Var v) override{
+		assert(v<nVars());
+		setFrozen(v, true);
+		Solver::disableElimination(v);
+	}
 	bool addClause(const vec<Lit>& ps) override;
 	bool addEmptyClause() override;                // Add the empty clause to the solver.
 	bool addClause(Lit p) override;               // Add a unit clause to the solver.

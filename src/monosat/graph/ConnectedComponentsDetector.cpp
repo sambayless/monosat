@@ -79,7 +79,7 @@ void ConnectedComponentsDetector<Weight>::addConnectedLit(Var outer_reach_var, i
 	} else {
 		Lit r = reachLits[node1][node2];
 		//force equality between the new lit and the old reach lit, in the SAT solver
-		outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
+		outer->makeEqualInSolver(mkLit(outer_reach_var),outer->toSolver(r),true);
 	}
 	assert(reachLits[node1][node2] == reachLits[node2][node1]);
 }
@@ -105,7 +105,7 @@ void ConnectedComponentsDetector<Weight>::addConnectedComponentsLit(Var outer_we
 			//force equality between the new lit and the old reach lit, in the SAT solver
 			//outer->S->addClause(~r, reachLit);
 			//outer->S->addClause(r, ~reachLit);
-			outer->makeEqual(r, reachLit);
+			outer->makeEqual(reachLit,r,true);
 		}
 	}
 	if (!found) {

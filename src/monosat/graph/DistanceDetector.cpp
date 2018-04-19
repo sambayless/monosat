@@ -486,7 +486,7 @@ void DistanceDetector<Weight,Graph>::addUnweightedShortestPathLit(int from, int 
 			found = true;
 			Lit r = unweighted_dist_lits[to][i].l;
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->makeEqual(r, reachLit);
+			outer->makeEqual(reachLit,r,true);
 			/*outer->S->addClause(~r, reachLit);
 			 outer->S->addClause(r, ~reachLit);*/
 		}

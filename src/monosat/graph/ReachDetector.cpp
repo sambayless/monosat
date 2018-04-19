@@ -409,7 +409,7 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 				if (reach_lits[i] == lit_Undef) {
 					reach_lits[i] = d;
 				} else {
-					outer->makeEqual(reach_lits[i], d);
+					outer->makeEqual(d,reach_lits[i],true);
 				}
 			}
 
@@ -1002,7 +1002,7 @@ void ReachDetector<Weight,Graph>::addLit(int from, int to, Var outer_reach_var) 
 	if (reach_lits[to] != lit_Undef) {
 		Lit r = reach_lits[to];
 		//force equality between the new lit and the old reach lit, in the SAT solver
-		outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
+		outer->makeEqualInSolver(mkLit(outer_reach_var),outer->toSolver(r),true);
 		return;
 	}
 
@@ -1039,7 +1039,7 @@ void ReachDetector<Weight,Graph>::addLit(int from, int to, Var outer_reach_var) 
 		if(cnf_reach_lits[to]!=lit_Undef && cnf_reach_lits[to]!=reach_lits[to]){
 			Lit r = cnf_reach_lits[to];
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->makeEqualInSolver(outer->toSolver(r), mkLit(outer_reach_var));
+			outer->makeEqualInSolver(mkLit(outer_reach_var),outer->toSolver(r),true);
 			if(!overapprox_reach_detector)
 				return;
 		}

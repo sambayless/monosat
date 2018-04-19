@@ -57,6 +57,7 @@ class TestGraph(unittest.TestCase):
         e_2_3 = g.addEdge(2,3)
 
         r = g.reaches(0,3)
+        r2 = g.reaches(0,3)
         self.assertTrue(monosat.Solve(r))
         self.assertFalse(monosat.Solve(r, e_0_1.Not(), e_2_3.Not()))
         self.assertTrue(monosat.Solve(r, e_0_2.Not(), e_1_3.Not()))
@@ -80,6 +81,14 @@ class TestGraph(unittest.TestCase):
         self.assertFalse(e_1_3.value())
     
         self.assertTrue(monosat.Solve(r))
+        self.assertTrue(r.value())
+        self.assertTrue(r2.value())
+        print(g.getPath(r,False))
+        print(g.getPath(r2,False))
+        print(g.getPath(r,True))
+        print(g.getPath(r2,True))
+        self.assertEqual(g.getPath(r,False),g.getPath(r2,False))
+        self.assertEqual(g.getPath(r,True),g.getPath(r2,True))
 
 
     def test_reachesBack(self):
@@ -150,7 +159,7 @@ class TestGraph(unittest.TestCase):
         e_2_3 = g.addEdge(2,3)
 
         r = g.onPath(1,0,3)
-
+        r2 = g.onPath(1,0,3)
         self.assertFalse(monosat.Solve(r,~e_0_1))
         self.assertFalse(monosat.Solve(r, e_0_1.Not(), e_2_3.Not()))
         self.assertTrue(monosat.Solve(r, e_0_2.Not(), e_1_3.Not()))
@@ -177,6 +186,15 @@ class TestGraph(unittest.TestCase):
         self.assertFalse(e_1_3.value())
 
         self.assertTrue(monosat.Solve(r))
+        self.assertTrue(r.value())
+        self.assertTrue(r2.value())
+        print(g.getPath(r,False))
+        print(g.getPath(r2,False))
+        print(g.getPath(r,True))
+        print(g.getPath(r2,True))
+        self.assertEqual(g.getPath(r,False),g.getPath(r2,False))
+        self.assertEqual(g.getPath(r,True),g.getPath(r2,True))
+
 
 
     def test_maximumFlow_geq(self):

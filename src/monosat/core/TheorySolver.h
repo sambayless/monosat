@@ -69,6 +69,8 @@ public:
 	//Set whether a variable can be a chosen as a decision in the SAT solver or not
 	virtual void setDecisionVar(Var solverVar, bool decidable)=0;
 	virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar)=0;
+	//Prevent this variable from being eliminated during preprocessing
+	virtual void disableElimination(Var solverVar)=0;
 	virtual Var newVar(bool polarity = true, bool dvar = true)=0;
 	virtual int nVars()const=0;
 	virtual bool enqueue(Lit l, CRef reason=CRef_Undef)=0;
