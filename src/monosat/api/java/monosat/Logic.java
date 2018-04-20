@@ -96,13 +96,26 @@ public final class Logic {
             Solver.log.log(Level.WARNING, "Statically UNSAT assertion (which is almost always an error).");
         }
     }
+    //make these literals available to users who import monosat.Logic.*
+    public final static Lit True = Lit.True; //Is there any possibility that this won't be constructed in the proper order?
+    public final static Lit False = Lit.False;
+    public final static Lit Undef = Lit.Undef;
 
     public static Lit not(Lit a) {
         return a.not();
     }
 
     public static Lit implies(Lit a, Lit b){
-        return a.getSolver().implies(a, b);
+        Solver solver = getSolver(a,b);
+        if(solver!=null) {
+            return solver.implies(a, b);
+        }else{
+            if(a==Lit.True && b==Lit.False){
+                return Lit.False;
+            }else{
+                return Lit.True;
+            }
+        }
     }
 
     public static Lit ite(Lit condition, Lit then, Lit els) {
