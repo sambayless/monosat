@@ -51,9 +51,9 @@ public class BitVector {
         this.width = width;
         for (int i = 0; i < width; i++) {
             if ((constant & (1 << i)) == 1) {
-                bits.add(solver.True());
+                bits.add(Lit.True);
             } else {
-                bits.add(solver.False());
+                bits.add(Lit.False);
             }
         }
     }

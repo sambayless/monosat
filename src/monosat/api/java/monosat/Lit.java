@@ -34,6 +34,8 @@ import monosat.Solver;
 final public class Lit {
     public final static Lit Undef = new Lit(-1, true);
     public final static Lit Error = new Lit(-2, true);
+    public final static Lit True = new Lit(0, true);
+    public final static Lit False = new Lit(1, true);
     protected final Solver solver;
 
     //private final Lit neg; //every literal also has a pointer to its negation.
@@ -52,7 +54,7 @@ final public class Lit {
 
     private Lit(int lit, boolean define_literal) {
         //used to define static lits
-        assert(lit<=0);
+        assert(lit<=1);
         this.solver=null;
         this.l = lit;
         //neg = null;
@@ -88,11 +90,16 @@ final public class Lit {
     }
 
     public Lit not() {
+        if(this==True){
+            return False;
+        }else if (this==False){
+            return True;
+        }
         return solver.not(this);
     }
     public Lit abs() {
         if (sign()) {
-            return solver.not(this);
+            return this.not();
         } else {
             return this;
         }
@@ -113,6 +120,10 @@ final public class Lit {
             return "Lit_Error";
         }else if(l==-1){
             return "Lit_Undef";
+        }else if (l==0){
+            return "True";
+        }else if (l==1){
+            return "False";
         }
         return "Lit" + l;
     }
@@ -142,6 +153,11 @@ final public class Lit {
      * This can happen only if the literal is not a decision literal.
      */
     public boolean value() throws RuntimeException {
+        if(this==Lit.True) {
+            return true;
+        }else if (this==Lit.False){
+            return false;
+        }
         return getSolver().getValue(this);
     }
     /**
@@ -150,6 +166,11 @@ final public class Lit {
      * Else, if the literal is unassigned, defaultVal will be returned.
      */
     public boolean value(LBool defaultVal) throws RuntimeException {
+        if(this==Lit.True) {
+            return true;
+        }else if (this==Lit.False){
+            return false;
+        }
         return getSolver().getValue(this, defaultVal);
     }
     /**
@@ -157,6 +178,11 @@ final public class Lit {
      * Unassigned literals will have the value LBool.Undef;
      */
     public LBool possibleValue(){
+        if(this==Lit.True) {
+            return LBool.True;
+        }else if (this==Lit.False){
+            return LBool.False;
+        }
         return getSolver().getPossibleValue(this);
     }
     /**
@@ -164,6 +190,11 @@ final public class Lit {
      * this returns that value. Otherwise, returns LBool.Undef
      */
     public LBool constantValue(){
+        if(this==Lit.True) {
+            return LBool.True;
+        }else if (this==Lit.False){
+            return LBool.False;
+        }
         return getSolver().getConstantValue(this);
     }
 
@@ -176,13 +207,28 @@ final public class Lit {
      * @return True if the literal is known to the solver to be either always true, or always false, in any satisfying model.
      */
     public boolean isConst(){
+        if(this==Lit.True || this==Lit.False){
+            return true;
+        }else if(l<0){
+            return false;
+        }
         return getSolver().getConstantValue(this)!=LBool.Undef;
     }
 
     public boolean isConstTrue(){
+        if(this==Lit.True){
+            return true;
+        }else if (this==Lit.False || this==Lit.Undef || this==Lit.Error){
+            return false;
+        }
         return getSolver().getConstantValue(this)==LBool.True;
     }
     public boolean isConstFalse(){
+        if(this==Lit.False){
+            return true;
+        }else if (this==Lit.True || this==Lit.Undef || this==Lit.Error){
+            return false;
+        }
         return getSolver().getConstantValue(this)==LBool.False;
     }
 }

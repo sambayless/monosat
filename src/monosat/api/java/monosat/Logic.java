@@ -22,9 +22,7 @@
 package monosat;
 
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.*;
 
 /**
  * Logic provides static accessors for common logic functions.
@@ -34,245 +32,504 @@ import java.util.Collection;
  * These static methods form a light-weight domain specific language.
  */
 public final class Logic {
-
     //prevent instances of logic from being constructed
     private Logic() {}
-    //Literal level constructs
-    public static Lit ite(Lit condition, Lit then, Lit els) {
-        Solver solver = condition.getSolver();
-        return solver.ite(condition, then, els);
+    private static boolean allow_contradictions=false;
+
+    private static Solver getSolver(Lit... args){
+        for(Lit l:args){
+            if(l==null || l==Lit.Error || l==Lit.Undef){
+                throw new IllegalArgumentException("Invalid literal " + String.valueOf(l));
+            }
+            if (l.solver!=null){
+                return l.solver;
+            }
+        }
+        return null;
     }
 
-    public static Lit and(Lit... args) {
-        if(args.length>=0){
-            return args[0].getSolver().and(args);
-        }else{
-            throw new IllegalArgumentException("and requires at least one argument");
+    private static Solver getSolver(Collection<Lit> args){
+        for(Lit l:args){
+            if(l==null || l==Lit.Error || l==Lit.Undef){
+                throw new IllegalArgumentException("Invalid literal " + String.valueOf(l));
+            }
+            if (l.solver!=null){
+                return l.solver;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * By default, certain trivial contradictions (such as AssertFalse(True), or AssertOr() with empty arguments)
+     * will be caught, and trigger an exception. This is useful, as such contradictions are almost always unintentional.
+     * Use this method to disable exceptions on trivial contradictions.
+     */
+    public static synchronized void allowContradictions(){
+        allow_contradictions=true;
+    }
+
+    private static synchronized void contradiction(Lit a){
+        //all existing solvers are now UNSAT
+        for(Solver s: Solver.solvers.keySet()){
+            s.assertFalse(Lit.True);
+        }
+        if(a==Lit.False){
+            throw new RuntimeException("Constant False asserted to be True (which is almost always an error).");
+        }else if(a==Lit.True){
+            throw new RuntimeException("Constant True asserted to be False (which is almost always an error).");
         }
     }
 
-    public static Lit or(Lit... args) {
-        if(args.length>=0){
-            return args[0].getSolver().or(args);
-        }else{
-            throw new IllegalArgumentException("or requires at least one argument");
+    private static synchronized void contradiction(){
+        //all existing solvers are now UNSAT
+        for(Solver s: Solver.solvers.keySet()){
+            s.assertFalse(Lit.True);
         }
+        throw new RuntimeException("Statically UNSAT assertion (which is almost always an error).");
     }
 
     public static Lit not(Lit a) {
-        //don't need the solver for this call
-        //so avoid the thread local access of using getSolver()
         return a.not();
-    }
-
-    public static Lit nand(Lit... args) {
-        if(args.length>=0){
-            return args[0].getSolver().nand(args);
-        }else{
-            throw new IllegalArgumentException("nand requires at least one argument");
-        }
-    }
-
-    public static Lit nor(Lit... args) {
-        if(args.length>=0){
-            return args[0].getSolver().nor(args);
-        }else{
-            throw new IllegalArgumentException("nor requires at least one argument");
-        }
-    }
-
-    public static Lit xor(Lit... args) {
-        if(args.length>=0){
-            return args[0].getSolver().xor(args);
-        }else{
-            throw new IllegalArgumentException("xor requires at least one argument");
-        }
-    }
-
-    public static Lit xnor(Lit... args) {
-        if(args.length>0) {
-            return args[0].getSolver().xnor(args);
-        }else{
-            throw new IllegalArgumentException("xnor requires at least one argument");
-        }
-    }
-
-    public static Lit equal(Lit... args) {
-        if(args.length>0) {
-            return args[0].getSolver().xnor(args);
-        }else{
-            throw new IllegalArgumentException("equal requires at least one argument");
-        }
-    }
-    //Assertion forms.
-    public static void assertTrue(Lit a) {
-        a.getSolver().assertTrue(a);
-    }
-
-    public static void assertFalse(Lit a) {
-        a.getSolver().assertFalse(a);
-    }
-
-    public static void assertAnd(Lit... args) {
-        if(args.length>0) {
-            args[0].getSolver().assertAnd(args);
-        }else{
-            throw new IllegalArgumentException("assertAnd requires at least one argument");
-        }
-    }
-
-    public static void assertOr(Lit... args) {
-        if(args.length>0) {
-            args[0].getSolver().assertOr(args);
-        }else{
-            throw new IllegalArgumentException("assertOr requires at least one argument");
-        }
-    }
-
-    public static void assertNand(Lit... args) {
-        if(args.length>0) {
-            args[0].getSolver().assertNand(args);
-        }else{
-            throw new IllegalArgumentException("assertNand requires at least one argument");
-        }
-    }
-
-    public static void assertNor(Lit... args) {
-        if(args.length>0) {
-            args[0].getSolver().assertNor(args);
-        }else{
-            throw new IllegalArgumentException("assertNor requires at least one argument");
-        }
-    }
-
-    public static void assertXor(Lit... args) {
-        if(args.length>0) {
-            args[0].getSolver().assertXor(args);
-        }else{
-            throw new IllegalArgumentException("assertXor requires at least one argument");
-        }
-    }
-
-    public static void assertXnor(Lit... args) {
-        if(args.length>0) {
-            args[0].getSolver().assertXnor(args);
-        }else{
-            throw new IllegalArgumentException("assertXnor requires at least one argument");
-        }
-    }
-
-    public static void assertEqual(Lit a, Lit b) {
-        a.getSolver().assertEqual(a, b);
-    }
-
-    public static void assertImplies(Lit a, Lit b) {a.getSolver().assertImplies(a,b);}
-
-    //Multi-Literal constructs
-    public static Lit and(Collection<Lit> args) {
-        if(args.size()>0) {
-            return args.iterator().next().getSolver().and(args);
-        }else{
-            throw new IllegalArgumentException("and requires at least one argument");
-        }
-    }
-
-    public static Lit or(Collection<Lit> args) {
-        if(args.size()>0) {
-            return args.iterator().next().getSolver().or(args);
-        }else{
-            throw new IllegalArgumentException("or requires at least one argument");
-        }
-    }
-
-    public static Lit nand(Collection<Lit> args) {
-        if(args.size()>0) {
-            return args.iterator().next().getSolver().nand(args);
-        }else{
-            throw new IllegalArgumentException("nand requires at least one argument");
-        }
-    }
-
-    public static Lit nor(Collection<Lit> args) {
-        if(args.size()>0) {
-            return args.iterator().next().getSolver().nor(args);
-        }else{
-            throw new IllegalArgumentException("nor requires at least one argument");
-        }
-    }
-
-    public static Lit xor(Collection<Lit> args) {
-        if(args.size()>0) {
-            return args.iterator().next().getSolver().xor(args);
-        }else{
-            throw new IllegalArgumentException("xor requires at least one argument");
-        }
-    }
-
-    public static Lit xnor(Collection<Lit> args) {
-        if(args.size()>0) {
-            return args.iterator().next(). getSolver().xnor(args);
-        }else{
-            throw new IllegalArgumentException("xnor requires at least one argument");
-        }
     }
 
     public static Lit implies(Lit a, Lit b){
         return a.getSolver().implies(a, b);
     }
 
-    //assertion forms
+    public static Lit ite(Lit condition, Lit then, Lit els) {
+        Solver solver = getSolver(condition,then,els);
+        if(solver!=null) {
+            return solver.ite(condition, then, els);
+        }else{
+            if(condition==Lit.True){
+                return then;
+            }else{
+                return els;
+            }
+        }
+    }
+
+    public static Lit and(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.and(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.False){
+                    return Lit.False;
+                }
+            }
+            return Lit.True;
+        }
+    }
+
+    public static Lit and(Collection<Lit> args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.and(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.False){
+                    return Lit.False;
+                }
+            }
+            return Lit.True;
+        }
+    }
+
+    public static Lit or(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.or(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.True){
+                    return Lit.True;
+                }
+            }
+            return Lit.False;
+        }
+    }
+    public static Lit or(Collection<Lit> args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.or(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.True){
+                    return Lit.True;
+                }
+            }
+            return Lit.False;
+        }
+    }
+
+
+    public static Lit nand(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.nand(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.False){
+                    return Lit.True;
+                }
+            }
+            return Lit.False;
+        }
+    }
+
+
+    public static Lit nand(Collection<Lit> args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.nand(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.False){
+                    return Lit.True;
+                }
+            }
+            return Lit.False;
+        }
+    }
+
+    public static Lit nor(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.nor(args);
+        }else{
+            for(Lit l:args){
+                if(l!=Lit.False){
+                    return Lit.False;
+                }
+            }
+            return Lit.True;
+        }
+    }
+    public static Lit nor(Collection<Lit> args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.nor(args);
+        }else{
+            for(Lit l:args){
+                if(l!=Lit.False){
+                    return Lit.False;
+                }
+            }
+            return Lit.True;
+        }
+    }
+    public static Lit xor(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.xor(args);
+        }else{
+            //XOR is defined to be true if an odd number of its arguments are true, and false otherwise
+           int trueCount = 0;
+           for(Lit l:args){
+               if(l==Lit.True){
+                   trueCount++;
+               }
+           }
+           if(trueCount%2==1){
+               return Lit.True;
+           }else{
+               return Lit.False;
+           }
+        }
+    }
+    public static Lit xor(Collection<Lit> args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.xor(args);
+        }else{
+            //XOR is defined to be true if an odd number of its arguments are true, and false otherwise
+            int trueCount = 0;
+            for(Lit l:args){
+                if(l==Lit.True){
+                    trueCount++;
+                }
+            }
+            if(trueCount%2==1){
+                return Lit.True;
+            }else{
+                return Lit.False;
+            }
+        }
+    }
+    public static Lit xnor(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.xnor(args);
+        }else{
+            //XNOR is defined to be false if an odd number of its arguments are true, and false otherwise
+            int trueCount = 0;
+            for(Lit l:args){
+                if(l==Lit.True){
+                    trueCount++;
+                }
+            }
+            if(trueCount%2==0){
+                return Lit.True;
+            }else{
+                return Lit.False;
+            }
+        }
+    }
+    public static Lit xnor(Collection<Lit> args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            return solver.xnor(args);
+        }else{
+            //XNOR is defined to be false if an odd number of its arguments are true, and false otherwise
+            int trueCount = 0;
+            for(Lit l:args){
+                if(l==Lit.True){
+                    trueCount++;
+                }
+            }
+            if(trueCount%2==0){
+                return Lit.True;
+            }else{
+                return Lit.False;
+            }
+        }
+    }
+    public static Lit equal(Lit a, Lit b) {
+        return xnor(a,b);
+    }
+    //Assertion forms.
+    public static void assertTrue(Lit a) {
+        Solver solver = getSolver(a);
+        if(solver!=null){
+            solver.assertTrue(a);
+        }else{
+            if(a==Lit.False){
+                contradiction(a);
+            }else{
+                //do nothing
+            }
+        }
+    }
+
+    public static void assertFalse(Lit a) {
+        Solver solver = getSolver(a);
+        if(solver!=null){
+            solver.assertFalse(a);
+        }else{
+            if(a==Lit.True){
+                contradiction(a);
+            }else{
+                //do nothing
+            }
+        }
+    }
+
+    public static void assertAnd(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertAnd(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.False){
+                    contradiction(l);
+                }
+            }
+            //do nothing
+        }
+    }
     public static void assertAnd(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().assertAnd(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertAnd(args);
         }else{
-            throw new IllegalArgumentException("assertAnd requires at least one argument");
+            for(Lit l:args){
+                if(l==Lit.False){
+                    contradiction(l);
+                }
+            }
+            //do nothing
         }
     }
-
+    public static void assertOr(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertOr(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.True){
+                    return;
+                }
+            }
+            contradiction();
+        }
+    }
     public static void assertOr(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().assertOr(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertOr(args);
         }else{
-            throw new IllegalArgumentException("assertOr requires at least one argument");
+            for(Lit l:args){
+                if(l==Lit.True){
+                    return;
+                }
+            }
+            contradiction();
         }
     }
-
+    public static void assertNand(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertNand(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.False){
+                    return;
+                }
+            }
+            contradiction();
+        }
+    }
     public static void assertNand(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().assertNand(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertNand(args);
         }else{
-            throw new IllegalArgumentException("assertNand requires at least one argument");
+            for(Lit l:args){
+                if(l==Lit.False){
+                    return;
+                }
+            }
+            contradiction();
         }
     }
-
+    public static void assertNor(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertNor(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.True){
+                    contradiction(l);
+                }
+            }
+        }
+    }
     public static void assertNor(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().assertNor(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertNor(args);
         }else{
-            throw new IllegalArgumentException("assertNor requires at least one argument");
+            for(Lit l:args){
+                if(l==Lit.True){
+                    contradiction(l);
+                }
+            }
         }
     }
-
+    public static void assertXor(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertXor(args);
+        }else{
+            //XOR is defined to be true if an odd number of its arguments are true, and false otherwise
+            int trueCount = 0;
+            for(Lit l:args){
+                if(l==Lit.True){
+                    trueCount++;
+                }
+            }
+            if(trueCount%2==1){
+                //do nothing
+            }else{
+                contradiction();
+            }
+        }
+    }
     public static void assertXor(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().assertXor(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertXor(args);
         }else{
-            throw new IllegalArgumentException("assertXor requires at least one argument");
+            //XOR is defined to be true if an odd number of its arguments are true, and false otherwise
+            int trueCount = 0;
+            for(Lit l:args){
+                if(l==Lit.True){
+                    trueCount++;
+                }
+            }
+            if(trueCount%2==1){
+                //do nothing
+            }else{
+                contradiction();
+            }
         }
     }
+    public static void assertXnor(Lit... args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertXnor(args);
+        }else{
+            //XNOR is defined to be false if an odd number of its arguments are true, and false otherwise
+            int trueCount = 0;
+            for(Lit l:args){
+                if(l==Lit.True){
+                    trueCount++;
+                }
+            }
+            if(trueCount%2==1){
+                contradiction();
+            }else{
 
+            }
+        }
+    }
     public static void assertXnor(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().assertXnor(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertXnor(args);
         }else{
-            throw new IllegalArgumentException("assertXnor requires at least one argument");
+            //XNOR is defined to be false if an odd number of its arguments are true, and false otherwise
+            int trueCount = 0;
+            for(Lit l:args){
+                if(l==Lit.True){
+                    trueCount++;
+                }
+            }
+            if(trueCount%2==1){
+                contradiction();
+            }else{
+
+            }
+        }
+    }
+    public static void assertEqual(Lit a, Lit b) {
+        Solver solver = getSolver(a,b);
+        if(solver!=null) {
+           solver.assertEqual(a, b);
+        }else{
+            if(a!=b){
+                contradiction();
+            }
         }
     }
 
+    public static void assertImplies(Lit a, Lit b) {
+        Solver solver = getSolver(a,b);
+        if(solver!=null) {
+            solver.assertImplies(a, b);
+        }else{
+            if(a==Lit.True && b==Lit.False){
+                contradiction();
+            }
+        }
+    }
 
     //Bitvector constructs
     public static BitVector ite(Lit condition, BitVector then, BitVector els) {
-        return condition.getSolver().ite(condition, then, els);
+        return then.getSolver().ite(condition, then, els);
     }
 
     public static BitVector and(BitVector a, BitVector b) {
@@ -358,70 +615,124 @@ public final class Logic {
     }
 
     public static void maximizeLits(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().maximizeLits(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.maximizeLits(args);
         }else{
-            throw new IllegalArgumentException("maximizeLits requires at least one argument");
+            //do nothing
         }
     }
 
     public static void minimizeLits(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().minimizeLits(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.minimizeLits(args);
         }else{
-            throw new IllegalArgumentException("minimizeLits requires at least one argument");
+            //do nothing
         }
     }
 
     public static void maximizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
-        if(literals.size()>0) {
-            literals.iterator().next().getSolver().maximizeWeightedLits(literals, weights);
+        Solver solver = getSolver(literals);
+        if(solver!=null){
+            solver.maximizeWeightedLits(literals, weights);
         }else{
             //do nothing
-            //throw new IllegalArgumentException("maximizeWeightedLits requires at least one argument");
         }
     }
 
     public static void minimizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
-        if(literals.size()>0) {
-            literals.iterator().next().getSolver().minimizeWeightedLits(literals, weights);
+        Solver solver = getSolver(literals);
+        if(solver!=null){
+            solver.minimizeWeightedLits(literals, weights);
         }else{
             //do nothing
-            //throw new IllegalArgumentException("minimizeWeightedLits requires at least one argument");
-        }
-    }
-
-    public static void assertAtMostOne(Collection<Lit> args) {
-        if(args.size()>0) {
-            args.iterator().next().getSolver().assertAtMostOne(args);
-        }else{
-            //do nothing
-            //throw new IllegalArgumentException("assertAtMostOne requires at least one argument");
         }
     }
 
     public static void assertAtMostOne(Lit... args) {
-        if(args.length>0) {
-            args[0].getSolver().assertAtMostOne(args);
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertAtMostOne(args);
         }else{
-            //do nothing
-            //throw new IllegalArgumentException("assertAtMostOne requires at least one argument");
+            for(Lit l:args){
+                if(l==Lit.True){
+                    return;
+                }
+            }
+            contradiction();
         }
     }
+
+    public static void assertAtMostOne(Collection<Lit> args) {
+        Solver solver = getSolver(args);
+        if(solver!=null){
+            solver.assertAtMostOne(args);
+        }else{
+            for(Lit l:args){
+                if(l==Lit.True){
+                    return;
+                }
+            }
+            contradiction();
+        }
+    }
+    private static boolean checkStaticPB(int trueCount, Comparison c, int compareTo){
+        switch(c){
+            case GT:
+                return trueCount>compareTo;
+            case GEQ:
+                return trueCount>=compareTo;
+            case EQ:
+                return trueCount==compareTo;
+            case LT:
+                return trueCount<compareTo;
+            case LEQ:
+                return trueCount<=compareTo;
+            case NEQ:
+                return trueCount!=compareTo;
+        }
+        assert(false);
+        return false;
+    }
+
     public static void assertPB(Collection<Lit> args, Comparison c, int compareTo) {
+        Solver solver = getSolver(args);
         if(args.size()>0) {
-            args.iterator().next().getSolver().assertPB(args, c, compareTo);
+           solver.assertPB(args, c, compareTo);
         }else{
-            //do nothing
-            //throw new IllegalArgumentException("assertPB requires at least one argument");
+            int trueCount = 0;
+            for(Lit l:args){
+                if(l==Lit.True){
+                    trueCount++;
+                }
+            }
+            //statically check if the comparison holds
+            if(!checkStaticPB(trueCount,c,compareTo)){
+                contradiction();
+            }
         }
     }
-    public static void assertPB(Collection<Lit> args, Collection<Integer> weights, Comparison c, int compareTo) {
+    public static void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
+        Solver solver = getSolver(args);
         if(args.size()>0) {
-            args.iterator().next().getSolver().assertPB(args, weights, c, compareTo);
+            solver.assertPB(args, c, compareTo);
         }else{
-            //do nothing
-            //throw new IllegalArgumentException("assertPB requires at least one argument");
+            int trueCount = 0;
+            for(int i = 0;i<args.size();i++){
+                Lit l = args.get(i);
+                int weight = 1;
+                if(i<weights.size()){
+                    weight = weights.get(i);
+                }
+                if(l==Lit.True){
+                    trueCount+=weight;
+                }
+            }
+            //statically check if the comparison holds
+            if(!checkStaticPB(trueCount,c,compareTo)){
+                contradiction();
+            }
         }
     }
 

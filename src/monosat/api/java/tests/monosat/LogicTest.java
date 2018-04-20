@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 
 import static org.junit.Assert.*;
+import static monosat.Lit.*;
 
 /**
  * Tests the basic API functionality of the solver.
@@ -38,7 +39,7 @@ public class LogicTest {
     public void test_newLit() {
         Solver solver = new Solver();
         Lit a = solver.newLit();
-        assertNotEquals(a, solver.True());
+        assertNotEquals(a, True);
 
         Lit b = solver.newLit();
         assertNotEquals(a, b);
@@ -61,9 +62,9 @@ public class LogicTest {
         Solver solver = new Solver();
         assertEquals(solver.solve(), true);
         assertEquals(solver.solve(), true);
-        Logic.assertTrue(solver.True());
+        Logic.assertTrue(True);
         assertEquals(solver.solve(), true);
-        Logic.assertFalse(solver.True());
+        Logic.assertFalse(True);
         assertEquals(solver.solve(), false);
         Solver solver2 = new Solver();
         assertEquals(solver2.solve(), true);
@@ -75,9 +76,9 @@ public class LogicTest {
         Solver solver = new Solver();
         assertEquals(solver.solve(), true);
         assertEquals(solver.solve(), true);
-        assertEquals(solver.solve(solver.True()), true);
-        assertEquals(solver.solve(solver.False()), false);
-        assertEquals(solver.solve(solver.True(), solver.False()), false);
+        assertEquals(solver.solve(True), true);
+        assertEquals(solver.solve(False), false);
+        assertEquals(solver.solve(True, False), false);
         assertEquals(solver.solve(), true);
     }
 
@@ -101,7 +102,7 @@ public class LogicTest {
     @Test
     public void test_not() {
         Solver solver = new Solver();
-        assertEquals(Logic.not(solver.True()), solver.False());
+        assertEquals(Logic.not(True), False);
         Lit a = solver.newLit();
         assertNotEquals(Logic.not(a), a);
         assertEquals(Logic.not(a), a.not());
@@ -533,13 +534,13 @@ public class LogicTest {
     @Test
     public void test_Constant() {
         Solver solver = new Solver();
-        assertTrue(solver.True().isConst());
-        assertTrue(solver.True().isConstTrue());
-        assertFalse(solver.True().isConstFalse());
+        assertTrue(True.isConst());
+        assertTrue(True.isConstTrue());
+        assertFalse(True.isConstFalse());
 
-        assertTrue(solver.False().isConst());
-        assertFalse(solver.False().isConstTrue());
-        assertTrue(solver.False().isConstFalse());
+        assertTrue(False.isConst());
+        assertFalse(False.isConstTrue());
+        assertTrue(False.isConstFalse());
 
         Lit a = solver.newLit();
 

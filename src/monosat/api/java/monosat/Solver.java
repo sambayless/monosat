@@ -21,29 +21,33 @@
 
 package monosat;
 
+
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.*;
 
 public class Solver implements Closeable {
+    //Holds weak references to all currently existing solvers, so that global logic operations on True/False can be applied
+    protected static WeakHashMap<Solver,Boolean> solvers = new WeakHashMap<Solver, Boolean>();
+
     //Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
-    private ArrayList<Lit> lits = new ArrayList<>();
     private static long MAX_CACHE_CONST = 255;
     protected long solverPtr = 0; //handle to the underlying monsoat this instance.
     protected long bvPtr = 0;
     private int buffer_size0 = 1024;
     private int buffer_size1 = 1024;
     private int buffer_size2 = 1024;
-    private Lit true_lit;
+
     private IntBuffer ints0;
     private IntBuffer ints1;
     private IntBuffer ints2;
     private ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
-
+    private ArrayList<Lit> lits = new ArrayList<>();
+    /*
+    public static Lit True = Lit.True;
+    public static Lit False = Lit.False;*/
     /**
      * Instantiate a new Solver.
      * By default, support for preprocessing is disabled (as solving with preprocessing enabled requires some extra care)
@@ -89,15 +93,19 @@ public class Solver implements Closeable {
         if (solverPtr==0){
             throw new RuntimeException("Failed to created solver");
         }
+        //Keep a global list of all solvers that yet created
+        solvers.put(this,true);
         if(outputFile!=null && outputFile.length()>0){
             MonosatJNI.setOutputFile(solverPtr, outputFile);
         }
         if (!enable_preprocessing) {
             disablePreprocessing();
         }
-        true_lit = toLit(MonosatJNI.true_lit(solverPtr));
+        this.addClause(Lit.True);
+        //true_lit = toLit(MonosatJNI.true_lit(solverPtr));
         initBV();
         initBuffers();
+        assert(getConstantValue(Lit.True)==LBool.True);
     }
 
     private static String collectArgs(ArrayList<String> args) {
@@ -117,6 +125,7 @@ public class Solver implements Closeable {
     public synchronized void close() {
         //Does this method actually need to be syncronized?
         if (solverPtr != 0) {
+            solvers.remove(this);
             MonosatJNI.deleteSolver(solverPtr);
             solverPtr = 0;
         }
@@ -190,6 +199,8 @@ public class Solver implements Closeable {
     protected void validate(Lit... args){
         int nvars = nVars();
         for(Lit l:args){
+            if(l==Lit.True || l==Lit.False)
+                continue;
             if(l==null){
                 throw new IllegalArgumentException("Literal is null");
             }else if (l.l<0 ) {
@@ -204,6 +215,8 @@ public class Solver implements Closeable {
     protected void validate(Collection<Lit> args){
         int nvars = nVars();
         for(Lit l:args){
+            if(l==Lit.True || l==Lit.False)
+                continue;
             if(l==null){
                 throw new IllegalArgumentException("Literal is null");
             }else if (l.l<0 ) {
@@ -293,13 +306,6 @@ public class Solver implements Closeable {
         return MonosatJNI.getDecisionPolarity(solverPtr, l.toVar());
     }
 
-    public Lit True() {
-        return true_lit;
-    }
-
-    public Lit False() {
-        return true_lit.not();
-    }
 
     public void disallowSimplification(Lit l) {
         validate(l);
@@ -660,10 +666,17 @@ public class Solver implements Closeable {
 
     public void assertPB(Collection<Lit> args,  Comparison c, int compareTo) {
         validate(args);
-        assertPB(args, null,c, compareTo);
+        ArrayList<Lit> tmp = new ArrayList<>();
+        for(Lit l:args){
+            tmp.add(l);
+        }
+        assertPB(tmp, null,c, compareTo);
     }
 
-    public void assertPB(Collection<Lit> args, Collection<Integer> weights,Comparison c, int compareTo) {
+    /**
+     * args and weights are ordered, so they are Lists, not collections
+     */
+    public void assertPB(List<Lit> args, List<Integer> weights,Comparison c, int compareTo) {
         validate(args);
         IntBuffer wt_buffer = getBuffer(1, args.size());
         int n_wts = 0;
@@ -857,7 +870,7 @@ public class Solver implements Closeable {
     public Lit and(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            return True();
+            return Lit.True;
         } else if (args.length == 1) {
             return args[0];
         } else if (args.length == 2) {
@@ -870,7 +883,7 @@ public class Solver implements Closeable {
     public Lit or(Lit... args) {
         validate(args);
         if (args.length == 0) {
-            return False();
+            return Lit.False;
         } else if (args.length == 1) {
             return args[0];
         } else if (args.length == 2) {

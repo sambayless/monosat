@@ -34,9 +34,9 @@ public class SolverTest {
         Solver s = new Solver();
         assertTrue(s.solve());
         assertTrue(s.solve());
-        assertTrue(s.solve(s.True()));
-        assertFalse(s.solve(s.False()));
-        assertFalse(s.solve(s.True(), s.False()));
+        assertTrue(s.solve(Lit.True));
+        assertFalse(s.solve(Lit.False));
+        assertFalse(s.solve(Lit.True, Lit.False));
         assertTrue(s.solve());
         System.out.println("Done");
 
@@ -47,9 +47,9 @@ public class SolverTest {
         Solver s = new Solver("-no-reach-underapprox-cnf");
         assertTrue(s.solve());
         assertTrue(s.solve());
-        assertTrue(s.solve(s.True()));
-        assertFalse(s.solve(s.False()));
-        assertFalse(s.solve(s.True(), s.False()));
+        assertTrue(s.solve(Lit.True));
+        assertFalse(s.solve(Lit.False));
+        assertFalse(s.solve(Lit.True, Lit.False));
         assertTrue(s.solve());
         System.out.println("Done");
 
