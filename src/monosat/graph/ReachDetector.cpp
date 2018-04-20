@@ -323,7 +323,7 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 		return;
 	if (!onlyUnderApprox && constraintsBuiltOver >= within_steps)
 		return;
-
+	outer->freezeGraph();
 	//there is no reason to encode these variables in the theory solver!
 
 	if (!onlyUnderApprox) {

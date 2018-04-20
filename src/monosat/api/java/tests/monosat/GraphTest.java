@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 
+import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -108,6 +109,82 @@ public class GraphTest {
         assertTrue(s.solve(e_0_1, e_0_2.not(), e_1_3));
     }
 
+    @Test
+    public void addEdgeAfterSolve() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for (int i = 0; i < 4; i++) {
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+        /*
+
+        0 *--* 1
+          |/ |
+        2 *--* 3
+
+         */
+
+        Lit e_0_1 = g.addEdge(0, 1);
+        Lit e_0_2 = g.addEdge(0, 2);
+        Lit e_1_3 = g.addEdge(1, 3);
+        Lit e_1_2 = g.addEdge(1, 2);
+        Lit e_2_3 = g.addEdge(2, 3);
+
+        Lit r = g.reaches(0, 3);
+        assertTrue(s.solve(r));
+        assertFalse(s.solve(r, e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(r, e_0_2.not(), e_1_3.not()));
+
+        try {
+            //you cannot add edges to graphs after clause learning has occured (eg, during solve calls)
+            //as this may result in inconsistent solutions
+            Lit bad_edge = g.addEdge(0, 1);
+            fail("you cannot add edges to graphs after clause learning has occured (eg, during solve calls)");
+        }catch(java.lang.Error e){
+
+        }
+        //the solver should still be useable after this
+        assertTrue(s.solve(r));
+    }
+    @Test
+    public void addNodeAfterSolve() {
+        Solver s = new Solver();
+        Graph g = new Graph(s);
+        for (int i = 0; i < 4; i++) {
+            g.addNode();
+        }
+        //create a directed square graph with one diagonal edges
+        /*
+
+        0 *--* 1
+          |/ |
+        2 *--* 3
+
+         */
+
+        Lit e_0_1 = g.addEdge(0, 1);
+        Lit e_0_2 = g.addEdge(0, 2);
+        Lit e_1_3 = g.addEdge(1, 3);
+        Lit e_1_2 = g.addEdge(1, 2);
+        Lit e_2_3 = g.addEdge(2, 3);
+
+        Lit r = g.reaches(0, 3);
+        assertTrue(s.solve(r));
+        assertFalse(s.solve(r, e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(r, e_0_2.not(), e_1_3.not()));
+
+        try {
+            //you cannot add nodes to graphs after clause learning has occured (eg, during solve calls)
+            //as this may result in inconsistent solutions
+            int n = g.addNode();
+            fail("you cannot add nodes to graphs after clause learning has occured (eg, during solve calls)");
+        }catch(java.lang.Error e){
+
+        }
+        //the solver should still be useable after this
+        assertTrue(s.solve(r));
+    }
     @Test
     public void reaches() {
         Solver s = new Solver();

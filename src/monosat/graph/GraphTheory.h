@@ -81,7 +81,11 @@ private:
 	int local_q = 0;
 	bool lazy_backtracking_enabled=false;
 	vec<Theory*> propagation_required_theories;
-
+	/**
+	 * If true, then no further edges can be added to the graph.
+	 * This is to ensure we don't get inconsistent results if edges are added after clauses are learnt in the graph theory.
+	 */
+    bool frozen=false;
 public:
 	int n_satisfied_detectors=0;
 	bool all_edges_unit = true;
@@ -744,6 +748,16 @@ public:
         S->addTheory(this);
         graph_decision_reason = S->newReasonMarker(this,true);
 	}
+
+    void checkFrozen(){
+        if(frozen){
+            throw std::runtime_error("Edges and nodes cannot be added to graphs after solve() calls, as they may lead to inconsistent solutions.");
+        }
+    }
+    //No further edges or nodes can be added to a frozen graph
+    void freezeGraph(){
+        frozen=true;
+    }
 	Lit const_true= lit_Undef;
 	Lit True() override {
 		if (const_true==lit_Undef){
@@ -1276,7 +1290,7 @@ public:
 			return edge_symbols[edgeID];
 	}
 	int newNode() {
-		
+        checkFrozen();
 		inv_adj.push();
 		undirected_adj.push();
 		reach_info.push();
@@ -1815,7 +1829,10 @@ public:
 	}
 
 	void buildReason(Lit p, vec<Lit> & reason,CRef marker) override {
-		//CRef marker = S->reason(var(toSolver(p)));
+
+        //if we learn a conflict from a graph detector, then
+        //no further edges or nodes can be added to the graph
+        freezeGraph();
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
 		if(marker_map[pos].forTheory){
@@ -2414,7 +2431,9 @@ public:
 			}
 
 			if (!r) {
-
+                //if we learn a conflict from a graph detector, then
+                //no further edges can be added to the graph
+                freezeGraph();
 
 				if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head!=var_Undef){
 					//find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
@@ -2979,6 +2998,7 @@ public:
 	}
 
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
+        checkFrozen();
 		if(!bvTheory ){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
@@ -3075,6 +3095,7 @@ public:
 			return mkLit(v, false);
 		}
 	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
+        checkFrozen();
 		if(!bvTheory){
 			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
 		}
@@ -3143,6 +3164,7 @@ public:
 				return mkLit(v, false);
 			}
 	Lit newEdge(int from, int to, Var outerVar = var_Undef, Weight weight = 1) {
+	    checkFrozen();
 		assert(outerVar!=var_Undef);
 		while(from>=nNodes()||to>=nNodes())
 			newNode();
