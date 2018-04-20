@@ -141,7 +141,7 @@ public class GraphTest {
             //as this may result in inconsistent solutions
             Lit bad_edge = g.addEdge(0, 1);
             fail("you cannot add edges to graphs after clause learning has occured (eg, during solve calls)");
-        }catch(java.lang.Error e){
+        }catch(java.lang.Exception e){
 
         }
         //the solver should still be useable after this
@@ -179,7 +179,7 @@ public class GraphTest {
             //as this may result in inconsistent solutions
             int n = g.addNode();
             fail("you cannot add nodes to graphs after clause learning has occured (eg, during solve calls)");
-        }catch(java.lang.Error e){
+        }catch(java.lang.Exception e){
 
         }
         //the solver should still be useable after this

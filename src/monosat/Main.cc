@@ -844,6 +844,7 @@ int main(int argc, char** argv) {
 
 	} catch (OutOfMemoryException&) {
 		printf("===============================================================================\n");
+		printf("Out of memory exception\n");
 		printf("INDETERMINATE\n");
 		exit(0);
 	}

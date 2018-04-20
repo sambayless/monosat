@@ -6,6 +6,7 @@
 #ifndef MONOSAT_JNIEXCEPT_H
 #define MONOSAT_JNIEXCEPT_H
 #include <jni.h>
+#include <monosat/mtl/XAlloc.h>
 struct ThrownJavaException : std::runtime_error {
     ThrownJavaException() :std::runtime_error("") {}
     ThrownJavaException(const std::string& msg ) :std::runtime_error(msg) {}
@@ -41,12 +42,18 @@ void javaThrow(JNIEnv * env) {
     } catch(const std::bad_alloc& rhs) {
         //translate OOM C++ exception to a Java exception
         NewJavaException(env, "java/lang/OutOfMemoryError", rhs.what());
+    } catch(const Monosat::OutOfMemoryException& rhs) {
+        //translate OOM C++ exception to a Java exception
+        NewJavaException(env, "java/lang/OutOfMemoryError", "Out of memory error");
     } catch(const std::ios_base::failure& rhs) { //sample translation
         //translate IO C++ exception to a Java exception
         NewJavaException(env, "java/io/IOException", rhs.what());
-    } catch(const std::exception& e) {
+    }catch(const std::runtime_error& e) {
+        //translate C++ runtime exception to a Java runtime exception
+        NewJavaException(env, "java/lang/RuntimeException", e.what());
+    }catch(const std::exception& e) {
         //translate unknown C++ exception to a Java exception
-        NewJavaException(env, "java/lang/Error", e.what());
+        NewJavaException(env, "java/lang/Exception", e.what());
     } catch(...) {
         //translate unknown C++ exception to a Java exception
         NewJavaException(env, "java/lang/Error", "Unknown exception type");
