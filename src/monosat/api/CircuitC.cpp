@@ -480,7 +480,8 @@ void AssertAllSame(Monosat::SimpSolver *S, int *lits, int n_lits) {
     assert(d);
     Monosat::Circuit<Monosat::SimpSolver> &circuit = d->circuit;
     toVec(lits,n_lits,tmp_lits_a);
-    circuit.AssertEqual(tmp_lits_a);
+    //circuit.AssertEqual(tmp_lits_a);
+    throw std::runtime_error("Not yet implemetned");
 }
 
 
@@ -490,7 +491,8 @@ int Equals(Monosat::SimpSolver *S, int *lits_a,  int *lits_b, int n_lits) {
     Monosat::Circuit<Monosat::SimpSolver> &circuit = d->circuit;
     toVec(lits_a,n_lits,tmp_lits_a);
     toVec(lits_b,n_lits,tmp_lits_b);
-    return toInt(circuit.Equal(tmp_lits_a,tmp_lits_b));
+    throw std::runtime_error("Not yet implemetned");
+   // return toInt(circuit.Equal(tmp_lits_a,tmp_lits_b));
 }
 
 int LEQ(Monosat::SimpSolver *S, int *lits_a,  int *lits_b, int n_lits) {
