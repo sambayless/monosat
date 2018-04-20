@@ -30,7 +30,9 @@
 #include <cstdio>
 
 namespace dgl {
-
+/**
+ * Optional callback interface for dynamic graph algorithms.
+ */
 class DynamicGraphAlgorithm{
 public:
 	virtual ~DynamicGraphAlgorithm(){}
@@ -39,8 +41,8 @@ public:
 };
 
 /**
- * Abstract interface to a dynamic graph.
- * See DynamicGraph.h for an implementation.
+ * Abstract interface for dynamic graphs.
+ * See DynamicGraph.h for a concrete implementation.
  */
 template<typename Weight>
 class Graph {
@@ -54,13 +56,13 @@ public:
 		int from;
 		int to;
 		int id;
-		//int weight;
+
 		FullEdge() :
 				from(-1), to(-1), id(-1) {
-		} //,weight(1){}
+		}
 		FullEdge(int from, int to, int id) :
 				from(from), to(to), id(id) {
-		} //,weight(weight){}
+		}
 	};
 
 	struct EdgeChange {

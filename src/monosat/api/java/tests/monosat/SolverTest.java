@@ -42,7 +42,19 @@ public class SolverTest {
 
 
     }
+    @Test
+    public void testArguments() {
+        Solver s = new Solver("-no-reach-underapprox-cnf");
+        assertTrue(s.solve());
+        assertTrue(s.solve());
+        assertTrue(s.solve(s.True()));
+        assertFalse(s.solve(s.False()));
+        assertFalse(s.solve(s.True(), s.False()));
+        assertTrue(s.solve());
+        System.out.println("Done");
 
+
+    }
     @Test
     public void testMultipleSolvers() {
         Solver s = new Solver();

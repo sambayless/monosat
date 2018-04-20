@@ -1959,7 +1959,7 @@ public:
 	 }*/
 
 	void preprocess() override {
-
+        implementConstraints();
 		for (int i = 0; i < detectors.size(); i++) {
 			detectors[i]->preprocess();
 		}

@@ -82,7 +82,7 @@ public class Solver implements Closeable {
     }
     public Solver(String args, boolean enable_preprocessing,String outputFile) {
         if (args != null && args.length() > 0) {
-            solverPtr = MonosatJNI.newSolver(args);
+            solverPtr = MonosatJNI.newSolver("monosat " + args);
         } else {
             solverPtr = MonosatJNI.newSolver();
         }

@@ -333,8 +333,8 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 		if (constraintsBuiltOver <= 0) {
 			constraintsBuiltOver = 0;
 			dist_lits.push();
-			Lit True = mkLit(outer->newVar());
-			outer->addClause(True);
+			Lit True = outer->True(); //mkLit(outer->newVar());
+			//outer->addClause(True);
 
 			Lit False = ~True;
 
@@ -397,6 +397,7 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 					}
 				}
 				dist_lits.last()[j] = r_cur;
+				outer->disableElimination(var(r_cur));
 			}
 
 		}
@@ -431,6 +432,7 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 					//	reach_var = outer->newVar(detectorID, true);
 					//else {
 					reach_var = outer->newVar(-1, false);
+					outer->disableElimination(reach_var);
 					//}
 					cnf_reach_lits[n] = mkLit(reach_var); //since this is _only_ the underapproximation, these variables _do_ need to be connected to the theory solver
 
@@ -1039,7 +1041,7 @@ void ReachDetector<Weight,Graph>::addLit(int from, int to, Var outer_reach_var) 
 		if(cnf_reach_lits[to]!=lit_Undef && cnf_reach_lits[to]!=reach_lits[to]){
 			Lit r = cnf_reach_lits[to];
 			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->makeEqualInSolver(mkLit(outer_reach_var),outer->toSolver(r),true);
+			outer->makeEqualInSolver(mkLit(outer_reach_var),outer->toSolver(r));
 			if(!overapprox_reach_detector)
 				return;
 		}

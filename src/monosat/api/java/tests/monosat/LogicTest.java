@@ -25,8 +25,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests the basic API functionality of the solver.
@@ -531,5 +530,31 @@ public class LogicTest {
         assertEquals(solver.solve(), true);
     }
 
+    @Test
+    public void test_Constant() {
+        Solver solver = new Solver();
+        assertTrue(solver.True().isConst());
+        assertTrue(solver.True().isConstTrue());
+        assertFalse(solver.True().isConstFalse());
 
+        assertTrue(solver.False().isConst());
+        assertFalse(solver.False().isConstTrue());
+        assertTrue(solver.False().isConstFalse());
+
+        Lit a = solver.newLit();
+
+        assertFalse(a.isConst());
+        assertFalse(a.isConstTrue());
+        assertFalse(a.isConstFalse());
+
+        Lit b = solver.newLit();
+        solver.assertTrue(a);
+        assertTrue(a.isConst());
+        assertTrue(a.isConstTrue());
+        assertFalse(a.isConstFalse());
+
+        assertFalse(b.isConst());
+        assertFalse(b.isConstTrue());
+        assertFalse(b.isConstFalse());
+    }
 }

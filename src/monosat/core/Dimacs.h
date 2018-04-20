@@ -331,6 +331,22 @@ private:
 				S.setDecisionVar(var, decision);
 			}else if (match(b,"clear_opt")) {
 				objectives.clear();
+			}else if (match(b,"minimize_core")){
+				int parsed_lit, var;
+				lits.clear();
+				for (;;) {
+					while(*b==' ')
+						++b;
+					if(*b=='\n')
+						break;
+					parsed_lit = parseInt(b);
+					if (parsed_lit == 0)
+						break;
+					var = abs(parsed_lit) - 1;
+					var = mapVar(S,var);
+					//assumptions.push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
+				}
+				//do nothing
 			}else if (match(b,"minimize bv")){
 				//fprintf(stderr,"minimize statements not yet supported\n");
 				skipWhitespace(b);

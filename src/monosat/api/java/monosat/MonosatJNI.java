@@ -477,7 +477,7 @@ public class MonosatJNI {
 
     // Test Driver
     public static void main(String[] args) {
-        System.out.println("Start");
+        System.out.println("Loading native libraries:");
         try {
             java.lang.reflect.Field LIBRARIES = ClassLoader.class.getDeclaredField("loadedLibraryNames");
             LIBRARIES.setAccessible(true);
@@ -486,7 +486,7 @@ public class MonosatJNI {
                 System.out.println(s);
 
             String version = MonosatJNI.getVersion();  // invoke the native method
-            System.out.println(version);
+            System.out.println("Loaded MonoSAT: " + version);
         } catch (Exception e) {
             e.printStackTrace();
         }
