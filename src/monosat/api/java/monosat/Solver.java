@@ -27,10 +27,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class Solver implements Closeable {
     //Holds weak references to all currently existing solvers, so that global logic operations on True/False can be applied
     protected static WeakHashMap<Solver,Boolean> solvers = new WeakHashMap<Solver, Boolean>();
+    protected static final Logger log = Logger.getLogger("monosat");
 
     //Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
     private static long MAX_CACHE_CONST = 255;

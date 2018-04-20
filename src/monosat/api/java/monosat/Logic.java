@@ -23,6 +23,7 @@ package monosat;
 
 import java.nio.IntBuffer;
 import java.util.*;
+import java.util.logging.Level;
 
 /**
  * Logic provides static accessors for common logic functions.
@@ -34,7 +35,7 @@ import java.util.*;
 public final class Logic {
     //prevent instances of logic from being constructed
     private Logic() {}
-    private static boolean allow_contradictions=false;
+    private static boolean warn_contradictions=true;
 
     private static Solver getSolver(Lit... args){
         for(Lit l:args){
@@ -66,27 +67,33 @@ public final class Logic {
      * Use this method to disable exceptions on trivial contradictions.
      */
     public static synchronized void allowContradictions(){
-        allow_contradictions=true;
+        warn_contradictions=false;
     }
 
     private static synchronized void contradiction(Lit a){
-        //all existing solvers are now UNSAT
+        //this global contradiction on True/False makes all existing solvers UNSAT
         for(Solver s: Solver.solvers.keySet()){
             s.assertFalse(Lit.True);
         }
-        if(a==Lit.False){
-            throw new RuntimeException("Constant False asserted to be True (which is almost always an error).");
-        }else if(a==Lit.True){
-            throw new RuntimeException("Constant True asserted to be False (which is almost always an error).");
+        if(warn_contradictions) {
+            warn_contradictions=false;
+            if (a == Lit.False) {
+                Solver.log.log(Level.WARNING,"Constant False asserted to be True (which is almost always an error).");
+            } else if (a == Lit.True) {
+                Solver.log.log(Level.WARNING,"Constant True asserted to be False (which is almost always an error).");
+            }
         }
     }
 
     private static synchronized void contradiction(){
-        //all existing solvers are now UNSAT
+        //this global contradiction on True/False makes all existing solvers UNSAT
         for(Solver s: Solver.solvers.keySet()){
             s.assertFalse(Lit.True);
         }
-        throw new RuntimeException("Statically UNSAT assertion (which is almost always an error).");
+        if(warn_contradictions) {
+            warn_contradictions=false;
+            Solver.log.log(Level.WARNING, "Statically UNSAT assertion (which is almost always an error).");
+        }
     }
 
     public static Lit not(Lit a) {
