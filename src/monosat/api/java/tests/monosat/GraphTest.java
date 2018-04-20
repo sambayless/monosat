@@ -105,7 +105,7 @@ public class GraphTest {
         Lit e_1_2 = g.addEdge(1, 2);
         Lit e_2_3 = g.addEdge(2, 3);
 
-        assertEquals(s.solve(e_0_1, e_0_2.not(), e_1_3), true);
+        assertTrue(s.solve(e_0_1, e_0_2.not(), e_1_3));
     }
 
     @Test
@@ -321,15 +321,15 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
         BitVector cmp = s.bv(4);
         Lit f = g.compareMaximumFlow(0, 3, cmp, Comparison.GT);
-        assertEquals(s.solve(f), true);
-        assertEquals(s.solve(f, cmp.eq(3)), false);
-        assertEquals(s.solve(f, cmp.eq(2)), false);
-        assertEquals(s.solve(f, cmp.eq(1)), true);
+        assertTrue(s.solve(f));
+        assertFalse(s.solve(f, cmp.eq(3)));
+        assertFalse(s.solve(f, cmp.eq(2)));
+        assertTrue(s.solve(f, cmp.eq(1)));
 
-        assertEquals(s.solve(f, e_0_1.not(), e_2_3.not()), false);
-        assertEquals(s.solve(f, e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()), false);
-        assertEquals(s.solve(f), true);
+        assertFalse(s.solve(f, e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(f, e_0_2.not(), e_1_3.not()));
+        assertFalse(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()));
+        assertTrue(s.solve(f));
     }
 
     @Test
@@ -356,18 +356,18 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
         BitVector cmp = s.bv(4);
         Lit f = g.compareMaximumFlow(0, 3, cmp, Comparison.LEQ);
-        assertEquals(s.solve(f), true);
-        assertEquals(s.solve(f, cmp.eq(3)), true);
-        assertEquals(s.solve(f, cmp.eq(2)), true);
-        assertEquals(s.solve(f, cmp.eq(1)), true);
+        assertTrue(s.solve(f));
+        assertTrue(s.solve(f, cmp.eq(3)));
+        assertTrue(s.solve(f, cmp.eq(2)));
+        assertTrue(s.solve(f, cmp.eq(1)));
 
-        assertEquals(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(1)), false);
-        assertEquals(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(2)), true);
-        assertEquals(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(3)), true);
-        assertEquals(s.solve(f, e_0_1.not(), e_2_3.not()), true);
-        assertEquals(s.solve(f, e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()), true);
-        assertEquals(s.solve(f), true);
+        assertFalse(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(1)));
+        assertTrue(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(2)));
+        assertTrue(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(3)));
+        assertTrue(s.solve(f, e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(f, e_0_2.not(), e_1_3.not()));
+        assertTrue(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()));
+        assertTrue(s.solve(f));
     }
 
     @Test
@@ -394,19 +394,19 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
         BitVector cmp = s.bv(4);
         Lit f = g.compareMaximumFlow(0, 3, cmp, Comparison.LT);
-        assertEquals(s.solve(f), true);
-        assertEquals(s.solve(f, cmp.eq(3)), true);
-        assertEquals(s.solve(f, cmp.eq(2)), true);
-        assertEquals(s.solve(f, cmp.eq(1)), true);
+        assertTrue(s.solve(f));
+        assertTrue(s.solve(f, cmp.eq(3)));
+        assertTrue(s.solve(f, cmp.eq(2)));
+        assertTrue(s.solve(f, cmp.eq(1)));
 
-        assertEquals(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(1)), false);
-        assertEquals(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(2)), false);
-        assertEquals(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(3)), true);
+        assertFalse(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(1)));
+        assertFalse(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(2)));
+        assertTrue(s.solve(f, e_0_1, e_0_2, e_1_3, e_2_3, cmp.eq(3)));
 
-        assertEquals(s.solve(f, e_0_1.not(), e_2_3.not()), true);
-        assertEquals(s.solve(f, e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()), true);
-        assertEquals(s.solve(f), true);
+        assertTrue(s.solve(f, e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(f, e_0_2.not(), e_1_3.not()));
+        assertTrue(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()));
+        assertTrue(s.solve(f));
     }
 
     @Test
@@ -433,19 +433,19 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
 
         BitVector flow = g.maximumFlow(0, 3);
-        assertEquals(s.solve(flow.gt(0)), true);
-        assertEquals(s.solve(flow.eq(0)), true);
-        assertEquals(s.solve(flow.eq(1)), true);
-        assertEquals(s.solve(flow.eq(2)), true);
-        assertEquals(s.solve(flow.eq(3)), false);
+        assertTrue(s.solve(flow.gt(0)));
+        assertTrue(s.solve(flow.eq(0)));
+        assertTrue(s.solve(flow.eq(1)));
+        assertTrue(s.solve(flow.eq(2)));
+        assertFalse(s.solve(flow.eq(3)));
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, flow.eq(1)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, flow.eq(2)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, flow.eq(3)), false);
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, flow.eq(1)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, flow.eq(2)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, flow.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()), true);
+        assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()));
 
 
     }
@@ -475,19 +475,19 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
 
         BitVector dist = g.distance(0, 3);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), false);
-        assertEquals(s.solve(dist.eq(1)), false);
-        assertEquals(s.solve(dist.eq(2)), true);
-        assertEquals(s.solve(dist.eq(3)), false);
+        assertTrue(s.solve(dist.gt(0)));
+        assertFalse(s.solve(dist.eq(0)));
+        assertFalse(s.solve(dist.eq(1)));
+        assertTrue(s.solve(dist.eq(2)));
+        assertFalse(s.solve(dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), false);
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), false);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()), false);
+        assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()));
 
 
     }
@@ -515,20 +515,20 @@ public class GraphTest {
         Lit e_2_3 = g.addEdge(2, 3, 3);
 
         BitVector dist = g.distance(0, 3);
-        assertEquals(s.solve(), true);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), false);
-        assertEquals(s.solve(dist.eq(1)), false);
-        assertEquals(s.solve(dist.eq(2)), true);
-        assertEquals(s.solve(dist.eq(3)), false);
+        assertTrue(s.solve());
+        assertTrue(s.solve(dist.gt(0)));
+        assertFalse(s.solve(dist.eq(0)));
+        assertFalse(s.solve(dist.eq(1)));
+        assertTrue(s.solve(dist.eq(2)));
+        assertFalse(s.solve(dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), false);
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), false);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()), false);
+        assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()));
 
 
     }
@@ -558,20 +558,20 @@ public class GraphTest {
         BitVector dist = s.bv(4);
         Lit d = g.compareDistance(0, 3, dist, Comparison.GEQ);
         s.assertTrue(d);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), true);
-        assertEquals(s.solve(dist.eq(1)), true);
-        assertEquals(s.solve(dist.eq(2)), true);
-        assertEquals(s.solve(dist.eq(3)), true);
+        assertTrue(s.solve(dist.gt(0)));
+        assertTrue(s.solve(dist.eq(0)));
+        assertTrue(s.solve(dist.eq(1)));
+        assertTrue(s.solve(dist.eq(2)));
+        assertTrue(s.solve(dist.eq(3)));
 
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), false);
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)), true);
+        assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
 
     }
 
@@ -600,20 +600,20 @@ public class GraphTest {
         BitVector dist = s.bv(4);
         Lit d = g.compareDistance(0, 3, dist, Comparison.GT);
         s.assertTrue(d);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), true);
-        assertEquals(s.solve(dist.eq(1)), true);
-        assertEquals(s.solve(dist.eq(2)), true);
-        assertEquals(s.solve(dist.eq(3)), true);
+        assertTrue(s.solve(dist.gt(0)));
+        assertTrue(s.solve(dist.eq(0)));
+        assertTrue(s.solve(dist.eq(1)));
+        assertTrue(s.solve(dist.eq(2)));
+        assertTrue(s.solve(dist.eq(3)));
 
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), false);
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)), true);
+        assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
 
     }
 
@@ -642,20 +642,20 @@ public class GraphTest {
         BitVector dist = s.bv(4);
         Lit d = g.compareDistance(0, 3, dist, Comparison.LT);
         s.assertTrue(d);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), false);
-        assertEquals(s.solve(dist.eq(1)), false);
-        assertEquals(s.solve(dist.eq(2)), false);
-        assertEquals(s.solve(dist.eq(3)), true);
+        assertTrue(s.solve(dist.gt(0)));
+        assertFalse(s.solve(dist.eq(0)));
+        assertFalse(s.solve(dist.eq(1)));
+        assertFalse(s.solve(dist.eq(2)));
+        assertTrue(s.solve(dist.eq(3)));
 
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), true);
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), false);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)), false);
+        assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
 
     }
 
@@ -727,20 +727,20 @@ public class GraphTest {
         BitVector dist = s.bv(4);
         Lit d = g.compareDistance(0, 3, dist, Comparison.GEQ);
         s.assertTrue(d);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), true);
-        assertEquals(s.solve(dist.eq(1)), true);
-        assertEquals(s.solve(dist.eq(2)), true);
-        assertEquals(s.solve(dist.eq(3)), true);
+        assertTrue(s.solve(dist.gt(0)));
+        assertTrue(s.solve(dist.eq(0)));
+        assertTrue(s.solve(dist.eq(1)));
+        assertTrue(s.solve(dist.eq(2)));
+        assertTrue(s.solve(dist.eq(3)));
 
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), false);
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)), true);
+        assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
 
 
     }
@@ -770,20 +770,20 @@ public class GraphTest {
         BitVector dist = s.bv(4);
         Lit d = g.compareDistance(0, 3, dist, Comparison.GT);
         s.assertTrue(d);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), true);
-        assertEquals(s.solve(dist.eq(1)), true);
-        assertEquals(s.solve(dist.eq(2)), true);
-        assertEquals(s.solve(dist.eq(3)), true);
+        assertTrue(s.solve(dist.gt(0)));
+        assertTrue(s.solve(dist.eq(0)));
+        assertTrue(s.solve(dist.eq(1)));
+        assertTrue(s.solve(dist.eq(2)));
+        assertTrue(s.solve(dist.eq(3)));
 
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), false);
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)), true);
+        assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
 
 
     }
@@ -813,20 +813,20 @@ public class GraphTest {
         BitVector dist = s.bv(4);
         Lit d = g.compareDistance(0, 3, dist, Comparison.LEQ);
         s.assertTrue(d);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), false);
-        assertEquals(s.solve(dist.eq(1)), false);
-        assertEquals(s.solve(dist.eq(2)), true);
-        assertEquals(s.solve(dist.eq(3)), true);
+        assertTrue(s.solve(dist.gt(0)));
+        assertFalse(s.solve(dist.eq(0)));
+        assertFalse(s.solve(dist.eq(1)));
+        assertTrue(s.solve(dist.eq(2)));
+        assertTrue(s.solve(dist.eq(3)));
 
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), true);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), true);
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), false);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)), false);
+        assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
 
 
     }
@@ -857,20 +857,20 @@ public class GraphTest {
         BitVector dist = s.bv(4);
         Lit d = g.compareDistance(0, 3, dist, Comparison.LT);
         s.assertTrue(d);
-        assertEquals(s.solve(dist.gt(0)), true);
-        assertEquals(s.solve(dist.eq(0)), false);
-        assertEquals(s.solve(dist.eq(1)), false);
-        assertEquals(s.solve(dist.eq(2)), false);
-        assertEquals(s.solve(dist.eq(3)), true);
+        assertTrue(s.solve(dist.gt(0)));
+        assertFalse(s.solve(dist.eq(0)));
+        assertFalse(s.solve(dist.eq(1)));
+        assertFalse(s.solve(dist.eq(2)));
+        assertTrue(s.solve(dist.eq(3)));
 
 
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)), false);
-        assertEquals(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)), true);
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(1)));
+        assertFalse(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(2)));
+        assertTrue(s.solve(e_0_1, e_0_2, e_1_3, e_2_3, dist.eq(3)));
 
-        assertEquals(s.solve(e_0_1.not(), e_2_3.not()), false);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not()), true);
-        assertEquals(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)), false);
+        assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
+        assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
+        assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
 
 
     }

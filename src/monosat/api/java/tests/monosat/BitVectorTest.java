@@ -27,7 +27,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.assertFalse;
 /**
  * Tests the basic API functionality of bitvectors.
  * The goal of these tests is simply to make sure the JNI implementation works as expected,
@@ -42,8 +42,8 @@ public class BitVectorTest {
         List<Lit> bits = bv.getBits();
         assertEquals(bits.size(), 4);
         for (Lit l : bits) {
-            assertEquals(s.solve(l), true);
-            assertEquals(s.solve(l.not()), true);
+            assertTrue(s.solve(l));
+            assertTrue(s.solve(l.not()));
         }
     }
 
@@ -61,11 +61,11 @@ public class BitVectorTest {
         BitVector bv1 = s.bv(4);
         BitVector bv2 = s.bv(4);
         Lit c = bv1.gt(bv2);
-        assertEquals(s.solve(c), true);
+        assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
         long v2 = s.getValue(bv2);
         assertTrue("BV1 > BV2", v1 > v2);
-        assertEquals(s.solve(c.not()), true);
+        assertTrue(s.solve(c.not()));
         v1 = s.getValue(bv1);
         v2 = s.getValue(bv2);
         assertTrue("BV1 <= BV2", v1 <= v2);
@@ -77,11 +77,11 @@ public class BitVectorTest {
         BitVector bv1 = s.bv(4);
         BitVector bv2 = s.bv(4);
         Lit c = bv1.geq(bv2);
-        assertEquals(s.solve(c), true);
+        assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
         long v2 = s.getValue(bv2);
         assertTrue("BV1 >= BV2", v1 >= v2);
-        assertEquals(s.solve(c.not()), true);
+        assertTrue(s.solve(c.not()));
         v1 = s.getValue(bv1);
         v2 = s.getValue(bv2);
         assertTrue("BV1 < BV2", v1 < v2);
@@ -93,11 +93,11 @@ public class BitVectorTest {
         BitVector bv1 = s.bv(4);
         BitVector bv2 = s.bv(4);
         Lit c = bv1.lt(bv2);
-        assertEquals(s.solve(c), true);
+        assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
         long v2 = s.getValue(bv2);
         assertTrue("BV1 < BV2", v1 < v2);
-        assertEquals(s.solve(c.not()), true);
+        assertTrue(s.solve(c.not()));
         v1 = s.getValue(bv1);
         v2 = s.getValue(bv2);
         assertTrue("BV1 >= BV2", v1 >= v2);
@@ -109,11 +109,11 @@ public class BitVectorTest {
         BitVector bv1 = s.bv(4);
         BitVector bv2 = s.bv(4);
         Lit c = bv1.leq(bv2);
-        assertEquals(s.solve(c), true);
+        assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
         long v2 = s.getValue(bv2);
         assertTrue("BV1 <= BV2", v1 <= v2);
-        assertEquals(s.solve(c.not()), true);
+        assertTrue(s.solve(c.not()));
         v1 = s.getValue(bv1);
         v2 = s.getValue(bv2);
         assertTrue("BV1 > BV2", v1 > v2);
@@ -125,11 +125,11 @@ public class BitVectorTest {
         BitVector bv1 = s.bv(4);
         BitVector bv2 = s.bv(4);
         Lit c = bv1.neq(bv2);
-        assertEquals(s.solve(c), true);
+        assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
         long v2 = s.getValue(bv2);
         assertTrue("BV1 != BV2", v1 != v2);
-        assertEquals(s.solve(c.not()), true);
+        assertTrue(s.solve(c.not()));
         v1 = s.getValue(bv1);
         v2 = s.getValue(bv2);
         assertTrue("BV1 == BV2", v1 == v2);
@@ -141,11 +141,11 @@ public class BitVectorTest {
         BitVector bv1 = s.bv(4);
         BitVector bv2 = s.bv(4);
         Lit c = bv1.eq(bv2);
-        assertEquals(s.solve(c), true);
+        assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
         long v2 = s.getValue(bv2);
         assertTrue("BV1 == BV2", v1 == v2);
-        assertEquals(s.solve(c.not()), true);
+        assertTrue(s.solve(c.not()));
         v1 = s.getValue(bv1);
         v2 = s.getValue(bv2);
         assertTrue("BV1 != BV2", v1 != v2);
@@ -158,7 +158,7 @@ public class BitVectorTest {
         BitVector bv1 = s.bv(4);
         BitVector bv2 = bv1.slice(1, 3);
         assertEquals(bv2.width(), 2);
-        assertEquals(s.solve(bv1.get(1), bv2.get(0).not()), false);
+        assertFalse(s.solve(bv1.get(1), bv2.get(0).not()));
     }
 
     @Test
@@ -168,10 +168,10 @@ public class BitVectorTest {
         BitVector bv2 = s.bv(3);
         BitVector bv3 = bv1.append(bv2);
         assertEquals(bv3.width(), 7);
-        assertEquals(s.solve(bv1.get(1), bv3.get(1)), true);
-        assertEquals(s.solve(bv1.get(1), bv3.get(1).not()), false);
-        assertEquals(s.solve(bv2.get(1), bv3.get(5)), true);
-        assertEquals(s.solve(bv2.get(1), bv3.get(5).not()), false);
+        assertTrue(s.solve(bv1.get(1), bv3.get(1)));
+        assertFalse(s.solve(bv1.get(1), bv3.get(1).not()));
+        assertTrue(s.solve(bv2.get(1), bv3.get(5)));
+        assertFalse(s.solve(bv2.get(1), bv3.get(5).not()));
     }
 
     @Test
@@ -180,8 +180,8 @@ public class BitVectorTest {
         BitVector bv1 = s.bv(4);
         BitVector bv2 = Logic.not(bv1);
         for (int i = 0; i < bv1.size(); i++) {
-            assertEquals(s.solve(bv1.get(i), bv2.get(i)), false);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i).not()), true);
+            assertFalse(s.solve(bv1.get(i), bv2.get(i)));
+            assertTrue(s.solve(bv1.get(i), bv2.get(i).not()));
         }
     }
 
@@ -192,11 +192,11 @@ public class BitVectorTest {
         BitVector bv2 = s.bv(4);
         BitVector bv3 = Logic.and(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()), false);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)), false);
+            assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()));
+            assertFalse(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)));
         }
     }
 
@@ -207,11 +207,11 @@ public class BitVectorTest {
         BitVector bv2 = s.bv(4);
         BitVector bv3 = Logic.nand(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()), true);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)), true);
+            assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()));
+            assertTrue(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)));
         }
     }
 
@@ -222,11 +222,11 @@ public class BitVectorTest {
         BitVector bv2 = s.bv(4);
         BitVector bv3 = Logic.or(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()), false);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)), true);
+            assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()));
+            assertTrue(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)));
         }
     }
 
@@ -237,11 +237,11 @@ public class BitVectorTest {
         BitVector bv2 = s.bv(4);
         BitVector bv3 = Logic.nor(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()), true);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)), false);
+            assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()));
+            assertFalse(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)));
         }
     }
 
@@ -252,11 +252,11 @@ public class BitVectorTest {
         BitVector bv2 = s.bv(4);
         BitVector bv3 = Logic.xor(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()), true);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)), true);
+            assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()));
+            assertTrue(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)));
         }
     }
 
@@ -267,11 +267,11 @@ public class BitVectorTest {
         BitVector bv2 = s.bv(4);
         BitVector bv3 = Logic.xnor(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()), false);
-            assertEquals(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)), false);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)), true);
-            assertEquals(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)), false);
+            assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i).not()));
+            assertFalse(s.solve(bv1.get(i), bv2.get(i).not(), bv3.get(i)));
+            assertTrue(s.solve(bv1.get(i).not(), bv2.get(i).not(), bv3.get(i)));
+            assertFalse(s.solve(bv1.get(i).not(), bv2.get(i), bv3.get(i)));
         }
     }
 
@@ -283,11 +283,11 @@ public class BitVectorTest {
         BitVector bv3 = Logic.add(bv1,bv2);
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
-                assertEquals(s.solve(bv1.eq(i), bv2.eq(j)), true);
+                assertTrue(s.solve(bv1.eq(i), bv2.eq(j)));
                 assertEquals(s.getValue(bv1), i);
                 assertEquals(s.getValue(bv2), j);
                 assertEquals(s.getValue(bv3), i + j);
-                assertEquals(s.solve(bv1.eq(i), bv2.eq(j), bv3.neq(i + j)), false);
+                assertFalse(s.solve(bv1.eq(i), bv2.eq(j), bv3.neq(i + j)));
             }
         }
     }
@@ -300,11 +300,11 @@ public class BitVectorTest {
         BitVector bv3 = bv1.subtract(bv2);
         for (int i = 0; i < 7; i++) {
             for (int j = 0; j <= i; j++) {
-                assertEquals(s.solve(bv1.eq(i), bv2.eq(j)), true);
+                assertTrue(s.solve(bv1.eq(i), bv2.eq(j)));
                 assertEquals(s.getValue(bv1), i);
                 assertEquals(s.getValue(bv2), j);
                 assertEquals(s.getValue(bv3), i - j);
-                assertEquals(s.solve(bv1.eq(i), bv2.eq(j), bv3.neq(i - j)), false);
+                assertFalse(s.solve(bv1.eq(i), bv2.eq(j), bv3.neq(i - j)));
             }
         }
     }

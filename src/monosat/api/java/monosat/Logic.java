@@ -35,6 +35,7 @@ import java.util.logging.Level;
 public final class Logic {
     //prevent instances of logic from being constructed
     private Logic() {}
+    //log the first time a global contradiction occurs
     private static boolean warn_contradictions=true;
 
     private static Solver getSolver(Lit... args){

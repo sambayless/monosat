@@ -39,47 +39,47 @@ public class LogicTest {
     public void test_newLit() {
         Solver solver = new Solver();
         Lit a = solver.newLit();
-        assertNotEquals(a, True);
+        assertNotEquals(a,False);
 
         Lit b = solver.newLit();
         assertNotEquals(a, b);
         assertNotEquals(a.l, b.l);
         assertNotEquals(a.toVar(), b.toVar());
-        assertEquals(solver.solve(a), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(Logic.not(b)), true);
-        assertEquals(solver.solve(a), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(a), b), true);
-        assertEquals(solver.solve(Logic.not(a), a), false);
-        assertEquals(solver.solve(a), true);
-        assertEquals(solver.solve(b), true);
+        assertTrue(solver.solve(a));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(Logic.not(b)));
+        assertTrue(solver.solve(a));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(a), b));
+        assertFalse(solver.solve(Logic.not(a), a));
+        assertTrue(solver.solve(a));
+        assertTrue(solver.solve(b));
     }
 
     @Test
     public void test_solve() {
         Solver solver = new Solver();
-        assertEquals(solver.solve(), true);
-        assertEquals(solver.solve(), true);
+        assertTrue(solver.solve());
+        assertTrue(solver.solve());
         Logic.assertTrue(True);
-        assertEquals(solver.solve(), true);
+        assertTrue(solver.solve());
         Logic.assertFalse(True);
-        assertEquals(solver.solve(), false);
+        assertFalse(solver.solve());
         Solver solver2 = new Solver();
-        assertEquals(solver2.solve(), true);
+        assertTrue(solver2.solve());
     }
 
 
     @Test
     public void test_testSolveAssumps() {
         Solver solver = new Solver();
-        assertEquals(solver.solve(), true);
-        assertEquals(solver.solve(), true);
-        assertEquals(solver.solve(True), true);
-        assertEquals(solver.solve(False), false);
-        assertEquals(solver.solve(True, False), false);
-        assertEquals(solver.solve(), true);
+        assertTrue(solver.solve());
+        assertTrue(solver.solve());
+        assertTrue(solver.solve(True));
+        assertFalse(solver.solve(False));
+        assertFalse(solver.solve(True, False));
+        assertTrue(solver.solve());
     }
 
     @Test
@@ -89,20 +89,20 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Lit result = Logic.ite(c, a, b);
-        assertEquals(solver.solve(c, a, Logic.not(b), result), true);
-        assertEquals(solver.solve(c, a, Logic.not(b), Logic.not(result)), false);
-        assertEquals(solver.solve(c, Logic.not(a), Logic.not(b), Logic.not(result)), true);
+        assertTrue(solver.solve(c, a, Logic.not(b), result));
+        assertFalse(solver.solve(c, a, Logic.not(b), Logic.not(result)));
+        assertTrue(solver.solve(c, Logic.not(a), Logic.not(b), Logic.not(result)));
 
-        assertEquals(solver.solve(Logic.not(c), a, Logic.not(b), result), false);
-        assertEquals(solver.solve(Logic.not(c), a, Logic.not(b), Logic.not(result)), true);
-        assertEquals(solver.solve(Logic.not(c), Logic.not(a), b, result), true);
+        assertFalse(solver.solve(Logic.not(c), a, Logic.not(b), result));
+        assertTrue(solver.solve(Logic.not(c), a, Logic.not(b), Logic.not(result)));
+        assertTrue(solver.solve(Logic.not(c), Logic.not(a), b, result));
 
     }
 
     @Test
     public void test_not() {
         Solver solver = new Solver();
-        assertEquals(Logic.not(True), False);
+        assertEquals(Logic.not(True),False);
         Lit a = solver.newLit();
         assertNotEquals(Logic.not(a), a);
         assertEquals(Logic.not(a), a.not());
@@ -114,11 +114,11 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Lit result = Logic.and(a, b);
-        assertEquals(solver.solve(a, b, result), true);
-        assertEquals(solver.solve(a, Logic.not(b), result), false);
-        assertEquals(solver.solve(a, Logic.not(b), Logic.not(result)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), Logic.not(result)), true);
-        assertEquals(solver.solve(a, b, result), true);
+        assertTrue(solver.solve(a, b, result));
+        assertFalse(solver.solve(a, Logic.not(b), result));
+        assertTrue(solver.solve(a, Logic.not(b), Logic.not(result)));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), Logic.not(result)));
+        assertTrue(solver.solve(a, b, result));
     }
 
     @Test
@@ -128,11 +128,11 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Lit result = Logic.and(a, b, c);
-        assertEquals(solver.solve(a, b, c, result), true);
-        assertEquals(solver.solve(a, Logic.not(b), c, result), false);
-        assertEquals(solver.solve(a, Logic.not(b), c, Logic.not(result)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), c, Logic.not(result)), true);
-        assertEquals(solver.solve(a, b, c, result), true);
+        assertTrue(solver.solve(a, b, c, result));
+        assertFalse(solver.solve(a, Logic.not(b), c, result));
+        assertTrue(solver.solve(a, Logic.not(b), c, Logic.not(result)));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), c, Logic.not(result)));
+        assertTrue(solver.solve(a, b, c, result));
     }
 
     @Test
@@ -141,11 +141,11 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Lit result = Logic.or(a, b);
-        assertEquals(solver.solve(a, b, result), true);
-        assertEquals(solver.solve(a, Logic.not(b), result), true);
-        assertEquals(solver.solve(a, Logic.not(b), Logic.not(result)), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), result), false);
-        assertEquals(solver.solve(a, b, result), true);
+        assertTrue(solver.solve(a, b, result));
+        assertTrue(solver.solve(a, Logic.not(b), result));
+        assertFalse(solver.solve(a, Logic.not(b), Logic.not(result)));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), result));
+        assertTrue(solver.solve(a, b, result));
     }
 
     @Test
@@ -155,11 +155,11 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Lit result = Logic.or(a, b, c);
-        assertEquals(solver.solve(a, b, c, result), true);
-        assertEquals(solver.solve(a, Logic.not(b), c, result), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), Logic.not(c), result), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), c, result), true);
-        assertEquals(solver.solve(a, b, c, result), true);
+        assertTrue(solver.solve(a, b, c, result));
+        assertTrue(solver.solve(a, Logic.not(b), c, result));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), Logic.not(c), result));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), c, result));
+        assertTrue(solver.solve(a, b, c, result));
     }
 
 
@@ -169,11 +169,11 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Lit result = Logic.nand(a, b);
-        assertEquals(solver.solve(a, b, result), false);
-        assertEquals(solver.solve(a, Logic.not(b), result), true);
-        assertEquals(solver.solve(a, Logic.not(b), Logic.not(result)), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), Logic.not(result)), false);
-        assertEquals(solver.solve(a, b, result), false);
+        assertFalse(solver.solve(a, b, result));
+        assertTrue(solver.solve(a, Logic.not(b), result));
+        assertFalse(solver.solve(a, Logic.not(b), Logic.not(result)));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), Logic.not(result)));
+        assertFalse(solver.solve(a, b, result));
     }
 
     @Test
@@ -183,11 +183,11 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Lit result = Logic.nand(a, b, c);
-        assertEquals(solver.solve(a, b, c, result), false);
-        assertEquals(solver.solve(a, Logic.not(b), c, result), true);
-        assertEquals(solver.solve(a, Logic.not(b), c, Logic.not(result)), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), c, Logic.not(result)), false);
-        assertEquals(solver.solve(a, b, c, result), false);
+        assertFalse(solver.solve(a, b, c, result));
+        assertTrue(solver.solve(a, Logic.not(b), c, result));
+        assertFalse(solver.solve(a, Logic.not(b), c, Logic.not(result)));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), c, Logic.not(result)));
+        assertFalse(solver.solve(a, b, c, result));
     }
 
     @Test
@@ -196,11 +196,11 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Lit result = Logic.nor(a, b);
-        assertEquals(solver.solve(a, b, result), false);
-        assertEquals(solver.solve(a, Logic.not(b), result), false);
-        assertEquals(solver.solve(a, Logic.not(b), Logic.not(result)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), result), true);
-        assertEquals(solver.solve(a, b, result), false);
+        assertFalse(solver.solve(a, b, result));
+        assertFalse(solver.solve(a, Logic.not(b), result));
+        assertTrue(solver.solve(a, Logic.not(b), Logic.not(result)));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), result));
+        assertFalse(solver.solve(a, b, result));
     }
 
     @Test
@@ -210,11 +210,11 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Lit result = Logic.nor(a, b, c);
-        assertEquals(solver.solve(a, b, c, result), false);
-        assertEquals(solver.solve(a, Logic.not(b), c, result), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), Logic.not(c), result), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), c, result), false);
-        assertEquals(solver.solve(a, b, c, result), false);
+        assertFalse(solver.solve(a, b, c, result));
+        assertFalse(solver.solve(a, Logic.not(b), c, result));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), Logic.not(c), result));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), c, result));
+        assertFalse(solver.solve(a, b, c, result));
     }
 
     @Test
@@ -223,11 +223,11 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Lit result = Logic.xor(a, b);
-        assertEquals(solver.solve(a, b, result), false);
-        assertEquals(solver.solve(a, Logic.not(b), result), true);
-        assertEquals(solver.solve(a, Logic.not(b), Logic.not(result)), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), Logic.not(result)), true);
-        assertEquals(solver.solve(a, b, result), false);
+        assertFalse(solver.solve(a, b, result));
+        assertTrue(solver.solve(a, Logic.not(b), result));
+        assertFalse(solver.solve(a, Logic.not(b), Logic.not(result)));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), Logic.not(result)));
+        assertFalse(solver.solve(a, b, result));
     }
 
     @Test
@@ -237,11 +237,11 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Lit result = Logic.xor(a, b, c);
-        assertEquals(solver.solve(a, b, c, result), true);
-        assertEquals(solver.solve(a, Logic.not(b), c, result), false);
-        assertEquals(solver.solve(a, Logic.not(b), c, Logic.not(result)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), c, Logic.not(result)), false);
-        assertEquals(solver.solve(a, b, c, result), true);
+        assertTrue(solver.solve(a, b, c, result));
+        assertFalse(solver.solve(a, Logic.not(b), c, result));
+        assertTrue(solver.solve(a, Logic.not(b), c, Logic.not(result)));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), c, Logic.not(result)));
+        assertTrue(solver.solve(a, b, c, result));
     }
 
     @Test
@@ -250,11 +250,11 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Lit result = Logic.xnor(a, b);
-        assertEquals(solver.solve(a, b, result), true);
-        assertEquals(solver.solve(a, Logic.not(b), result), false);
-        assertEquals(solver.solve(a, Logic.not(b), Logic.not(result)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), Logic.not(result)), false);
-        assertEquals(solver.solve(a, b, result), true);
+        assertTrue(solver.solve(a, b, result));
+        assertFalse(solver.solve(a, Logic.not(b), result));
+        assertTrue(solver.solve(a, Logic.not(b), Logic.not(result)));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), Logic.not(result)));
+        assertTrue(solver.solve(a, b, result));
     }
 
     @Test
@@ -264,11 +264,11 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Lit result = Logic.xnor(a, b, c);
-        assertEquals(solver.solve(a, b, c, result), false);
-        assertEquals(solver.solve(a, Logic.not(b), c, result), true);
-        assertEquals(solver.solve(a, Logic.not(b), c, Logic.not(result)), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), c, Logic.not(result)), true);
-        assertEquals(solver.solve(a, b, c, result), false);
+        assertFalse(solver.solve(a, b, c, result));
+        assertTrue(solver.solve(a, Logic.not(b), c, result));
+        assertFalse(solver.solve(a, Logic.not(b), c, Logic.not(result)));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), c, Logic.not(result)));
+        assertFalse(solver.solve(a, b, c, result));
     }
 
     @Test
@@ -276,8 +276,8 @@ public class LogicTest {
         Solver solver = new Solver();
         Lit a = solver.newLit();
         Logic.assertTrue(a);
-        assertEquals(solver.solve(a), true);
-        assertEquals(solver.solve(Logic.not(a)), false);
+        assertTrue(solver.solve(a));
+        assertFalse(solver.solve(Logic.not(a)));
     }
 
     @Test
@@ -285,8 +285,8 @@ public class LogicTest {
         Solver solver = new Solver();
         Lit a = solver.newLit();
         Logic.assertFalse(a);
-        assertEquals(solver.solve(a), false);
-        assertEquals(solver.solve(Logic.not(a)), true);
+        assertFalse(solver.solve(a));
+        assertTrue(solver.solve(Logic.not(a)));
     }
 
     @Test
@@ -295,10 +295,10 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Logic.assertAnd(a, b);
-        assertEquals(solver.solve(a, b), true);
-        assertEquals(solver.solve(Logic.not(a)), false);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(b)), false);
+        assertTrue(solver.solve(a, b));
+        assertFalse(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertFalse(solver.solve(Logic.not(b)));
     }
 
     @Test
@@ -308,10 +308,10 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Logic.assertAnd(a, b, c);
-        assertEquals(solver.solve(a, b, c), true);
-        assertEquals(solver.solve(Logic.not(a)), false);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(c)), false);
+        assertTrue(solver.solve(a, b, c));
+        assertFalse(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertFalse(solver.solve(Logic.not(c)));
     }
 
     @Test
@@ -320,11 +320,11 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Logic.assertOr(a, b);
-        assertEquals(solver.solve(a, b), true);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(b)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b)), false);
+        assertTrue(solver.solve(a, b));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(b)));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b)));
 
     }
 
@@ -335,11 +335,11 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Logic.assertOr(a, b, c);
-        assertEquals(solver.solve(a, b, c), true);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(c)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), Logic.not(c)), false);
+        assertTrue(solver.solve(a, b, c));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(c)));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), Logic.not(c)));
     }
 
     @Test
@@ -348,10 +348,10 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Logic.assertNand(a, b);
-        assertEquals(solver.solve(a, b), false);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(b)), true);
+        assertFalse(solver.solve(a, b));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(b)));
     }
 
     @Test
@@ -361,10 +361,10 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Logic.assertNand(a, b, c);
-        assertEquals(solver.solve(a, b, c), false);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(c)), true);
+        assertFalse(solver.solve(a, b, c));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(c)));
     }
 
     @Test
@@ -373,11 +373,11 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Logic.assertNor(a, b);
-        assertEquals(solver.solve(a, b), false);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), false);
-        assertEquals(solver.solve(Logic.not(b)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b)), true);
+        assertFalse(solver.solve(a, b));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertFalse(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(b)));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b)));
 
     }
 
@@ -388,11 +388,11 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Logic.assertNor(a, b, c);
-        assertEquals(solver.solve(a, b, c), false);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), false);
-        assertEquals(solver.solve(Logic.not(c)), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), Logic.not(c)), true);
+        assertFalse(solver.solve(a, b, c));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertFalse(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(c)));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), Logic.not(c)));
     }
 
     @Test
@@ -401,13 +401,13 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Logic.assertXor(a, b);
-        assertEquals(solver.solve(a, b), false);
-        assertEquals(solver.solve(Logic.not(a), b), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b)), false);
-        assertEquals(solver.solve(a, Logic.not(b)), true);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(b)), true);
+        assertFalse(solver.solve(a, b));
+        assertTrue(solver.solve(Logic.not(a), b));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b)));
+        assertTrue(solver.solve(a, Logic.not(b)));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(b)));
     }
 
     @Test
@@ -417,13 +417,13 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Logic.assertXor(a, b);
-        assertEquals(solver.solve(a, b, c), false);
-        assertEquals(solver.solve(Logic.not(a), b, c), true);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), c), false);
-        assertEquals(solver.solve(a, Logic.not(b), c), true);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(c), true);
-        assertEquals(solver.solve(Logic.not(c)), true);
+        assertFalse(solver.solve(a, b, c));
+        assertTrue(solver.solve(Logic.not(a), b, c));
+        assertFalse(solver.solve(Logic.not(a), Logic.not(b), c));
+        assertTrue(solver.solve(a, Logic.not(b), c));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(c));
+        assertTrue(solver.solve(Logic.not(c)));
     }
 
 
@@ -433,13 +433,13 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Logic.assertXnor(a, b);
-        assertEquals(solver.solve(a, b), true);
-        assertEquals(solver.solve(Logic.not(a), b), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b)), true);
-        assertEquals(solver.solve(a, Logic.not(b)), false);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(b)), true);
+        assertTrue(solver.solve(a, b));
+        assertFalse(solver.solve(Logic.not(a), b));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b)));
+        assertFalse(solver.solve(a, Logic.not(b)));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(b)));
     }
 
     @Test
@@ -449,13 +449,13 @@ public class LogicTest {
         Lit b = solver.newLit();
         Lit c = solver.newLit();
         Logic.assertXnor(a, b);
-        assertEquals(solver.solve(a, b, c), true);
-        assertEquals(solver.solve(Logic.not(a), b, c), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b), c), true);
-        assertEquals(solver.solve(a, Logic.not(b), c), false);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(c), true);
-        assertEquals(solver.solve(Logic.not(c)), true);
+        assertTrue(solver.solve(a, b, c));
+        assertFalse(solver.solve(Logic.not(a), b, c));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), c));
+        assertFalse(solver.solve(a, Logic.not(b), c));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(c));
+        assertTrue(solver.solve(Logic.not(c)));
     }
 
     @Test
@@ -464,13 +464,13 @@ public class LogicTest {
         Lit a = solver.newLit();
         Lit b = solver.newLit();
         Logic.assertEqual(a, b);
-        assertEquals(solver.solve(a, b), true);
-        assertEquals(solver.solve(Logic.not(a), b), false);
-        assertEquals(solver.solve(Logic.not(a), Logic.not(b)), true);
-        assertEquals(solver.solve(a, Logic.not(b)), false);
-        assertEquals(solver.solve(Logic.not(a)), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(Logic.not(b)), true);
+        assertTrue(solver.solve(a, b));
+        assertFalse(solver.solve(Logic.not(a), b));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b)));
+        assertFalse(solver.solve(a, Logic.not(b)));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(Logic.not(b)));
     }
 
     @Test
@@ -481,12 +481,12 @@ public class LogicTest {
         Lit c = solver.newLit();
         Logic.assertAtMostOne(a,b,c);
 
-        assertEquals(solver.solve(a, b), false);
-        assertEquals(solver.solve(b, c), false);
-        assertEquals(solver.solve(a, c), false);
-        assertEquals(solver.solve(a, b.not()), true);
-        assertEquals(solver.solve(b), true);
-        assertEquals(solver.solve(c),true);
+        assertFalse(solver.solve(a, b));
+        assertFalse(solver.solve(b, c));
+        assertFalse(solver.solve(a, c));
+        assertTrue(solver.solve(a, b.not()));
+        assertTrue(solver.solve(b));
+        assertTrue(solver.solve(c));
     }
 
 
@@ -502,33 +502,33 @@ public class LogicTest {
         Lit z = Logic.equal(c, a);
         Lit w = Logic.equal(b, d.not());
         Lit q = Logic.equal(d, a);
-        assertEquals(solver.solve(), true);
-        assertEquals(solver.solve(x, y,z,w,q), false);
+        assertTrue(solver.solve());
+        assertFalse(solver.solve(x, y,z,w,q));
         ArrayList<Lit> conflict = solver.getConflictClause();
-        assertEquals(conflict.isEmpty(),false);
+        assertFalse(conflict.isEmpty());
         ArrayList<Lit> test = new ArrayList<>();
         for(Lit l:conflict){
             assert(!l.sign());
             test.add(l.not());
         }
-        assertEquals(solver.solve(test), false);
+        assertFalse(solver.solve(test));
 
-        assertEquals(solver.solve(x, y,z,w,q), false);
+        assertFalse(solver.solve(x, y,z,w,q));
         ArrayList<Lit> conflict2 = solver.getConflictClause(true);
-        assertEquals(conflict2.isEmpty(),false);
-        assertEquals(conflict2.size()<=conflict.size(), true);
+        assertFalse(conflict2.isEmpty());
+        assertTrue(conflict2.size()<=conflict.size());
         ArrayList<Lit> test2 = new ArrayList<>();
         for(Lit l:conflict2){
             assert(!l.sign());
             test2.add(l.not());
         }
-        assertEquals(solver.solve(test2), false);
-        assertEquals(solver.solve(), true);
+        assertFalse(solver.solve(test2));
+        assertTrue(solver.solve());
 
         ArrayList<Lit> conflict3 = solver.minimizeUnsatCore(x, y,z,w,q);
-        assertEquals(conflict3.isEmpty(),false);
-        assertEquals(conflict3.size()<=3, true);
-        assertEquals(solver.solve(), true);
+        assertFalse(conflict3.isEmpty());
+        assertTrue(conflict3.size()<=3);
+        assertTrue(solver.solve());
     }
 
     @Test
