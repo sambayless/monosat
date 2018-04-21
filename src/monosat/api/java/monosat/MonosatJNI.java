@@ -28,7 +28,7 @@ import java.nio.IntBuffer;
 /**
  * Low-level JNI mapping of the C interface to MonoSAT.
  */
-public class MonosatJNI {
+public final class MonosatJNI {
     static {
         System.loadLibrary("monosat");
     }

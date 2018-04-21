@@ -22,6 +22,9 @@
 package monosat;
 import monosat.Logic;
 import monosat.Solver;
+
+import java.util.Optional;
+
 /**
  * Literals are integers in the rance 0..nVars()*2
  * Literals come in pairs; positive literals are even, negative literals are odd.
@@ -31,7 +34,7 @@ import monosat.Solver;
  * In an ideal world, this would be _just_ an integer, or a type-checked value class of size 32 bits.
  * However, to deal with
  */
-final public class Lit {
+public final class Lit {
     public final static Lit Undef = new Lit(-1, true);
     public final static Lit Error = new Lit(-2, true);
     public final static Lit True = new Lit(0, true);
@@ -182,7 +185,7 @@ final public class Lit {
      * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
      * Else, if the literal is unassigned, defaultVal will be returned.
      */
-    public boolean value(LBool defaultVal) throws RuntimeException {
+    public boolean value(boolean defaultVal) throws RuntimeException {
         if(this==Lit.True) {
             return true;
         }else if (this==Lit.False){
@@ -194,11 +197,11 @@ final public class Lit {
      * After a solve call, non-decision literals may or may not be assigned to a value.
      * Unassigned literals will have the value LBool.Undef;
      */
-    public LBool possibleValue(){
+    public Optional<Boolean> possibleValue(){
         if(this==Lit.True) {
-            return LBool.True;
+            return Optional.of(true);
         }else if (this==Lit.False){
-            return LBool.False;
+            return Optional.of(false);
         }
         return getSolver().getPossibleValue(this);
     }
@@ -206,11 +209,11 @@ final public class Lit {
      * If a literal is known to the solver to be a constant (either true or false),
      * this returns that value. Otherwise, returns LBool.Undef
      */
-    public LBool constantValue(){
+    public Optional<Boolean> constantValue(){
         if(this==Lit.True) {
-            return LBool.True;
+            return  Optional.of(true);
         }else if (this==Lit.False){
-            return LBool.False;
+            return Optional.of(false);
         }
         return getSolver().getConstantValue(this);
     }
@@ -229,7 +232,7 @@ final public class Lit {
         }else if(l<0){
             return false;
         }
-        return getSolver().getConstantValue(this)!=LBool.Undef;
+        return getSolver().getConstantValue(this).isPresent();
     }
 
     public boolean isConstTrue(){
@@ -238,7 +241,7 @@ final public class Lit {
         }else if (this==Lit.False || this==Lit.Undef || this==Lit.Error){
             return false;
         }
-        return getSolver().getConstantValue(this)==LBool.True;
+        return getSolver().getConstantValue(this).orElse(false);
     }
     public boolean isConstFalse(){
         if(this==Lit.False){
@@ -246,6 +249,6 @@ final public class Lit {
         }else if (this==Lit.True || this==Lit.Undef || this==Lit.Error){
             return false;
         }
-        return getSolver().getConstantValue(this)==LBool.False;
+        return !getSolver().getConstantValue(this).orElse(true);
     }
 }

@@ -27,9 +27,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.*;
+
 import java.util.logging.Logger;
 
-public class Solver implements Closeable {
+public final class Solver implements Closeable {
     //Holds weak references to all currently existing solvers, so that global logic operations on True/False can be applied
     protected static WeakHashMap<Solver,Boolean> solvers = new WeakHashMap<Solver, Boolean>();
     protected static final Logger log = Logger.getLogger("monosat");
@@ -47,9 +48,37 @@ public class Solver implements Closeable {
     private IntBuffer ints2;
     private ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
     private ArrayList<Lit> lits = new ArrayList<>();
-    /*
-    public static Lit True = Lit.True;
-    public static Lit False = Lit.False;*/
+
+
+    /**
+     * Represents a value that is either true, false, or undefined.
+     */
+    private enum LBool {
+        //Don't change the order of these, as they must match the order of the l_bool enum defined in Monosat.
+        True, False, Undef;
+
+        public static LBool toLbool(int value) {
+            return values()[value];
+        }
+        public static LBool fromBool(boolean value) {
+            return values()[value?0:1];
+        }
+
+        private Optional<Boolean> opt;
+
+        static {
+            True.opt = Optional.of(true);
+            False.opt = Optional.of(false);
+            Undef.opt = Optional.empty();
+        }
+
+        public Optional<Boolean> toOpt(){
+            return opt;
+        }
+
+    }
+
+
     /**
      * Instantiate a new Solver.
      * By default, support for preprocessing is disabled (as solving with preprocessing enabled requires some extra care)
@@ -105,11 +134,12 @@ public class Solver implements Closeable {
         }
         registerLit(Lit.True,Lit.False);
         this.addClause(Lit.True);
+        //Ensure that the True lit returned by circuit operations (eg, and())
+        //is the same as this True Lit.
+        assert(Lit.True== toLit(MonosatJNI.true_lit(solverPtr)));
 
-        //true_lit = toLit(MonosatJNI.true_lit(solverPtr));
         initBV();
         initBuffers();
-        assert(getConstantValue(Lit.True)==LBool.True);
     }
 
     private static String collectArgs(ArrayList<String> args) {
@@ -453,20 +483,20 @@ public class Solver implements Closeable {
 
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
     //Consider using Optional<Boolean> instead.
-    public LBool solveLimited() {
+    public Optional<Boolean> solveLimited() {
         int result = MonosatJNI.solveLimited(solverPtr);
         assert (result >= 0);
         assert (result <= 2);
-        return LBool.toLbool(result);
+        return LBool.toLbool(result).toOpt();
     }
 
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-    public LBool solveAssumptionsLimited(ArrayList<Lit> assumptions) {
+    public Optional<Boolean> solveAssumptionsLimited(ArrayList<Lit> assumptions) {
         validate(assumptions);
         int result = MonosatJNI.solveAssumptionsLimited(solverPtr, getLitBuffer(assumptions), assumptions.size());
         assert (result >= 0);
         assert (result <= 2);
-        return LBool.toLbool(result);
+        return LBool.toLbool(result).toOpt();
     }
 
     public boolean lastSolutionWasOptimal() {
@@ -697,7 +727,7 @@ public class Solver implements Closeable {
     /**
      * args and weights are ordered, so they are Lists, not collections
      */
-    public void assertPB(List<Lit> args, List<Integer> weights,Comparison c, int compareTo) {
+    public void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
         validate(args);
         IntBuffer wt_buffer = getBuffer(1, args.size());
         int n_wts = 0;
@@ -784,14 +814,22 @@ public class Solver implements Closeable {
     public boolean getValue(Lit l) throws NoModelException {
         return getValue(l, LBool.Undef);
     }
+    /**
+     * Query the model in the solver.
+     * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
+     * Else, if the literal is unassigned, defaultVal will be returned.
+     */
+    public boolean getValue(Lit l, boolean defaultVal) throws NoModelException {
+        return getValue(l, LBool.fromBool(defaultVal));
+    }
 
     /**
      * Query the model in the solver.
      * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
      * Else, if the literal is unassigned, defaultVal will be returned.
      */
-    public boolean getValue(Lit l, LBool defaultVal) throws NoModelException {
-        LBool val = getPossibleValue(l);
+    private boolean getValue(Lit l, LBool defaultVal) throws NoModelException {
+        LBool val = getLBoolValue(l,LBool.Undef);//intentionally pass Undef here, not defaultVal!
         if (val == LBool.Undef) {
             if (defaultVal == LBool.Undef) {
                 throw new NoModelException("Literal " + l.toString() + " is unassigned in the current model");
@@ -806,7 +844,7 @@ public class Solver implements Closeable {
      * After a solve call, non-decision literals may or may not be assigned to a value.
      * Unassigned literals will have the value LBool.Undef;
      */
-    public LBool getPossibleValue(Lit l) {
+    public Optional<Boolean>  getPossibleValue(Lit l) {
         return getPossibleValue(l,LBool.Undef);
     }
 
@@ -814,7 +852,20 @@ public class Solver implements Closeable {
      * After a solve call, non-decision literals may or may not be assigned to a value.
      * Unassigned literals will have the value defaultValue
      */
-    public LBool getPossibleValue(Lit l, LBool defaultValue) {
+    public Optional<Boolean> getPossibleValue(Lit l, LBool defaultValue) {
+        validate(l);
+        /*if (!MonosatJNI.hasModel(solverPtr)) {
+            throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
+        }*/
+        LBool val = LBool.toLbool(MonosatJNI.getModel_Literal(solverPtr, l.l));
+        if (val==LBool.Undef){
+            return defaultValue.toOpt();
+        }else{
+            return val.toOpt();
+        }
+    }
+
+    private LBool getLBoolValue(Lit l, LBool defaultValue) {
         validate(l);
         /*if (!MonosatJNI.hasModel(solverPtr)) {
             throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
@@ -826,6 +877,7 @@ public class Solver implements Closeable {
             return val;
         }
     }
+
     /**
     * Sometimes the solver may prove that a literal must always be true, or must always be false, in any satisfying assignment.
     * If the solver has already proven that literal l must always be true, or always false, returns LBool.True or LBool.False.
@@ -839,13 +891,13 @@ public class Solver implements Closeable {
     * }
     *
     */
-     public LBool getConstantValue(Lit l) {
+     public Optional<Boolean> getConstantValue(Lit l) {
             validate(l);
             /*if (!MonosatJNI.hasModel(solverPtr)) {
                 throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
             }*/
             LBool val = LBool.toLbool(MonosatJNI.getConstantModel_Literal(solverPtr, l.l));
-            return val;
+            return val.toOpt();
         }
     /**
      * Return the value of this bitvector from the solver.

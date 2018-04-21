@@ -2,6 +2,8 @@ package examples;
 
 import monosat.*;
 
+import java.util.Optional;
+
 import static monosat.Logic.*;
 
 /**
@@ -71,7 +73,7 @@ public class Tutorial {
         }catch(NoModelException e){
 
             //If you want to get the value of a literal that may or may not yet be assigned, use Lit.possibleValue();
-            LBool val = d.possibleValue();
+            Optional<Boolean> val = d.possibleValue();
             System.out.println("Literal 'd' is not yet assigned, and so has value " + val);
         }
 

@@ -25,7 +25,7 @@ import java.nio.IntBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Graph {
+public final class Graph {
     Solver solver;
     int bitwidth = -1;
     private long graphPtr;
@@ -634,32 +634,36 @@ public class Graph {
         if(showModel && !solver.hasModel()) {
             showModel= false;//there is no model, show all edges
         }
-        StringBuilder w = new StringBuilder();
-        w.append("digraph{\n");
+        StringBuilder writer = new StringBuilder();
+        writer.append("digraph{\n");
         for(int n= 0;n<nNodes();n++){
-            w.append("n"+Integer.toString(n) + " [label=\""+getName(n) + "\"]\n");
+            writer.append("n"+Integer.toString(n) + " [label=\""+getName(n) + "\"]\n");
         }
-        LBool defaulValue=LBool.Undef;
+
 
         for (Edge e:getAllEdges()){
-            w.append("n"+Integer.toString(e.from) + "->" + "n"+Integer.toString(e.to) + "[label=\""+e.l.toString() + "\"");
+            writer.append("n"+Integer.toString(e.from) + "->" + "n"+Integer.toString(e.to) + "[label=\""+e.l.toString() + "\"");
             if(showModel || showConstants){
-                LBool possibleValue = solver.getPossibleValue(e.l);
+                Optional<Boolean> possibleValue = solver.getPossibleValue(e.l);
                 long weight = e.getWeight();
-                if (possibleValue==LBool.False){
-                    w.append(",color=white");
-                }else if (possibleValue==LBool.Undef && showModel){
-                    w.append(",color=gray,style=dashed");
+                if (possibleValue.isPresent() && !possibleValue.get()){
+                    writer.append(",color=white");
+                }else if (!possibleValue.isPresent() && showModel){
+                    writer.append(",color=gray,style=dashed");
                 }else{
-                    w.append(",color=black");
+                    writer.append(",color=black");
+                    if(weight!=1){
+                        //supress weight 1, as that is the default
+                        writer.append(",label=\"" + Long.toString(weight) + "\"");
+                    }
                 }
             }else{
 
             }
-            w.append("]\n");
+            writer.append("]\n");
         }
-        w.append("}\n");
-        return w.toString();
+        writer.append("}\n");
+        return writer.toString();
     }
 
     public String draw(){

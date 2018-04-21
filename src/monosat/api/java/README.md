@@ -11,12 +11,20 @@
 
 ## Installation
 By default, the shared library does not compile with JNI bindings.
-To build with JNI support:
+To build with JNI support (requires a JDK installation, tested with OpenJDK 1.8):
 ```
 $ cd <root folder of monosat>
 $ cmake  -DJAVA=ON
 $ make 
 ```
 
+This will compile JNI bindings into the shared library (libmonosat.so/dylib).
+It will also produce monosat.jar in the root folder, containing the java API.
 
+## Usage
+In order to use the library, you will need to ensure that monosat.jar
+is on the classpath. You will also need to ensure that libmonosat.so is in Java's
+native library path, eg, java -Djava.library.path=/path/to/libmonosat.so
+
+See examples/java/Tutorial.java for an introduction to using the library.
 

@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class BitVector {
+public final class BitVector {
     protected int id;
     private int width;
     private Solver solver;
