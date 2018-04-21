@@ -37,6 +37,8 @@ public final class Logic {
     private Logic() {}
     //log the first time a global contradiction occurs
     private static boolean warn_contradictions=true;
+    //throw an exception of global contradictions
+    private static boolean throw_contradictions=false;
 
     private static Solver getSolver(Lit... args){
         for(Lit l:args){
@@ -64,17 +66,33 @@ public final class Logic {
 
     /**
      * By default, certain trivial contradictions (such as AssertFalse(True), or AssertOr() with empty arguments)
-     * will be caught, and trigger an exception. This is useful, as such contradictions are almost always unintentional.
-     * Use this method to disable exceptions on trivial contradictions.
+     * will be caught, and log a warning. This is useful, as such contradictions are almost always unintentional.
+     * Use this method to disable warnings on trivial contradictions.
      */
     public static synchronized void allowContradictions(){
         warn_contradictions=false;
+        throw_contradictions=false;
     }
 
+    /**
+     * By default, certain trivial contradictions (such as AssertFalse(True), or AssertOr() with empty arguments)
+     * will be caught, and log a warning. Use this method to instead throw exceptions on trivial contradictions.
+     */
+    public static synchronized void disallowContradictions(){
+        throw_contradictions=true;
+    }
     private static synchronized void contradiction(Lit a){
         //this global contradiction on True/False makes all existing solvers UNSAT
         for(Solver s: Solver.solvers.keySet()){
             s.assertFalse(Lit.True);
+        }
+        if(throw_contradictions){
+            if (a == Lit.False) {
+                throw new RuntimeException("Constant False asserted to be True (which is almost always an error).");
+            } else if (a == Lit.True) {
+                throw new RuntimeException("Constant True asserted to be False (which is almost always an error).");
+            }
+
         }
         if(warn_contradictions) {
             warn_contradictions=false;
@@ -90,6 +108,9 @@ public final class Logic {
         //this global contradiction on True/False makes all existing solvers UNSAT
         for(Solver s: Solver.solvers.keySet()){
             s.assertFalse(Lit.True);
+        }
+        if(throw_contradictions){
+                throw new RuntimeException("Statically UNSAT assertion (which is almost always an error).");
         }
         if(warn_contradictions) {
             warn_contradictions=false;
@@ -684,12 +705,14 @@ public final class Logic {
         if(solver!=null){
             solver.assertAtMostOne(args);
         }else{
+            int trueCount = 0;
             for(Lit l:args){
                 if(l==Lit.True){
-                    return;
+                    trueCount++;
                 }
             }
-            contradiction();
+            if(trueCount>1)
+                contradiction();
         }
     }
 
@@ -698,12 +721,14 @@ public final class Logic {
         if(solver!=null){
             solver.assertAtMostOne(args);
         }else{
+            int trueCount = 0;
             for(Lit l:args){
                 if(l==Lit.True){
-                    return;
+                    trueCount++;
                 }
             }
-            contradiction();
+            if(trueCount>1)
+                contradiction();
         }
     }
     private static boolean checkStaticPB(int trueCount, Comparison c, int compareTo){
