@@ -1035,7 +1035,38 @@ public class GraphTest {
 
 
     @Test
-    public void edgeTest() {
+    public void testGraphDecisions(){
+        Solver s = new Solver("-decide-theories");
+        assertTrue(s.solve());
+        Graph g = new Graph(s,4);
+        for (int i = 0; i < 4; i++) {
+            g.addNode();
+        }
+
+        //create a directed square graph with two diagonal edges
+        /*
+          0 *--* 1
+            |/\|
+          2 *--* 3
+         */
+        Lit e_0_1 = g.addEdge(0, 1);
+        Lit e_0_2 = g.addEdge(0, 2);
+        Lit e_1_3 = g.addEdge(1, 3);
+        Lit e_1_2 = g.addEdge(1, 2);
+        Lit e_2_3 = g.addEdge(2, 3);
+        Lit e_3_0 = g.addEdge(3, 0);
+
+        //create lots of graph predicates
+        Lit r = g.acyclic();
+        Lit r2 = g.acyclic(false);
+        Lit r3 = g.reaches(0, 3);
+        BitVector cmp = new BitVector(s,4);
+        Lit f = g.compareMaximumFlow(0, 3,Comparison.GEQ, cmp);
+        Lit d = g.compareDistance(0, 3, Comparison.GEQ, cmp);
+
+        assertTrue(s.solve(r));
+        assertTrue(s.solve(r, r2,r3, f,d));
+        assertTrue(s.solve(monosat.Logic.or(r, r2,r3, f,d)));
 
     }
 }
