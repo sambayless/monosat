@@ -103,7 +103,9 @@ public class Solver implements Closeable {
         if (!enable_preprocessing) {
             disablePreprocessing();
         }
+        registerLit(Lit.True,Lit.False);
         this.addClause(Lit.True);
+
         //true_lit = toLit(MonosatJNI.true_lit(solverPtr));
         initBV();
         initBuffers();
@@ -252,23 +254,6 @@ public class Solver implements Closeable {
                 throw new IllegalArgumentException("Bitvector is undefined " + bv.toString());
             }
         }
-    }
-    public Lit newLit() {
-        return newLit(true);
-    }
-
-    public Lit newLit(boolean decisionVar) {
-        int var = MonosatJNI.newVar(solverPtr);
-        return toLit(var*2);
-      /*  assert (var >= 0);
-        Lit l = new Lit(this,var);
-        while (lits.size() <= var) {
-            lits.add(null);
-        }
-        assert (!l.sign());
-        lits.set(l.toVar(), l);
-        assert (toLit(var * 2) == l);
-        return l;*/
     }
 
     public void releaseLiteral(Lit l) {
@@ -529,6 +514,46 @@ public class Solver implements Closeable {
     public void backtrack() {
         MonosatJNI.backtrack(solverPtr);
     }
+    protected void registerLit(Lit l){
+        registerLit(l,null);
+    }
+    protected void registerLit(Lit l, Lit notL){
+        assert(l.l>=0);
+        int literal = l.toInt();
+        assert (literal >= 0);
+        int var = literal / 2;
+        assert (var < nVars());//the variable must have already been declared in the sat solver before this call
+        while (var*2+1 >= lits.size()) {
+            lits.add(null);
+        }
+
+        assert (lits.get(var*2) == null);
+        assert (lits.get(var*2+1) == null);
+
+        if(notL==null){
+            if(l.sign()){
+                notL = new Lit(this,var*2);
+            }else{
+                notL = new Lit(this,var*2+1);
+            }
+        }
+
+        if(l.sign()) {
+            assert(notL.l==l.l-1);
+            lits.set(var*2, notL);
+            lits.set(var*2+1,l);
+        }else {
+            assert(notL.l==l.l+1);
+            lits.set(var*2,l);
+            lits.set(var*2+1,notL);
+        }
+
+        assert(!lits.get(var*2).sign());
+        assert(lits.get(var*2+1).sign());
+
+        assert(lits.get(l.l)!=null);
+        assert(lits.get(l.l)==l);
+    }
 
     protected Lit toLit(int literal) {
         assert (literal >= 0);
@@ -547,12 +572,6 @@ public class Solver implements Closeable {
         assert(lits.get(literal)!=null);
         assert(lits.get(literal).l==literal);
         return lits.get(literal);
-       /* Lit l = lits.get(var);
-        if ((literal & 1) == 1) {
-            return l.not();
-        } else {
-            return l;
-        }*/
     }
 
 
@@ -658,7 +677,7 @@ public class Solver implements Closeable {
             //amo constraints to operate only on variables (not literals), which must also not have been used elsewhere
             ArrayList<Integer> vars = new ArrayList<Integer>();
             for(Lit l:args){
-                Lit l2 = newLit(false);
+                Lit l2 = new Lit(this,false);
                 assertEqual(l,l2);
                 vars.add(l2.toVar());
             }
@@ -740,9 +759,7 @@ public class Solver implements Closeable {
         return new BitVector(this, width, constant);
     }
 
-    public BitVector bv(int width) {
-        return new BitVector(this, width);
-    }
+
 
     /**
      * Clear the current satisfying model in the solver (if any), while preserving the current constraints.
@@ -764,7 +781,7 @@ public class Solver implements Closeable {
      * Query the model in the solver, throwing an exception if the literal is unassigned in the model.
      * This can happen only if the literal is not a decision literal.
      */
-    public boolean getValue(Lit l) throws RuntimeException {
+    public boolean getValue(Lit l) throws NoModelException {
         return getValue(l, LBool.Undef);
     }
 
@@ -773,11 +790,11 @@ public class Solver implements Closeable {
      * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
      * Else, if the literal is unassigned, defaultVal will be returned.
      */
-    public boolean getValue(Lit l, LBool defaultVal) throws RuntimeException {
+    public boolean getValue(Lit l, LBool defaultVal) throws NoModelException {
         LBool val = getPossibleValue(l);
         if (val == LBool.Undef) {
             if (defaultVal == LBool.Undef) {
-                throw new RuntimeException("Literal " + l.toString() + " is unassigned in the current model");
+                throw new NoModelException("Literal " + l.toString() + " is unassigned in the current model");
             } else {
                 val = defaultVal;
             }
@@ -840,10 +857,10 @@ public class Solver implements Closeable {
      * @param getMaximumValue
      * @return
      */
-    public long getValue(BitVector bv, boolean getMaximumValue) {
+    public long getValue(BitVector bv, boolean getMaximumValue) throws NoModelException {
         validate(bv);
         if (!MonosatJNI.hasModel(solverPtr)) {
-            throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
+            throw new NoModelException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
         }
         return MonosatJNI.getModel_BV(solverPtr, bvPtr, bv.id, getMaximumValue);
     }

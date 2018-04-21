@@ -38,7 +38,7 @@ public class BitVectorTest {
     @Test
     public void getBits() {
         Solver s = new Solver();
-        BitVector bv = s.bv(4);
+        BitVector bv = new BitVector(s,4);
         List<Lit> bits = bv.getBits();
         assertEquals(bits.size(), 4);
         for (Lit l : bits) {
@@ -50,7 +50,7 @@ public class BitVectorTest {
     @Test
     public void width() {
         Solver s = new Solver();
-        BitVector bv = s.bv(4);
+        BitVector bv = new BitVector(s,4);
         assertEquals(bv.width(), 4);
         assertEquals(bv.size(), 4);
     }
@@ -58,8 +58,8 @@ public class BitVectorTest {
     @Test
     public void gt() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         Lit c = bv1.gt(bv2);
         assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
@@ -74,8 +74,8 @@ public class BitVectorTest {
     @Test
     public void geq() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         Lit c = bv1.geq(bv2);
         assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
@@ -90,8 +90,8 @@ public class BitVectorTest {
     @Test
     public void lt() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         Lit c = bv1.lt(bv2);
         assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
@@ -106,8 +106,8 @@ public class BitVectorTest {
     @Test
     public void leq() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         Lit c = bv1.leq(bv2);
         assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
@@ -122,8 +122,8 @@ public class BitVectorTest {
     @Test
     public void neq() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         Lit c = bv1.neq(bv2);
         assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
@@ -138,8 +138,8 @@ public class BitVectorTest {
     @Test
     public void eq() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         Lit c = bv1.eq(bv2);
         assertTrue(s.solve(c));
         long v1 = s.getValue(bv1);
@@ -155,7 +155,7 @@ public class BitVectorTest {
     @Test
     public void slice() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
         BitVector bv2 = bv1.slice(1, 3);
         assertEquals(bv2.width(), 2);
         assertFalse(s.solve(bv1.get(1), bv2.get(0).not()));
@@ -164,8 +164,8 @@ public class BitVectorTest {
     @Test
     public void append() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(3);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,3);
         BitVector bv3 = bv1.append(bv2);
         assertEquals(bv3.width(), 7);
         assertTrue(s.solve(bv1.get(1), bv3.get(1)));
@@ -177,7 +177,7 @@ public class BitVectorTest {
     @Test
     public void not() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
         BitVector bv2 = Logic.not(bv1);
         for (int i = 0; i < bv1.size(); i++) {
             assertFalse(s.solve(bv1.get(i), bv2.get(i)));
@@ -188,8 +188,8 @@ public class BitVectorTest {
     @Test
     public void and() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = Logic.and(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
             assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
@@ -203,8 +203,8 @@ public class BitVectorTest {
     @Test
     public void nand() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = Logic.nand(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
             assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
@@ -218,8 +218,8 @@ public class BitVectorTest {
     @Test
     public void or() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = Logic.or(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
             assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
@@ -233,8 +233,8 @@ public class BitVectorTest {
     @Test
     public void nor() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = Logic.nor(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
             assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
@@ -248,8 +248,8 @@ public class BitVectorTest {
     @Test
     public void xor() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = Logic.xor(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
             assertFalse(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
@@ -263,8 +263,8 @@ public class BitVectorTest {
     @Test
     public void xnor() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = Logic.xnor(bv1,bv2);
         for (int i = 0; i < bv1.size(); i++) {
             assertTrue(s.solve(bv1.get(i), bv2.get(i), bv3.get(i)));
@@ -278,8 +278,8 @@ public class BitVectorTest {
     @Test
     public void add() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = Logic.add(bv1,bv2);
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
@@ -295,8 +295,8 @@ public class BitVectorTest {
     @Test
     public void subtract() {
         Solver s = new Solver();
-        BitVector bv1 = s.bv(4);
-        BitVector bv2 = s.bv(4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = bv1.subtract(bv2);
         for (int i = 0; i < 7; i++) {
             for (int j = 0; j <= i; j++) {

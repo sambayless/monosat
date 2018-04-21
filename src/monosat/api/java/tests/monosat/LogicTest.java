@@ -38,10 +38,10 @@ public class LogicTest {
     @Test
     public void test_newLit() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
+        Lit a = new Lit(solver);
         assertNotEquals(a,False);
 
-        Lit b = solver.newLit();
+        Lit b = new Lit(solver);
         assertNotEquals(a, b);
         assertNotEquals(a.l, b.l);
         assertNotEquals(a.toVar(), b.toVar());
@@ -85,9 +85,9 @@ public class LogicTest {
     @Test
     public void test_ite() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Lit result = Logic.ite(c, a, b);
         assertTrue(solver.solve(c, a, Logic.not(b), result));
         assertFalse(solver.solve(c, a, Logic.not(b), Logic.not(result)));
@@ -103,7 +103,7 @@ public class LogicTest {
     public void test_not() {
         Solver solver = new Solver();
         assertEquals(Logic.not(True),False);
-        Lit a = solver.newLit();
+        Lit a = new Lit(solver);
         assertNotEquals(Logic.not(a), a);
         assertEquals(Logic.not(a), a.not());
     }
@@ -111,8 +111,8 @@ public class LogicTest {
     @Test
     public void test_and() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Lit result = Logic.and(a, b);
         assertTrue(solver.solve(a, b, result));
         assertFalse(solver.solve(a, Logic.not(b), result));
@@ -124,9 +124,9 @@ public class LogicTest {
     @Test
     public void test_ands() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Lit result = Logic.and(a, b, c);
         assertTrue(solver.solve(a, b, c, result));
         assertFalse(solver.solve(a, Logic.not(b), c, result));
@@ -138,8 +138,8 @@ public class LogicTest {
     @Test
     public void test_or() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Lit result = Logic.or(a, b);
         assertTrue(solver.solve(a, b, result));
         assertTrue(solver.solve(a, Logic.not(b), result));
@@ -151,9 +151,9 @@ public class LogicTest {
     @Test
     public void test_ors() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Lit result = Logic.or(a, b, c);
         assertTrue(solver.solve(a, b, c, result));
         assertTrue(solver.solve(a, Logic.not(b), c, result));
@@ -166,8 +166,8 @@ public class LogicTest {
     @Test
     public void test_nand() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Lit result = Logic.nand(a, b);
         assertFalse(solver.solve(a, b, result));
         assertTrue(solver.solve(a, Logic.not(b), result));
@@ -179,9 +179,9 @@ public class LogicTest {
     @Test
     public void test_nands() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Lit result = Logic.nand(a, b, c);
         assertFalse(solver.solve(a, b, c, result));
         assertTrue(solver.solve(a, Logic.not(b), c, result));
@@ -193,8 +193,8 @@ public class LogicTest {
     @Test
     public void test_nor() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Lit result = Logic.nor(a, b);
         assertFalse(solver.solve(a, b, result));
         assertFalse(solver.solve(a, Logic.not(b), result));
@@ -206,9 +206,9 @@ public class LogicTest {
     @Test
     public void test_nors() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Lit result = Logic.nor(a, b, c);
         assertFalse(solver.solve(a, b, c, result));
         assertFalse(solver.solve(a, Logic.not(b), c, result));
@@ -220,8 +220,8 @@ public class LogicTest {
     @Test
     public void test_xor() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Lit result = Logic.xor(a, b);
         assertFalse(solver.solve(a, b, result));
         assertTrue(solver.solve(a, Logic.not(b), result));
@@ -233,9 +233,9 @@ public class LogicTest {
     @Test
     public void test_xors() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Lit result = Logic.xor(a, b, c);
         assertTrue(solver.solve(a, b, c, result));
         assertFalse(solver.solve(a, Logic.not(b), c, result));
@@ -247,8 +247,8 @@ public class LogicTest {
     @Test
     public void test_xnor() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Lit result = Logic.xnor(a, b);
         assertTrue(solver.solve(a, b, result));
         assertFalse(solver.solve(a, Logic.not(b), result));
@@ -260,9 +260,9 @@ public class LogicTest {
     @Test
     public void test_xnors() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Lit result = Logic.xnor(a, b, c);
         assertFalse(solver.solve(a, b, c, result));
         assertTrue(solver.solve(a, Logic.not(b), c, result));
@@ -274,7 +274,7 @@ public class LogicTest {
     @Test
     public void test_assertTrue() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
+        Lit a = new Lit(solver);
         Logic.assertTrue(a);
         assertTrue(solver.solve(a));
         assertFalse(solver.solve(Logic.not(a)));
@@ -283,7 +283,7 @@ public class LogicTest {
     @Test
     public void test_assertFalse() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
+        Lit a = new Lit(solver);
         Logic.assertFalse(a);
         assertFalse(solver.solve(a));
         assertTrue(solver.solve(Logic.not(a)));
@@ -292,8 +292,8 @@ public class LogicTest {
     @Test
     public void test_assertAnd() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Logic.assertAnd(a, b);
         assertTrue(solver.solve(a, b));
         assertFalse(solver.solve(Logic.not(a)));
@@ -304,9 +304,9 @@ public class LogicTest {
     @Test
     public void test_assertAnds() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Logic.assertAnd(a, b, c);
         assertTrue(solver.solve(a, b, c));
         assertFalse(solver.solve(Logic.not(a)));
@@ -317,8 +317,8 @@ public class LogicTest {
     @Test
     public void test_assertOr() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Logic.assertOr(a, b);
         assertTrue(solver.solve(a, b));
         assertTrue(solver.solve(Logic.not(a)));
@@ -331,9 +331,9 @@ public class LogicTest {
     @Test
     public void test_assertOrs() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Logic.assertOr(a, b, c);
         assertTrue(solver.solve(a, b, c));
         assertTrue(solver.solve(Logic.not(a)));
@@ -345,8 +345,8 @@ public class LogicTest {
     @Test
     public void test_assertNand() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Logic.assertNand(a, b);
         assertFalse(solver.solve(a, b));
         assertTrue(solver.solve(Logic.not(a)));
@@ -357,9 +357,9 @@ public class LogicTest {
     @Test
     public void test_assertNands() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Logic.assertNand(a, b, c);
         assertFalse(solver.solve(a, b, c));
         assertTrue(solver.solve(Logic.not(a)));
@@ -370,8 +370,8 @@ public class LogicTest {
     @Test
     public void test_assertNor() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Logic.assertNor(a, b);
         assertFalse(solver.solve(a, b));
         assertTrue(solver.solve(Logic.not(a)));
@@ -384,9 +384,9 @@ public class LogicTest {
     @Test
     public void test_assertNors() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Logic.assertNor(a, b, c);
         assertFalse(solver.solve(a, b, c));
         assertTrue(solver.solve(Logic.not(a)));
@@ -398,8 +398,8 @@ public class LogicTest {
     @Test
     public void test_assertXor() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Logic.assertXor(a, b);
         assertFalse(solver.solve(a, b));
         assertTrue(solver.solve(Logic.not(a), b));
@@ -413,9 +413,9 @@ public class LogicTest {
     @Test
     public void test_assertXors() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Logic.assertXor(a, b);
         assertFalse(solver.solve(a, b, c));
         assertTrue(solver.solve(Logic.not(a), b, c));
@@ -430,8 +430,8 @@ public class LogicTest {
     @Test
     public void test_assertXnor() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Logic.assertXnor(a, b);
         assertTrue(solver.solve(a, b));
         assertFalse(solver.solve(Logic.not(a), b));
@@ -445,9 +445,9 @@ public class LogicTest {
     @Test
     public void test_assertXnors() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Logic.assertXnor(a, b);
         assertTrue(solver.solve(a, b, c));
         assertFalse(solver.solve(Logic.not(a), b, c));
@@ -461,8 +461,8 @@ public class LogicTest {
     @Test
     public void test_assertEqual() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
         Logic.assertEqual(a, b);
         assertTrue(solver.solve(a, b));
         assertFalse(solver.solve(Logic.not(a), b));
@@ -476,9 +476,9 @@ public class LogicTest {
     @Test
     public void test_assertAtMostOne() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
         Logic.assertAtMostOne(a,b,c);
 
         assertFalse(solver.solve(a, b));
@@ -493,10 +493,10 @@ public class LogicTest {
     @Test
     public void test_unsatCore() {
         Solver solver = new Solver();
-        Lit a = solver.newLit();
-        Lit b = solver.newLit();
-        Lit c = solver.newLit();
-        Lit d = solver.newLit();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
+        Lit d = new Lit(solver);
         Lit x = Logic.equal(a, b);
         Lit y = Logic.equal(b, c.not());
         Lit z = Logic.equal(c, a);
@@ -542,13 +542,13 @@ public class LogicTest {
         assertFalse(False.isConstTrue());
         assertTrue(False.isConstFalse());
 
-        Lit a = solver.newLit();
+        Lit a = new Lit(solver);
 
         assertFalse(a.isConst());
         assertFalse(a.isConstTrue());
         assertFalse(a.isConstFalse());
 
-        Lit b = solver.newLit();
+        Lit b = new Lit(solver);
         solver.assertTrue(a);
         assertTrue(a.isConst());
         assertTrue(a.isConstTrue());

@@ -413,7 +413,7 @@ public class Graph {
         validateNode(to);
         return solver.toLit(MonosatJNI.onPath(solver.solverPtr, graphPtr, nodeOnPath,from, to));
     }
-    public Lit compareDistance(int from, int to, long compareTo, Comparison comparison) {
+    public Lit compareDistance(int from, int to,Comparison comparison, long compareTo) {
         validateNode(from);
         validateNode(to);
         switch (comparison) {
@@ -439,7 +439,7 @@ public class Graph {
         throw new RuntimeException("Unknown comparison");
     }
 
-    public Lit compareDistance(int from, int to, BitVector compareTo, Comparison comparison) {
+    public Lit compareDistance(int from, int to,Comparison comparison, BitVector compareTo) {
         validateNode(from);
         validateNode(to);
         switch (comparison) {
@@ -496,7 +496,7 @@ public class Graph {
      * @param to
      * @return
      */
-    public Lit compareMaximumFlow(int from, int to, long compareTo, Comparison comparison) {
+    public Lit compareMaximumFlow(int from, int to,Comparison comparison, long compareTo) {
         validateNode(from);
         validateNode(to);
         switch (comparison) {
@@ -531,7 +531,7 @@ public class Graph {
      * @param to
      * @return
      */
-    public Lit compareMaximumFlow(int from, int to, BitVector compareTo, Comparison comparison) {
+    public Lit compareMaximumFlow(int from, int to, Comparison comparison, BitVector compareTo) {
         validateNode(from);
         validateNode(to);
         switch (comparison) {
@@ -658,7 +658,7 @@ public class Graph {
             }
             w.append("]\n");
         }
-        w.append("\n}\n");
+        w.append("}\n");
         return w.toString();
     }
 

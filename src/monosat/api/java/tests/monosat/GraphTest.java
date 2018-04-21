@@ -361,9 +361,9 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
-        BitVector cmp = s.bv(4);
-        Lit f = g.compareMaximumFlow(0, 3, cmp, Comparison.GEQ);
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
+        BitVector cmp = new BitVector(s,4);
+        Lit f = g.compareMaximumFlow(0, 3,Comparison.GEQ, cmp);
         assertTrue(s.solve(f));
         assertFalse(s.solve(f, cmp.eq(3)));
         assertTrue(s.solve(f, cmp.eq(2)));
@@ -395,9 +395,9 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
-        BitVector cmp = s.bv(4);
-        Lit f = g.compareMaximumFlow(0, 3, cmp, Comparison.GT);
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
+        BitVector cmp = new BitVector(s,4);
+        Lit f = g.compareMaximumFlow(0, 3,Comparison.GT, cmp);
         assertTrue(s.solve(f));
         assertFalse(s.solve(f, cmp.eq(3)));
         assertFalse(s.solve(f, cmp.eq(2)));
@@ -430,9 +430,9 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
-        BitVector cmp = s.bv(4);
-        Lit f = g.compareMaximumFlow(0, 3, cmp, Comparison.LEQ);
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
+        BitVector cmp = new BitVector(s,4);
+        Lit f = g.compareMaximumFlow(0, 3, Comparison.LEQ,cmp);
         assertTrue(s.solve(f));
         assertTrue(s.solve(f, cmp.eq(3)));
         assertTrue(s.solve(f, cmp.eq(2)));
@@ -468,9 +468,9 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
-        BitVector cmp = s.bv(4);
-        Lit f = g.compareMaximumFlow(0, 3, cmp, Comparison.LT);
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
+        BitVector cmp = new BitVector(s,4);
+        Lit f = g.compareMaximumFlow(0, 3, Comparison.LT, cmp);
         assertTrue(s.solve(f));
         assertTrue(s.solve(f, cmp.eq(3)));
         assertTrue(s.solve(f, cmp.eq(2)));
@@ -507,7 +507,7 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
 
         BitVector flow = g.maximumFlow(0, 3);
         assertTrue(s.solve(flow.gt(0)));
@@ -549,7 +549,7 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
 
         BitVector dist = g.distance(0, 3);
         assertTrue(s.solve(dist.gt(0)));
@@ -632,8 +632,8 @@ public class GraphTest {
         Lit e_1_2 = g.addEdge(1, 2, 2);
         Lit e_2_3 = g.addEdge(2, 3, 3);
 
-        BitVector dist = s.bv(4);
-        Lit d = g.compareDistance(0, 3, dist, Comparison.GEQ);
+        BitVector dist = new BitVector(s,4);
+        Lit d = g.compareDistance(0, 3, Comparison.GEQ, dist);
         s.assertTrue(d);
         assertTrue(s.solve(dist.gt(0)));
         assertTrue(s.solve(dist.eq(0)));
@@ -674,8 +674,8 @@ public class GraphTest {
         Lit e_1_2 = g.addEdge(1, 2, 2);
         Lit e_2_3 = g.addEdge(2, 3, 3);
 
-        BitVector dist = s.bv(4);
-        Lit d = g.compareDistance(0, 3, dist, Comparison.GT);
+        BitVector dist = new BitVector(s,4);
+        Lit d = g.compareDistance(0, 3, Comparison.GT, dist);
         s.assertTrue(d);
         assertTrue(s.solve(dist.gt(0)));
         assertTrue(s.solve(dist.eq(0)));
@@ -716,8 +716,8 @@ public class GraphTest {
         Lit e_1_2 = g.addEdge(1, 2, 2);
         Lit e_2_3 = g.addEdge(2, 3, 3);
 
-        BitVector dist = s.bv(4);
-        Lit d = g.compareDistance(0, 3, dist, Comparison.LT);
+        BitVector dist = new BitVector(s,4);
+        Lit d = g.compareDistance(0, 3, Comparison.LT, dist);
         s.assertTrue(d);
         assertTrue(s.solve(dist.gt(0)));
         assertFalse(s.solve(dist.eq(0)));
@@ -759,8 +759,8 @@ public class GraphTest {
         Lit e_1_2 = g.addEdge(1, 2, 2);
         Lit e_2_3 = g.addEdge(2, 3, 3);
 
-        BitVector dist = s.bv(4);
-        Lit d = g.compareDistance(0, 3, dist, Comparison.LEQ);
+        BitVector dist = new BitVector(s,4);
+        Lit d = g.compareDistance(0, 3, Comparison.LEQ, dist);
         s.assertTrue(d);
         assertTrue(s.solve(dist.gt(0)));
         assertFalse(s.solve(dist.eq(0)));
@@ -800,9 +800,9 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
-        BitVector dist = s.bv(4);
-        Lit d = g.compareDistance(0, 3, dist, Comparison.GEQ);
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
+        BitVector dist = new BitVector(s,4);
+        Lit d = g.compareDistance(0, 3, Comparison.GEQ, dist);
         s.assertTrue(d);
         assertTrue(s.solve(dist.gt(0)));
         assertTrue(s.solve(dist.eq(0)));
@@ -843,9 +843,9 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
-        BitVector dist = s.bv(4);
-        Lit d = g.compareDistance(0, 3, dist, Comparison.GT);
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
+        BitVector dist = new BitVector(s,4);
+        Lit d = g.compareDistance(0, 3, Comparison.GT,dist);
         s.assertTrue(d);
         assertTrue(s.solve(dist.gt(0)));
         assertTrue(s.solve(dist.eq(0)));
@@ -886,9 +886,9 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
-        BitVector dist = s.bv(4);
-        Lit d = g.compareDistance(0, 3, dist, Comparison.LEQ);
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
+        BitVector dist = new BitVector(s,4);
+        Lit d = g.compareDistance(0, 3, Comparison.LEQ,dist);
         s.assertTrue(d);
         assertTrue(s.solve(dist.gt(0)));
         assertFalse(s.solve(dist.eq(0)));
@@ -930,9 +930,9 @@ public class GraphTest {
         Lit e_0_2 = g.addEdge(0, 2);
         Lit e_1_3 = g.addEdge(1, 3);
         Lit e_1_2 = g.addEdge(1, 2, 2);
-        Lit e_2_3 = g.addEdge(2, 3, s.bv(4, 1));
-        BitVector dist = s.bv(4);
-        Lit d = g.compareDistance(0, 3, dist, Comparison.LT);
+        Lit e_2_3 = g.addEdge(2, 3, new BitVector(s,4, 1));
+        BitVector dist = new BitVector(s,4);
+        Lit d = g.compareDistance(0, 3, Comparison.LT,dist);
         s.assertTrue(d);
         assertTrue(s.solve(dist.gt(0)));
         assertFalse(s.solve(dist.eq(0)));

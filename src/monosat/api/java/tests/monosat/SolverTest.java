@@ -39,8 +39,6 @@ public class SolverTest {
         assertFalse(s.solve(Lit.True, Lit.False));
         assertTrue(s.solve());
         System.out.println("Done");
-
-
     }
     @Test
     public void testArguments() {
@@ -52,8 +50,6 @@ public class SolverTest {
         assertFalse(s.solve(Lit.True, Lit.False));
         assertTrue(s.solve());
         System.out.println("Done");
-
-
     }
     @Test
     public void testMultipleSolvers() {

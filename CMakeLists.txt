@@ -323,6 +323,7 @@ if (JAVA)
             src/monosat/api/java/monosat/Comparison.java
             src/monosat/api/java/monosat/BitVector.java
             src/monosat/api/java/monosat/Graph.java
+            src/monosat/api/java/monosat/NoModelException.java
             )
 
     message(STATUS "Compiling shared library with support for JNI")

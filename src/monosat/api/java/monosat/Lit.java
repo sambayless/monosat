@@ -57,14 +57,37 @@ final public class Lit {
         assert(lit<=1);
         this.solver=null;
         this.l = lit;
-        //neg = null;
     }
 
     protected Lit(Solver solver,int literal) {
         assert (literal >= 0);
         this.l =literal;
         this.solver=solver;
-        //this.neg = new Lit(l + 1, this);
+    }
+
+    /**
+     * Before you can create a new Literal, you must first create a Solver:
+     * Solver s = new Solver();
+     * Lit a = new Lit(s);
+     * @param solver The SAT solver in which to create a new literal.
+     */
+    public Lit(Solver solver){
+        this(solver,true);
+    }
+
+    /**
+     * Before you can create a new Literal, you must first create a Solver:
+     * Solver s = new Solver();
+     * Lit a = new Lit(s);
+     * @param solver The SAT solver in which to create a new literal.
+     * @param decisionLit If true (the default), this literal can be used as a decision Literal in the solver.
+     */
+    public Lit(Solver solver, boolean decisionLit){
+        int var = MonosatJNI.newVar(solver.solverPtr);
+        this.l = var*2;
+        this.solver = solver;
+        solver.registerLit(this);
+        solver.setDecisionLiteral(this,decisionLit);
     }
 
     public Solver getSolver(){
@@ -73,12 +96,6 @@ final public class Lit {
         }
         return solver;
     }
-
-    /*private Lit(int l, Lit neg) {
-        this.l = l;
-        this.neg = neg;
-    }*/
-
 
     /**
      * Check whether the literal has a negation sign.

@@ -27,6 +27,7 @@ import monosat.Solver;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class BitVector {
     protected int id;
@@ -76,7 +77,7 @@ public class BitVector {
             id = MonosatJNI.newBitvector_anon(solver.solverPtr, solver.bvPtr, width);
         } else {
             for (int i = 0; i < width; i++) {
-                bits.add(solver.newLit());
+                bits.add(new Lit(solver));
             }
             id = MonosatJNI.newBitvector(solver.solverPtr, solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size());
         }
@@ -84,6 +85,20 @@ public class BitVector {
 
     public BitVector(Solver solver, int width) {
         this(solver, width, true);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BitVector bitVector = (BitVector) o;
+        return id == bitVector.id &&
+                Objects.equals(solver, bitVector.solver);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, solver);
     }
 
     public Solver getSolver(){
