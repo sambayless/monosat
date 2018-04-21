@@ -375,8 +375,9 @@ public:
 		}
 		dbg_decisions();
 	}*/
-
+	bool preprocessed= false;
 	void preprocess() override {
+		preprocessed=true;
 		activity.growTo(g_under.edges());
 		seen.growTo(outer->nNodes());
 		is_potential_decision.growTo(g_under.edges(), false);

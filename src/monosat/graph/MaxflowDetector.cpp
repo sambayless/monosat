@@ -1647,7 +1647,7 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
     if(opt_theory_internal_vsids){
         insertEdgeOrder(edgeid);
     }
-    if(!opt_decide_theories)
+    if(!opt_decide_theories || !preprocessed)
         return;
     if((outer->hasBitVector(edgeid) || is_potential_decision[edgeid]) && !in_decision_q[edgeid]){
         if(opt_maxflow_decisions_type==1){

@@ -22,8 +22,15 @@ public class Tutorial {
 
     public static void main(String[] args) {
 
-        //Create a new solver
-        Solver s = new Solver("",false,"/tmp/test.gnf");
+        //Create a new SAT solver
+        Solver s = new Solver();
+
+        /*
+        When you create a solver, you can optionally pass some options to the underlying solver.
+        In many (but not all) cases, the following option, which enables theory-based decision heuristics,
+        is particularly good for performance:
+        */
+        s = new Solver("-decide-theories",false,"/tmp/test2.gnf");
 
         //Create some literals in the solver
         Lit a = new Lit(s);
@@ -46,7 +53,6 @@ public class Tutorial {
         } else {
             System.out.println("UNSAT");
         }
-
 
         /*
         After a solve call, you can continue making further assertions, creating new variables, and making incremental
