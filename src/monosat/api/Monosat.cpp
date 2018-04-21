@@ -1125,7 +1125,7 @@ int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 int newBVComparison_const_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID, Weight weight){
     Lit a = toLit(newBVComparison_const_geq(S,bv,bvID,weight));
     Lit b = toLit(newBVComparison_const_gt(S,bv,bvID,weight));
-    Lit c = mkLit(S->newVar());
+    Lit c = mkLit(S->newVar());S->disableElimination(var(c));
     S->addClause(a, ~c);
     S->addClause(~b, ~c);
     S->addClause(c, ~a, b);
@@ -1135,7 +1135,7 @@ int newBVComparison_bv_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int6
 
     Lit a = toLit(newBVComparison_bv_geq(S,bv,bvID,compareID));
     Lit b = toLit(newBVComparison_bv_gt(S,bv,bvID,compareID));
-    Lit c = mkLit(S->newVar());
+    Lit c = mkLit(S->newVar());S->disableElimination(var(c));
     S->addClause(a, ~c);
     S->addClause(~b, ~c);
     S->addClause(c, ~a, b);
@@ -1145,8 +1145,8 @@ int newBVComparison_bv_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int6
     if(bits1.size()==bits2.size()) {
         //watch out for anonymous bitvectors
         for (int i = 0; i < bits1.size(); i++) {
-            Lit l1 = bits1[i];
-            Lit l2 = bits2[i];
+            Lit l1 = bv->toSolver(bits1[i]);
+            Lit l2 = bv->toSolver(bits2[i]);
             //either each bit is equal, or c is false
             S->addClause(l1, ~l2, ~c);
             S->addClause(~l1, l2, ~c);
