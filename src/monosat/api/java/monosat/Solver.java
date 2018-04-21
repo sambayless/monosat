@@ -764,8 +764,7 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * Caches constant bitvectors of value < MAX_CACHE_CONST
-     *
+     * Caches constant bitvectors of value <= MAX_CACHE_CONST
      * @param width
      * @param constant
      * @return
