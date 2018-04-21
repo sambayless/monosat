@@ -153,6 +153,21 @@ public class BitVectorTest {
 
 
     @Test
+    public void eqConstAdd() {
+        //Test combination of bv equality to a constant, and bv addition, which
+        //once triggered a bug
+        Solver s = new Solver();
+        BitVector bv0 = new BitVector(s,4);
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv3 = new BitVector(s,4);
+        monosat.Logic.assertTrue(bv3.eq (bv0.add(bv1)));
+        monosat.Logic.assertTrue(bv3.eq (2));
+        assertTrue(s.solve());
+    }
+
+
+
+    @Test
     public void slice() {
         Solver s = new Solver();
         BitVector bv1 = new BitVector(s,4);

@@ -295,6 +295,16 @@ public class BitVector {
         return solver.add(this,other);
     }
 
+    /**
+     * Returns a Bitvector that represents the non-wrapping two's complement addition
+     * of this and other. To prevent wrapping, the solver will enforce that a+b<(1<<width()).
+     *
+     * @param other
+     * @return
+     */
+    public BitVector add(long other) {
+        return solver.add(this,solver.bv(width(),other));
+    }
 
     /**
      * Returns a Bitvector that represents the non-wrapping two's complement subtraction
@@ -305,6 +315,17 @@ public class BitVector {
      */
     public BitVector subtract(BitVector other) {
         return solver.subtract(this,other);
+    }
+
+    /**
+     * Returns a Bitvector that represents the non-wrapping two's complement subtraction
+     * of this and other. To prevent wrapping, the solver will enforce that a-b>=0.
+     *
+     * @param other
+     * @return
+     */
+    public BitVector subtract(long other) {
+        return solver.subtract(this,solver.bv(width(),other));
     }
 
     /**

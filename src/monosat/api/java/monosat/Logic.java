@@ -101,6 +101,14 @@ public final class Logic {
     public final static Lit False = Lit.False;
     public final static Lit Undef = Lit.Undef;
 
+    //make these constants available to users who import monosat.Logic.*
+    public final static Comparison EQ = Comparison.EQ;
+    public final static Comparison NEQ = Comparison.NEQ;
+    public final static Comparison GEQ = Comparison.GEQ;
+    public final static Comparison GT = Comparison.GT;
+    public final static Comparison LEQ = Comparison.LEQ;
+    public final static Comparison LT = Comparison.LT;
+
     public static Lit not(Lit a) {
         return a.not();
     }
