@@ -60,7 +60,7 @@ $cd src/monosat/api/python
 $sudo python3 setup.py install -f
 ```
 
-See the [tutorial] for instructions on using the Python library.
+See the [tutorial] and [tutorial.py] for instructions on using the Python library.
 
 ### Compiling the Java Library
 
@@ -80,6 +80,8 @@ java -Djava.library.path=path/to/libmonosat.so -cp path/to/monosat.jar mypacakge
 ```
 
 On OSX, you would instead use ```path/to/libmonosat.dylib```
+
+See [Tutorial.java] for instructions on using the Python library.
 
 ### Command-Line Usage
 
@@ -152,6 +154,8 @@ MonoSAT was made possible by the use of several open-source projects, including 
 [monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
 [FORMAT]: FORMAT.md
 [tutorial]: TUTORIAL.md
+[tutorial.py]: examples/python/tutorial.py
+[Tutorial.java]: examples/java/Tutorial.java
 [router]: examples/python/routing/router.py
 [MiniSat]:http://minisat.se/
 

@@ -145,7 +145,7 @@ n4 = g2.addNode()
 n5 = g2.addNode()
 n6 = g2.addNode()
 
-#Add three weighted, undirected edges to the graph
+#Add three weighted edges to the graph
 e4 = g2.addEdge(n4, n5, bv1) 
 e5 = g2.addEdge(n5, n6, bv2) 
 e6 = g2.addEdge(n4, n6, bv3)
