@@ -873,6 +873,33 @@ public:
 		assert(vars[v].isEdge);
 		return v;
 	}
+
+	/**
+	 * Check if the given literal belongs to this theory, and also if it is an edge var or a property var
+	 * @param solverLit
+	 * @param edgeVar
+	 */
+	void checkGraphLit(Lit solverLit, bool edgeVar){
+        if(!S->hasTheory(solverLit) || S->getTheoryID(solverLit)!=this->theory_index){
+            throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " does not belong to graph " + std::to_string(this->getGraphID()));
+        }
+        Lit theoryLit = S->getTheoryLit(solverLit);
+        if (isEdgeVar(var(theoryLit)) ) {
+        	if(!edgeVar) {
+				throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " is an edge literal");
+			}else{
+        		//ok
+        	}
+		}else if (edgeVar){
+			throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " is not an edge literal");
+        }else{
+        	//check that this is actually a detector literal
+			if(var(theoryLit) >= vars.size() || vars[var(theoryLit)].detector_edge<0){
+				throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " is not a detector lit");
+			}
+        }
+	}
+
     LMap<Lit> litLinkMap;
 	bool hasCanonicalSolverLit(Lit solverLit){
 	    return litLinkMap.has(solverLit) && (litLinkMap[solverLit]!=lit_Undef);
@@ -3855,7 +3882,7 @@ public:
 		Detector * d= detectors[getDetector(v)];
 		MaxflowDetector<Weight> * mf = dynamic_cast<MaxflowDetector<Weight>*>(d);
 		if(!mf)
-			return -1;
+			throw std::runtime_error("Literal " + std::to_string(toInt(toSolver(theoryLit))) + " is not a maximum flow literal");
 		return mf->getModel_Maxflow();
 	}
 	Weight getModel_MaximumFlow_EdgeFlow(Lit theoryLit, Lit edgeLit){
@@ -3866,7 +3893,7 @@ public:
 		Detector * d= detectors[getDetector(v)];
 		MaxflowDetector<Weight> * mf = dynamic_cast<MaxflowDetector<Weight>*>(d);
 		if(!mf)
-			return -1;
+			throw std::runtime_error("Literal " + std::to_string(toInt(toSolver(theoryLit))) + " is not a maximum flow literal");
 		return mf->getModel_EdgeFlow(edgeID);
 	}
 	Weight getModel_MaximumFlow_AcyclicEdgeFlow(Lit theoryLit, Lit edgeLit){
@@ -3877,7 +3904,7 @@ public:
 		Detector * d= detectors[getDetector(v)];
 		MaxflowDetector<Weight> * mf = dynamic_cast<MaxflowDetector<Weight>*>(d);
 		if(!mf)
-			return -1;
+			throw std::runtime_error("Literal " + std::to_string(toInt(toSolver(theoryLit))) + " is not a maximum flow literal");
 		return mf->getModel_AcyclicEdgeFlow(edgeID);
 	}
 	Weight getModel_MinimumSpanningWeight(Lit theoryLit){
@@ -3886,7 +3913,7 @@ public:
 		Detector * d= detectors[getDetector(v)];
 		MSTDetector<Weight> * mst = dynamic_cast<MSTDetector<Weight>*>(d);
 		if(!mst)
-			return -1;
+			throw std::runtime_error("Literal " + std::to_string(toInt(toSolver(theoryLit))) + " is not a spanning tree literal");
 		return mst->getModel_SpanningTreeWeight();
 	}
 
@@ -3913,6 +3940,8 @@ public:
 		    return r1&& r2;
 		}
 
+		checkGraphLit(solverLit,false);
+
         Lit theoryLit = S->getTheoryLit(solverLit);
         Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
@@ -3935,8 +3964,8 @@ public:
 			int node = dist2->getNode(v);
 			return dist2->getModel_Path(node, store_path);
 		}
-		return false;
 
+		throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " is not a reach/distance literal");
 	 }
 	 //Get a valid path, in terms of edges, (from a reachability or shortest path constraint)
 	 //store_path must point to an array of ints of sufficient length to store the path (the path length can be optained by a call to getModel_PathLength)
@@ -3959,7 +3988,7 @@ public:
              }
              return r1&& r2;
          }
-
+		 checkGraphLit(solverLit,false);
          Lit theoryLit =  S->getTheoryLit(solverLit);
          Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
@@ -3982,7 +4011,7 @@ public:
 			 int node = dist2->getNode(v);
 			 return dist2->getModel_PathByEdgeLit(node, store_path);
 		 }
-		 return false;
+		 throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " is not a reach/distance literal");
 	}
 };
 

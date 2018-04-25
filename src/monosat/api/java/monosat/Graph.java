@@ -626,6 +626,24 @@ public final class Graph {
         }
         return store;
     }
+
+
+
+    public long getMaxFlow(Lit flowComparisonLiteral){
+        return MonosatJNI.getModel_MaxFlow(solver.solverPtr,graphPtr, flowComparisonLiteral.l);
+    }
+
+    public long getEdgeFlow(Lit flowComparisonLiteral, Lit edgeLiteral){
+        return getEdgeFlow(flowComparisonLiteral,edgeLiteral,false);
+    }
+    public long getEdgeFlow(Lit flowComparisonLiteral, Lit edgeLiteral, boolean forceAcyclicFlow){
+        if(forceAcyclicFlow) {
+            return MonosatJNI.getModel_AcyclicEdgeFlow(solver.solverPtr, graphPtr, flowComparisonLiteral.l,edgeLiteral.l);
+        }else{
+            return MonosatJNI.getModel_EdgeFlow(solver.solverPtr, graphPtr, flowComparisonLiteral.l,edgeLiteral.l);
+        }
+    }
+
     /**
      * Prints out a graphviz/.dot formatted representation of this graph
      * @return

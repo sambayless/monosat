@@ -77,4 +77,25 @@ public class SolverTest {
         assertTrue(s2.solve());
         assertFalse(s.solve());
     }
+    @Test
+    public void test_AMO() {
+        Solver solver = new Solver();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
+        Lit result = Logic.xnor(a, b, c);
+        assertTrue(solver.solve());
+        //An empty AMO call should have no effect
+        solver.assertAtMostOne();
+        assertTrue(solver.solve());
+        solver.assertAtMostOne(a);
+        assertTrue(solver.solve());
+        assertTrue(solver.solve(a));
+        assertTrue(solver.solve(a.not()));
+
+        solver.assertAtMostOne(a,b);
+        assertTrue(solver.solve());
+        assertTrue(solver.solve(a));
+        assertTrue(solver.solve(a.not(),b.not()));
+    }
 }

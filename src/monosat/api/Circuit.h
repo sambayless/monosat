@@ -1406,12 +1406,8 @@ public:
         }
 
         if (constant_true_lit == lit_Undef) {
-            if(set.size()==0){
-                //all literals are known to be false.
-                //this is a conflict
-                S.addClause(getFalse());
-            }else if(set.size()==1){
-                S.addClause(set[0]);
+            if(set.size()<2){
+                //an empty set of literals, or a set with just one argument, always satisfies the AMO constraint
             }else {
                 for (int i = 0; i < set.size(); i++) {
                     for (int j = i + 1; j < set.size(); j++) {
@@ -1422,8 +1418,11 @@ public:
         }else{
             //all remaining elements of the set must be false, because constant_true_lit is true.
             for (int i = 0; i < set.size(); i++) {
-                S.addClause(~constant_true_lit,~set[i]);//technically don't need to include ~constant_true_lit here, but it might make things cleaner to reason about elsewhere.
-                // (It will be eliminated by the solver anyhow, so this doesn't cost anything.)
+            	if(set[i]!=constant_true_lit) {
+					S.addClause(~constant_true_lit,
+								~set[i]);//technically don't need to include ~constant_true_lit here, but it might make things cleaner to reason about elsewhere.
+					// (It will be eliminated by the solver anyhow, so this doesn't cost anything.)
+				}
             }
         }
 

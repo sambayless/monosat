@@ -558,4 +558,27 @@ public class LogicTest {
         assertFalse(b.isConstTrue());
         assertFalse(b.isConstFalse());
     }
+
+    @Test
+    public void test_AMO() {
+        Solver solver = new Solver();
+        Lit a = new Lit(solver);
+        Lit b = new Lit(solver);
+        Lit c = new Lit(solver);
+        Lit result = Logic.xnor(a, b, c);
+        assertTrue(solver.solve());
+        //An empty AMO call should have no effect
+        Logic.assertAtMostOne();
+        assertTrue(solver.solve());
+        Logic.assertAtMostOne(a);
+        assertTrue(solver.solve());
+        assertTrue(solver.solve(a));
+        assertTrue(solver.solve(a.not()));
+
+        Logic.assertAtMostOne(a,b);
+        assertTrue(solver.solve());
+        assertTrue(solver.solve(a));
+        assertTrue(solver.solve(a.not(),b.not()));
+    }
+
 }

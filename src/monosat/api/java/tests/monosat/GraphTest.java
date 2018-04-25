@@ -1069,4 +1069,189 @@ public class GraphTest {
         assertTrue(s.solve(monosat.Logic.or(r, r2,r3, f,d)));
 
     }
+    @Test
+    public void testEmptyGraph() {
+        Solver s = new Solver("-decide-theories");
+        assertTrue(s.solve());
+        Graph g1 = new Graph(s, 4);
+        for (int i = 0; i < 4; i++) {
+            g1.addNode();
+        }
+
+
+        Lit r = g1.reaches(0, 3);
+        assertFalse(s.solve(r));
+        assertTrue(s.solve(r.not()));
+
+
+
+
+    }
+
+    @Test
+    public void testWrongGraphLiteral() {
+        Solver s = new Solver("-decide-theories");
+        assertTrue(s.solve());
+        Graph g1 = new Graph(s, 4);
+        for (int i = 0; i < 4; i++) {
+            g1.addNode();
+        }
+        Lit l = new Lit(s);
+        Lit e_0_1 = g1.addEdge(0, 1);
+        Lit e_0_2 = g1.addEdge(0, 2);
+        Lit e_1_3 = g1.addEdge(1, 3);
+        Lit e_1_2 = g1.addEdge(1, 2);
+        Lit e_2_3 = g1.addEdge(2, 3);
+        Lit e_3_0 = g1.addEdge(3, 0);
+        Graph g2 = new Graph(s, 4);
+        for (int i = 0; i < 4; i++) {
+            g2.addNode();
+        }
+
+        Lit r = g1.reaches(0, 3);
+        Lit m = g1.compareMaximumFlow(0, 3,Comparison.GEQ,1);
+        assertTrue(s.solve(r,m));
+
+
+        ArrayList<Integer> nodes1 = g1.getPathNodes(r);
+        ArrayList<Lit> edges1 = g1.getPathEdges(r);
+        long flow = g1.getMaxFlow(m);
+        assertTrue(flow>=1);
+        long f2 = g1.getEdgeFlow(m,e_0_1);
+        assertTrue(f2>=1);
+        long f3 = g1.getEdgeFlow(m,e_0_1,true);
+        assertTrue(f3>=1);
+
+        try{
+            ArrayList<Integer> nodes2 = g1.getPathNodes(m);
+            fail("you cannot read the path of a flow constraint");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            ArrayList<Lit> edges2 = g1.getPathEdges(m);
+            fail("you cannot read the path of a flow constraint");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            long f4 = g1.getMaxFlow(r);
+            fail("you cannot read the flow of a reach constraint");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            long f4 = g1.getEdgeFlow(r,e_0_1);
+            fail("you cannot read the flow of a reach constraint");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            long f4 = g1.getEdgeFlow(e_0_1,m);
+            fail("inverted arguments should fail");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            long f4 = g1.getEdgeFlow(e_0_1,e_0_1);
+            fail("you cannot read the flow of an edge by itself");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            long f4 = g1.getEdgeFlow(l,e_0_1);
+            fail("you cannot read the flow of a literal");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            long f4 = g1.getEdgeFlow(m,l);
+            fail("you cannot read the flow of a literal");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            ArrayList<Integer> nodes2 = g2.getPathNodes(m);
+            fail("you cannot read the path of a flow constraint");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            ArrayList<Lit> edges2 = g2.getPathEdges(m);
+            fail("you cannot read the path of a flow constraint");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            ArrayList<Integer> nodes2 = g2.getPathNodes(r);
+            fail("you cannot read the path of one graph from another");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            ArrayList<Lit> edges2 = g2.getPathEdges(r);
+            fail("you cannot read the path of one graph from another");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            ArrayList<Integer> nodes2 = g1.getPathNodes(e_0_1);
+            fail("you cannot read the path of an edge");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            ArrayList<Lit> edges2 = g1.getPathEdges(e_0_1);
+            fail("you cannot read the path of an edge");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            ArrayList<Integer> nodes2 = g2.getPathNodes(e_0_1);
+            fail("you cannot read the path of an edge");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            ArrayList<Lit> edges2 = g2.getPathEdges(e_0_1);
+            fail("you cannot read the path of an edge");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            ArrayList<Integer> nodes2 = g1.getPathNodes(l);
+            fail("you cannot read the path of a non-theory literal");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            ArrayList<Lit> edges2 = g1.getPathEdges(l);
+            fail("you cannot read the path of a non-theory literal");
+        }catch(java.lang.Exception e){
+
+        }
+        try{
+            ArrayList<Integer> nodes2 = g2.getPathNodes(l);
+            fail("you cannot read the path of a non-theory literal");
+        }catch(java.lang.Exception e){
+
+        }
+
+        try{
+            ArrayList<Lit> edges2 = g2.getPathEdges(l);
+            fail("you cannot read the path of a non-theory literal");
+        }catch(java.lang.Exception e){
+
+        }
+
+    }
 }

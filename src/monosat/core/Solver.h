@@ -351,10 +351,10 @@ public:
 
 
 	bool hasTheory(Var v) {
-		return theory_vars[v].isTheoryVar;
+		return v>=0 && v<theory_vars.size() && theory_vars[v].isTheoryVar;
 	}
 	bool hasTheory(Lit l) {
-		return theory_vars[var(l)].isTheoryVar;
+		return var(l)>=0 && var(l)<theory_vars.size() && theory_vars[var(l)].isTheoryVar;
 	}
 	int getTheoryID(Var v) {
 		return theory_vars[v].theory - 1;
@@ -364,6 +364,10 @@ public:
 	}
 	Var getTheoryVar(Var v) {
 		assert(hasTheory(v));
+		//is this check too expensive? Does getTheoryVar appear in any tight loops?
+		if(!hasTheory(v)){
+			throw std::runtime_error("Literal " + std::to_string(toInt(toLit(v))) + " is not a theory atom");
+		}
 		return (Var) theory_vars[v].theory_var;
 	}
     vec<Theory*> & getTheories() override {

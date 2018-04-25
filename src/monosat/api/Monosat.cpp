@@ -1839,21 +1839,27 @@ int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<in
 }
 int64_t getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal){
 	Lit l = toLit(maxflow_literal);
+	G->checkGraphLit(l,false);
 	return G->getModel_MaximumFlow(S->getTheoryLit(l));
 }
 int64_t getModel_EdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
 	Lit l = toLit(maxflow_literal);
 	Lit e = toLit(edge_assignment_literal);
+	G->checkGraphLit(l,false);
+	G->checkGraphLit(e,true);
 	return G->getModel_MaximumFlow_EdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
 }
 int64_t getModel_AcyclicEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
 	Lit l = toLit(maxflow_literal);
 	Lit e = toLit(edge_assignment_literal);
+	G->checkGraphLit(l,false);
+	G->checkGraphLit(e,true);
 	return G->getModel_MaximumFlow_AcyclicEdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
 }
 
 int64_t getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int spanning_tree_literal){
 	Lit l = toLit(spanning_tree_literal);
+	G->checkGraphLit(l,false);
 	return G->getModel_MinimumSpanningWeight(S->getTheoryLit(l));
 }
 /* //Get the length of a valid path (from a reachability or shortest path constraint)
