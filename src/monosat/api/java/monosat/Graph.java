@@ -662,7 +662,7 @@ public final class Graph {
         for (Edge e:getAllEdges()){
             writer.append("n"+Integer.toString(e.from) + "->" + "n"+Integer.toString(e.to) + "[label=\""+e.l.toString() + "\"");
             if(showModel || showConstants){
-                Optional<Boolean> possibleValue = solver.getPossibleValue(e.l);
+                Optional<Boolean> possibleValue = e.l.possibleValue();
                 long weight = e.getWeight();
                 if (possibleValue.isPresent() && !possibleValue.get()){
                     writer.append(",color=white");

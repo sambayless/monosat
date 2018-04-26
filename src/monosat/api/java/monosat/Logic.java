@@ -26,11 +26,11 @@ import java.util.*;
 import java.util.logging.Level;
 
 /**
- * Logic provides static accessors for common logic functions.
- * <p>
- * The expected use of Logic is for all methods of Logic to be statically imported:
- * import static monosat.Logic.*
+ * Logic provides static accessors for common logic operations.
  * These static methods form a light-weight domain specific language.
+ * <p>
+ * The expected usage is for all methods of Logic to be statically imported:
+ * import static monosat.Logic.*
  */
 public final class Logic {
     //prevent instances of logic from being constructed

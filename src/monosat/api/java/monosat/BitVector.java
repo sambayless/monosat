@@ -338,7 +338,10 @@ public final class BitVector {
      * @return
      */
     public long value(boolean getMaximumValue) {
-        return solver.getValue(this);
+        if (!MonosatJNI.hasModel(solver.solverPtr)) {
+            throw new NoModelException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
+        }
+        return MonosatJNI.getModel_BV(solver.solverPtr, solver.bvPtr, id, getMaximumValue);
     }
 
     /**

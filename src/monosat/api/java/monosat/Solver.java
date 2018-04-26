@@ -30,15 +30,35 @@ import java.util.*;
 
 import java.util.logging.Logger;
 
+/**
+ * Represents a MonoSAT solver instance.
+ * Multiple solvers may be instantiated, with separate
+ * sets of literals and clauses.
+ */
 public final class Solver implements Closeable {
-    //Holds weak references to all currently existing solvers, so that global logic operations on True/False can be applied
+    /**
+     * Holds weak references to all currently existing solvers,
+     * so that global logic operations on True/False can be applied.
+     */
     protected static WeakHashMap<Solver,Boolean> solvers = new WeakHashMap<Solver, Boolean>();
     protected static final Logger log = Logger.getLogger("monosat");
 
-    //Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
+
     private static long MAX_CACHE_CONST = 255;
-    protected long solverPtr = 0; //handle to the underlying monsoat this instance.
+
+    /**
+     * Handle to the underlying monosat solver instance.
+     * This is really a pointer, masquerading as a long.
+     */
+    protected long solverPtr = 0;
+
+    /**
+     * Handle to the underlying monosat BitVector theory instance.
+     * This is really a pointer, masquerading as a long.
+     */
     protected long bvPtr = 0;
+
+    //Used internally to manage byte buffers for calls to the C api
     private int buffer_size0 = 1024;
     private int buffer_size1 = 1024;
     private int buffer_size2 = 1024;
@@ -46,14 +66,18 @@ public final class Solver implements Closeable {
     private IntBuffer ints0;
     private IntBuffer ints1;
     private IntBuffer ints2;
+
+    //Caches instantiated, small BitVectors
     private ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
+
+    //Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
     private ArrayList<Lit> lits = new ArrayList<>();
 
 
     /**
      * Represents a value that is either true, false, or undefined.
      */
-    private enum LBool {
+    protected enum LBool {
         //Don't change the order of these, as they must match the order of the l_bool enum defined in Monosat.
         True, False, Undef;
 
@@ -227,39 +251,28 @@ public final class Solver implements Closeable {
         assert (bvPtr != 0);
     }
 
-
-
+    protected void validate(Lit l){
+        if(l==Lit.True || l==Lit.False)
+            return;
+        if(l==null){
+            throw new IllegalArgumentException("Literal is null");
+        }else if (l.l<0 ) {
+            throw new IllegalArgumentException("Literal " + l.toString() + " is not a valid literal.");
+        }else if (l.solver!=this){
+            throw new IllegalArgumentException("Cannot pass literal belonging to solver " + (l.solver ==null?"null":l.solver.toString()) + " to solver " + toString());
+        }else if(l.toVar()>=nVars()){
+            throw new IllegalArgumentException("Literal is undefined in solver (too large)");
+        }
+    }
 
     protected void validate(Lit... args){
-        int nvars = nVars();
         for(Lit l:args){
-            if(l==Lit.True || l==Lit.False)
-                continue;
-            if(l==null){
-                throw new IllegalArgumentException("Literal is null");
-            }else if (l.l<0 ) {
-                throw new IllegalArgumentException("Literal " + l.toString() + " is not a valid literal.");
-            }else if (l.solver!=this){
-                throw new IllegalArgumentException("Cannot pass literal belonging to solver " + (l.solver ==null?"null":l.solver.toString()) + " to solver " + toString());
-            }else if(l.toVar()>=nvars){
-                throw new IllegalArgumentException("Literal is undefined in solver (too large)");
-            }
+            validate(l);
         }
     }
     protected void validate(Collection<Lit> args){
-        int nvars = nVars();
         for(Lit l:args){
-            if(l==Lit.True || l==Lit.False)
-                continue;
-            if(l==null){
-                throw new IllegalArgumentException("Literal is null");
-            }else if (l.l<0 ) {
-                throw new IllegalArgumentException("Literal " + l.toString() + " is not a valid literal.");
-            }else if (l.solver!=this){
-                throw new IllegalArgumentException("Cannot pass literal belonging to solver " + (l.solver ==null?"null":l.solver.toString()) + " to solver " + toString());
-            }else if(l.toVar()>=nvars){
-                throw new IllegalArgumentException("Literal is undefined in solver (too large)");
-            }
+            validate(l);
         }
     }
 
@@ -345,7 +358,15 @@ public final class Solver implements Closeable {
         return MonosatJNI.nBitvectors(solverPtr, bvPtr);
     }
 
-    IntBuffer getBVBuffer(Collection<BitVector> clause, int bufferN) {
+
+    /**
+     * Internal method for converting java arrays of bitvectors into
+     * byte buffers (as required by the Monosat JNI)
+     * @param clause
+     * @param bufferN
+     * @return
+     */
+    protected IntBuffer getBVBuffer(Collection<BitVector> clause, int bufferN) {
         assert (bufferN < 3);
         assert (bufferN >= 0);
         IntBuffer buffer = getBuffer(bufferN, clause.size());
@@ -358,7 +379,15 @@ public final class Solver implements Closeable {
         return buffer;
     }
 
-    IntBuffer getVarBuffer(Collection<Lit> clause, int bufferN) {
+
+    /**
+     * Internal method for converting java collections of lits into
+     * byte buffers (as required by the Monosat JNI)
+     * @param clause
+     * @param bufferN
+     * @return
+     */
+    protected IntBuffer getVarBuffer(Collection<Lit> clause, int bufferN) {
         assert (bufferN < 3);
         assert (bufferN >= 0);
         IntBuffer buffer = getBuffer(bufferN, clause.size());
@@ -370,11 +399,24 @@ public final class Solver implements Closeable {
         return buffer;
     }
 
-    IntBuffer getLitBuffer(Collection<Lit> clause) {
+    /**
+     * Internal method for converting java collections of Lits into
+     * byte buffers (as required by the Monosat JNI)
+     * @param clause
+     * @return
+     */
+    protected IntBuffer getLitBuffer(Collection<Lit> clause) {
         return getLitBuffer(clause, 0);
     }
 
-    IntBuffer getLitBuffer(Lit[] clause, int bufferN) {
+    /**
+     * Internal method for converting java arrays of Lits into
+     * byte buffers (as required by the Monosat JNI)
+     * @param clause
+     * @param bufferN
+     * @return
+     */
+    protected IntBuffer getLitBuffer(Lit[] clause, int bufferN) {
         assert (bufferN < 3);
         assert (bufferN >= 0);
         IntBuffer buffer = getBuffer(bufferN, clause.length);
@@ -386,7 +428,14 @@ public final class Solver implements Closeable {
         return buffer;
     }
 
-    IntBuffer getLitBuffer(Collection<Lit> clause, int bufferN) {
+    /**
+     * Internal method for converting java collections of Lits into
+     * byte buffers (as required by the Monosat JNI)
+     * @param clause
+     * @param bufferN
+     * @return
+     */
+    protected IntBuffer getLitBuffer(Collection<Lit> clause, int bufferN) {
         assert (bufferN < 3);
         assert (bufferN >= 0);
         IntBuffer buffer = getBuffer(bufferN, clause.size());
@@ -398,7 +447,14 @@ public final class Solver implements Closeable {
         return buffer;
     }
 
-    IntBuffer getIntBuffer(Collection<Integer> ints, int bufferN) {
+    /**
+     * Internal method for converting java collections of integers into
+     * byte buffers (as required by the Monosat JNI)
+     * @param ints
+     * @param bufferN
+     * @return
+     */
+    protected IntBuffer getIntBuffer(Collection<Integer> ints, int bufferN) {
         assert (bufferN < 3);
         assert (bufferN >= 0);
         IntBuffer buffer = getBuffer(bufferN, ints.size());
@@ -410,22 +466,43 @@ public final class Solver implements Closeable {
         return buffer;
     }
 
-    /**
-     * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
-     * else returns true.
-     *
-     * @param clause The clause to add to the solver
-     * @return
-     */
-    public boolean addClause(ArrayList<Lit> clause) {
-        validate(clause);
-        boolean status = MonosatJNI.addClause(solverPtr, getLitBuffer(clause, 1), clause.size());
-        return status;
-    }
-
     //Solver API
 
     /**
+     * Add a clause to the solver.
+     * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
+     * else returns true.
+     */
+    public boolean addClause(Lit a) {
+        validate(a);
+        return MonosatJNI.addUnitClause(solverPtr, a.l);
+    }
+
+    /**
+     * Add a clause to the solver.
+     * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
+     * else returns true.
+     */
+    public boolean addClause(Lit a, Lit b) {
+        validate(a);
+        validate(b);
+        return MonosatJNI.addBinaryClause(solverPtr, a.l,b.l);
+    }
+
+    /**
+     * Add a clause to the solver.
+     * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
+     * else returns true.
+     */
+    public boolean addClause(Lit a, Lit b,Lit c) {
+        validate(a);
+        validate(b);
+        validate(c);
+        return MonosatJNI.addTertiaryClause(solverPtr, a.l,b.l,c.l);
+    }
+
+    /**
+     * Add a clause to the solver.
      * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
      * else returns true.
      *
@@ -434,28 +511,50 @@ public final class Solver implements Closeable {
      */
     public boolean addClause(Lit... args) {
         validate(args);
-        if (args.length==1){
-            return MonosatJNI.addUnitClause(solverPtr, args[0].l);
-        }else if (args.length==2){
-            return MonosatJNI.addBinaryClause(solverPtr, args[0].l, args[1].l);
-        }else if (args.length==3){
-            return MonosatJNI.addTertiaryClause(solverPtr, args[0].l, args[1].l, args[2].l);
-        }else{
-            return MonosatJNI.addClause(solverPtr, getLitBuffer(args, 1), args.length);
-        }
+        return MonosatJNI.addClause(solverPtr, getLitBuffer(args, 1), args.length);
+    }
+
+    /**
+     * Add a clause to the solver.
+     * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
+     * else returns true.
+     *
+     * @param clause The clause to add to the solver
+     * @return
+     */
+    public boolean addClause(Collection<Lit> clause) {
+        validate(clause);
+        boolean status = MonosatJNI.addClause(solverPtr, getLitBuffer(clause, 1), clause.size());
+        return status;
     }
 
     //basic this functions
+
+    /**
+     * Either find a satisfying solution to the constraints in te formula, or
+     * prove the formula to be unsatisfiable.
+     * @return True if a satisfying soltuion was found, false if it does not.
+     */
     public boolean solve() {
         boolean r = MonosatJNI.solve(solverPtr);
         return r;
     }
-
+    /**
+     * Either find a satisfying solution to the constraints in te formula, or
+     * prove the formula to be unsatisfiable, while temporarily enforcing the
+     * literals in assumptions to be true.     * *
+     * @return True if a satisfying soltuion was found, false if it does not.
+     */
     public boolean solve(Lit... assumptions) {
         validate(assumptions);
         return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions, 0), assumptions.length);
     }
-
+    /**
+     * Either find a satisfying solution to the constraints in te formula, or
+     * prove the formula to be unsatisfiable, while temporarily enforcing the
+     * literals in assumptions to be true.     * *
+     * @return True if a satisfying soltuion was found, false if it does not.
+     */
     public boolean solve(Collection<Lit> assumptions) {
         validate(assumptions);
         return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions), assumptions.size());
@@ -480,9 +579,14 @@ public final class Solver implements Closeable {
     public void setPropagationLimit(int num_propagations) {
         MonosatJNI.setPropagationLimit(solverPtr, num_propagations);
     }
-
-    //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-    //Consider using Optional<Boolean> instead.
+    /**
+     * Attempt to find a satisfying solution, but return Optional.empty() if any resource limits
+     * are violated. To set resource limits, see:
+     * setTimeLimit()
+     * setMemoryLimit()
+     * setConflictLimit()
+     * setPropagationLimit()
+    */
     public Optional<Boolean> solveLimited() {
         int result = MonosatJNI.solveLimited(solverPtr);
         assert (result >= 0);
@@ -490,15 +594,41 @@ public final class Solver implements Closeable {
         return LBool.toLbool(result).toOpt();
     }
 
-    //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
-    public Optional<Boolean> solveAssumptionsLimited(ArrayList<Lit> assumptions) {
+    /**
+     * Attempt to find a satisfying solution, but return Optional.empty() if any resource limits
+     * are violated. To set resource limits, see:
+     * setTimeLimit()
+     * setMemoryLimit()
+     * setConflictLimit()
+     * setPropagationLimit()
+     */
+    public Optional<Boolean> solveLimited(Collection<Lit> assumptions) {
         validate(assumptions);
         int result = MonosatJNI.solveAssumptionsLimited(solverPtr, getLitBuffer(assumptions), assumptions.size());
         assert (result >= 0);
         assert (result <= 2);
         return LBool.toLbool(result).toOpt();
     }
-
+    /**
+     * Attempt to find a satisfying solution, but return Optional.empty() if any resource limits
+     * are violated. To set resource limits, see:
+     * setTimeLimit()
+     * setMemoryLimit()
+     * setConflictLimit()
+     * setPropagationLimit()
+     */
+    public Optional<Boolean> solveLimited(Lit... assumptions) {
+        validate(assumptions);
+        int result = MonosatJNI.solveAssumptionsLimited(solverPtr,  getLitBuffer(assumptions, 0), assumptions.length);
+        assert (result >= 0);
+        assert (result <= 2);
+        return LBool.toLbool(result).toOpt();
+    }
+    /**
+     * Returns true if the last solve() call found an optimal solution.
+     * This is normally always the case, unless resource limits are enforced.
+     * @return
+     */
     public boolean lastSolutionWasOptimal() {
         return MonosatJNI.lastSolutionWasOptimal(solverPtr);
     }
@@ -506,7 +636,7 @@ public final class Solver implements Closeable {
     /**
      * If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
      */
-    public ArrayList<Lit> getConflictClause(){
+    public List<Lit> getConflictClause(){
         return getConflictClause(false);
     }
 
@@ -517,7 +647,7 @@ public final class Solver implements Closeable {
      * literals that are mutually UNSAT. Else, an inexpensive, best effort set of literals will be returned.
      * @return
      */
-    public ArrayList<Lit> getConflictClause(boolean minimize) {
+    public List<Lit> getConflictClause(boolean minimize) {
         ArrayList<Lit> store = new ArrayList<Lit>();
         if(minimize){
             minimizeConflictClause();
@@ -540,13 +670,22 @@ public final class Solver implements Closeable {
     }
 
 
-    //Backtrack the solver to level 0
-    public void backtrack() {
-        MonosatJNI.backtrack(solverPtr);
-    }
+
+
+    /**
+     * Internal method used to cache newly instantiated literals,
+     * so that literals returned from C++ can reuse the same objects.
+     * @param l
+     */
     protected void registerLit(Lit l){
         registerLit(l,null);
     }
+
+    /**
+     * Internal method used to cache newly instantiated literals,
+     * so that literals returned from C++ can reuse the same objects.
+     * @param l
+     */
     protected void registerLit(Lit l, Lit notL){
         assert(l.l>=0);
         int literal = l.toInt();
@@ -585,6 +724,9 @@ public final class Solver implements Closeable {
         assert(lits.get(l.l)==l);
     }
 
+    /**
+     * Internal method to convert C++ literal integers into java Lits
+     */
     protected Lit toLit(int literal) {
         assert (literal >= 0);
         int var = literal / 2;
@@ -612,7 +754,7 @@ public final class Solver implements Closeable {
      * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
      * (leaves the original set intact if the literals are not mutualy UNSAT)
      */
-    public ArrayList<Lit> minimizeUnsatCore(Lit... literals){
+    public List<Lit> minimizeUnsatCore(Lit... literals){
         validate(literals);
         return minimizeUnsatCore(Arrays.asList(literals));
     }
@@ -620,7 +762,7 @@ public final class Solver implements Closeable {
      * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
      * (leaves the original set intact if the literals are not mutualy UNSAT)
      */
-    public ArrayList<Lit> minimizeUnsatCore(Collection<Lit> literals) {
+    public List<Lit> minimizeUnsatCore(Collection<Lit> literals) {
         validate(literals);
         ArrayList<Lit> store = new ArrayList<Lit>();
         IntBuffer buf = getLitBuffer(literals);
@@ -654,45 +796,90 @@ public final class Solver implements Closeable {
         MonosatJNI.minimizeConflictClause(solverPtr);
     }
 
+    /**
+     * Clear any optimizaiton objectives in the solver.
+     */
     public void clearOptimizationObjectives() {
         MonosatJNI.clearOptimizationObjectives(solverPtr);
     }
 
+    /**
+     * Add an optimization objective to the solver:
+     * maximize the specified BitVector.
+     */
     public void maximizeBV(BitVector bv) {
         validate(bv);
         MonosatJNI.maximizeBV(solverPtr, bvPtr, bv.id);
     }
 
+    /**
+     * Add an optimization objective to the solver:
+     * minimize the specified BitVector.
+     */
     public void minimizeBV(BitVector bv) {
         validate(bv);
         MonosatJNI.minimizeBV(solverPtr, bvPtr, bv.id);
     }
 
+    /**
+     * Add an optimization objective to the solver:
+     * maximize the number of true literals from among the given literals.
+     */
     public void maximizeLits(Collection<Lit> literals) {
         validate(literals);
         MonosatJNI.maximizeLits(solverPtr, getLitBuffer(literals), literals.size());
     }
 
+    /**
+     * Add an optimization objective to the solver:
+     * minimize the number of true literals from among the given literals.
+     */
     public void minimizeLits(Collection<Lit> literals) {
         validate(literals);
         MonosatJNI.minimizeLits(solverPtr, getLitBuffer(literals), literals.size());
     }
 
+    /**
+     * Add an optimization objective to the solver:
+     * maximize the weighted number of true literals from among the given literals.
+     */
     public void maximizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
         validate(literals);
-        assert (literals.size() == weights.size());
+        if (literals.size()!=weights.size()){
+            throw  new IllegalArgumentException("literals and weights must be the same length");
+        }
         MonosatJNI.maximizeWeightedLits(solverPtr, getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
     }
 
+    /**
+     * Add an optimization objective to the solver:
+     * minimize the weighted number of true literals from among the given literals.
+     */
     public void minimizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
         validate(literals);
-        assert (literals.size() == weights.size());
+        if (literals.size()!=weights.size()){
+            throw  new IllegalArgumentException("literals and weights must be the same length");
+        }
         MonosatJNI.minimizeWeightedLits(solverPtr, getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
     }
+
+    /**
+     * Enforce that at most one of the specified literals may be true.
+     * If 1 or fewer arguments are given, has no effect.
+     * If exactly 2 arguments are given, this is the same as:
+     * assertOr(args[0],args[1])
+     */
     public void assertAtMostOne(Lit... args) {
         validate(args);
         assertAtMostOne(Arrays.asList(args));
     }
+
+    /**
+     * Enforce that at most one of the specified literals may be true.
+     * If 1 or fewer arguments are given, has no effect.
+     * If exactly 2 arguments are given, this is the same as:
+     * assertOr(args[0],args[1])
+     */
     public void assertAtMostOne(Collection<Lit> args) {
         //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
         //for small numbers of variables, consider using a direct CNF encoding instead
@@ -715,6 +902,14 @@ public final class Solver implements Closeable {
         }
     }
 
+    /**
+     * Enforce a pseudo-Boolean constraint.
+     * The number of true literals from among args must satisfy comparison c
+     * relative to compare to.
+     *
+     * For example, if c is Comparison.LEQ, and compareTo is 3,
+     * then at most 3 literals from args may be true.
+     */
     public void assertPB(Collection<Lit> args,  Comparison c, int compareTo) {
         validate(args);
         ArrayList<Lit> tmp = new ArrayList<>();
@@ -724,11 +919,18 @@ public final class Solver implements Closeable {
         assertPB(tmp, null,c, compareTo);
     }
 
+
     /**
-     * args and weights are ordered, so they are Lists, not collections
+     * Enforce a weighted pseudo-Boolean constraint.
+     * The weighted number of true literals from among args must satisfy comparison c
+     * relative to compare to.
+     *
      */
     public void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
         validate(args);
+        if(weights.size()>args.size()){
+            throw  new IllegalArgumentException("Must not have more weights then literals.");
+        }
         IntBuffer wt_buffer = getBuffer(1, args.size());
         int n_wts = 0;
         if (weights != null) {
@@ -757,9 +959,11 @@ public final class Solver implements Closeable {
                 MonosatJNI.assertPB_gt(solverPtr, compareTo, args.size(), getLitBuffer(args), wt_buffer);
         }
     }
-
-    //Convert any pb constraints in the solver into cnf (will be called automatically before solve())
-    public void flushPB() {
+    /**
+     * Immediately convert any pseudo Boolean constraints in the solver into clauses.
+     * This function does not need to be manually called, as it will be called automatically before 'solve' calls.
+    */
+    protected void flushPB() {
         MonosatJNI.flushPB(solverPtr);
     }
 
@@ -788,10 +992,8 @@ public final class Solver implements Closeable {
         return new BitVector(this, width, constant);
     }
 
-
-
     /**
-     * Clear the current satisfying model in the solver (if any), while preserving the current constraints.
+     * Reset any decisions in the solver, while preserving the current constraints.
      * There is normally no need to manually call restart(), as this is called automatically before calling solve().
      */
     public void restart(){
@@ -799,135 +1001,15 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * True if the solver has a satisfying model to its constraints
+     * True if the solver has a satisfying model to its constraints.
      * @return
      */
     public boolean hasModel(){
         return MonosatJNI.hasModel(solverPtr);
     }
 
-    /**
-     * Query the model in the solver, throwing an exception if the literal is unassigned in the model.
-     * This can happen only if the literal is not a decision literal.
-     */
-    public boolean getValue(Lit l) throws NoModelException {
-        return getValue(l, LBool.Undef);
-    }
-    /**
-     * Query the model in the solver.
-     * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
-     * Else, if the literal is unassigned, defaultVal will be returned.
-     */
-    public boolean getValue(Lit l, boolean defaultVal) throws NoModelException {
-        return getValue(l, LBool.fromBool(defaultVal));
-    }
 
-    /**
-     * Query the model in the solver.
-     * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
-     * Else, if the literal is unassigned, defaultVal will be returned.
-     */
-    private boolean getValue(Lit l, LBool defaultVal) throws NoModelException {
-        LBool val = getLBoolValue(l,LBool.Undef);//intentionally pass Undef here, not defaultVal!
-        if (val == LBool.Undef) {
-            if (defaultVal == LBool.Undef) {
-                throw new NoModelException("Literal " + l.toString() + " is unassigned in the current model");
-            } else {
-                val = defaultVal;
-            }
-        }
-        return val == LBool.True;
-    }
 
-    /**
-     * After a solve call, non-decision literals may or may not be assigned to a value.
-     * Unassigned literals will have the value LBool.Undef;
-     */
-    public Optional<Boolean>  getPossibleValue(Lit l) {
-        return getPossibleValue(l,LBool.Undef);
-    }
-
-    /**
-     * After a solve call, non-decision literals may or may not be assigned to a value.
-     * Unassigned literals will have the value defaultValue
-     */
-    public Optional<Boolean> getPossibleValue(Lit l, LBool defaultValue) {
-        validate(l);
-        /*if (!MonosatJNI.hasModel(solverPtr)) {
-            throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
-        }*/
-        LBool val = LBool.toLbool(MonosatJNI.getModel_Literal(solverPtr, l.l));
-        if (val==LBool.Undef){
-            return defaultValue.toOpt();
-        }else{
-            return val.toOpt();
-        }
-    }
-
-    private LBool getLBoolValue(Lit l, LBool defaultValue) {
-        validate(l);
-        /*if (!MonosatJNI.hasModel(solverPtr)) {
-            throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
-        }*/
-        LBool val = LBool.toLbool(MonosatJNI.getModel_Literal(solverPtr, l.l));
-        if (val==LBool.Undef){
-            return defaultValue;
-        }else{
-            return val;
-        }
-    }
-
-    /**
-    * Sometimes the solver may prove that a literal must always be true, or must always be false, in any satisfying assignment.
-    * If the solver has already proven that literal l must always be true, or always false, returns LBool.True or LBool.False.
-    * Otherwise, returns LBool.Undef.
-    *
-    * Note that as constraints are added to the solver, and after solve calls, the solver may learn that new literals are constant.
-    * This function will not attempt to prove that l is constant, if the solver does not already know this.
-    * You can attempt to discover whether a literal is constant using the assumption mechanism, eg:
-    * if(~solve(l)){
-    *   //l must be constant false, because the constraints are UNSAT if l is true.
-    * }
-    *
-    */
-     public Optional<Boolean> getConstantValue(Lit l) {
-            validate(l);
-            /*if (!MonosatJNI.hasModel(solverPtr)) {
-                throw new RuntimeException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
-            }*/
-            LBool val = LBool.toLbool(MonosatJNI.getConstantModel_Literal(solverPtr, l.l));
-            return val.toOpt();
-        }
-    /**
-     * Return the value of this bitvector from the solver.
-     * Sometimes, a range of values may be determined by the solver to be satisfying.
-     * If getMaximumValue is true, then largest value in that range will be returned,
-     * otherwise, the smallest value is returned (this is relevant if optimization queries are being performed).
-     *
-     * @param bv
-     * @param getMaximumValue
-     * @return
-     */
-    public long getValue(BitVector bv, boolean getMaximumValue) throws NoModelException {
-        validate(bv);
-        if (!MonosatJNI.hasModel(solverPtr)) {
-            throw new NoModelException("Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
-        }
-        return MonosatJNI.getModel_BV(solverPtr, bvPtr, bv.id, getMaximumValue);
-    }
-
-    /**
-     * Return the value of this bitvector from the solver.
-     * Sometimes, a range of values may be determined by the solver to be satisfying.
-     * In this case, the smallest value is returned (this is relevant if optimization queries are being performed).
-     *
-     * @param bv
-     * @return
-     */
-    public long getValue(BitVector bv) {
-        validate(bv);
-        return getValue(bv, false);
-    }
 
     public Lit ite(Lit condition, Lit then, Lit els) {
         validate(condition,then,els);
@@ -1314,18 +1396,4 @@ public final class Solver implements Closeable {
         pair.add(b);
         return max(pair);
     }
-
-    //Alternative interface to 'solve'
-    public boolean apply() {
-        return solve();
-    }
-
-    public boolean apply(Lit... assumptions) {
-        return solve(assumptions);
-    }
-
-    public boolean apply(Collection<Lit> assumptions) {
-        return solve(assumptions);
-    }
-
 }

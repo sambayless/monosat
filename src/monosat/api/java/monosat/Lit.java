@@ -167,56 +167,117 @@ public final class Lit {
         return l;
     }
 
-
     /**
-     * Query the model in the solver, throwing an exception if the literal is unassigned in the model.
+     * Query the model in the solver, throwing a NoModelException if the literal is unassigned in the model.
      * This can happen only if the literal is not a decision literal.
      */
-    public boolean value() throws RuntimeException {
-        if(this==Lit.True) {
-            return true;
-        }else if (this==Lit.False){
-            return false;
-        }
-        return getSolver().getValue(this);
+    public boolean value() throws NoModelException {
+        return getValue(Solver.LBool.Undef);
     }
     /**
      * Query the model in the solver.
-     * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
+     * If defaultVal is LBool.Undef, this will throw a NoModelException if the literal is unassigned.
      * Else, if the literal is unassigned, defaultVal will be returned.
      */
-    public boolean value(boolean defaultVal) throws RuntimeException {
-        if(this==Lit.True) {
-            return true;
-        }else if (this==Lit.False){
-            return false;
-        }
-        return getSolver().getValue(this, defaultVal);
+    public boolean value(boolean defaultVal) throws NoModelException {
+        return getValue(Solver.LBool.fromBool(defaultVal));
     }
     /**
      * After a solve call, non-decision literals may or may not be assigned to a value.
      * Unassigned literals will have the value LBool.Undef;
      */
     public Optional<Boolean> possibleValue(){
-        if(this==Lit.True) {
-            return Optional.of(true);
-        }else if (this==Lit.False){
-            return Optional.of(false);
-        }
-        return getSolver().getPossibleValue(this);
+        return getPossibleValue(Solver.LBool.Undef);
     }
+    public Optional<Boolean> possibleValue(boolean defaultValue){
+        return getPossibleValue(defaultValue ? Solver.LBool.True : Solver.LBool.False);
+    }
+
     /**
-     * If a literal is known to the solver to be a constant (either true or false),
-     * this returns that value. Otherwise, returns LBool.Undef
+     * After a solve call, non-decision literals may or may not be assigned to a value.
+     * Unassigned literals will have the value defaultValue
      */
-    public Optional<Boolean> constantValue(){
-        if(this==Lit.True) {
-            return  Optional.of(true);
-        }else if (this==Lit.False){
-            return Optional.of(false);
+    private Optional<Boolean> getPossibleValue( Solver.LBool defaultValue) {
+        if(this.l<0){
+            throw new IllegalArgumentException("Literal " + toString() + " is not a valid literal.");
         }
-        return getSolver().getConstantValue(this);
+        if(this==Lit.True){
+            return Solver.LBool.True.toOpt();
+        }else if(this==Lit.False){
+            return Solver.LBool.False.toOpt();
+        }
+
+        Solver.LBool val = Solver.LBool.toLbool(MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
+        if (val==Solver.LBool.Undef){
+            return defaultValue.toOpt();
+        }else{
+            return val.toOpt();
+        }
     }
+
+    protected Solver.LBool getLBoolValue(Solver.LBool defaultValue) {
+
+        Solver.LBool val = Solver.LBool.toLbool(MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
+        if (val==Solver.LBool.Undef){
+            return defaultValue;
+        }else{
+            return val;
+        }
+    }
+
+
+    /**
+     * Query the model in the solver.
+     * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
+     * Else, if the literal is unassigned, defaultVal will be returned.
+     */
+    protected boolean getValue(Solver.LBool defaultVal) throws NoModelException {
+        if(this.l<0){
+            throw new IllegalArgumentException("Literal " + toString() + " is not a valid literal.");
+        }
+        if(this==Lit.True){
+            return true;
+        }else if(this==Lit.False){
+            return false;
+        }
+
+        Solver.LBool val = Solver.LBool.toLbool(MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
+        if (val == Solver.LBool.Undef) {
+            if (defaultVal == Solver.LBool.Undef) {
+                throw new NoModelException("Literal " + toString() + " is unassigned in the current model");
+            } else {
+                val = defaultVal;
+            }
+        }
+        return val == Solver.LBool.True;
+    }
+
+    /**
+     * Sometimes the solver may prove that a literal must always be true, or must always be false, in any satisfying assignment.
+     * If the solver has already proven that literal l must always be true, or always false, returns LBool.True or LBool.False.
+     * Otherwise, returns LBool.Undef.
+     *
+     * Note that as constraints are added to the solver, and after solve calls, the solver may learn that new literals are constant.
+     * This function will not attempt to prove that l is constant, if the solver does not already know this.
+     * You can attempt to discover whether a literal is constant using the assumption mechanism, eg:
+     * if(~solve(l)){
+     *   //l must be constant false, because the constraints are UNSAT if l is true.
+     * }
+     *
+     */
+    public Optional<Boolean> getConstantValue() {
+        if(this.l<0){
+            throw new IllegalArgumentException("Literal " + toString() + " is not a valid literal.");
+        }
+        if(this==Lit.True){
+            return Solver.LBool.True.toOpt();
+        }else if(this==Lit.False){
+            return Solver.LBool.False.toOpt();
+        }
+        Solver.LBool val = Solver.LBool.toLbool(MonosatJNI.getConstantModel_Literal(solver.solverPtr, l));
+        return val.toOpt();
+    }
+
 
     /**
      * If a literal is known to the solver to be a constant (either true or false),
@@ -232,7 +293,7 @@ public final class Lit {
         }else if(l<0){
             return false;
         }
-        return getSolver().getConstantValue(this).isPresent();
+        return getConstantValue().isPresent();
     }
 
     public boolean isConstTrue(){
@@ -241,7 +302,7 @@ public final class Lit {
         }else if (this==Lit.False || this==Lit.Undef || this==Lit.Error){
             return false;
         }
-        return getSolver().getConstantValue(this).orElse(false);
+        return getConstantValue().orElse(false);
     }
     public boolean isConstFalse(){
         if(this==Lit.False){
@@ -249,6 +310,6 @@ public final class Lit {
         }else if (this==Lit.True || this==Lit.Undef || this==Lit.Error){
             return false;
         }
-        return !getSolver().getConstantValue(this).orElse(true);
+        return !getConstantValue().orElse(true);
     }
 }

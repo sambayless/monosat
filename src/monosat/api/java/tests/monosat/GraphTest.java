@@ -223,11 +223,11 @@ public class GraphTest {
         assertEquals(edges.get(0), e_0_1);
         assertEquals(edges.get(1), e_1_2);
         assertEquals(edges.get(2), e_2_3);
-        assertTrue(s.getValue(e_0_1));
-        assertTrue(s.getValue(e_1_2));
-        assertTrue(s.getValue(e_2_3));
-        assertFalse(s.getValue(e_0_2));
-        assertFalse(s.getValue(e_1_3));
+        assertTrue(e_0_1.value());
+        assertTrue(e_1_2.value());
+        assertTrue(e_2_3.value());
+        assertFalse(e_0_2.value());
+        assertFalse(e_1_3.value());
 
         assertTrue(s.solve(r));
 
@@ -275,11 +275,11 @@ public class GraphTest {
         assertEquals(edges.get(2), e_0_1);
         assertEquals(edges.get(1), e_1_2);
         assertEquals(edges.get(0), e_2_3);
-        assertTrue(s.getValue(e_0_1));
-        assertTrue(s.getValue(e_1_2));
-        assertTrue(s.getValue(e_2_3));
-        assertFalse(s.getValue(e_0_2));
-        assertFalse(s.getValue(e_1_3));
+        assertTrue(e_0_1.value());
+        assertTrue(e_1_2.value());
+        assertTrue(e_2_3.value());
+        assertFalse(e_0_2.value());
+        assertFalse(e_1_3.value());
 
         assertTrue(s.solve(r));
 
@@ -327,11 +327,11 @@ public class GraphTest {
         assertEquals(edges.get(0), e_0_1);
         assertEquals(edges.get(1), e_1_2);
         assertEquals(edges.get(2), e_2_3);
-        assertTrue(s.getValue(e_0_1));
-        assertTrue(s.getValue(e_1_2));
-        assertTrue(s.getValue(e_2_3));
-        assertFalse(s.getValue(e_0_2));
-        assertFalse(s.getValue(e_1_3));
+        assertTrue(e_0_1.value());
+        assertTrue(e_1_2.value());
+        assertTrue(e_2_3.value());
+        assertFalse(e_0_2.value());
+        assertFalse(e_1_3.value());
 
         ArrayList<Integer> nodes2 = g.getPathNodes(r2);
         ArrayList<Lit> edges2 = g.getPathEdges(r2);

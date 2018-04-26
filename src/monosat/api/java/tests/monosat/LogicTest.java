@@ -24,6 +24,7 @@ package monosat;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 import static monosat.Lit.*;
@@ -504,7 +505,7 @@ public class LogicTest {
         Lit q = Logic.equal(d, a);
         assertTrue(solver.solve());
         assertFalse(solver.solve(x, y,z,w,q));
-        ArrayList<Lit> conflict = solver.getConflictClause();
+        List<Lit> conflict = solver.getConflictClause();
         assertFalse(conflict.isEmpty());
         ArrayList<Lit> test = new ArrayList<>();
         for(Lit l:conflict){
@@ -514,7 +515,7 @@ public class LogicTest {
         assertFalse(solver.solve(test));
 
         assertFalse(solver.solve(x, y,z,w,q));
-        ArrayList<Lit> conflict2 = solver.getConflictClause(true);
+        List<Lit> conflict2 = solver.getConflictClause(true);
         assertFalse(conflict2.isEmpty());
         assertTrue(conflict2.size()<=conflict.size());
         ArrayList<Lit> test2 = new ArrayList<>();
@@ -525,7 +526,7 @@ public class LogicTest {
         assertFalse(solver.solve(test2));
         assertTrue(solver.solve());
 
-        ArrayList<Lit> conflict3 = solver.minimizeUnsatCore(x, y,z,w,q);
+        List<Lit> conflict3 = solver.minimizeUnsatCore(x, y,z,w,q);
         assertFalse(conflict3.isEmpty());
         assertTrue(conflict3.size()<=3);
         assertTrue(solver.solve());

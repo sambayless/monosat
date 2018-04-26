@@ -23,6 +23,9 @@ package monosat;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -77,6 +80,29 @@ public class SolverTest {
         assertTrue(s2.solve());
         assertFalse(s.solve());
     }
+
+
+    @Test
+    public void testAddClause(){
+        Solver s = new Solver();
+        assertTrue(s.solve());
+        s.addClause();
+        assertFalse(s.solve());
+        s = new Solver();
+        Lit a = new Lit(s);
+        Lit b = new Lit(s);
+        Lit c = new Lit(s);
+        Lit d = new Lit(s);
+        s.addClause(a);
+        s.addClause(a,b.not());
+        s.addClause(a.not(),b,c);
+        s.addClause(a.not(),b,c,d.not());
+        assertTrue(s.solve());
+        ArrayList<Lit> clause = new ArrayList<Lit>(Arrays.asList(a,b.not(),c.not(),d));
+        s.addClause(clause);
+        assertTrue(s.solve());
+    }
+
     @Test
     public void test_AMO() {
         Solver solver = new Solver();
