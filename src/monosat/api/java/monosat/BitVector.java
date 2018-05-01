@@ -37,8 +37,13 @@ public final class BitVector {
 
     public BitVector(Solver solver, ArrayList<Lit> bits) {
         this.solver = solver;
-        id = MonosatJNI.newBitvector(solver.solverPtr, solver.bvPtr, solver.getLitBuffer(bits), bits.size());
         width = bits.size();
+        if(width<=0){
+            throw new IllegalArgumentException("BitVector must have a bit-width >= 0");
+        }else if(width>64){
+            throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
+        }
+        id = MonosatJNI.newBitvector(solver.solverPtr, solver.bvPtr, solver.getLitBuffer(bits), bits.size());
         for (Lit l : bits) {
             bits.add(l);
         }
@@ -46,8 +51,17 @@ public final class BitVector {
 
     public BitVector(Solver solver, int width, long constant) {
         this.solver = solver;
-        assert (constant >= 0);
-        assert (constant < (1L << width));
+        if(width<=0){
+            throw new IllegalArgumentException("BitVector must have a bit-width >= 0");
+        }else if(width>64){
+            throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
+        }
+        if (constant < 0){
+            throw new IllegalArgumentException("BitVectors can only represent values >=0");
+        }
+        if (constant >= (1L << width)){
+            throw new IllegalArgumentException("BitVectors can only represent values <= (2^width-1)");
+        }
         id = MonosatJNI.newBitvector_const(solver.solverPtr, solver.bvPtr, width, constant);
         this.width = width;
         for (int i = 0; i < width; i++) {
@@ -71,6 +85,8 @@ public final class BitVector {
         this.solver = solver;
         if (width < 0) {
             throw new IllegalArgumentException("BitVector width must be >=0");
+        }else if(width>64){
+            throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
         }
         this.width = width;
         if (!introduceLiterals) {
