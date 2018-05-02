@@ -1106,7 +1106,7 @@ public:
 		return S->level(toSolver(v));
 	}
 	inline int decisionLevel()const override {
-		return decisions.size()-1; //S->decisionLevel();
+		return decisions.size()-1; //note: there is no level 0 decision, but there is a level 0 head of the tail. So at decision level 0, there is still a literal in the decision list (the head of the trail)
 	}
 	inline int nVars() const override {
 		return vars.size(); //S->nVars();

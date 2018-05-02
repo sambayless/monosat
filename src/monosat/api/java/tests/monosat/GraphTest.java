@@ -824,7 +824,7 @@ public class GraphTest {
 
     @Test
     public void distanceGT() {
-        Solver s = new Solver();
+        Solver s = new Solver("","/tmp/test2.gnf");
 
         Graph g = new Graph(s, 4);
         for (int i = 0; i < 4; i++) {

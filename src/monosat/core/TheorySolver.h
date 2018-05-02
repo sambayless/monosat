@@ -40,7 +40,9 @@ public:
 	virtual void activateHeuristic(Heuristic*h){
 
 	}
-
+	virtual int nAssumptions(){
+		return 0;
+	}
 	virtual vec<Theory*> & getTheories() =0;
 	virtual lbool value(Lit l)const=0;
 	virtual lbool value(Var v)const=0;

@@ -328,7 +328,9 @@ public:
 	bool isTheoryCause(CRef cr)const {
 		return cr != CRef_Undef && !ca.isClause(cr);
 	}
-
+    int nAssumptions() override {
+        return assumptions.size();
+    }
 	Theory* getTheory(CRef cr) const{
 		assert(isTheoryCause(cr));
 		assert(!isDecisionReason(cr));

@@ -381,7 +381,7 @@ BoolOption Monosat::opt_propagate_theories_during_fast_simplification(_cat, "the
 
 
 BoolOption Monosat::opt_theory_propagate_assumptions(_cat, "theory-prop-during-assumps",
-                                                     "Apply theory propagation well assigning assumptions (can be slow, if there are many assumptions)", false);
+                                                     "Apply theory propagation while assigning assumptions (can be slow, if there are many assumptions)", false);
 
 BoolOption Monosat::opt_shrink_theory_conflicts(_cat, "shrink-theory-conflicts", "", false);
 

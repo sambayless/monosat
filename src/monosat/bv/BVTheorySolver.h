@@ -5213,6 +5213,7 @@ public:
 		if(sl.x ==83){
 			int a=1;
 		}
+
 #ifdef DEBUG_BV
 
 	/*printf("learnt ");
@@ -5561,7 +5562,7 @@ public:
 			trail_lim.shrink(trail_lim.size() - lev);
 			assert(trail_lim.size() == lev);
 			if(opt_theory_propagate_assumptions)
-			assert(dbg_uptodate());
+				assert(dbg_uptodate());
 			if (lev ==0) {
 				//decisionLevel()==0 This check can fail if the levels of the theory and sat solver are out of sync
 				for(int cID:repropagate_comparisons){
@@ -5966,6 +5967,7 @@ public:
 
 
 	}
+
 	void enqueueTheory(Lit l) override {
 		Var v = var(l);
 		rewind_trail_pos(trail.size());

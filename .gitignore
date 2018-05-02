@@ -37,3 +37,4 @@ graph/resources/*
 /Win64
 *.pyc
 tests/local/
+venv/

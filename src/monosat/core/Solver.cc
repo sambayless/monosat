@@ -2117,7 +2117,7 @@ lbool Solver::search(int nof_conflicts) {
 	bool using_theory_decisions= opt_decide_theories && drand(random_seed) < opt_random_theory_freq;
 	bool using_theory_order_heap= opt_decide_theories && (opt_theory_order_vsids || opt_theory_order_swapping) && drand(random_seed) < opt_random_theory_order_freq;
 
-
+    bool propagate_theories_during_assumptions =  opt_theory_propagate_assumptions;
 
 	if(decisionLevel()==0 && initialPropagate && opt_detect_pure_lits && !simplify()){
 		return l_False;//if using pure literal detection, and the theories haven't been propagated yet, run simpify
@@ -2127,13 +2127,13 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  21) {//3150 //3144
+		if (++iter ==  8487) {//3150 //3144
 			int a = 1;
 		}
 		propagate:
 
 		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
-		bool propagate_theories = (!disable_theories) && (opt_theory_propagate_assumptions || decisionLevel() ==0 ||   all_assumptions_assigned);
+		bool propagate_theories = (!disable_theories) && (propagate_theories_during_assumptions || decisionLevel() ==0 ||   all_assumptions_assigned);
 		if(opt_decide_theories_only_prop_decision && propagate_theories && decisionLevel()>0 && !last_propagation_was_conflict   && last_decision_heuristic && ! decision_heuristic_changed){
 			propagate_theories =false;
 		}
@@ -2533,7 +2533,7 @@ lbool Solver::search(int nof_conflicts) {
 				cancelUntil(lowest_conflicting_decision_level-1);
 			}
 
-			if(!opt_theory_propagate_assumptions && decisionLevel()>0 && decisionLevel()<assumptions.size()){
+			if(!propagate_theories_during_assumptions && decisionLevel()>0 && decisionLevel()<assumptions.size()){
 				//improve this in the future!
 				//if we backtracked past the assumption level, AND if theory propagate was disabled while assigning assumptions
 				//then some theories (notably, the bv theory) currently require us to re-propagate all theory literals of that bv,
@@ -2541,22 +2541,17 @@ lbool Solver::search(int nof_conflicts) {
 				//theory literals did not have their effects propagated until after the backtrack level.
 				//with better book-keeping, this could probably be avoided... however, it only occurs when backtracking past the
 				//assumption level, but not to level 0, which in practice should (?) only happen when the assumptions are in conflict.
-				for(Theory * theory:theories) {
-					theory->backtrackUntil(0);
-				}
-				assert(decisionLevel()>0);
-				for(int q = trail_lim[0];q<trail.size();q++){ //should this be q<qhead, or q<trail.size()?
-					Lit p = trail[q];
-					if (hasTheory(p)) {
-						int theoryID = getTheoryID(p);
-						if (!theorySatisfied(theories[theoryID])) {
-							needsPropagation(theoryID);
 
-							theories[theoryID]->enqueueTheory(getTheoryLit(p));
-						}
-					}
-				}
-
+                //backtrack to 0, and disable the 'no theory propagation during assumptions'
+                //optimization during the current search() call, as a conflict has occured during assumption
+                //assignment itself.
+                propagate_theories_during_assumptions=true;
+                cancelUntil(0); //note: in cases where we have vast nubmers of assumptions,
+				//and we expect to always have conflicts during the assumptions, this
+				//solution makes the !opt_theory_propagate_assumptions optimization a bad idea as a whole.
+				//it might be worth re-exploring the previous, much more complex solution of
+				//only backtracking and reasserting the theory solvers in that case... but that strategy
+				//had some non-obvious bugs and pitfalls, when combinging the bv theory with the graph theory.
 			}
 
 			if (--learntsize_adjust_cnt <= 0) {
