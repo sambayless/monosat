@@ -34,7 +34,7 @@ template<class Solver>
 class Circuit{
 	Solver & S;
 	Lit lit_True=lit_Undef;
-
+	
 	bool isConst(Lit l){
 		return isConstTrue(l) || isConstFalse(l);
 	}
@@ -49,6 +49,40 @@ class Circuit{
 	vec<Lit> tmp2;
 	vec<Lit> clause;
 	vec<Lit> store;
+	FILE * outfile=nullptr;
+
+	bool _addClause(Lit a){
+		if(outfile) {
+			fprintf(outfile, "%d 0\n ", dimacs(a));
+			fflush(outfile);
+		}
+		S.addClause(a);
+	}
+	bool _addClause(Lit a, Lit b){
+		if(outfile) {
+			fprintf(outfile, "%d %d 0\n ", dimacs(a), dimacs(b));
+			fflush(outfile);
+		}
+		S.addClause(a,b);
+	}
+	bool _addClause(Lit a, Lit b, Lit c){
+		if(outfile) {
+			fprintf(outfile, "%d %d %d 0\n ", dimacs(a), dimacs(b), dimacs(c));
+			fflush(outfile);
+		}
+		S.addClause(a,b,c);
+	}
+	bool _addClause(vec<Lit> & clause){
+		if(outfile) {
+			for (Lit l:clause) {
+				fprintf(outfile, "%d ", dimacs(l));
+			}
+			fprintf(outfile, "0\n");
+			fflush(outfile);
+		}
+		S.addClause(clause);
+	}
+	
 	template<typename... Args>
 	void collect(vec<Lit> & store, Lit a, Args... args ){
 		store.push(a);
@@ -82,9 +116,16 @@ class Circuit{
 		return a;
 	}
 public:
-
+	/**
+	 * Specify a file to write constructed clauses to (in GNF format)
+	 * @param file
+	 */
+	void setOutputFile(FILE * file){
+		this->outfile=file;
+	}
 	Circuit(Solver & S):S(S){
 		lit_True = S.True();
+		_addClause(lit_True);
 	}
 
 	Lit newLit(bool decisionLit=true){
@@ -153,9 +194,9 @@ public:
 		if(out==lit_Undef){
 			out = mkLit(S.newVar());
 		}
-		S.addClause(a,~out);
-		S.addClause(b,~out);
-		S.addClause(~a,~b,out);
+		_addClause(a,~out);
+		_addClause(b,~out);
+		_addClause(~a,~b,out);
 		return out;
 	}
 
@@ -198,13 +239,13 @@ public:
 			out = mkLit(S.newVar());
 		}
 		for(Lit l:tmp){
-			S.addClause(l,~out);
+			_addClause(l,~out);
 		}
 		for(int i = 0;i<tmp.size();i++){
 			tmp[i]=~tmp[i];
 		}
 		tmp.push(out);
-		S.addClause(tmp);
+		_addClause(tmp);
 		tmp.clear();
 		return out;
 	}
@@ -228,14 +269,14 @@ public:
 			out = mkLit(S.newVar());
 		}
 		for(Lit l:tmp){
-			S.addClause(l,~out,~implies);
+			_addClause(l,~out,~implies);
 		}
 		for(int i = 0;i<tmp.size();i++){
 			tmp[i]=~tmp[i];
 		}
 		tmp.push(out);
 		tmp.push(~implies);
-		S.addClause(tmp);
+		_addClause(tmp);
 		tmp.clear();
 	}
 
@@ -260,9 +301,9 @@ public:
 		}
 
 		Lit out = mkLit(S.newVar());
-		S.addClause(a,~out);
-		S.addClause(b,~out);
-		S.addClause(~a,~b,out);
+		_addClause(a,~out);
+		_addClause(b,~out);
+		_addClause(~a,~b,out);
 		return out;
 	}
 	Lit And(const std::list<Lit> & vals){
@@ -311,9 +352,9 @@ public:
 		}
 
 		Lit out = mkLit(S.newVar());
-		S.addClause(~a,out);
-		S.addClause(~b,out);
-		S.addClause(a,b,~out);
+		_addClause(~a,out);
+		_addClause(~b,out);
+		_addClause(a,b,~out);
 		return out;
 	}
 	Lit Or_(Lit a, Lit b, Lit out){
@@ -358,9 +399,9 @@ public:
 		if(out==lit_Undef){
 			out = mkLit(S.newVar());
 		}
-		S.addClause(~a,out);
-		S.addClause(~b,out);
-		S.addClause(a,b,~out);
+		_addClause(~a,out);
+		_addClause(~b,out);
+		_addClause(a,b,~out);
 		return out;
 	}
 	Lit Or_(const vec<Lit> & vals, Lit out){
@@ -394,11 +435,11 @@ public:
 			out = mkLit(S.newVar());
 		}
 		for(Lit l:tmp){
-			S.addClause(~l,out);
+			_addClause(~l,out);
 		}
 
 		tmp.push(~out);
-		S.addClause(tmp);
+		_addClause(tmp);
 		tmp.clear();
 		return out;
 	}
@@ -455,11 +496,11 @@ public:
 			//is this correct?
 			tmp.push(~out);
 			tmp.push(~implies);//if implies is true, then at least one of the elements of tmp must be true, or out must be false.
-			S.addClause(tmp);
+			_addClause(tmp);
 			tmp.clear();
 		}else{
 			tmp.push(~implies);//if implies is true, then at least one of the elements of tmp must be true.
-			S.addClause(tmp);
+			_addClause(tmp);
 			tmp.clear();
 		}
 
@@ -559,10 +600,10 @@ public:
 		}
 		//return Or(And(a, ~b), And(~a,b));
 		Lit out = mkLit(S.newVar());
-		S.addClause(a,b,~out);
-		S.addClause(~a,b,out);
-		S.addClause(a,~b,out);
-		S.addClause(~a,~b,~out);
+		_addClause(a,b,~out);
+		_addClause(~a,b,out);
+		_addClause(a,~b,out);
+		_addClause(~a,~b,~out);
 		return out;
 	}
 	Lit Xor_(Lit a, Lit b, Lit out){
@@ -593,10 +634,10 @@ public:
 		if(out!=lit_Undef){
 			out = mkLit(S.newVar());
 		}
-		S.addClause(a,b,~out);
-		S.addClause(~a,b,out);
-		S.addClause(a,~b,out);
-		S.addClause(~a,~b,~out);
+		_addClause(a,b,~out);
+		_addClause(~a,b,out);
+		_addClause(a,~b,out);
+		_addClause(~a,~b,~out);
 		return out;
 	}
 	Lit Xor(const std::list<Lit> & vals){
@@ -875,20 +916,20 @@ public:
     }
 
 	void Assert(Lit l){
-		S.addClause(l);
+		_addClause(l);
 	}
 
 	void AssertOr(Lit a)
 	{
-		S.addClause(a);
+		_addClause(a);
 	}
 
 	void AssertOr(Lit a, Lit b){
-		S.addClause(a,b);
+		_addClause(a,b);
 	}
 
 	void AssertOr(Lit a, Lit b, Lit c){
-		S.addClause(a,b,c);
+		_addClause(a,b,c);
 	}
 
 	void AssertOr(const std::list<Lit> & vals){
@@ -896,7 +937,7 @@ public:
 		tmp.clear();
 		for (Lit l:vals)
 			tmp.push(l);
-		S.addClause(tmp);
+		_addClause(tmp);
 
 	}
 
@@ -906,7 +947,7 @@ public:
 			assert(l!=lit_Undef);
 			tmp.push(l);
 		}
-		S.addClause(tmp);
+		_addClause(tmp);
 	}
 
 	template<typename... Args>
@@ -915,16 +956,16 @@ public:
 		store.clear();
 		store.push(a);
 		collect(store,b,args...);
-		S.addClause(store);
+		_addClause(store);
 	}
 
 	void AssertNand(Lit a)
 	{
-		S.addClause(~a);
+		_addClause(~a);
 	}
 
 	void AssertNand(Lit a, Lit b){
-		S.addClause(~a,~b);
+		_addClause(~a,~b);
 	}
 
 	void AssertNand(const std::list<Lit> & vals){
@@ -932,7 +973,7 @@ public:
 		tmp.clear();
 		for (Lit l:vals)
 			tmp.push(~l);
-		S.addClause(tmp);
+		_addClause(tmp);
 
 	}
 
@@ -940,7 +981,7 @@ public:
 		tmp.clear();
 		for (Lit l:vals)
 			tmp.push(~l);
-		S.addClause(tmp);
+		_addClause(tmp);
 	}
 
 	template<typename... Args>
@@ -953,27 +994,27 @@ public:
 		tmp.clear();
 		for (Lit l:store)
 			tmp.push(~l);
-		S.addClause(tmp);
+		_addClause(tmp);
 	}
 
 	void AssertAnd(Lit a)
 	{
-		S.addClause(a);
+		_addClause(a);
 	}
 
 	void AssertAnd(Lit a, Lit b){
-		S.addClause(a);
-		S.addClause(b);
+		_addClause(a);
+		_addClause(b);
 	}
 
 	void AssertAnd(const std::list<Lit> & vals){
 		for (Lit l:vals)
-			S.addClause(l);
+			_addClause(l);
 	}
 
 	void AssertAnd(const vec<Lit> & vals){
 		for (Lit l:vals)
-			S.addClause(l);
+			_addClause(l);
 	}
 
 	template<typename... Args>
@@ -983,27 +1024,27 @@ public:
 		store.push(a);
 		collect(store,b,args...);
 		for (Lit l:store)
-			S.addClause(l);
+			_addClause(l);
 	}
 
 	void AssertNor(Lit a)
 	{
-		S.addClause(~a);
+		_addClause(~a);
 	}
 
 	void AssertNor(Lit a, Lit b){
-		S.addClause(~a);
-		S.addClause(~b);
+		_addClause(~a);
+		_addClause(~b);
 	}
 
 	void AssertNor(const std::list<Lit> & vals){
 		for (Lit l:vals)
-			S.addClause(~l);
+			_addClause(~l);
 	}
 
 	void AssertNor(const vec<Lit> & vals){
 		for (Lit l:vals)
-			S.addClause(~l);
+			_addClause(~l);
 	}
 
 	template<typename... Args>
@@ -1013,17 +1054,17 @@ public:
 		store.push(a);
 		collect(store,b,args...);
 		for (Lit l:store)
-			S.addClause(~l);
+			_addClause(~l);
 	}
 
 	void AssertXor(Lit a)
 	{
-		S.addClause(a);//is this correct?
+		_addClause(a);//is this correct?
 	}
 
 	void AssertXor(Lit a, Lit b){
-		S.addClause(a, b);
-		S.addClause(~a, ~b);
+		_addClause(a, b);
+		_addClause(~a, ~b);
 	}
 
 	void AssertXor(const std::list<Lit> & vals){
@@ -1039,8 +1080,8 @@ public:
 		else if (vals.size()==1){
 			Assert(vals[0]);
 		}else if (vals.size()==2){
-			S.addClause(vals[0], vals[1]);
-			S.addClause(~vals[0], ~vals[1]);
+			_addClause(vals[0], vals[1]);
+			_addClause(~vals[0], ~vals[1]);
 		}else{
 			//this can probably be done better...
 			Assert(Xor(vals));
@@ -1058,12 +1099,12 @@ public:
 
 	void AssertXnor(Lit a)
 	{
-		S.addClause(a);//is this correct?
+		_addClause(a);//is this correct?
 	}
 
 	void AssertXnor(Lit a, Lit b){
-		S.addClause(~a, b);
-		S.addClause(a, ~b);
+		_addClause(~a, b);
+		_addClause(a, ~b);
 	}
 
 	void AssertXnor(const std::list<Lit> & vals){
@@ -1079,8 +1120,8 @@ public:
 		else if (vals.size()==1){
 			Assert(vals[0]);
 		}else if (vals.size()==2){
-			S.addClause(~vals[0], vals[1]);
-			S.addClause(vals[0], ~vals[1]);
+			_addClause(~vals[0], vals[1]);
+			_addClause(vals[0], ~vals[1]);
 		}else{
 			//this can probably be done better...
 			Assert(Xnor(vals));
@@ -1097,7 +1138,7 @@ public:
 	}
 
 	void AssertImplies(Lit a, Lit b){
-		S.addClause(~a, b);
+		_addClause(~a, b);
 	}
 
 	void AssertEqual(Lit a, Lit b){
@@ -1119,8 +1160,8 @@ public:
 		else if (vals.size()==1){
 			Assert(vals[0]);
 		}else if (vals.size()==2){
-			S.addClause(~vals[0], vals[1]);
-			S.addClause(vals[0], ~vals[1]);
+			_addClause(~vals[0], vals[1]);
+			_addClause(vals[0], ~vals[1]);
 		}else{
 			//this is not a good definition.
 		//equal should be true if all arguments are TRUE, or all arguments are FALSE.
@@ -1273,13 +1314,13 @@ public:
 			p_lt_n = Or(B[j],p_lt_n);
 		}
         //The A must be less than or equal to B
-        S.addClause(p_lt_n, p_eq_n);
+        _addClause(p_lt_n, p_eq_n);
 
     }
 
     void AssertLT(vec<Lit> & A, vec<Lit> & B){
 
-        S.addClause(LT(A,B));
+        _addClause(LT(A,B));
     }
 
 	Lit Mux(vec<Lit> & selector, vec<Lit> & data, int opt_mux=0){
@@ -1313,11 +1354,11 @@ public:
 				}
 				args.push(~in);
 				args.push(out);
-				S.addClause(args);
+				_addClause(args);
 				args.shrink(2);
 				args.push(in);
 				args.push(~out);
-				S.addClause(args);
+				_addClause(args);
 			}
 			if(opt_mux==1) {
 				int max = 1<<selector.size();
@@ -1336,7 +1377,7 @@ public:
 						args[i]=~args[i];
 					}
 					//explicitly rule out this assignment to args
-					S.addClause(args);
+					_addClause(args);
 
 				}
 			}
@@ -1372,7 +1413,7 @@ public:
 				}
 			}
 			//The p must be less than max_val
-			S.addClause(p_lt_n);*/
+			_addClause(p_lt_n);*/
 		}
 		}
 		return out;
@@ -1397,7 +1438,7 @@ public:
                     constant_true_lit = l;
                 } else {
                     //multiple literals are known to be true; this is a conflict
-                    S.addClause(~constant_true_lit, ~l);//this is a conflict
+                    _addClause(~constant_true_lit, ~l);//this is a conflict
                     return;
                 }
             } else {
@@ -1411,7 +1452,7 @@ public:
             }else {
                 for (int i = 0; i < set.size(); i++) {
                     for (int j = i + 1; j < set.size(); j++) {
-                        S.addClause(~set[i], ~set[j]);
+                        _addClause(~set[i], ~set[j]);
                     }
                 }
             }
@@ -1419,7 +1460,7 @@ public:
             //all remaining elements of the set must be false, because constant_true_lit is true.
             for (int i = 0; i < set.size(); i++) {
             	if(set[i]!=constant_true_lit) {
-					S.addClause(~constant_true_lit,
+					_addClause(~constant_true_lit,
 								~set[i]);//technically don't need to include ~constant_true_lit here, but it might make things cleaner to reason about elsewhere.
 					// (It will be eliminated by the solver anyhow, so this doesn't cost anything.)
 				}

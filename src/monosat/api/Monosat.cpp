@@ -406,6 +406,7 @@ void setOutputFile(Monosat::SimpSolver * S,const  char * output){
 	if(S->const_true!=lit_Undef){
 		write_out(S,"%d 0\n",dimacs(S->True()));
 	}
+	d->circuit.setOutputFile(d->outfile);
 }
 
 const char * getVersion(){
