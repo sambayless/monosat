@@ -38,6 +38,7 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVersion
     return env->NewStringUTF(getVersion());
 }catch(...) { 
     javaThrow(env);
+    return nullptr;
 }
 
 
@@ -46,6 +47,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_varToLit
     return varToLit(var, sign);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -54,6 +56,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_litToVar
     return litToVar(lit);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -62,6 +65,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__
     return reinterpret_cast<jlong>(newSolver());
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -73,6 +77,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__Ljava_lang_String_2
     return reinterpret_cast<jlong>(ptr);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -111,6 +116,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
     return jboolean(result);
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
@@ -121,6 +127,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
                                  n_assumptions));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -161,6 +168,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveLimited
     return solveLimited(reinterpret_cast<SolverPtr>(solverPtr));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -170,6 +178,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveAssumptionsLimited
                                    (int *) env->GetDirectBufferAddress(assumptions), n_assumptions);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_lastSolutionWasOptimal
@@ -177,6 +186,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_lastSolutionWasOptimal
     return jboolean(lastSolutionWasOptimal(reinterpret_cast<SolverPtr>(solverPtr)));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -191,6 +201,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConflictClause
     }
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimizeUnsatCore
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array, jint length) try {
@@ -198,6 +209,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimizeUnsatCore
     return minimizeUnsatCore(solver, (int *) env->GetDirectBufferAddress(array), length);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -225,6 +237,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newVar
     return jint(newVar(solver));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -243,6 +256,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_isDecisionVar
     return jboolean(isDecisionVar(solver, variable));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -261,6 +275,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getDecisionPriority
     return jint(getDecisionPriority(solver, variable));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -279,6 +294,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_getDecisionPolarity
     return jboolean(getDecisionPolarity(solver, variable));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -288,6 +304,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_true_1lit
     return jint(true_lit(solver));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -297,6 +314,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_disallowLiteralSimplification
     return jboolean(disallowLiteralSimplification(solver, var));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -315,6 +333,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nVars
     return jint(nVars(solver));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -324,6 +343,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nClauses
     return jint(nClauses(solver));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -334,6 +354,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectors
     return jint(nBitvectors(solver, bv));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -343,6 +364,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addClause
     return jboolean(addClause(solver, (int *) env->GetDirectBufferAddress(array), length));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -352,6 +374,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addUnitClause
     return jboolean(addUnitClause(solver, lit));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -361,6 +384,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addBinaryClause
     return jboolean(addBinaryClause(solver, l1, l2));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -370,6 +394,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addTertiaryClause
     return addTertiaryClause(solver, l1, l2, l3);
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -446,6 +471,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_initBVTheory
     return reinterpret_cast<jlong>(initBVTheory(solver));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -456,6 +482,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1const
     return newBitvector_const(solver, bv, width, constantValue);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -466,6 +493,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1anon
     return newBitvector_anon(solver, bv, width);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -476,6 +504,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
     return newBitvector(solver, bv, (int *) env->GetDirectBufferAddress(array), length);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -486,6 +515,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_bv_1width
     return bv_width(solver, bv, bvID);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1eq
@@ -495,6 +525,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1eq
     return newBVComparison_const_eq(solver, bv, bvID, constval);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -506,6 +537,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1eq
     return newBVComparison_bv_eq(solver, bv, bvID1, bvID2);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1neq
@@ -515,6 +547,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1neq
     return newBVComparison_const_neq(solver, bv, bvID, constval);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -525,6 +558,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1neq
     return newBVComparison_bv_neq(solver, bv, bvID1, bvID2);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1lt
@@ -534,6 +568,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1lt
     return newBVComparison_const_lt(solver, bv, bvID, constval);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -544,6 +579,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1lt
     return newBVComparison_bv_lt(solver, bv, bvID1, bvID2);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -554,6 +590,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1leq
     return newBVComparison_const_leq(solver, bv, bvID, constval);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -564,6 +601,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1leq
     return newBVComparison_bv_leq(solver, bv, bvID1, bvID2);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -574,6 +612,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1gt
     return newBVComparison_const_gt(solver, bv, bvID, constval);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -584,6 +623,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1gt
     return newBVComparison_bv_gt(solver, bv, bvID1, bvID2);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -594,6 +634,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1geq
     return newBVComparison_const_geq(solver, bv, bvID, constval);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -604,6 +645,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1geq
     return newBVComparison_bv_geq(solver, bv, bvID1, bvID2);
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -885,6 +927,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
     return reinterpret_cast<jlong>(newGraph(solver));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -895,6 +938,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
     return jint(newNode(solver, graph));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -905,6 +949,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
     return jint(newEdge(solver, graph, from, to, weight));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -915,6 +960,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge_1bv
     return jint(newEdge_bv(solver, graph, from, to, bvID));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -925,6 +971,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNodes
     return jint(nNodes(solver, graph));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -935,6 +982,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
     return jint(nEdges(solver, graph));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -945,6 +993,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
     return jint(reaches(solver, graph, from, to));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reachesBackward
@@ -954,6 +1003,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reachesBackward
     return jint(reachesBackward(solver, graph, from, to));
 }catch(...) {
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_onPath
@@ -963,6 +1013,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_onPath
     return jint(onPath(solver, graph,nodeOnPath, from, to));
 }catch(...) {
     javaThrow(env);
+    return 0;
 }
 
 
@@ -973,6 +1024,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1lt_1const
     return jint(shortestPathUnweighted_lt_const(solver, graph, from, to, steps));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -983,6 +1035,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1leq_1cons
     return jint(shortestPathUnweighted_leq_const(solver, graph, from, to, steps));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -993,6 +1046,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1const
     return jint(shortestPath_lt_const(solver, graph, from, to, dist));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1003,6 +1057,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1const
     return jint(shortestPath_leq_const(solver, graph, from, to, dist));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1013,6 +1068,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1bv
     return jint(shortestPath_lt_bv(solver, graph, from, to, bvID));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1023,6 +1079,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1bv
     return jint(shortestPath_leq_bv(solver, graph, from, to, bvID));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1033,6 +1090,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq
     return jint(maximumFlow_geq(solver, graph, from, to, weight));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1043,6 +1101,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt
     return jint(maximumFlow_gt(solver, graph, from, to, weight));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1053,6 +1112,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq_1bv
     return jint(maximumFlow_geq_bv(solver, graph, from, to, bvID));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1063,6 +1123,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt_1bv
     return jint(maximumFlow_gt_bv(solver, graph, from, to, bvID));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1073,6 +1134,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1leq
     return jint(minimumSpanningTree_leq(solver, graph, weight));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1083,6 +1145,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1lt
     return jint(minimumSpanningTree_lt(solver, graph, weight));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1093,6 +1156,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1undirected
     return jint(acyclic_undirected(solver, graph));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1103,6 +1167,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1directed
     return jint(acyclic_directed(solver, graph));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1135,6 +1200,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_createFlowRouting
     return reinterpret_cast<jlong>(createFlowRouting(solver, graph, sourceNode, destNode, maxflowLit));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1155,6 +1221,7 @@ SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     return jboolean(hasModel(solver));
 }catch(...) { 
     javaThrow(env);
+    return false;
 }
 
 
@@ -1164,6 +1231,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
     return jint(getModel_Literal(solver, literal));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConstantModel_1Literal
@@ -1172,6 +1240,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConstantModel_1Literal
     return jint(getConstantModel_Literal(solver, literal));
 }catch(...) {
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
@@ -1181,6 +1250,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
     return jlong(getModel_BV(solver, bv, bvID, getMaximumValue));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1191,6 +1261,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MaxFlow
     return jlong(getModel_MaxFlow(solver, graph, maxflow_literal));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1201,6 +1272,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1EdgeFlow
     return jlong(getModel_EdgeFlow(solver, graph, maxflow_literal, edgeLit));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1211,6 +1283,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1AcyclicEdgeFlow
     return jlong(getModel_AcyclicEdgeFlow(solver, graph, maxflow_literal, edgeLit));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1221,6 +1294,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MinimumSpanningTreeWei
     return jlong(getModel_MinimumSpanningTreeWeight(solver, graph, spanning_tree_literal));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1231,6 +1305,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes_1Length
     return jint(getModel_Path_Nodes_Length(solver, graph, reach_or_distance_literal));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1243,6 +1318,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes
                                     (int *) env->GetDirectBufferAddress(store)));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1253,6 +1329,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits_1Length
     return jint(getModel_Path_EdgeLits_Length(solver, graph, reach_or_distance_literal));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1265,6 +1342,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits
                                        (int *) env->GetDirectBufferAddress(store)));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 //Circuit interface
@@ -1277,6 +1355,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_And_1
     return jint(And_(solver, lit_a, lit_b, lit_out));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1286,6 +1365,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands_1
     return jint(Ands_(solver, (int *) env->GetDirectBufferAddress(lits), n_lits, lit_out));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1304,6 +1384,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands
     return jint(Ands(solver, (int *) env->GetDirectBufferAddress(lits), n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1313,6 +1394,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_And
     return jint(And(solver, lit_a, lit_b));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1322,6 +1404,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Or_1
     return jint(Or_(solver, lit_a, lit_b, lit_out));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1331,6 +1414,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors_1
     return jint(Ors_(solver, (int *) env->GetDirectBufferAddress(lits), n_lits, lit_out));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1340,6 +1424,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesAnd
     return jint(ImpliesAnd(solver, (int *) env->GetDirectBufferAddress(lits), n_lits, lit_out));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr
@@ -1348,6 +1433,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr
     return jint(ImpliesOr(solver, (int *) env->GetDirectBufferAddress(lits), n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1357,6 +1443,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr_1
     return jint(ImpliesOr_(solver, (int *) env->GetDirectBufferAddress(lits), n_lits, lit_out));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1375,6 +1462,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors
     return jint(Ors(solver, (int *) env->GetDirectBufferAddress(lits), n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1384,6 +1472,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Or
     return jint(Or(solver, lit_a, lit_b));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1391,9 +1480,9 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nors
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     return jint(Nors(solver, (int *) env->GetDirectBufferAddress(lits), n_lits));
-
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1403,6 +1492,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nor
     return jint(Nor(solver, lit_a, lit_b));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1412,6 +1502,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nands
     return jint(Nands(solver, (int *) env->GetDirectBufferAddress(lits), n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1421,6 +1512,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nand
     return jint(Nand(solver, lit_a, lit_b));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1430,6 +1522,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xors
     return jint(Xors(solver, (int *) env->GetDirectBufferAddress(lits), n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1439,6 +1532,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xor
     return jint(Xor(solver, lit_a, lit_b));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1448,6 +1542,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xnors
     return jint(Xnors(solver, (int *) env->GetDirectBufferAddress(lits), n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1457,6 +1552,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xnor
     return jint(Xnor(solver, lit_a, lit_b));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1466,6 +1562,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Implies
     return jint(Implies(solver, lit_a, lit_b));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1475,6 +1572,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Implies_1
     return jint(Implies_(solver, lit_a, lit_b, lit_out));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1484,6 +1582,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ite
     return jint(Ite(solver, lit_cond, lit_thn, lit_els));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1494,6 +1593,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ite_1
     return jint(Ite_(solver, lit_cond, lit_thn, lit_els, lit_result));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1505,6 +1605,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Add
                     n_lits, (int *) env->GetDirectBufferAddress(lits_out)));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1516,6 +1617,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Add_1
                      n_lits, (int *) env->GetDirectBufferAddress(lits_out), carry_lit));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1528,6 +1630,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Subtract
                      n_lits, (int *) env->GetDirectBufferAddress(lits_out)));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1540,6 +1643,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Subtract_1
                       n_lits, (int *) env->GetDirectBufferAddress(lits_out), carry_lit));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1721,6 +1825,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Equals
                     n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1731,6 +1836,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_LEQ
                     n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
@@ -1741,6 +1847,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_LT
                    n_lits));
 }catch(...) { 
     javaThrow(env);
+    return 0;
 }
 
 
