@@ -3501,7 +3501,7 @@ public:
 		unimplemented_maxflow_constraints_bv.clear();
 	}
 	void allpairs_undirected(int from, int to, Var reach_var, int within_steps = -1) {
-		
+	    throw std::runtime_error("Unsupported constraint");
 	}
 	
 	void allpairs(int from, int to, Var reach_var, int within_steps = -1, bool backward=false) {
