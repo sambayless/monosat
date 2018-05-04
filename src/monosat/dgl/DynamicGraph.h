@@ -529,7 +529,7 @@ public:
 	}
 
 	void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos)override{
-		assert(algorithmID >=0 && algorithmID<=dynamic_algs.size() && dynamic_algs[algorithmID]==alg);//sanity check
+		//assert(algorithmID >=0 && algorithmID<=dynamic_algs.size() && dynamic_algs[algorithmID]==alg);//sanity check
         if(algorithmID <0 || algorithmID>= dynamic_algs.size() || dynamic_algs[algorithmID]!=alg || alg==nullptr){
 			if(alg==nullptr){
 				throw std::runtime_error("Internal error in DynamicBackGraph (invalid algorithm ID): algorithm " +
