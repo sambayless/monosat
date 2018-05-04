@@ -25,19 +25,19 @@
 
 using namespace Monosat;
 
-template<typename Weight>
-SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,
-										 DynamicGraph<Weight>  &g, DynamicGraph<Weight>  &antig, double seed) :
+template<typename Weight,typename Graph>
+SteinerDetector<Weight,Graph>::SteinerDetector(int detectorID, GraphTheorySolver<Weight> * outer,
+										 Graph  &g, Graph  &antig, double seed) :
 		Detector(detectorID), outer(outer), g_under(g), g_over(antig), rnd_seed(seed) {
 	checked_unique = false;
 	all_unique = true;
-	positiveStatus = new SteinerDetector<Weight>::SteinerStatus(*this, true);
-	negativeStatus = new SteinerDetector<Weight>::SteinerStatus(*this, false);
+	positiveStatus = new SteinerDetector<Weight,Graph>::SteinerStatus(*this, true);
+	negativeStatus = new SteinerDetector<Weight,Graph>::SteinerStatus(*this, false);
 
 	//NOTE: the terminal sets are intentionally swapped, in order to preserve monotonicity
-	underapprox_detector = new SteinerApprox<Weight, DynamicGraph<Weight>, DynamicNodes, SteinerDetector<Weight>::SteinerStatus>(g,
-																										   overTerminalSet, *positiveStatus, 1); //new SpiraPan<SteinerDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
-	overapprox_detector = new SteinerApprox<Weight, DynamicGraph<Weight>,DynamicNodes, SteinerDetector<Weight>::SteinerStatus>(antig,
+	underapprox_detector = new SteinerApprox<Weight, Graph, DynamicNodes, SteinerDetector<Weight,Graph>::SteinerStatus>(g,
+																										   overTerminalSet, *positiveStatus, 1); //new SpiraPan<SteinerDetector<Weight,Graph>::MSTStatus>(_g,*(positiveReachStatus),1);
+	overapprox_detector = new SteinerApprox<Weight, Graph,DynamicNodes, SteinerDetector<Weight,Graph>::SteinerStatus>(antig,
 																										  underTerminalSet, *negativeStatus, -1);
 
 	underprop_marker = outer->newReasonMarker(getID());
@@ -47,8 +47,8 @@ SteinerDetector<Weight>::SteinerDetector(int detectorID, GraphTheorySolver<Weigh
 	overprop_edge_marker = outer->newReasonMarker(getID());
 	first_reach_var = var_Undef;
 }
-template<typename Weight>
-void SteinerDetector<Weight>::addTerminalNode(int node, Var outer_Var) {
+template<typename Weight,typename Graph>
+void SteinerDetector<Weight,Graph>::addTerminalNode(int node, Var outer_Var) {
 	Var var = outer->newVar(outer_Var, getID());
 	underTerminalSet.addNode(node);
 	underTerminalSet.setNodeEnabled(node, false);
@@ -60,8 +60,8 @@ void SteinerDetector<Weight>::addTerminalNode(int node, Var outer_Var) {
 	terminal_var_map.growTo(var + 1, -1);
 	terminal_var_map[var] = node;
 }
-template<typename Weight>
-void SteinerDetector<Weight>::addWeightLit(Weight& min_weight, Var outer_weight_var) {
+template<typename Weight,typename Graph>
+void SteinerDetector<Weight,Graph>::addWeightLit(Weight& min_weight, Var outer_weight_var) {
 	g_under.invalidate();
 	g_over.invalidate();
 
@@ -90,8 +90,8 @@ void SteinerDetector<Weight>::addWeightLit(Weight& min_weight, Var outer_weight_
 	}
 
 }
-template<typename Weight>
-void SteinerDetector<Weight>::SteinerStatus::setMinimumSteinerTree(Weight& weight) {
+template<typename Weight,typename Graph>
+void SteinerDetector<Weight,Graph>::SteinerStatus::setMinimumSteinerTree(Weight& weight) {
 
 	for (int i = 0; i < detector.weight_lits.size(); i++) {
 		Weight & min_weight = detector.weight_lits[i].min_weight;
@@ -113,8 +113,8 @@ void SteinerDetector<Weight>::SteinerStatus::setMinimumSteinerTree(Weight& weigh
 	}
 
 }
-template<typename Weight>
-void SteinerDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void SteinerDetector<Weight,Graph>::buildMinWeightTooSmallReason(Weight & weight, vec<Lit> & conflict) {
 	//if the weight is too small, then either an edge has to be enabled, or a terminal node that is currently disabled has to be enabled.
 	for (int i = 0; i < underTerminalSet.nodes(); i++) {
 		if (!underTerminalSet.nodeEnabled(i) && terminal_map[i] != var_Undef) {
@@ -130,8 +130,8 @@ void SteinerDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight, vec<
 
 }
 
-template<typename Weight>
-void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void SteinerDetector<Weight,Graph>::buildMinWeightTooLargeReason(Weight &weight, vec<Lit> & conflict) {
 	assert(overapprox_detector->disconnected() || overapprox_detector->weight() > weight);
 	//if the weight is too large, then either an edge has to be enabled, or a terminal node that is currently enabled has to be disabled.
 	for (int i = 0; i < overTerminalSet.nodes(); i++) {
@@ -276,8 +276,8 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 
 }
 
-template<typename Weight>
-void SteinerDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+template<typename Weight,typename Graph>
+void SteinerDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 
 	if (marker == underprop_marker) {
 		reason.push(p);
@@ -324,8 +324,8 @@ void SteinerDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 	}
 	outer->toSolver(reason);
 }
-template<typename Weight>
-bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+bool SteinerDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
 	if (++it == 7) {
 		int a = 1;
@@ -389,14 +389,14 @@ bool SteinerDetector<Weight>::propagate(vec<Lit> & conflict) {
 
 	return true;
 }
-template<typename Weight>
-bool SteinerDetector<Weight>::checkSatisfied() {
+template<typename Weight,typename Graph>
+bool SteinerDetector<Weight,Graph>::checkSatisfied() {
 
 	assert(underTerminalSet.numEnabled() == overTerminalSet.numEnabled());
 
-	SteinerApprox<Weight, DynamicGraph<Weight>, DynamicNodes, typename SteinerTree<Weight>::NullStatus> positive_checker(g_under,
+	SteinerApprox<Weight, Graph, DynamicNodes, typename SteinerTree<Weight>::NullStatus> positive_checker(g_under,
 																								   overTerminalSet, SteinerTree<Weight>::nullStatus, 0);
-	SteinerApprox<Weight, DynamicGraph<Weight>, DynamicNodes, typename SteinerTree<Weight>::NullStatus> negative_checker(g_over,
+	SteinerApprox<Weight, Graph, DynamicNodes, typename SteinerTree<Weight>::NullStatus> negative_checker(g_over,
 																								   underTerminalSet, SteinerTree<Weight>::nullStatus, 0);
 	positive_checker.update();
 	negative_checker.update();
@@ -428,8 +428,8 @@ bool SteinerDetector<Weight>::checkSatisfied() {
 
 	return true;
 }
-template<typename Weight>
-Lit SteinerDetector<Weight>::decide(CRef &decision_reason) {
+template<typename Weight,typename Graph>
+Lit SteinerDetector<Weight,Graph>::decide(CRef &decision_reason) {
 
 	return lit_Undef;
 }

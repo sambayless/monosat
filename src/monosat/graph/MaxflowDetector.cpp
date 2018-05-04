@@ -34,9 +34,9 @@ using namespace Monosat;
 
 
 
-template<typename Weight>
-MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-                                         DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, int _target, double seed, bool overIsEdgeSet) :
+template<typename Weight,typename Graph>
+MaxflowDetector<Weight,Graph>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
+                                         Graph  &_g, Graph  &_antig, int from, int _target, double seed, bool overIsEdgeSet) :
         Detector(_detectorID), outer(_outer),  g_under(_g), g_over(_antig), source(
         from), target(_target), rnd_seed(seed),order_heap(EdgeOrderLt(activity)),overIsEdgeSet(overIsEdgeSet) {
     var_decay =opt_var_decay;
@@ -151,8 +151,8 @@ MaxflowDetector<Weight>::MaxflowDetector(int _detectorID, GraphTheorySolver<Weig
 
 
 
-template<typename Weight>
-void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
 
     if(maxflow==0){
         //The max flow of a graph is _always_ at least 0.
@@ -195,8 +195,8 @@ void MaxflowDetector<Weight>::addFlowLit(Weight maxflow, Var outer_reach_var, bo
     }
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var outer_reach_var, bool inclusive) {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var outer_reach_var, bool inclusive) {
     g_under.invalidate();
     g_over.invalidate();
     Var reach_var = outer->newVar(outer_reach_var, getID());
@@ -232,8 +232,8 @@ void MaxflowDetector<Weight>::addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var 
 
 
 
-template<typename Weight>
-void MaxflowDetector<Weight>::analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict){
 
     tmp_cut.clear();
     Weight actual_flow = underapprox_conflict_detector->maxFlow();
@@ -291,8 +291,8 @@ void MaxflowDetector<Weight>::analyzeMaxFlowGEQ(Weight flow, vec<Lit> & conflict
     }
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & conflict) {
     double starttime = rtime(2);
     if(outer->bvTheory){
         outer->bvTheory->rewind_trail_pos(outer->bvTheory->trail.size());
@@ -333,8 +333,8 @@ void MaxflowDetector<Weight>::buildMaxFlowTooHighReason(Weight flow, vec<Lit> & 
 }
 /*
 
- template<typename Weight>
- int MaxflowDetector<Weight>::dbg_minconflict(){
+ template<typename Weight,typename Graph>
+ int MaxflowDetector<Weight,Graph>::dbg_minconflict(){
  #ifdef DEBUG_GRAPH
  Weight foundflow = negative_conflict_detector->maxFlow();
 
@@ -410,8 +410,8 @@ void bassert(bool condition) {
 }
 
 
-template<typename Weight>
-void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict,bool force_maxflow){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict,bool force_maxflow){
     if(g_over.edges()==0)
         return;
 
@@ -647,8 +647,8 @@ void MaxflowDetector<Weight>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & conflict
 	}
 #endif
 }
-template<typename Weight>
-void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> & conflict, bool force_maxflow) {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> & conflict, bool force_maxflow) {
     //Consider using the kernigan-lin partitioning heuristic to get a separating cut here, instead of maxflow?
 
     static int it = 0;
@@ -704,8 +704,8 @@ void MaxflowDetector<Weight>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit> 
 
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 
     if (marker == underprop_marker) {
         reason.push(outer->toSolver(p));
@@ -768,8 +768,8 @@ void MaxflowDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker)
 
     //Note: the conflict clause already has 'toSolver' called, in buildMaxFlowTooLowReason/buildMaxFlowTooHighReason
 }
-template<typename Weight>
-bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit) {
+template<typename Weight,typename Graph>
+bool MaxflowDetector<Weight,Graph>::propagate(vec<Lit> & conflict, bool backtrackOnly, Lit & conflictLit) {
     if (flow_lits.size() == 0) {
         return true;
     }
@@ -947,8 +947,8 @@ bool MaxflowDetector<Weight>::propagate(vec<Lit> & conflict, bool backtrackOnly,
     return true;
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::FlowOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::FlowOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
 //watch out - might need to backtrack the graph theory appropriately, here...
     static int iter = 0;
     if(++iter==46){
@@ -964,8 +964,8 @@ void MaxflowDetector<Weight>::FlowOp::analyzeReason(bool compareOver,Comparison 
 }
 
 
-template<typename Weight>
-bool MaxflowDetector<Weight>::checkSatisfied() {
+template<typename Weight,typename Graph>
+bool MaxflowDetector<Weight,Graph>::checkSatisfied() {
     //g_under.drawFull(true);
     EdmondsKarpAdj<Weight> underCheck(g_under, source, target);
     EdmondsKarpAdj<Weight> overCheck(g_over, source, target);
@@ -1069,8 +1069,8 @@ bool MaxflowDetector<Weight>::checkSatisfied() {
     }
     return true;
 }
-template<typename Weight>
-void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::printSolution(std::ostream & write_to) {
     Weight f = underapprox_conflict_detector->maxFlow();
     BFSReachability<Weight> r = BFSReachability<Weight>(source,g_under);
     r.update();
@@ -1131,8 +1131,8 @@ void MaxflowDetector<Weight>::printSolution(std::ostream & write_to) {
     write_to << "\n";
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::collectDisabledEdges() {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::collectDisabledEdges() {
     if (opt_conflict_min_cut_maxflow) {
         buildLearnGraph();
 
@@ -1229,8 +1229,8 @@ void MaxflowDetector<Weight>::collectDisabledEdges() {
     g_over.updateAlgorithmHistory(this,alg_id,learngraph_history_qhead);
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::collectChangedEdges() {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::collectChangedEdges() {
     if(!(opt_conflict_min_cut_maxflow || opt_decide_theories))
         return;
 
@@ -1388,8 +1388,8 @@ void MaxflowDetector<Weight>::collectChangedEdges() {
     dbg_decisions();
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::dbg_decisions() {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::dbg_decisions() {
 #ifdef DEBUG_GRAPH
     static int iter = 0;
 	++iter;
@@ -1428,8 +1428,8 @@ void MaxflowDetector<Weight>::dbg_decisions() {
 #endif
 }
 
-/*template<typename Weight>
-Lit MaxflowDetector<Weight>::decideByPath(int level){
+/*template<typename Weight,typename Graph>
+Lit MaxflowDetector<Weight,Graph>::decideByPath(int level){
 	//given an edgeID, decide any undecided edge contributing to its flow.
 	if(current_decision_edge<0)
 		return lit_Undef;
@@ -1471,15 +1471,15 @@ Lit MaxflowDetector<Weight>::decideByPath(int level){
 	return lit_Undef;
 }*/
 
-template<typename Weight>
-bool MaxflowDetector<Weight>::decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op){
+template<typename Weight,typename Graph>
+bool MaxflowDetector<Weight,Graph>::decideEdgeWeight(int edgeID, Weight & store, DetectorComparison & op){
     store =  overapprox_conflict_detector->getEdgeFlow(edgeID);
     op=DetectorComparison::geq;
     return store>0;
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::debug_decidable(Var v){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::debug_decidable(Var v){
 #ifdef DEBUG_GRAPH
     if(opt_maxflow_decisions_type>0) {
 		if (outer->isEdgeVar(v)) {
@@ -1517,8 +1517,8 @@ void MaxflowDetector<Weight>::debug_decidable(Var v){
 	}
 #endif
 }
-template<typename Weight>
-void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::undecideEdgeWeight(int edgeid){
     if(opt_theory_internal_vsids){
         insertEdgeOrder(edgeid);
     }
@@ -1577,8 +1577,8 @@ void MaxflowDetector<Weight>::undecideEdgeWeight(int edgeid){
     }
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::assignBV(int bvID){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::assignBV(int bvID){
     /*Weight upper_bound = outer->getBV(bvID).getOver();
     if (upper_bound==0 && !maximum_flow_bvs[bvID].isSatisfied){
         //this bv is trivially satisfied
@@ -1587,8 +1587,8 @@ void MaxflowDetector<Weight>::assignBV(int bvID){
         assert(n_satisfied_lits<=this->flow_lits.size());
     }*/
 }
-template<typename Weight>
-void MaxflowDetector<Weight>::unassignBV(int bvID){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::unassignBV(int bvID){
     /*Weight upper_bound = outer->getBV(bvID).getOver();
     if (maximum_flow_bvs[bvID].isSatisfied && upper_bound>0){
         //this bv is trivially satisfied
@@ -1597,8 +1597,8 @@ void MaxflowDetector<Weight>::unassignBV(int bvID){
         assert(n_satisfied_lits>=0);
     }*/
 }
-template<typename Weight>
-void MaxflowDetector<Weight>::setSatisfied(Lit l, bool isSatisfied){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::setSatisfied(Lit l, bool isSatisfied){
     if(isSatisfied) {
         n_satisfied_lits++;
         assert(n_satisfied_lits<=this->flow_lits.size());
@@ -1608,13 +1608,13 @@ void MaxflowDetector<Weight>::setSatisfied(Lit l, bool isSatisfied){
     }
 }
 
-template<typename Weight>
-bool MaxflowDetector<Weight>::detectorIsSatisfied(){
+template<typename Weight,typename Graph>
+bool MaxflowDetector<Weight,Graph>::detectorIsSatisfied(){
     return n_satisfied_lits==flow_lits.size();
 }
 
-template<typename Weight>
-void MaxflowDetector<Weight>::undecide(Lit l) {
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::undecide(Lit l) {
     static int iter = 0;
     Detector::unassign(l);
     if(outer->isEdgeVar(var(l))){
@@ -1631,16 +1631,16 @@ void MaxflowDetector<Weight>::undecide(Lit l) {
     }
     printf("\n");*/
 }
-template<typename Weight>
-void MaxflowDetector<Weight>::suggestDecision(Lit l){
+template<typename Weight,typename Graph>
+void MaxflowDetector<Weight,Graph>::suggestDecision(Lit l){
     if(outer->isEdgeVar(var(l))){
         int edgeID = outer->getEdgeID(var(l));
         priority_decisions.push(edgeID);
     }
 }
 
-template<typename Weight>
-Lit MaxflowDetector<Weight>::decide(CRef &decision_reason) {
+template<typename Weight,typename Graph>
+Lit MaxflowDetector<Weight,Graph>::decide(CRef &decision_reason) {
     //all constraints are already satisfied
     if(n_satisfied_lits==flow_lits.size())
         return lit_Undef;

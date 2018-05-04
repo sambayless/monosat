@@ -41,9 +41,9 @@
 #include <iomanip>
 using namespace Monosat;
 
-template<typename Weight>
-WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,
-														   DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int from, double seed) :
+template<typename Weight,typename Graph>
+WeightedDistanceDetector<Weight,Graph>::WeightedDistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,
+														   Graph  &_g, Graph  &_antig, int from, double seed) :
 		Detector(_detectorID), outer(outer), g_under(_g), g_over(_antig), source(from), rnd_seed(seed) {
 	max_unweighted_distance = 0;
 	rnd_path = NULL;
@@ -55,7 +55,7 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 
 	if (opt_use_random_path_for_decisions) {
 		rnd_weight.clear();
-		rnd_path = new WeightedDijkstra<Weight,DynamicGraph<Weight>,double>(from, _antig, rnd_weight);
+		rnd_path = new WeightedDijkstra<Weight,Graph,double>(from, _antig, rnd_weight);
 		for (int i = 0; i < outer->nEdges(); i++) {
 			double w = drand(rnd_seed);
 
@@ -66,32 +66,32 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 
 
 	//select the _weighted_ distance detectors
-	positiveDistanceStatus = new WeightedDistanceDetector<Weight>::DistanceStatus(*this, true);
-	negativeDistanceStatus = new WeightedDistanceDetector<Weight>::DistanceStatus(*this, false);
+	positiveDistanceStatus = new WeightedDistanceDetector<Weight,Graph>::DistanceStatus(*this, true);
+	negativeDistanceStatus = new WeightedDistanceDetector<Weight,Graph>::DistanceStatus(*this, false);
 
 	if (outer->hasBitVectorEdges()){
 		printf("Note: falling back on Dijkstra for shortest paths, because edge weights are bitvectors\n");
 		//ramel reps doesn't support bvs yet
 		underapprox_weighted_distance_detector =
-				new Dijkstra<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
+				new Dijkstra<Weight,Graph, typename WeightedDistanceDetector<Weight,Graph>::DistanceStatus>(from, _g,
 																								*positiveDistanceStatus, 0);
-		overapprox_weighted_distance_detector = new Dijkstra<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(
+		overapprox_weighted_distance_detector = new Dijkstra<Weight,Graph, typename WeightedDistanceDetector<Weight,Graph>::DistanceStatus>(
 				from, _antig,  *negativeDistanceStatus, 0);
 		underapprox_weighted_path_detector = underapprox_weighted_distance_detector;
 	}else if (  distalg == DistAlg::ALG_RAMAL_REPS) {
 
 		underapprox_weighted_distance_detector =
-				new RamalReps<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
+				new RamalReps<Weight,Graph, typename WeightedDistanceDetector<Weight,Graph>::DistanceStatus>(from, _g,
 																								 *(positiveDistanceStatus), -2);
 		overapprox_weighted_distance_detector =
-				new RamalReps<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _antig,
+				new RamalReps<Weight,Graph, typename WeightedDistanceDetector<Weight,Graph>::DistanceStatus>(from, _antig,
 																								 *(negativeDistanceStatus), -2);
 		underapprox_weighted_path_detector =underapprox_weighted_distance_detector; //new Dijkstra<Weight>(from, _g);
 	} else {
 		underapprox_weighted_distance_detector =
-				new Dijkstra<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(from, _g,
+				new Dijkstra<Weight,Graph, typename WeightedDistanceDetector<Weight,Graph>::DistanceStatus>(from, _g,
 																								*positiveDistanceStatus, 0);
-		overapprox_weighted_distance_detector = new Dijkstra<Weight,DynamicGraph<Weight>, typename WeightedDistanceDetector<Weight>::DistanceStatus>(
+		overapprox_weighted_distance_detector = new Dijkstra<Weight,Graph, typename WeightedDistanceDetector<Weight,Graph>::DistanceStatus>(
 				from, _antig,  *negativeDistanceStatus, 0);
 		underapprox_weighted_path_detector = underapprox_weighted_distance_detector;
 	}
@@ -127,8 +127,8 @@ WeightedDistanceDetector<Weight>::WeightedDistanceDetector(int _detectorID, Grap
 }
 
 
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::addWeightedShortestPathLit(int from, int to, Var outer_reach_var,
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::addWeightedShortestPathLit(int from, int to, Var outer_reach_var,
 																  Weight within_distance, bool strictComparison) {
 	g_under.invalidate();
 	g_over.invalidate();
@@ -147,8 +147,8 @@ void WeightedDistanceDetector<Weight>::addWeightedShortestPathLit(int from, int 
 	reach_lit_map[reach_var - first_reach_var] = {to,weighted_dist_lits.size()-1,WeightedConstLit};
 }
 
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, int to, Var outer_reach_var,
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::addWeightedShortestPathBVLit(int from, int to, Var outer_reach_var,
 																	const BitVector<Weight>  &bv, bool strictComparison) {
 	g_under.invalidate();
 	g_over.invalidate();
@@ -176,22 +176,22 @@ void WeightedDistanceDetector<Weight>::addWeightedShortestPathBVLit(int from, in
 
 
 
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::DistanceStatus::setReachable(int u, bool reachable) {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::DistanceStatus::setReachable(int u, bool reachable) {
 
 }
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::DistanceStatus::setMininumDistance(int u, bool reachable, Weight & distance) {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::DistanceStatus::setMininumDistance(int u, bool reachable, Weight & distance) {
 
 }
 
 
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::printSolution(std::ostream& write_to) {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::printSolution(std::ostream& write_to) {
 
 }
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::DistanceOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::DistanceOp::analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict){
 //watch out - might need to backtrack the graph theory appropriately, here...
 	static int iter = 0;
 	if(++iter==46){
@@ -218,8 +218,8 @@ void WeightedDistanceDetector<Weight>::DistanceOp::analyzeReason(bool compareOve
 	GraphTheorySolver<Weight>::GraphTheoryOp::completeAnalysis();
 }
 
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::analyzeDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
 	Distance<Weight> & d = *underapprox_weighted_path_detector;
 	underapprox_weighted_distance_detector->update();
 	Weight & actual_dist = underapprox_weighted_distance_detector->distance(to);
@@ -260,8 +260,8 @@ void WeightedDistanceDetector<Weight>::analyzeDistanceLEQReason(int to, Weight &
 		}
 	}
 }
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::buildDistanceLEQReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
 	stats_distance_leq_reasons++;
 	double starttime = rtime(2);
 
@@ -278,8 +278,8 @@ void WeightedDistanceDetector<Weight>::buildDistanceLEQReason(int to, Weight & m
 
 }
 
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::analyzeDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::analyzeDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
 	bool reaches = overapprox_weighted_distance_detector->connected(to);
 	if (!reaches && opt_conflict_min_cut && conflict_flow) {
 
@@ -406,8 +406,8 @@ void WeightedDistanceDetector<Weight>::analyzeDistanceGTReason(int to, Weight & 
 	}
 }
 
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::buildDistanceGTReason(int to, Weight & min_distance, vec<Lit> & conflict, bool strictComparison) {
 	static int it = 0;
 	stats_distance_gt_reasons++;
 	stats_over_conflicts++;
@@ -425,8 +425,8 @@ void WeightedDistanceDetector<Weight>::buildDistanceGTReason(int to, Weight & mi
 	outer->mctime += elapsed;
 
 }
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 
 	if (marker ==weighted_underprop_marker) {
 		reason.push(outer->toSolver(p));
@@ -524,8 +524,8 @@ void WeightedDistanceDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRe
 
 }
 
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::updateShortestPaths() {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::updateShortestPaths() {
 	if (opt_shortest_path_prune_dist && outer->decisionLevel() == 0) {
 		//only update these distances at level 0, to ensure they are a valid over approximate of the shortest possible path to each node
 
@@ -537,8 +537,8 @@ void WeightedDistanceDetector<Weight>::updateShortestPaths() {
 
 	}
 }
-template<typename Weight>
-void WeightedDistanceDetector<Weight>::preprocess() {
+template<typename Weight,typename Graph>
+void WeightedDistanceDetector<Weight,Graph>::preprocess() {
 	is_changed_under.growTo(g_under.nodes());
 	is_changed_over.growTo(g_over.nodes());
 
@@ -549,8 +549,8 @@ void WeightedDistanceDetector<Weight>::preprocess() {
 
 
 
-template<typename Weight>
-bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+bool WeightedDistanceDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 
 	static int iter = 0;
 	if (++iter == 29) { //18303
@@ -761,8 +761,8 @@ bool WeightedDistanceDetector<Weight>::propagate(vec<Lit> & conflict) {
 	return true;
 }
 //Return the path (in terms of nodes)
-template<typename Weight>
-bool WeightedDistanceDetector<Weight>::getModel_Path(int node, std::vector<int> & store_path){
+template<typename Weight,typename Graph>
+bool WeightedDistanceDetector<Weight,Graph>::getModel_Path(int node, std::vector<int> & store_path){
 	store_path.clear();
 	Reach & d = *underapprox_weighted_path_detector;
 	d.update();
@@ -784,8 +784,8 @@ bool WeightedDistanceDetector<Weight>::getModel_Path(int node, std::vector<int> 
 	return true;
 }
 
-template<typename Weight>
-bool WeightedDistanceDetector<Weight>::getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path){
+template<typename Weight,typename Graph>
+bool WeightedDistanceDetector<Weight,Graph>::getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path){
 	store_path.clear();
 	Reach & d = *underapprox_weighted_path_detector;
 	d.update();
@@ -807,8 +807,8 @@ bool WeightedDistanceDetector<Weight>::getModel_PathByEdgeLit(int node, std::vec
 	return true;
 }
 
-template<typename Weight>
-bool WeightedDistanceDetector<Weight>::checkSatisfied() {
+template<typename Weight,typename Graph>
+bool WeightedDistanceDetector<Weight,Graph>::checkSatisfied() {
 
 	Dijkstra<Weight> under(source, g_under);
 	Dijkstra<Weight> over(source, g_over);
@@ -875,8 +875,8 @@ bool WeightedDistanceDetector<Weight>::checkSatisfied() {
 }
 
 
-template<typename Weight>
-Lit WeightedDistanceDetector<Weight>::decide(CRef &decision_reason) {
+template<typename Weight,typename Graph>
+Lit WeightedDistanceDetector<Weight,Graph>::decide(CRef &decision_reason) {
 	if (!opt_decide_graph_distance || !overapprox_weighted_distance_detector)
 		return lit_Undef;
 	WeightedDistanceDetector *r = this;

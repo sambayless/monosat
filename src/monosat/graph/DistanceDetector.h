@@ -24,7 +24,7 @@
 #include "monosat/utils/System.h"
 
 #include "monosat/graph/GraphTheoryTypes.h"
-#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/Graph.h"
 #include "monosat/dgl/Reach.h"
 #include "monosat/dgl/Distance.h"
 #include "monosat/dgl/Dijkstra.h"

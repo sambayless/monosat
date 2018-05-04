@@ -38,3 +38,4 @@ graph/resources/*
 *.pyc
 tests/local/
 venv/
+javadoc/

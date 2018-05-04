@@ -26,26 +26,26 @@
 #include <set>
 using namespace Monosat;
 
-template<typename Weight>
-MSTDetector<Weight>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * outer, DynamicGraph<Weight>  &g,
-								 DynamicGraph<Weight>  &antig, double seed) :
+template<typename Weight,typename Graph>
+MSTDetector<Weight,Graph>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * outer, Graph  &g,
+								 Graph  &antig, double seed) :
 		Detector(detectorID), outer(outer), g_under(g), g_over(antig), rnd_seed(seed)  {
 	checked_unique = false;
 	all_unique = true;
-	positiveReachStatus = new MSTDetector<Weight>::MSTStatus(*this, true);
-	negativeReachStatus = new MSTDetector<Weight>::MSTStatus(*this, false);
+	positiveReachStatus = new MSTDetector<Weight,Graph>::MSTStatus(*this, true);
+	negativeReachStatus = new MSTDetector<Weight,Graph>::MSTStatus(*this, false);
 
 	if (mstalg == MinSpanAlg::ALG_KRUSKAL) {
-		underapprox_detector = new Kruskal<MSTDetector<Weight>::MSTStatus, Weight>(g,
+		underapprox_detector = new Kruskal<MSTDetector<Weight,Graph>::MSTStatus, Weight>(g,
 																				   *(positiveReachStatus), 1);
-		overapprox_detector = new Kruskal<MSTDetector<Weight>::MSTStatus, Weight>(antig,
+		overapprox_detector = new Kruskal<MSTDetector<Weight,Graph>::MSTStatus, Weight>(antig,
 																				  *(negativeReachStatus), -1);
 		underapprox_conflict_detector = underapprox_detector;
 		overapprox_conflict_detector = overapprox_detector;
 	} else if (mstalg == MinSpanAlg::ALG_PRIM) {
-		underapprox_detector = new Prim<MSTDetector<Weight>::MSTStatus, Weight>(g,  *(positiveReachStatus),
+		underapprox_detector = new Prim<MSTDetector<Weight,Graph>::MSTStatus, Weight>(g,  *(positiveReachStatus),
 																				1);
-		overapprox_detector = new Prim<MSTDetector<Weight>::MSTStatus, Weight>(antig,
+		overapprox_detector = new Prim<MSTDetector<Weight,Graph>::MSTStatus, Weight>(antig,
 																			   *(negativeReachStatus), -1);
 		underapprox_conflict_detector = new Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight>(g,
 																											  MinimumSpanningTree<Weight>::nullStatus, 1);
@@ -54,9 +54,9 @@ MSTDetector<Weight>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * out
 
 	} else if (mstalg == MinSpanAlg::ALG_SPIRA_PAN) {
 
-		underapprox_detector = new SpiraPan<MSTDetector<Weight>::MSTStatus, Weight>(g,
-																					*(positiveReachStatus), 1); //new SpiraPan<MSTDetector<Weight>::MSTStatus>(_g,*(positiveReachStatus),1);
-		overapprox_detector = new SpiraPan<MSTDetector<Weight>::MSTStatus, Weight>(antig,
+		underapprox_detector = new SpiraPan<MSTDetector<Weight,Graph>::MSTStatus, Weight>(g,
+																					*(positiveReachStatus), 1); //new SpiraPan<MSTDetector<Weight,Graph>::MSTStatus>(_g,*(positiveReachStatus),1);
+		overapprox_detector = new SpiraPan<MSTDetector<Weight,Graph>::MSTStatus, Weight>(antig,
 																				   *(negativeReachStatus), -1);
 		underapprox_conflict_detector = new Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight>(g,
 																											  MinimumSpanningTree<Weight>::nullStatus, 1);
@@ -71,8 +71,8 @@ MSTDetector<Weight>::MSTDetector(int detectorID, GraphTheorySolver<Weight> * out
 	overprop_edge_marker = outer->newReasonMarker(getID());
 	first_reach_var = var_Undef;
 }
-template<typename Weight>
-void MSTDetector<Weight>::addWeightLit(Var outer_weight_var, Weight & min_weight, bool inclusive) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::addWeightLit(Var outer_weight_var, Weight & min_weight, bool inclusive) {
 	g_under.invalidate();
 	g_over.invalidate();
 
@@ -103,8 +103,8 @@ void MSTDetector<Weight>::addWeightLit(Var outer_weight_var, Weight & min_weight
 	}
 }
 
-template<typename Weight>
-void MSTDetector<Weight>::addTreeEdgeLit(int edge_id, Var outer_reach_var) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::addTreeEdgeLit(int edge_id, Var outer_reach_var) {
 	g_under.invalidate();
 	g_over.invalidate();
 	Var reach_var = outer->newVar(outer_reach_var, getID());
@@ -166,8 +166,8 @@ void MSTDetector<Weight>::addTreeEdgeLit(int edge_id, Var outer_reach_var) {
 	}
 
 }
-template<typename Weight>
-void MSTDetector<Weight>::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_tree) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_tree) {
 	if (edgeid < detector.tree_edge_lits.size()) {
 		Lit l = detector.tree_edge_lits[edgeid].l;
 		//Note: for the tree edge detector, polarity is effectively reversed.
@@ -188,8 +188,8 @@ void MSTDetector<Weight>::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_t
 		}
 	}
 }
-template<typename Weight>
-void MSTDetector<Weight>::MSTStatus::setMinimumSpanningTree(Weight & weight, bool connected) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::MSTStatus::setMinimumSpanningTree(Weight & weight, bool connected) {
 
 	/*for(int i = 0;i<detector.weight_lits.size();i++){
 	 Weight & min_weight =  detector.weight_lits[i].min_weight;
@@ -212,8 +212,8 @@ void MSTDetector<Weight>::MSTStatus::setMinimumSpanningTree(Weight & weight, boo
 
 }
 
-template<typename Weight>
-void MSTDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::buildMinWeightTooSmallReason(Weight & weight, vec<Lit> & conflict) {
 
 	MinimumSpanningTree<Weight> & d = *underapprox_conflict_detector;
 
@@ -237,8 +237,8 @@ void MSTDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight, vec<Lit>
 
 }
 
-template<typename Weight>
-bool MSTDetector<Weight>::walkback(Weight & min_weight, int from, int to) {
+template<typename Weight,typename Graph>
+bool MSTDetector<Weight,Graph>::walkback(Weight & min_weight, int from, int to) {
 	int u = from;
 	while (u != to && u != -1) {
 		int p = overapprox_conflict_detector->getParent(u);
@@ -253,8 +253,8 @@ bool MSTDetector<Weight>::walkback(Weight & min_weight, int from, int to) {
 	}
 	return false;
 }
-template<typename Weight>
-void MSTDetector<Weight>::TarjanOLCA(int node, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::TarjanOLCA(int node, vec<Lit> & conflict) {
 	ancestors[node] = node;
 	for (int i = 0; i < g_over.nIncident(node, true); i++) {
 		int edgeid = g_over.incident(node, i, true).id;
@@ -297,8 +297,8 @@ void MSTDetector<Weight>::TarjanOLCA(int node, vec<Lit> & conflict) {
 		}
 	}
 }
-template<typename Weight>
-void MSTDetector<Weight>::buildMinWeightTooLargeReason(Weight & weight, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::buildMinWeightTooLargeReason(Weight & weight, vec<Lit> & conflict) {
 
 	static int it = 0;
 	++it;
@@ -406,8 +406,8 @@ void MSTDetector<Weight>::buildMinWeightTooLargeReason(Weight & weight, vec<Lit>
 
 }
 
-template<typename Weight>
-Weight MSTDetector<Weight>::walkback_edge(Weight &min_weight, int edge_id, int from, int to, bool & found) {
+template<typename Weight,typename Graph>
+Weight MSTDetector<Weight,Graph>::walkback_edge(Weight &min_weight, int edge_id, int from, int to, bool & found) {
 	int u = from;
 	Weight maxweight = 0;
 	while (u != to && u != -1) {
@@ -428,8 +428,8 @@ Weight MSTDetector<Weight>::walkback_edge(Weight &min_weight, int edge_id, int f
 	return maxweight;
 }
 
-template<typename Weight>
-void MSTDetector<Weight>::TarjanOLCA_edge(int node, int check_edgeid, int lowest_endpoint, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::TarjanOLCA_edge(int node, int check_edgeid, int lowest_endpoint, vec<Lit> & conflict) {
 	ancestors[node] = node;
 	for (int i = 0; i < g_over.nIncident(node, true); i++) {
 		int edgeid = g_over.incident(node, i, true).id;
@@ -480,8 +480,8 @@ void MSTDetector<Weight>::TarjanOLCA_edge(int node, int check_edgeid, int lowest
 		}
 	}
 }
-template<typename Weight>
-void MSTDetector<Weight>::buildEdgeNotInTreeReason(int edgeid, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::buildEdgeNotInTreeReason(int edgeid, vec<Lit> & conflict) {
 	Var edgevar = outer->getEdgeVar(edgeid);
 	assert(outer->value(edgevar)!=l_False);							//else the edge counts as in the tree
 	//what about if the mst is disconnected?
@@ -548,8 +548,8 @@ void MSTDetector<Weight>::buildEdgeNotInTreeReason(int edgeid, vec<Lit> & confli
 	}
 
 }
-template<typename Weight>
-void MSTDetector<Weight>::buildEdgeInTreeReason(int edgeid, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::buildEdgeInTreeReason(int edgeid, vec<Lit> & conflict) {
 	//if the edge is disabled, then the reason for the edge being in the tree is that we have defined disabled edges to be in the mst.
 	if (!g_over.edgeEnabled(edgeid)) {
 		Var v = outer->getEdgeVar(edgeid);
@@ -608,8 +608,8 @@ void MSTDetector<Weight>::buildEdgeInTreeReason(int edgeid, vec<Lit> & conflict)
 	double elapsed = rtime(2) - starttime;
 	outer->mctime += elapsed;
 }
-template<typename Weight>
-void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 
 	if (marker == underprop_marker) {
 		reason.push(p);
@@ -683,12 +683,12 @@ void MSTDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 }
 
 
-template<typename Weight>
-void MSTDetector<Weight>::preprocess() {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::preprocess() {
 	is_edge_changed.growTo(g_under.edges());
 }
-template<typename Weight>
-bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+bool MSTDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
 	if (++it == 7) {
 		int a = 1;
@@ -787,7 +787,7 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 		int edgeID = changed_edges.last().edgeID;
 		assert(is_edge_changed[edgeID]);
 		Lit l;
-		Var edgevar = outer->getEdgeVar(edgeid);
+		Var edgevar = outer->getEdgeVar(edgeID);
 		lbool edge_val = outer->value(edgevar);
 		if ( (!g_over.edgeEnabled(edgeID) || overapprox_detector->edgeInTree(edgeID))) {
 			l = mkLit(v, false);
@@ -846,8 +846,8 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 	}
 	return true;
 }
-template<typename Weight>
-bool MSTDetector<Weight>::checkSatisfied() {
+template<typename Weight,typename Graph>
+bool MSTDetector<Weight,Graph>::checkSatisfied() {
 	Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> positive_checker(g_under,
 																					   MinimumSpanningTree<Weight>::nullStatus, 0);
 	Kruskal<typename MinimumSpanningTree<Weight>::NullStatus, Weight> negative_checker(g_over,
@@ -934,8 +934,8 @@ bool MSTDetector<Weight>::checkSatisfied() {
 //}
 	return true;
 }
-template<typename Weight>
-void MSTDetector<Weight>::printSolution(std::ostream & write_to) {
+template<typename Weight,typename Graph>
+void MSTDetector<Weight,Graph>::printSolution(std::ostream & write_to) {
 
 	if (underapprox_detector->numComponents() > 1) {
 		printf("Min Spanning Tree is disconnected (%d components)\n", underapprox_detector->numComponents());
@@ -982,12 +982,12 @@ void MSTDetector<Weight>::printSolution(std::ostream & write_to) {
 
 }
 
-template<typename Weight>
-Lit MSTDetector<Weight>::decide(CRef &decision_reason) {
+template<typename Weight,typename Graph>
+Lit MSTDetector<Weight,Graph>::decide(CRef &decision_reason) {
 	/*MSTDetector *r =this;
-	 MinimumSpanningTree<MSTDetector<Weight>::MSTStatus> * over = (MinimumSpanningTree<MSTDetector<Weight>::MSTStatus>*) r->negative_reach_detector;
+	 MinimumSpanningTree<MSTDetector<Weight,Graph>::MSTStatus> * over = (MinimumSpanningTree<MSTDetector<Weight,Graph>::MSTStatus>*) r->negative_reach_detector;
 
-	 MinimumSpanningTree<MSTDetector<Weight>::MSTStatus> * under = (MinimumSpanningTree<MSTDetector<Weight>::MSTStatus>*) r->positive_reach_detector;
+	 MinimumSpanningTree<MSTDetector<Weight,Graph>::MSTStatus> * under = (MinimumSpanningTree<MSTDetector<Weight,Graph>::MSTStatus>*) r->positive_reach_detector;
 
 	 //we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

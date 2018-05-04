@@ -21,19 +21,19 @@
 
 #include "GraphTheory.h"
 using namespace Monosat;
-template<typename Weight>
-ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-		DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, double seed) :
+template<typename Weight,typename Graph>
+ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
+		Graph  &_g, Graph  &_antig, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_component_detector(
 				NULL), overapprox_component_detector(NULL), positiveReachStatus(NULL), negativeReachStatus(NULL) {
 	
-	positiveReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this, true);
-	negativeReachStatus = new ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus(*this, false);
+	positiveReachStatus = new ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus(*this, true);
+	negativeReachStatus = new ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus(*this, false);
 	//Note: these are _intentionalyl_ swapped
 	overapprox_component_detector = new DisjointSetsConnectedComponents<Weight,
-			ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_g, *(negativeReachStatus), 1);
+			ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus>(_g, *(negativeReachStatus), 1);
 	underapprox_component_detector = new DisjointSetsConnectedComponents<Weight,
-			ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>(_antig, *(positiveReachStatus), 1);
+			ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus>(_antig, *(positiveReachStatus), 1);
 	
 	components_low_marker = outer->newReasonMarker(getID());
 	components_high_marker = outer->newReasonMarker(getID());
@@ -42,8 +42,8 @@ ConnectedComponentsDetector<Weight>::ConnectedComponentsDetector(int _detectorID
 	not_connected_marker = outer->newReasonMarker(getID());
 	
 }
-template<typename Weight>
-Lit ConnectedComponentsDetector<Weight>::getConnectLit(int u, int v) {
+template<typename Weight,typename Graph>
+Lit ConnectedComponentsDetector<Weight,Graph>::getConnectLit(int u, int v) {
 	if (reachLits.size() > u && reachLits[u].size() > v && reachLits[u][v] != lit_Undef) {
 		return reachLits[u][v];
 	}
@@ -59,8 +59,8 @@ Lit ConnectedComponentsDetector<Weight>::getConnectLit(int u, int v) {
 	reach_map.insert(connect_var, { u, v });
 	return reachLits[u][v];
 }
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::addConnectedLit(Var outer_reach_var, int node1, int node2) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::addConnectedLit(Var outer_reach_var, int node1, int node2) {
 	g_under.invalidate();
 	g_over.invalidate();
 	if (reachLits.size() < g_under.nodes()) {
@@ -83,8 +83,8 @@ void ConnectedComponentsDetector<Weight>::addConnectedLit(Var outer_reach_var, i
 	}
 	assert(reachLits[node1][node2] == reachLits[node2][node1]);
 }
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::addConnectedComponentsLit(Var outer_weight_var, int min_components) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::addConnectedComponentsLit(Var outer_weight_var, int min_components) {
 	
 	g_under.invalidate();
 	g_over.invalidate();
@@ -118,15 +118,15 @@ void ConnectedComponentsDetector<Weight>::addConnectedComponentsLit(Var outer_we
 	
 }
 
-/*void ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus::setConnected(int edgeid, bool in_tree){
+/*void ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus::setConnected(int edgeid, bool in_tree){
  if(edgeid<detector.tree_edge_lits.size()){
  Lit l = detector.tree_edge_lits[edgeid].l;
  if(l!=lit_Undef)
  detector.changed_edges.push({in_tree? l:~l,edgeid});
  }
  }*/
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus::setConnected(int u, int v, bool connected) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus::setConnected(int u, int v, bool connected) {
 	if (u > v) {
 		std::swap(u, v);
 	}
@@ -141,8 +141,8 @@ void ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus::setConnecte
 			detector.changed.push( { connected ? l : ~l, u, v });
 	}
 }
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus::setComponents(int components) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus::setComponents(int components) {
 	
 	for (int i = 0; i < detector.connected_components_lits.size(); i++) {
 		int min_components = detector.connected_components_lits[i].min_components;
@@ -167,8 +167,8 @@ void ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus::setComponen
 	
 }
 
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::buildMinComponentsTooLowReason(int min_components, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::buildMinComponentsTooLowReason(int min_components, vec<Lit> & conflict) {
 	
 	double starttime = rtime(2);
 	
@@ -206,8 +206,8 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooLowReason(int min
 	double elapsed = rtime(2) - starttime;
 	outer->pathtime += elapsed;
 }
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::buildMinComponentsTooHighReason(int min_components, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::buildMinComponentsTooHighReason(int min_components, vec<Lit> & conflict) {
 	static int it = 0;
 	++it;
 	
@@ -291,13 +291,13 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooHighReason(int mi
 	}
 	
 }
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, int node, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::buildNodesConnectedReason(int source, int node, vec<Lit> & conflict) {
 	if (source > node) {
 		std::swap(source, node);
 	}
 	
-	UnweightedBFS<Weight,DynamicGraph<Weight>,Distance<int>::NullStatus, true> d(source, g_under);
+	UnweightedBFS<Weight,Graph,Distance<int>::NullStatus, true> d(source, g_under);
 	double starttime = rtime(2);
 	d.update();
 	
@@ -347,8 +347,8 @@ void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, 
 	outer->pathtime += elapsed;
 }
 
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::buildNodesNotConnectedReason(int source, int node, vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::buildNodesNotConnectedReason(int source, int node, vec<Lit> & conflict) {
 	if (source > node) {
 		std::swap(source, node);
 	}
@@ -453,8 +453,8 @@ void ConnectedComponentsDetector<Weight>::buildNodesNotConnectedReason(int sourc
 		
 	}
 }
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	
 	if (marker == components_low_marker) {
 		reason.push(p);
@@ -513,8 +513,8 @@ void ConnectedComponentsDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, 
 	}
 	outer->toSolver(reason);
 }
-template<typename Weight>
-bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+bool ConnectedComponentsDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 	
 	changed.clear();
 	changed_weights.clear();
@@ -595,16 +595,16 @@ bool ConnectedComponentsDetector<Weight>::propagate(vec<Lit> & conflict) {
 	return true;
 }
 
-template<typename Weight>
-void ConnectedComponentsDetector<Weight>::printSolution(std::ostream & write_to) {
+template<typename Weight,typename Graph>
+void ConnectedComponentsDetector<Weight,Graph>::printSolution(std::ostream & write_to) {
 	if (opt_verb > 0) {
 		int numComponents = underapprox_component_detector->numComponents();
 		printf("Number of connected components (graph %d) is: %d\n", outer->getGraphID(), numComponents);
 	}
 }
 
-template<typename Weight>
-bool ConnectedComponentsDetector<Weight>::checkSatisfied() {
+template<typename Weight,typename Graph>
+bool ConnectedComponentsDetector<Weight,Graph>::checkSatisfied() {
 	int numConnected = underapprox_component_detector->numComponents();
 	int numConnectedOver = overapprox_component_detector->numComponents();
 	for (int k = 0; k < connected_components_lits.size(); k++) {
@@ -634,12 +634,12 @@ bool ConnectedComponentsDetector<Weight>::checkSatisfied() {
 	
 	return true;
 }
-template<typename Weight>
-Lit ConnectedComponentsDetector<Weight>::decide(CRef &decision_reason) {
+template<typename Weight,typename Graph>
+Lit ConnectedComponentsDetector<Weight,Graph>::decide(CRef &decision_reason) {
 	/*ConnectedComponentsDetector *r =this;
-	 MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus> * over = (MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>*) r->negative_reach_detector;
+	 MinimumSpanningTree<ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus> * over = (MinimumSpanningTree<ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus>*) r->negative_reach_detector;
 
-	 MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus> * under = (MinimumSpanningTree<ConnectedComponentsDetector<Weight>::ConnectedComponentsStatus>*) r->positive_reach_detector;
+	 MinimumSpanningTree<ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus> * under = (MinimumSpanningTree<ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus>*) r->positive_reach_detector;
 
 	 //we can probably also do something similar, but with cuts, for nodes that are decided to be unreachable.
 

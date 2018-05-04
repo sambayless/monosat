@@ -23,7 +23,7 @@
 #define STEINER_DETECTOR_H_
 #include "monosat/utils/System.h"
 #include "GraphTheoryTypes.h"
-#include "monosat/dgl/DynamicGraph.h"
+#include "monosat/dgl/Graph.h"
 #include "monosat/dgl/MinimumSpanningTree.h"
 #include "monosat/dgl/SteinerTree.h"
 #include "monosat/core/SolverTypes.h"
@@ -38,13 +38,13 @@ using namespace dgl;
 namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
-template<typename Weight = int>
+template<typename Weight = int,typename Graph=DynamicGraph<Weight>>
 class SteinerDetector: public Detector {
 public:
 	GraphTheorySolver<Weight> * outer;
 
-	DynamicGraph<Weight> & g_under;
-	DynamicGraph<Weight> & g_over;
+	Graph & g_under;
+	Graph & g_over;
 
 	DynamicNodes underTerminalSet;
 	DynamicNodes overTerminalSet;
@@ -113,8 +113,8 @@ public:
 
 	void addWeightLit(Weight &min_weight, Var weight_var);
 	void addTerminalNode(int node, Var theoryVar);
-	SteinerDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,DynamicGraph<Weight> &_g,
-					DynamicGraph<Weight>  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+	SteinerDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,Graph &_g,
+					Graph  &_antig, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 
 	~SteinerDetector() override {
 		delete underapprox_detector;

@@ -22,9 +22,9 @@
 #include "GraphTheory.h"
 #include "monosat/dgl/PKTopologicalSort.h"
 using namespace Monosat;
-template<typename Weight>
-CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, DynamicGraph<Weight>  &g_under,
-		DynamicGraph<Weight>  &g_over, bool detect_directed_cycles, double seed) :
+template<typename Weight,typename Graph>
+CycleDetector<Weight,Graph>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &g_under,
+		Graph  &g_over, bool detect_directed_cycles, double seed) :
 		Detector(_detectorID), outer(_outer), g_under(g_under), g_over(g_over), rnd_seed(seed), underapprox_directed_cycle_detector(NULL), overapprox_directed_cycle_detector(
 				NULL) {
 	
@@ -33,18 +33,18 @@ CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> 
 	
 
 	if(cyclealg==CycleAlg::ALG_DFS_CYCLE){
-		underapprox_directed_cycle_detector = new DFSCycle<Weight,DynamicGraph<Weight>,true,true>(g_under, detect_directed_cycles, 1);
-		overapprox_directed_cycle_detector = new DFSCycle<Weight,DynamicGraph<Weight>,true,true>(g_over, detect_directed_cycles, 1);
+		underapprox_directed_cycle_detector = new DFSCycle<Weight,Graph,true,true>(g_under, detect_directed_cycles, 1);
+		overapprox_directed_cycle_detector = new DFSCycle<Weight,Graph,true,true>(g_over, detect_directed_cycles, 1);
 
 		overapprox_undirected_cycle_detector=overapprox_directed_cycle_detector;
 		underapprox_undirected_cycle_detector=underapprox_directed_cycle_detector;
 
 	}else if(cyclealg==CycleAlg::ALG_PK_CYCLE){
-		underapprox_directed_cycle_detector = new PKToplogicalSort<Weight,DynamicGraph<Weight>>(g_under,  1);
-		overapprox_directed_cycle_detector = new PKToplogicalSort<Weight,DynamicGraph<Weight>>(g_over,  1);
+		underapprox_directed_cycle_detector = new PKToplogicalSort<Weight,Graph>(g_under,  1);
+		overapprox_directed_cycle_detector = new PKToplogicalSort<Weight,Graph>(g_over,  1);
 
-		underapprox_undirected_cycle_detector = new DFSCycle<Weight,DynamicGraph<Weight>,false,true>(g_under, false, 1);
-		overapprox_undirected_cycle_detector = new DFSCycle<Weight,DynamicGraph<Weight>,false,true>(g_over, false, 1);
+		underapprox_undirected_cycle_detector = new DFSCycle<Weight,Graph,false,true>(g_under, false, 1);
+		overapprox_undirected_cycle_detector = new DFSCycle<Weight,Graph,false,true>(g_over, false, 1);
 	}
 	directed_cycle_marker = outer->newReasonMarker(getID());
 	no_directed_cycle_marker = outer->newReasonMarker(getID());
@@ -53,8 +53,8 @@ CycleDetector<Weight>::CycleDetector(int _detectorID, GraphTheorySolver<Weight> 
 	no_undirected_cycle_marker = outer->newReasonMarker(getID());
 	//forced_reach_marker=outer->newReasonMarker(getID());
 }
-template<typename Weight>
-void CycleDetector<Weight>::addAcyclicLit(bool directed, Var outer_reach_var) {
+template<typename Weight,typename Graph>
+void CycleDetector<Weight,Graph>::addAcyclicLit(bool directed, Var outer_reach_var) {
 	Var v = outer->newVar(outer_reach_var, getID());
 	Lit l = mkLit(v, false);
 	g_under.invalidate();
@@ -79,8 +79,8 @@ void CycleDetector<Weight>::addAcyclicLit(bool directed, Var outer_reach_var) {
 		}
 	}
 }
-template<typename Weight>
-void CycleDetector<Weight>::buildNoUndirectedCycleReason(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void CycleDetector<Weight,Graph>::buildNoUndirectedCycleReason(vec<Lit> & conflict) {
 	//its clear that we can do better than this, but its also not clear how to do so efficiently...
 	//for now, learn the trivial clause...
 
@@ -94,8 +94,8 @@ void CycleDetector<Weight>::buildNoUndirectedCycleReason(vec<Lit> & conflict) {
 		}
 	}
 }
-template<typename Weight>
-void CycleDetector<Weight>::buildNoDirectedCycleReason(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void CycleDetector<Weight,Graph>::buildNoDirectedCycleReason(vec<Lit> & conflict) {
 	//its clear that we can do better than this, but its also not clear how to do so efficiently...
 	//for now, learn the trivial clause...
 	//One thing you could do would be to first do an over-approx cycle detection at level 0, and exclude from here any edges that can't possibly be part of any scc.
@@ -112,8 +112,8 @@ void CycleDetector<Weight>::buildNoDirectedCycleReason(vec<Lit> & conflict) {
 	
 }
 
-template<typename Weight>
-void CycleDetector<Weight>::buildUndirectedCycleReason(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void CycleDetector<Weight,Graph>::buildUndirectedCycleReason(vec<Lit> & conflict) {
 	assert(underapprox_undirected_cycle_detector->hasUndirectedCycle());
 	
 	std::vector<int> & cycle = underapprox_undirected_cycle_detector->getUndirectedCycle();
@@ -125,8 +125,8 @@ void CycleDetector<Weight>::buildUndirectedCycleReason(vec<Lit> & conflict) {
 	}
 	
 }
-template<typename Weight>
-void CycleDetector<Weight>::buildDirectedCycleReason(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+void CycleDetector<Weight,Graph>::buildDirectedCycleReason(vec<Lit> & conflict) {
 	assert(underapprox_directed_cycle_detector->hasDirectedCycle());
 	
 	std::vector<int> & cycle = underapprox_directed_cycle_detector->getDirectedCycle();
@@ -139,8 +139,8 @@ void CycleDetector<Weight>::buildDirectedCycleReason(vec<Lit> & conflict) {
 	}
 	
 }
-template<typename Weight>
-void CycleDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
+template<typename Weight,typename Graph>
+void CycleDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	
 	if (marker == directed_cycle_marker) {
 		reason.push(p);
@@ -167,8 +167,8 @@ void CycleDetector<Weight>::buildReason(Lit p, vec<Lit> & reason, CRef marker) {
 	}
 	outer->toSolver(reason);
 }
-template<typename Weight>
-bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
+template<typename Weight,typename Graph>
+bool CycleDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 	static int it = 0;
 
 
@@ -252,10 +252,10 @@ bool CycleDetector<Weight>::propagate(vec<Lit> & conflict) {
 	}
 	return true;
 }
-template<typename Weight>
-bool CycleDetector<Weight>::checkSatisfied() {
-	DFSCycle<Weight,DynamicGraph<Weight>,true,false> checkDirected (g_under, true, 1);
-	DFSCycle<Weight,DynamicGraph<Weight>,false,true> checkUndirected(g_under, false, 1);
+template<typename Weight,typename Graph>
+bool CycleDetector<Weight,Graph>::checkSatisfied() {
+	DFSCycle<Weight,Graph,true,false> checkDirected (g_under, true, 1);
+	DFSCycle<Weight,Graph,false,true> checkUndirected(g_under, false, 1);
 	if(directed_acyclic_lit != lit_Undef){
 		if(outer->value(directed_acyclic_lit)==l_True && checkDirected.hasDirectedCycle()){
 			return false;
@@ -274,8 +274,8 @@ bool CycleDetector<Weight>::checkSatisfied() {
 	}
 	return true;
 }
-template<typename Weight>
-Lit CycleDetector<Weight>::decide(CRef &decision_reason) {
+template<typename Weight,typename Graph>
+Lit CycleDetector<Weight,Graph>::decide(CRef &decision_reason) {
 	
 	return lit_Undef;
 }

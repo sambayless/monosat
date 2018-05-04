@@ -39,14 +39,14 @@ using namespace dgl;
 namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
-template<typename Weight = int>
+template<typename Weight = int,typename Graph = DynamicGraph<Weight>>
 class MaxflowDetector: public Detector,public EdgeDecider<Weight>, public DynamicGraphAlgorithm  {
 public:
 	GraphTheorySolver<Weight> * outer;
 	std::vector<Weight> capacities;
 
-	DynamicGraph<Weight> &g_under;
-	DynamicGraph<Weight> &g_over;
+	Graph &g_under;
+	Graph &g_over;
 
 	int source;
 	int target;
@@ -118,7 +118,7 @@ public:
 	vec<Lit> to_decide;
 	std::vector<int> q;
 
-	DynamicGraph<Weight> learn_graph;
+	Graph learn_graph;
 	vec<int> back_edges;
 	int learngraph_history_qhead = 0;
 	int learngraph_history_clears = -1;
@@ -304,7 +304,7 @@ public:
 	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
 	void addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-					DynamicGraph<Weight>  &_g, DynamicGraph<Weight>  &_antig, int _source, int _target, double seed = 1, bool overIsEdgeSet=false); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+					Graph  &_g, Graph  &_antig, int _source, int _target, double seed = 1, bool overIsEdgeSet=false); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() override {
 		if (underapprox_conflict_detector && underapprox_conflict_detector!=underapprox_detector)
 			delete 	underapprox_conflict_detector;

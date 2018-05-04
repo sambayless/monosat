@@ -558,7 +558,9 @@ public:
 	//vec<vec<Edge> > edges;
 	
 	//Just a list of the edges
+private:
 	vec<Edge> edge_list;
+public:
 	vec<vec<Edge> > undirected_adj;
 	vec<vec<Edge> > inv_adj;
 
