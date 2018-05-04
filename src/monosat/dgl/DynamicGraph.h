@@ -526,7 +526,10 @@ public:
 	}
 
 	void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos)override{
-		assert(dynamic_algs[algorithmID]==alg);//sanity check
+		assert(algorithmID >=0 && algorithmID<=dynamic_algs.size() && dynamic_algs[algorithmID]==alg);//sanity check
+        if(algorithmID <0 || algorithmID>= dynamic_algs.size() || dynamic_algs[algorithmID]!=alg){
+            throw std::runtime_error("Internal error in DynamicGraph (invalid algorithm ID): algorithm " + std::to_string(algorithmID) );
+        }
 		//bool was_uptodate = dynamic_history_pos[algorithmID]==historySize();
 		dynamic_history_pos[algorithmID]=historyPos;
 /*		if(!was_uptodate && historyPos ==historySize()){

@@ -85,7 +85,7 @@ public:
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
 	std::vector<int> changeset;
-	int alg_id;
+	int alg_id = -1;
 
 	struct LocalDistanceStatus {
 		RamalReps & outer;
@@ -1233,7 +1233,7 @@ public:
 	std::vector<int> edgeInShortestPathGraph;
 	std::vector<int> delta;
 	std::vector<int> changeset;
-	int alg_id;
+	int alg_id = -1;
 public:
 
 	uint64_t stats_full_updates=0;

@@ -89,7 +89,7 @@ public:
     std::vector<int> delta;
     std::vector<int> changeset;
     std::vector<bool> in_changeset;
-    int alg_id;
+    int alg_id = -1;
 
     struct LocalDistanceStatus {
         RamalRepsBatched & outer;
@@ -1260,7 +1260,7 @@ public:
     std::vector<int> delta;
     std::vector<int> changeset;
     std::vector<bool> in_changeset;
-    int alg_id;
+    int alg_id = -1;
 public:
 
     int64_t stats_full_updates=0;

@@ -1226,7 +1226,9 @@ void MaxflowDetector<Weight,Graph>::collectDisabledEdges() {
             learngraph_history_qhead = g_over.historySize();
         }
     }
-    g_over.updateAlgorithmHistory(this,alg_id,learngraph_history_qhead);
+    if(alg_id>=0) {
+        g_over.updateAlgorithmHistory(this, alg_id, learngraph_history_qhead);
+    }
 }
 
 template<typename Weight,typename Graph>

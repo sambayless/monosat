@@ -88,7 +88,7 @@ public:
     std::vector<int> delta; //delta records, for each node u, the number of incoming edges (v ,u) for which edgeInShortestPathGraph (v,u) is true
     std::vector<int> changeset;
     std::vector<bool> in_changeset;
-    int alg_id;
+    int alg_id = -1;
 
     struct LocalDistanceStatus {
         RamalRepsBatchedUnified & outer;
@@ -1179,7 +1179,7 @@ public:
     std::vector<int> delta; //delta records, for each node u, the number of incoming edges (v ,u) for which edgeInShortestPathGraph (v,u) is true
     std::vector<int> changeset;
     std::vector<bool> in_changeset;
-    int alg_id;
+    int alg_id = -1;
 public:
 
     int64_t stats_full_updates=0;

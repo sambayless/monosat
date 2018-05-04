@@ -104,7 +104,7 @@ class KohliTorr: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 	std::vector<int> changed_partition;
 	bool flow_needs_recalc = true;
 	bool needs_recompute = true;
-	int alg_id;
+	int alg_id=-1;
 
 	inline typename kohli_torr::Graph<Weight, Weight, Weight>::arc_id  getArc(int edgeID){
 		assert(edgeID<arc_map.size());
