@@ -353,7 +353,6 @@ public:
 
 		CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), use_extra));
 		new (lea(cid)) Clause(ps, use_extra, learnt);
-
 		return cid;
 	}
 

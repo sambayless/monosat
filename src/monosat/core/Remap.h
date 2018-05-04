@@ -52,7 +52,7 @@ public:
 			if(!remap_vars){
 				return internalVar;
 			}
-			if (internalVar< var_map.size() && var_reverse_map[internalVar]!=var_Undef){
+			if (internalVar< var_reverse_map.size() && var_reverse_map[internalVar]!=var_Undef){
 				return var_reverse_map[internalVar];
 			}
 			return var_Undef;
@@ -64,7 +64,7 @@ public:
 		Var internalVar = var(internalLit);
 		if(internalVar==var_Undef)
 			return lit_Undef;
-		if (internalVar< var_map.size() && var_reverse_map[internalVar]!=var_Undef){
+		if (internalVar< var_reverse_map.size() && var_reverse_map[internalVar]!=var_Undef){
 			return mkLit(var_reverse_map[internalVar],sign(internalLit));
 		}
 		return lit_Undef;

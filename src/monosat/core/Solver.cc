@@ -27,7 +27,9 @@
 #include "monosat/mtl/Sort.h"
 #include "monosat/graph/GraphTheory.h"
 using namespace Monosat;
-
+#ifndef NDEBUG
+#define DEBUG_SOLUTION
+#endif
 //=================================================================================================
 // Options:
 // Collected in Config.h
@@ -100,7 +102,6 @@ Var Solver::newVar(bool sign, bool dvar) {
 		decision.push();
 		trail.capacity(v + 1);
 	}
-
 	watches.init(mkLit(v, false));
 	watches.init(mkLit(v, true));
 	assigns[v]=l_Undef;
@@ -137,7 +138,25 @@ void Solver::releaseVar(Lit l)
 	}
 	addClause(l);
 }
-
+void  Solver::checkClause(vec<Lit> & clause){
+#ifdef DEBUG_SOLUTION
+	//start with an easy check - does this clause trivially violate the known solution
+	for(LSet & solution:known_solutions){
+		bool found = false;
+		for(Lit l:clause){
+			if(!solution.contains(~l)){
+				found=true;
+				break;
+			}
+		}
+		if(!found){
+			throw std::runtime_error("Learned clause violates known solution");
+		}
+	}
+	//slow check
+   // Solver dbg_Solver;
+#endif
+}
 
 bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 
@@ -160,6 +179,7 @@ bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 		else if (value(ps[i]) != l_False && ps[i] != p)
 			ps[j++] = p = ps[i];
 	ps.shrink(i - j);
+	checkClause(ps);
 	if (ps.size() == 0)
 		return ok = false;
 	else if (ps.size() == 1) {
@@ -173,6 +193,9 @@ bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 		ca[cr].setDerived(is_derived_clause);
 		clauses.push(cr);
 		attachClause(cr);
+		if(cr==34){
+		    int a=1;
+		}
 	}
 
 	return true;
@@ -275,7 +298,9 @@ CRef Solver::attachReasonClause(Lit r,vec<Lit> & ps) {
 		clauses.push(cr);
 		attachClause(cr);
 		enqueueLazy(ps[0],max_lev,cr);
-
+        if(cr==34){
+            int a=1;
+        }
 		//find the highest level in the conflict (should be the current decision level, but we won't require that)
 		/*	if (ps.size() > opt_temporary_theory_reasons) {
                 if (tmp_clause == CRef_Undef) {
@@ -1101,6 +1126,12 @@ void Solver::unsafeUnassign(Lit p){
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assert(value(p) == l_Undef);
+	if(toInt(p)==46){
+	    int a=1;
+	}
+    if(toInt(p)==47){
+        int a=1;
+    }
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);
@@ -2127,9 +2158,10 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  8487) {//3150 //3144
+		if (++iter ==  473 || iter==290 || iter==289) {//3150 //3144
 			int a = 1;
 		}
+
 		propagate:
 
 		bool all_assumptions_assigned = decisionLevel() >= assumptions.size();

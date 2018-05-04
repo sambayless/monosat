@@ -285,7 +285,6 @@ private:
 			if (*in == EOF)
 				break;
 			line_num++;//this will merge line counts if there are multiple blank lines...
-
 			//Typically, 99% of lines are either comments or clauses, and so it makes a lot of sense to handle these first, and before reading the whole line into a buffer.
 			if(*in=='-' || (*in >= '0' && *in<='9')){
 				//this is a clause
@@ -317,6 +316,24 @@ private:
 				}
 				solves++;
 				solve=true;
+			}else if (match(b,"dbg_solution")) {
+				//add a known solution that
+				//all learnt clauses should be checked against
+				int parsed_lit, var;
+				lits.clear();
+				S.known_solutions.push();
+				for (;;) {
+					while(*b==' ')
+						++b;
+					if(*b=='\n')
+						break;
+					parsed_lit = parseInt(b);
+					if (parsed_lit == 0)
+						break;
+					var = abs(parsed_lit) - 1;
+					var = mapVar(S,var);
+					S.known_solutions.last().push((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
+				}
 			}else if (match(b,"priority")) {
 				int parsed_int = parseInt(b);
 				int var = abs(parsed_int)-1;

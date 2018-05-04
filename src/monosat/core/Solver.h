@@ -1073,7 +1073,10 @@ public:
 	TrailIterator  trailBegin()   const;
 	TrailIterator  trailEnd  ()   const;
 
-
+	/**
+	 * Lit of known solutions (used for debugging only)
+	 */
+	vec<LSet> known_solutions;
 private:
 	IntSet<int> swapping_involved_theories;
 	IntSet<int> counter_involved_theories;
@@ -1086,6 +1089,14 @@ private:
 	bool addConflictClause(vec<Lit> & theory_conflict, CRef & confl_out, bool permanent = false) override;
 
 	bool addDelayedClauses(CRef & conflict);
+
+
+	/**
+	 * Check that this clause doens't violate any known solutions
+	 * (used for debugging, only)
+	 */
+	void checkClause(vec<Lit> & clause);
+
 	// Static helpers:
 	//
 	inline void toSuper(const vec<Lit> & from, vec<Lit> & to) {

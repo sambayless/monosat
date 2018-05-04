@@ -947,12 +947,16 @@ void disablePreprocessing(Monosat::SimpSolver * S){
 }
 
 void setDecisionVar(Monosat::SimpSolver * S,int variable,bool decidable){
-	write_out(S,"decision %d %d\n",variable+1,decidable);//add 1 for dimacs
-	S->setDecisionVar(variable,decidable);
+	if(S->isDecisionVar(variable)!=decidable) {
+		write_out(S, "decision %d %d\n", variable + 1, decidable);//add 1 for dimacs
+		S->setDecisionVar(variable, decidable);
+	}
 }
 void setDecisionPriority(Monosat::SimpSolver * S,int variable, int priority){
-	 write_out(S,"priority %d %d\n",variable+1,priority);//add 1 for dimacs
-	S->setDecisionPriority(variable,priority);
+	if(S->getDecisionPriority(variable)!=priority) {
+		write_out(S, "priority %d %d\n", variable + 1, priority);//add 1 for dimacs
+		S->setDecisionPriority(variable, priority);
+	}
 }
 bool isDecisionVar(Monosat::SimpSolver * S,int variable){
 	return S->isDecisionVar(variable);

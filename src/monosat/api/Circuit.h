@@ -125,7 +125,7 @@ public:
 	}
 	Circuit(Solver & S):S(S){
 		lit_True = S.True();
-		_addClause(lit_True);
+		//_addClause(lit_True);
 	}
 
 	Lit newLit(bool decisionLit=true){
