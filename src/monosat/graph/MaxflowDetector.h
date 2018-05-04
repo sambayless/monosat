@@ -321,7 +321,7 @@ public:
 		if (acyclic_flow)
 			delete acyclic_flow;
 	}
-	const char* getName() override {
+	std::string getName() override {
 		return "Max-flow Detector";
 	}
 

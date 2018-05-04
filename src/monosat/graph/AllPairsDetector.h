@@ -175,7 +175,7 @@ public:
 	}
 #endif
 	}
-	const char* getName() override {
+	std::string getName() override {
 		return "All-pairs Reachability Detector";
 	}
 };

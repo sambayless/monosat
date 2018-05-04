@@ -663,7 +663,7 @@ FlowRouter<Weight>::FlowRouter(Solver * S,GraphTheorySolver<Weight> * g,int sour
    GraphTheorySolver<Weight> * g2 = (GraphTheorySolver<Weight> *) t;
    Detector * d =  g2->detectors[g2->getDetector(var(S->getTheoryLit(maxflowLit)))];
    assert(d);
-   assert(strcmp(d->getName(),"Max-flow Detector")==0);
+   assert(d->getName().compare("Max-flow Detector")==0);
    MaxflowDetector<Weight> * rd = (MaxflowDetector<Weight> *) d;
    this->maxflow_detector = rd;
 
@@ -727,7 +727,7 @@ void FlowRouter<Weight>::addNet(Lit disabledEdge,vec<Lit> & dest_edges, vec<Lit>
         GraphTheorySolver<Weight> * g = (GraphTheorySolver<Weight> *) t;
         Detector * d =  g->detectors[g->getDetector(var(S->getTheoryLit(l)))];
         assert(d);
-        assert(strcmp(d->getName(),"Reachability Detector")==0);
+        assert(d->getName().compare("Reachability Detector")==0);
         ReachDetector<Weight> * rd = (ReachDetector<Weight> *) d;
         nets.last().detectors.push(rd);
 

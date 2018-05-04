@@ -149,7 +149,9 @@ public:
 		alg_id=g.addDynamicAlgorithm(this);
 
 	}
-
+	std::string getName() override {
+		return "KohliTorr(" + std::to_string(getSource()) +", " + std::to_string(getSink()) + ")" ;
+	}
 	int getSource() const override{
 		return source;
 	}
@@ -1276,6 +1278,9 @@ public:
     int64_t stats_reinits=0;
 	KohliTorr(Graph<Weight>& g,  int source, int sink,bool kt_preserve_order) :EdmondsKarpDynamic<Weight>(g,source,sink){
 
+	}
+	std::string getName() override {
+		return "EdmondsKarpDynamicKT()";
 	}
     const Weight update() override {
         if (!warning_issued){

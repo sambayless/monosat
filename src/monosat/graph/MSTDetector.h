@@ -158,7 +158,7 @@ public:
 
 
 	}
-	const char* getName() override {
+	std::string getName() override {
 		return "MST Detector";
 	}
 	Weight getModel_SpanningTreeWeight(){

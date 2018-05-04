@@ -148,7 +148,7 @@ public:
 		}
 	}
 
-	const char* getName() override {
+	std::string getName() override {
 		return "Steiner Detector";
 	}
 

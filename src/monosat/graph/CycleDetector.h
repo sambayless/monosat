@@ -93,7 +93,7 @@ public:
 			delete overapprox_directed_cycle_detector;
 
 	}
-	const char* getName() override {
+	std::string getName() override {
 		return "Cycle Detector";
 	}
 };

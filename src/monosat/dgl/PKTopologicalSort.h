@@ -113,7 +113,9 @@ public:
 		alg_id=g.addDynamicAlgorithm(this);
 
 	}
-
+	std::string getName() override {
+		return "PKTopologicalSort";
+	}
 	void setNodes(int n) {
 		in_cycle.resize(n);
 		edge_in_cycle.resize(g.edges());

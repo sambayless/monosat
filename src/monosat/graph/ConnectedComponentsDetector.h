@@ -147,6 +147,9 @@ public:
 			delete underapprox_component_detector;
 
 	}
+	std::string getName() override {
+		return "Connected Components Detector";
+	}
 private:
 	Lit getConnectLit(int u, int v);
 };

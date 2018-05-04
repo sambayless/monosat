@@ -23,6 +23,7 @@
 #define GRAPH_H_
 #include <vector>
 #include <algorithm>
+#include <string>
 #include <cassert>
 #include <sstream>
 #include <cstdint>
@@ -35,6 +36,8 @@ namespace dgl {
  */
 class DynamicGraphAlgorithm{
 public:
+	virtual std::string getName()=0;
+
 	virtual ~DynamicGraphAlgorithm(){}
 
 	virtual void updateHistory()=0;

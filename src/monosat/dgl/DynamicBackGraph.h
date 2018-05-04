@@ -154,9 +154,24 @@ public:
     /**
      * Returns a unique identifier for this algorithm.
      */
-     int addDynamicAlgorithm(DynamicGraphAlgorithm*alg) override {base.addDynamicAlgorithm(alg);};
+     int addDynamicAlgorithm(DynamicGraphAlgorithm*alg) override {
+		if(alg==nullptr){
+			throw std::runtime_error("Internal error in DynamicBackGraph (null dynamic graph algorithm)");
+		}
+     	base.addDynamicAlgorithm(alg);
+     };
 
-     void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos) override {base.updateAlgorithmHistory(alg,algorithmID,historyPos);};
+     void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos) override {
+         if(algorithmID <0 || alg==nullptr){
+         	if(alg==nullptr){
+				throw std::runtime_error("Internal error in DynamicBackGraph (invalid algorithm ID): algorithm " + std::to_string(algorithmID) + ", null algorithm");
+         	}else {
+				throw std::runtime_error("Internal error in DynamicBackGraph (invalid algorithm ID): algorithm " +
+										 std::to_string(algorithmID) + ", " + alg->getName());
+			}
+         }
+         base.updateAlgorithmHistory(alg,algorithmID,historyPos);
+     };
      EdgeChange & getChange(int64_t historyPos) override {
          return base.getChange(historyPos);
      };

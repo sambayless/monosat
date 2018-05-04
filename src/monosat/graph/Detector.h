@@ -26,7 +26,7 @@
 #include "monosat/mtl/Vec.h"
 #include "monosat/core/Config.h"
 #include "monosat/core/Heuristic.h"
-
+#include <string>
 #include <cstdio>
 #include <iostream>
 namespace Monosat {
@@ -65,7 +65,7 @@ public:
 		return detectorID;
 	}
 	
-	virtual const char* getName() {
+	virtual std::string getName() {
 		return "<unknown>";
 	}
 	

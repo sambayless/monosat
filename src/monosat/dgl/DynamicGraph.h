@@ -519,6 +519,9 @@ public:
 	 * Returns a unique identifier for this algorithm.
 	 */
 	int addDynamicAlgorithm(DynamicGraphAlgorithm*alg)override{
+		if(alg==nullptr){
+			throw std::runtime_error("Internal error in DynamicGraph (null dynamic graph algorithm)");
+		}
 		dynamic_algs.push_back(alg);
 		dynamic_history_pos.push_back(0);
 		//n_dynamic_algs_updtodate+= (historySize()==0);
@@ -527,8 +530,14 @@ public:
 
 	void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos)override{
 		assert(algorithmID >=0 && algorithmID<=dynamic_algs.size() && dynamic_algs[algorithmID]==alg);//sanity check
-        if(algorithmID <0 || algorithmID>= dynamic_algs.size() || dynamic_algs[algorithmID]!=alg){
-            throw std::runtime_error("Internal error in DynamicGraph (invalid algorithm ID): algorithm " + std::to_string(algorithmID) );
+        if(algorithmID <0 || algorithmID>= dynamic_algs.size() || dynamic_algs[algorithmID]!=alg || alg==nullptr){
+			if(alg==nullptr){
+				throw std::runtime_error("Internal error in DynamicBackGraph (invalid algorithm ID): algorithm " +
+										 std::to_string(algorithmID) + ", null algorithm");
+			}else {
+				throw std::runtime_error("Internal error in DynamicBackGraph (invalid algorithm ID): algorithm " +
+										 std::to_string(algorithmID) + ", " + alg->getName());
+			}
         }
 		//bool was_uptodate = dynamic_history_pos[algorithmID]==historySize();
 		dynamic_history_pos[algorithmID]=historyPos;

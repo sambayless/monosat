@@ -358,7 +358,7 @@ public:
 		if (conflict_flow)
 			delete conflict_flow;
 	}
-	const char* getName() override {
+	std::string getName() override {
 		return "Weighted Distance Detector";
 	}
 private:

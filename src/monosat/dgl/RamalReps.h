@@ -151,7 +151,9 @@ public:
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
 	}
-
+	std::string getName() override {
+		return "RamalReps(" + std::to_string(getSource()) + ")" ;
+	}
 	void setSource(int s)override {
 		source = s;
 		last_modification = -1;
@@ -1263,6 +1265,9 @@ public:
 		maxDistance = -1;
 		mod_percentage = 0.2;
 		alg_id=g.addDynamicAlgorithm(this);
+	}
+	std::string getName() override {
+		return "UnweightedRamalReps(" + std::to_string(getSource()) + ")" ;
 	}
 	void printStats() override {
 		printf("Updates: %" PRId64 " (+%" PRId64 " skipped), %" PRId64 " restarts\n",stats_updates,stats_all_updates-stats_updates,stats_resets);

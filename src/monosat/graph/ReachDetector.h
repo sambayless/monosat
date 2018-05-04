@@ -375,7 +375,7 @@ public:
 		}
 	}
 
-	const char* getName() override {
+	std::string getName() override {
 		return "Reachability Detector";
 	}
 

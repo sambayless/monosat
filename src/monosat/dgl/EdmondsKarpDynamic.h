@@ -157,6 +157,9 @@ public:
 		alg_id=g.addDynamicAlgorithm(this);
 		//setAllEdgeCapacities(1);
 	}
+	std::string getName() override {
+		return "EdmondsKarpDynamic(" + std::to_string(getSource()) +", " + std::to_string(getSink()) + ")" ;
+	}
 	int getSource() const {
 		return source;
 	}

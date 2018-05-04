@@ -122,7 +122,9 @@ public:
 		min_weight = -1;
 
 	}
-
+	std::string getName() override {
+		return "SpiraPan";
+	}
 	void setNodes(int n) {
 		q.reserve(n);
 		check.reserve(n);
