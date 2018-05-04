@@ -194,7 +194,7 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooLowReason(int min
 					seen[v] = true;
 					visit.push(v);
 					//this edge is in the spanning tree
-					Var v = outer->edge_list[edgeid].v;
+					Var v = outer->getEdgeVar(edgeid);
 					assert(outer->value(v)==l_True);
 					conflict.push(mkLit(v, true));
 				}
@@ -261,7 +261,7 @@ void ConnectedComponentsDetector<Weight>::buildMinComponentsTooHighReason(int mi
 					int v = g_over.incident(u, i).node;
 					if (!edge_in_clause[edgeid]) {
 						edge_in_clause[edgeid] = true;
-						Var e = outer->edge_list[edgeid].v;
+						Var e = outer->getEdgeVar(edgeid);
 						
 						assert(outer->value(e)==l_False);
 						conflict.push(mkLit(e, false));
@@ -309,8 +309,8 @@ void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, 
 		int u = node;
 		int p;
 		while ((p = d.previous(u)) != -1) {
-			Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-			Var e = edg.v;
+
+			Var e =  outer->getEdgeVar(d.incomingEdge(u));
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
 			conflict.push(mkLit(e, true));
@@ -322,8 +322,8 @@ void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, 
 		int u = node;
 		int p;
 		while ((p = d.previous(u)) != -1) {
-			Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-			Var e = edg.v;
+
+			Var e = outer->getEdgeVar(d.incomingEdge(u));
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
 			conflict.push(mkLit(e, true));
@@ -346,6 +346,7 @@ void ConnectedComponentsDetector<Weight>::buildNodesConnectedReason(int source, 
 	double elapsed = rtime(2) - starttime;
 	outer->pathtime += elapsed;
 }
+
 template<typename Weight>
 void ConnectedComponentsDetector<Weight>::buildNodesNotConnectedReason(int source, int node, vec<Lit> & conflict) {
 	if (source > node) {
@@ -396,8 +397,7 @@ void ConnectedComponentsDetector<Weight>::buildNodesNotConnectedReason(int sourc
 		//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 		//or perhaps we can learn the actual 1-uip cut?
 		
-		vec<int>& to_visit = outer->to_visit;
-		vec<char>& seen = outer->seen;
+
 		
 		to_visit.clear();
 		to_visit.push(node);
@@ -420,8 +420,6 @@ void ConnectedComponentsDetector<Weight>::buildNodesNotConnectedReason(int sourc
 				int from = outer->inv_adj[u][i].from;
 				int edge_num = outer->getEdgeID(v);								// v-outer->min_edge_var;
 				if (from == u) {
-					assert(outer->edge_list[edge_num].to == u);
-					assert(outer->edge_list[edge_num].from == u);
 					continue;				//Self loops are allowed, but just make sure nothing got flipped around...
 				}
 				assert(from != u);

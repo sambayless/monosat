@@ -201,7 +201,7 @@ void AllPairsDetector<Weight,Graph>::buildReachReason(int source, int to, vec<Li
 		//while(( p = d.previous(u)) != -1){
 		for (int i = tmp_path.size() - 2; i >= 0; i--) {
 			int edge_id = tmp_path[i];
-			int p = outer->edge_list[edge_id].from;
+			int p = g_over.getEdge(edge_id).from;
 			
 			Var e = outer->getEdgeVar(edge_id);
 			lbool val = outer->value(e);
@@ -570,7 +570,7 @@ Lit AllPairsDetector<Weight,Graph>::decide(CRef &decision_reason) {
 						for (int k = 0; k < g_over.nIncident(p); k++) {
 							int to = g_over.incident(p, k).node;
 							if (to == last) {
-								Var v = outer->edge_list[g_over.incident(p, k).id].v;
+								Var v = outer->getEdgeVar(g_over.incident(p, k).id);
 								if (outer->value(v) == l_Undef) {
 									return mkLit(v, false);
 								} else {

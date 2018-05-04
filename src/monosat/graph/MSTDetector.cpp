@@ -154,7 +154,7 @@ void MSTDetector<Weight>::addTreeEdgeLit(int edge_id, Var outer_reach_var) {
 		tree_edge_lits[edge_id].l = reachLit;
 		tree_edge_lits[edge_id].edgeID = edge_id;
 
-		Var edgeVar = outer->edge_list[edge_id].v;
+		Var edgeVar = outer->getEdgeVar(edge_id);
 		Lit edgeEnabled = mkLit(edgeVar, false);
 		outer->addClause(edgeEnabled, reachLit);//If the edge is not enabled, then we artificially enforce that the edge counts as being in the tree.
 		//this is required to enforce monotonicity of the in the tree constraint.
@@ -180,7 +180,7 @@ void MSTDetector<Weight>::MSTStatus::inMinimumSpanningTree(int edgeid, bool in_t
 			} else if (polarity && !in_tree) {
 				if (!detector.is_edge_changed[edgeid]) {
 					detector.is_edge_changed[edgeid] = true;
-					//Var edgevar = detector.outer->edge_list[edgeid].v;
+					//Var edgevar = detector.outer->getEdgeVar(edgeid);
 					//assert(detector.outer->value(edgevar)!=l_False);		//else the edge counts as in the tree
 					detector.changed_edges.push( {  var(l), edgeid });
 				}
@@ -225,7 +225,7 @@ void MSTDetector<Weight>::buildMinWeightTooSmallReason(Weight & weight, vec<Lit>
 	std::vector<int> & mst = d.getSpanningTree();
 	for (int i = 0; i < mst.size(); i++) {
 		int edgeid = mst[i];
-		Var v = outer->edge_list[edgeid].v;
+		Var v = outer->getEdgeVar(edgeid);
 		assert(outer->value(v)==l_True);
 		conflict.push(mkLit(v, true));
 	}
@@ -289,7 +289,7 @@ void MSTDetector<Weight>::TarjanOLCA(int node, vec<Lit> & conflict) {
 				//if any larger edge was found in either path from u or v to their common ancestor in the minimum spanning tree, then enabling this edge
 				//would have replaced that larger edge in the minimum spanning tree, resulting in a smaller minimum spanning tree.
 				if (any_larger_weights) {
-					Var e = outer->edge_list[edgeid].v;
+					Var e = outer->getEdgeVar(edgeid);
 					assert(outer->value(e)==l_False);
 					conflict.push(mkLit(e, false));
 				}
@@ -349,7 +349,7 @@ void MSTDetector<Weight>::buildMinWeightTooLargeReason(Weight & weight, vec<Lit>
 						int v = g_over.incident(u, i, true).node;
 						if (overapprox_conflict_detector->getComponent(v) != set) {
 							//Then this edge is on the cut between this component and the other components
-							Var e = outer->edge_list[edgeid].v;
+							Var e = outer->getEdgeVar(edgeid);
 							assert(outer->value(e)==l_False);
 							tmp_conflict.push(mkLit(e, false));
 						}
@@ -471,7 +471,7 @@ void MSTDetector<Weight>::TarjanOLCA_edge(int node, int check_edgeid, int lowest
 					//if any edge larger than the disabled edge's weight was found in either path from u or v to their common ancestor in the minimum spanning tree, then enabling this edge
 					//would lead  to replacing that larger edge in the minimum spanning tree, resulting in a smaller minimum spanning tree, possibly resulting in the edge we really care about being removed from the tree.
 
-					Var e = outer->edge_list[edgeid].v;
+					Var e = outer->getEdgeVar(edgeid);
 					assert(outer->value(e)==l_False);
 					conflict.push(mkLit(e, false));
 
@@ -482,7 +482,7 @@ void MSTDetector<Weight>::TarjanOLCA_edge(int node, int check_edgeid, int lowest
 }
 template<typename Weight>
 void MSTDetector<Weight>::buildEdgeNotInTreeReason(int edgeid, vec<Lit> & conflict) {
-	Var edgevar = outer->edge_list[edgeid].v;
+	Var edgevar = outer->getEdgeVar(edgeid);
 	assert(outer->value(edgevar)!=l_False);							//else the edge counts as in the tree
 	//what about if the mst is disconnected?
 	//the reason that an edge is NOT in the minimum spanning tree is the paths to lca from either edge. So long as all those edges are in the tree, each of which is <= weight to this edge,
@@ -519,7 +519,7 @@ void MSTDetector<Weight>::buildEdgeNotInTreeReason(int edgeid, vec<Lit> & confli
 		if (p != -1) {
 			int edge = underapprox_conflict_detector->getParentEdge(r);
 			assert(g_under.edgeEnabled(edge));
-			Var v = outer->edge_list[edge].v;
+			Var v = outer->getEdgeVar(edge);
 			assert(outer->value(v)==l_True);
 			conflict.push(mkLit(v, true));
 		}
@@ -533,7 +533,7 @@ void MSTDetector<Weight>::buildEdgeNotInTreeReason(int edgeid, vec<Lit> & confli
 		if (p != -1) {
 			int edge = underapprox_conflict_detector->getParentEdge(r);
 			assert(g_under.edgeEnabled(edge));
-			Var v = outer->edge_list[edge].v;
+			Var v = outer->getEdgeVar(edge);
 			assert(outer->value(v)==l_True);
 			conflict.push(mkLit(v, true));
 		}
@@ -552,12 +552,12 @@ template<typename Weight>
 void MSTDetector<Weight>::buildEdgeInTreeReason(int edgeid, vec<Lit> & conflict) {
 	//if the edge is disabled, then the reason for the edge being in the tree is that we have defined disabled edges to be in the mst.
 	if (!g_over.edgeEnabled(edgeid)) {
-		Var v = outer->edge_list[edgeid].v;
+		Var v = outer->getEdgeVar(edgeid);
 		assert(outer->value(v)==l_False);
 		conflict.push(mkLit(v, false));
 		return;
 	}
-	Var vt = outer->edge_list[edgeid].v;
+	Var vt = outer->getEdgeVar(edgeid);
 	assert(vt > 0);
 	//assert(outer->value(vt)==l_True);
 	static int it = 0;
@@ -601,25 +601,6 @@ void MSTDetector<Weight>::buildEdgeInTreeReason(int edgeid, vec<Lit> & conflict)
 	}
 	TarjanOLCA_edge(root, edgeid, lower_endpoint, conflict);//run tarjan's off-line lowest common ancestor query from node 0, arbitrarily.
 
-	/*if(conflict.size()<2 && outer->S->decisionLevel()>0){
-	 for(int i =0;i<outer->edge_list.size();i++){
-	 Var v = outer->edge_list[i].v;
-	 if(v>=0){
-	 lbool val = outer->value(v);
-	 int u = outer->edge_list[i].from;
-	 int v = outer->edge_list[i].to;
-	 int weight = outer->edge_weights[i];
-	 //printf("Edge %d v%d %d %d\n",i,v+1,val, negative_reach_detector->edgeInTree(i)?1:0);
-	 printf(" v%d -- v%d [label= \"%d v%d %d \" style=%s color=%s ]\n",u,v,i,v+1, weight,val==l_True?"solid":(val==l_False ? "dotted":"dashed"), negative_reach_detector->edgeInTree(i)?"red":"black");
-
-
-	 }
-	 }
-	 exit(3);
-	 }*/
-	/*					if(conflict.size()==1){
-	 conflict.push(outer->False);//should this ever be possible?? I'm not sure, but it seems wrong...
-	 }*/
 
 	outer->num_learnt_cuts++;
 	outer->learnt_cut_clause_length += (conflict.size() - 1);
@@ -806,7 +787,7 @@ bool MSTDetector<Weight>::propagate(vec<Lit> & conflict) {
 		int edgeID = changed_edges.last().edgeID;
 		assert(is_edge_changed[edgeID]);
 		Lit l;
-		Var edgevar = outer->edge_list[edgeID].v;
+		Var edgevar = outer->getEdgeVar(edgeid);
 		lbool edge_val = outer->value(edgevar);
 		if ( (!g_over.edgeEnabled(edgeID) || overapprox_detector->edgeInTree(edgeID))) {
 			l = mkLit(v, false);
@@ -903,7 +884,7 @@ bool MSTDetector<Weight>::checkSatisfied() {
 		int edgeid = tree_edge_lits[k].edgeID;
 
 		if (l != lit_Undef) {
-			Var v = outer->edge_list[edgeid].v;
+			Var v = outer->getEdgeVar(edgeid);
 			bool edgedisabled = true;
 			bool edgeenabled = false;
 			if (v >= 0) {

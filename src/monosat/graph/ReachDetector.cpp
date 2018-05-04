@@ -502,7 +502,7 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 					outer->addClause(c);
 				}
 
-				//If this node is reachable, the for each outgoing edge, if that edge is enabled, its to node must also be reachable
+				//If this node is reachable, then for each outgoing edge, if that edge is enabled, its to node must also be reachable
 				for (int i = 0; i < g_under.nIncident(n); i++) {
 					auto & edge = g_under.incident(n, i);
 					int edgeID = edge.id;
@@ -565,7 +565,7 @@ public:
 		if (opt_use_random_path_for_decisions) {
 			rnd_weight.clear();
 			rnd_path = new WeightedDijkstra<Weight,Graph,double>(r->source, r->g_over, rnd_weight);
-			for (int i = 0; i < outer->edge_list.size(); i++) {
+			for (int i = 0; i < outer->nEdges(); i++) {
 				double w = drand(r->rnd_seed);
 
 				rnd_weight.push_back(w);
@@ -694,7 +694,7 @@ public:
 						//Randomly re-weight the graph sometimes
 						if (drand(random_seed) < opt_decide_graph_re_rnd) {
 
-							for (int i = 0; i < outer->edge_list.size(); i++) {
+							for (int i = 0; i < outer->nEdges(); i++) {
 								double w = drand(random_seed);
 								/* w-=0.5;
 								 w*=w;*/
@@ -750,7 +750,7 @@ public:
 						int prev = over_path->previous(p);
 						int incoming_edge = over_path->incomingEdge(p);
 
-						Var v = outer->edge_list[incoming_edge].v;
+						Var v = outer->getEdgeVar(incoming_edge);
 						if (outer->value(v) == l_Undef) {
 							path_edges.insert(incoming_edge);
 							to_decide.push(mkLit(v, true));
@@ -1144,18 +1144,7 @@ void ReachDetector<Weight,Graph>::ReachStatus::setMininumDistance(int u, bool re
 	 }
 	 }*/
 }
-/*template<typename Weight,typename Graph>
- bool ReachDetector<Weight,Graph>::ChokepointStatus::mustReach(int node){
- Lit l =  detector.reach_lits[node];
- if(l!=lit_Undef){
- return detector.outer->value(l)==l_True;
- }
- return false;
- }
- template<typename Weight,typename Graph>
- bool ReachDetector<Weight,Graph>::ChokepointStatus::operator() (int edge_id){
- return detector.outer->value(detector.outer->edge_list[ edge_id].v)==l_Undef;
- }*/
+
 template<typename Weight,typename Graph>
 void ReachDetector<Weight,Graph>::preprocess() {
 	is_changed_under.growTo(g_under.nodes());
@@ -1178,8 +1167,7 @@ void ReachDetector<Weight,Graph>::buildReachReason(int node, vec<Lit> & conflict
 		int u = node;
 		int p;
 		while ((p = d.previous(u)) != -1) {
-			Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-			Var e = edg.v;
+			Var e = outer->getEdgeVar(d.incomingEdge(u));
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
 			conflict.push(mkLit(e, true));
@@ -1191,8 +1179,7 @@ void ReachDetector<Weight,Graph>::buildReachReason(int node, vec<Lit> & conflict
 		int u = node;
 		int p;
 		while ((p = d.previous(u)) != -1) {
-			Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-			Var e = edg.v;
+			Var e = outer->getEdgeVar(d.incomingEdge(u));
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
 			conflict.push(mkLit(e, true));
@@ -1272,8 +1259,6 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 		//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 		//or perhaps we can learn something equivalent to the 1-uip cut?
 
-		vec<int>& to_visit = outer->to_visit;
-		vec<char>& seen = outer->seen;
 
 		to_visit.clear();
 		to_visit.push(node);
@@ -1296,8 +1281,8 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 				int from = outer->inv_adj[u][i].from;
 				int edge_num = outer->getEdgeID(v);				    	// v-outer->min_edge_var;
 				if (from == u) {
-					assert(outer->edge_list[edge_num].to == u);
-					assert(outer->edge_list[edge_num].from == u);
+					assert(g_over.getEdge(edge_num).to == u);
+					assert(g_over.getEdge(edge_num).from == u);
 					continue;				  //Self loops are allowed, but just make sure nothing got flipped around...
 				}
 				assert(from != u);
@@ -1490,13 +1475,13 @@ void ReachDetector<Weight,Graph>::buildForcedEdgeReason(int reach_node, int forc
 	static int it = 0;
 	++it;
 
-	assert(outer->value(outer->edge_list[forced_edge_id].v)==l_True);
-	Lit edgeLit = mkLit(outer->edge_list[forced_edge_id].v, false);
+	assert(outer->value(outer->getEdgeVar(forced_edge_id))==l_True);
+	Lit edgeLit = mkLit(outer->getEdgeVar(forced_edge_id), false);
 
 	conflict.push(edgeLit);
 
-	int forced_edge_from = outer->edge_list[forced_edge_id].from;
-	int forced_edge_to = outer->edge_list[forced_edge_id].to;
+	int forced_edge_from =g_over.getEdge(forced_edge_id).from;
+	int forced_edge_to = g_over.getEdge(forced_edge_id).to;
 
 	int u = reach_node;
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
@@ -1661,7 +1646,7 @@ void ReachDetector<Weight,Graph>::buildReason(Lit p, vec<Lit> & reason, CRef mar
 template<typename Weight,typename Graph>
 bool ReachDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 	static int iter = 0;
-	if (++iter == 18) {
+	if (++iter == 5) {
 		int a = 1;
 	}
 	conflictingHeuristic=nullptr;
@@ -1738,7 +1723,7 @@ bool ReachDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 				outer->enqueue(l, overprop_marker);
 		} else if (outer->value(l) == l_False) {
 			conflict.push(l);
-			conflictingHeuristic= u < reach_heuristics.size() ?  reach_heuristics[u]:nullptr;
+			conflictingHeuristic= (u < reach_heuristics.size()) ?  reach_heuristics[u]:nullptr;
 
 			if (reach) {
 
@@ -1758,29 +1743,6 @@ bool ReachDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 			return false;
 		}
 
-		/*if(opt_reach_prop){
-		 forced_edges.clear();
-		 chokepoint.collectForcedEdges(forced_edges);
-		 for(int i = 0;i<forced_edges.size();i++){
-		 int edge_id = forced_edges[i].edge_id;
-		 int node = forced_edges[i].node;
-		 Lit l = mkLit( outer->edge_list[edge_id].v,false);
-		 if(outer->value(l)==l_Undef){
-		 force_reason.growTo(edge_id+1);
-		 force_reason[edge_id]=node;
-		 outer->enqueue(l,forced_reach_marker);
-		 }else if(outer->value(l)==l_True){
-		 //do nothing
-
-		 }else{
-		 //conflict.
-		 //this actually shouldn't be possible (at this point in the code)
-		 buildForcedEdgeReason(node,edge_id,conflict);
-		 return false;
-		 }
-		 }
-
-		 }*/
 		if(sz==changed.size()) {
 			//it is possible, in rare cases, for literals to have been added to the chagned list while processing the changed list.
 			//in that case, don't pop anything off the changed list, and instead accept that this literal may be re-processed
@@ -1846,7 +1808,6 @@ void ReachDetector<Weight,Graph>::printSolution(std::ostream & write_to) {
 			path.push(u);
 			int p;
 			while ((p = d.previous(u)) != -1) {
-				Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
 				path.push(p);
 				u = p;
 			}
@@ -1948,22 +1909,6 @@ void ReachDetector<Weight,Graph>::dbg_sync_reachability() {
 #endif
 }
 
-/*
- int ReachDetector<Weight,Graph>::OptimalWeightEdgeStatus::operator [] (int edge) const {
- Var v = detector.outer->edge_list[edge].v;
- lbool val = detector.outer->value(v);
- if(val==l_False){
- assert(false);
- return detector.outer->edge_list.size()*2;
- }else if (val==l_True){
- return 0;
- }else{
- return 1;
- }
- }
- int ReachDetector<Weight,Graph>::OptimalWeightEdgeStatus::size()const{
- return detector.outer->edge_list.size();
- }*/
 
 template<typename Weight,typename Graph>
 Lit ReachDetector<Weight,Graph>::decide(CRef &decision_reason) {
@@ -1983,8 +1928,7 @@ bool ReachDetector<Weight,Graph>::getModel_Path(int node, std::vector<int> & sto
 	int u = node;
 	int p;
 	while ((p = d.previous(u)) != -1) {
-		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-		Var e = edg.v;
+		Var e = outer->getEdgeVar(d.incomingEdge(u));
 		lbool val = outer->value(e);
 		assert(outer->value(e)==l_True);
 		store_path.push_back(u);
@@ -2006,8 +1950,7 @@ bool ReachDetector<Weight,Graph>::getModel_PathByEdgeLit(int node, std::vector<L
 	int u = node;
 	int p;
 	while ((p = d.previous(u)) != -1) {
-		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-		Var e = edg.v;
+		Var e = outer->getEdgeVar(d.incomingEdge(u));
 		assert(outer->value(e)==l_True);
 		lbool val = outer->value(e);
 		assert(outer->value(e)==l_True);

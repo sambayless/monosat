@@ -54,7 +54,8 @@ public:
 	ConnectedComponents * overapprox_component_detector;
 
 	//Reach *  positive_path_detector;
-	
+
+
 	//vec<Lit>  reach_lits;
 	struct ConnectCheck {
 		int u;
@@ -97,6 +98,7 @@ public:
 	vec<bool> seen;
 	vec<bool> black;
 	vec<int> ancestors;
+    vec<int> to_visit;
 
 	vec<bool> edge_in_clause;
 	vec<int> visit;

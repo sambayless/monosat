@@ -213,7 +213,7 @@ void SteinerDetector<Weight>::buildMinWeightTooLargeReason(Weight &weight, vec<L
 						int s = sets.FindSet(v);
 						if (s != set) {	//&& hasTerminal[s] this isn't correct, because there can be a separating component between two terminals that has no terminal itself, and yet an edge has to be added to it to make the terminals connected.
 							//this node is on a separating cut.
-							Var e = outer->edge_list[edgeid].v;
+							Var e = outer->getEdgeVar(edgeid);
 							assert(outer->value(e)==l_False);
 							tmp_conflict.push(mkLit(e, false));
 						}

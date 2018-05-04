@@ -96,6 +96,8 @@ public:
 	vec<bool> is_changed_over;
 	vec<Change> changed;
 
+	vec<int> to_visit;
+	vec<char> seen ;
 	vec<Lit> extra_conflict;
 	vec<int> removed_edges;
 	//stats

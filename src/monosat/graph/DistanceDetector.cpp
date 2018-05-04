@@ -69,7 +69,7 @@ DistanceDetector<Weight,Graph>::DistanceDetector(int _detectorID, GraphTheorySol
 	if (opt_use_random_path_for_decisions) {
 		rnd_weight.clear();
 		rnd_path = new WeightedDijkstra<Weight,Graph,double>(from, g_over, rnd_weight);
-		for (int i = 0; i < outer->edge_list.size(); i++) {
+		for (int i = 0; i < outer->nEdges(); i++) {
 			double w = drand(rnd_seed);
 			
 			rnd_weight.push_back(w);
@@ -585,8 +585,7 @@ void DistanceDetector<Weight,Graph>::buildUnweightedDistanceLEQReason(int node, 
 		int u = node;
 		int p;
 		while ((p = d.previous(u)) != -1) {
-			Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-			Var e = edg.v;
+			Var e = outer->getEdgeVar(d.incomingEdge(u));
 			lbool val = outer->value(e);
 			assert(outer->value(e)==l_True);
 			conflict.push(mkLit(e, true));
@@ -699,8 +698,8 @@ void DistanceDetector<Weight,Graph>::buildUnweightedDistanceGTReason(int node, i
 				int edge_num = outer->getEdgeID(v);				// v-outer->min_edge_var;
 						
 				if (from == u) {
-					assert(outer->edge_list[edge_num].to == u);
-					assert(outer->edge_list[edge_num].from == u);
+					assert(g_over.getEdge(edge_num).to==u);
+					assert(g_over.getEdge(edge_num).from==u);
 					continue;				//Self loops are allowed, but just make sure nothing got flipped around...
 				}
 				assert(from != u);
@@ -977,8 +976,7 @@ bool DistanceDetector<Weight,Graph>::getModel_Path(int node, std::vector<int> & 
 	 int u = node;
 	 int p;
 	while ((p = d.previous(u)) != -1) {
-		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-		Var e = edg.v;
+		Var e = outer->getEdgeVar(d.incomingEdge(u));
 		lbool val = outer->value(e);
 		assert(outer->value(e)==l_True);
 		store_path.push_back(u);
@@ -1000,8 +998,7 @@ bool DistanceDetector<Weight,Graph>::getModel_PathByEdgeLit(int node, std::vecto
 	 int u = node;
 	 int p;
 	while ((p = d.previous(u)) != -1) {
-		Edge & edg = outer->edge_list[d.incomingEdge(u)]; //outer->edges[p][u];
-		Var e = edg.v;
+		Var e = outer->getEdgeVar(d.incomingEdge(u));
 		assert(outer->value(e)==l_True);
 		lbool val = outer->value(e);
 		assert(outer->value(e)==l_True);
@@ -1049,26 +1046,6 @@ bool DistanceDetector<Weight,Graph>::checkSatisfied() {
 
 	return true;
 }
-
-/*
- int DistanceDetector<Weight,Graph>::OptimalWeightEdgeStatus::operator [] (int edge) const {
- Var v = detector.outer->edge_list[edge].v;
- lbool val = detector.outer->value(v);
- if(val==l_False){
- assert(false);
- return detector.outer->edge_list.size()*2;
- }else if (val==l_True){
- return 0;
- }else{
- assert(val==l_Undef);
- return 1;
- }
- }
-
- int DistanceDetector<Weight,Graph>::OptimalWeightEdgeStatus::size()const{
- return detector.outer->edge_list.size();
- }
- */
 
 template<typename Weight,typename Graph>
 Lit DistanceDetector<Weight,Graph>::decide(CRef &decision_reason) {
@@ -1134,7 +1111,7 @@ Lit DistanceDetector<Weight,Graph>::decide(CRef &decision_reason) {
 							//Randomly re-weight the graph sometimes
 							if (drand(rnd_seed) < opt_decide_graph_re_rnd) {
 								
-								for (int i = 0; i < outer->edge_list.size(); i++) {
+								for (int i = 0; i < outer->nEdges(); i++) {
 									double w = drand(rnd_seed);
 									/* w-=0.5;
 									 w*=w;*/
@@ -1169,8 +1146,8 @@ Lit DistanceDetector<Weight,Graph>::decide(CRef &decision_reason) {
 						 assert(over->connected(p));*/
 						assert(p > -1);
 						if (p > -1) {
-							assert(outer->edge_list[last_edge].from == p);
-							assert(outer->edge_list[last_edge].to == last);
+							assert(g_over.getEdge(last_edge).from == p);
+							assert(g_over.getEdge(last_edge).to == last);
 							Var v = outer->getEdgeVar(last_edge); ///outer->edges[p][last].v;
 							if (outer->value(v) == l_Undef) {
 								return mkLit(v, false);
@@ -1178,17 +1155,6 @@ Lit DistanceDetector<Weight,Graph>::decide(CRef &decision_reason) {
 								assert(outer->value(v)!=l_True);
 							}
 						}
-						/*		for(int k = 0;k<outer->antig.adjacency[p].size();k++){
-						 int to = outer->antig.adjacency[p][k].node;
-						 if (to==last){
-						 Var v =outer->edge_list[ outer->antig.adjacency[p][k].id].v;
-						 if(outer->value(v)==l_Undef){
-						 return mkLit(v,false);
-						 }else{
-						 assert(outer->value(v)!=l_True);
-						 }
-						 }
-						 }*/
 
 					}
 				}
@@ -1211,8 +1177,8 @@ Lit DistanceDetector<Weight,Graph>::decide(CRef &decision_reason) {
 							assert(p != source);
 							int prev = over->previous(p);
 							int edgeid = over->incomingEdge(p);
-							assert(outer->edge_list[edgeid].from == prev);
-							assert(outer->edge_list[edgeid].to == p);
+							assert(g_over.getEdge(edgeid).from == prev);
+							assert(g_over.getEdge(edgeid).to == p);
 							Var v = outer->getEdgeVar(edgeid); //outer->edges[prev][p].v;
 							if (outer->value(v) == l_Undef) {
 								//if(opt_use_random_path_for_decisions)
