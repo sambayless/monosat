@@ -561,8 +561,7 @@ public:
 private:
 	vec<Edge> edge_list;
 public:
-	vec<vec<Edge> > undirected_adj;
-	vec<vec<Edge> > inv_adj;
+
 
 	//vector of the weights for each edge
 	std::vector<Weight> edge_weights;
@@ -1320,8 +1319,7 @@ public:
 	}
 	int newNode() {
         checkFrozen();
-		inv_adj.push();
-		undirected_adj.push();
+
 		reach_info.push();
 		backward_reach_info.push();
 		connect_info.push();
@@ -3066,9 +3064,7 @@ public:
 			comparisons_gt.growTo(bv.getID()+1);
 			comparisons_leq.growTo(bv.getID()+1);
 			comparisons_geq.growTo(bv.getID()+1);
-			undirected_adj[to].push( { v, outerVar, from, to, index });
-			undirected_adj[from].push( { v, outerVar, to, from, index });
-			inv_adj[to].push( { v, outerVar, from, to, index });
+
 
 			//num_edges++;
 			edge_list[index].v = v;
@@ -3158,9 +3154,7 @@ public:
 		edge_list.push();
 		Var v = newVar(outerVar, index, true);
 		//bv_needs_update.growTo(bv.getID()+1);
-		undirected_adj[to].push( { v, outerVar, from, to, index });
-		undirected_adj[from].push( { v, outerVar, to, from, index });
-		inv_adj[to].push( { v, outerVar, from, to, index });
+
 
 		//num_edges++;
 		edge_list[index].v = v;
@@ -3218,10 +3212,7 @@ public:
 		 edge_list.push({-1,-1,-1,-1,-1,1});
 		 assigns.push(l_Undef);
 		 }*/
-		undirected_adj[to].push( { v, outerVar, from, to, index });
-		undirected_adj[from].push( { v, outerVar, to, from, index });
-		inv_adj[to].push( { v, outerVar, from, to, index });
-		
+
 		//num_edges++;
 		edge_list[index].v = v;
 		edge_list[index].outerVar = outerVar;

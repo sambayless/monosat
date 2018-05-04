@@ -186,7 +186,8 @@ public:
 	ReachStatus *positiveReachStatus;
 	ReachStatus *negativeReachStatus;
 
-
+	vec<int> to_visit;
+	vec<char> seen;
 
 	int getNode(Var reachVar) {
 		assert(reachVar >= first_reach_var);

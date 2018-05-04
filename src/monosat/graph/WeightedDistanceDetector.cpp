@@ -335,11 +335,8 @@ void WeightedDistanceDetector<Weight,Graph>::analyzeDistanceGTReason(int to, Wei
 			to_visit.pop();
 			assert(seen[u]);
 			//add all of this node's incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-			//for (int i = 0; i < outer->inv_adj[u].size(); i++) {
+
 			for(int i = 0;i<g_over.nIncoming(u);i++){
-				//int v = outer->inv_adj[u][i].v;
-				//int from = outer->inv_adj[u][i].from;
-				//assert(outer->inv_adj[u][i].to == u);
 				int from =  g_over.incoming(u,i).node;
 				int edge_num =  g_over.incoming(u,i).id;
 

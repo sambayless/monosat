@@ -248,11 +248,14 @@ void AllPairsDetector<Weight,Graph>::buildNonReachReason(int source, int node, v
 			assert(seen[u]);
 			//assert(negative_reach_detector->distance_unsafe(u)>d);
 			//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-			for (int i = 0; i < outer->inv_adj[u].size(); i++) {
-				int v = outer->inv_adj[u][i].v;
-				int from = outer->inv_adj[u][i].from;
+			for (int i = 0; i <g_over.nIncoming(u) ; i++) {
+				int v = outer->getEdgeVar(g_over.incoming(u,i).id);
+				int from = g_over.incoming(u,i).node;
+				if (from == u) {
+					continue;				//Self loops are allowed, but just make sure nothing got flipped around...
+				}
 				assert(from != u);
-				assert(outer->inv_adj[u][i].to == u);
+
 				//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 				int edge_num = outer->getEdgeID(v);				    	// v-outer->min_edge_var;
 						

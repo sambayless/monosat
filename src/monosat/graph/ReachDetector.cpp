@@ -361,15 +361,19 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 			for (int j = 0; j < g_under.nodes(); j++) {
 				Lit r_cur = reaches[j];
 
-				for (Edge & e : outer->inv_adj[j]) {
+
+				int to = j;
+				for(int n = 0;n<g_over.nIncoming(j);n++){
+					int from = g_over.incoming(j,n).node;
+					int v =outer->getEdgeVar(g_over.incoming(j,n).id);
 					//Edge e = outer->edges[j][k];
-					assert(e.to == j);
-					if (outer->value(dist_lits.last()[e.to]) == l_True) {
+					assert(to == j);
+					if (outer->value(dist_lits.last()[to]) == l_True) {
 						//do nothing
-					} else if (outer->value(reaches[e.from]) == l_False) {
+					} else if (outer->value(reaches[from]) == l_False) {
 						//do nothing
 					} else {
-						Lit l = mkLit(e.v, false);
+						Lit l = mkLit(v, false);
 
 						Lit r = mkLit(outer->newVar(), false);
 
@@ -381,7 +385,7 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 						c.clear();
 						c.push(~r);
 						c.push(r_cur);
-						c.push(reaches[e.from]); //r -> (reaches[e.from]) or reaches[e.to])
+						c.push(reaches[from]); //r -> (reaches[e.from]) or reaches[e.to])
 						outer->addClause(c);
 						c.clear();
 						c.push(r);
@@ -389,7 +393,7 @@ void ReachDetector<Weight,Graph>::buildSATConstraints(bool onlyUnderApprox, int 
 						outer->addClause(c);
 						c.clear();
 						c.push(r);
-						c.push(~reaches[e.from]);
+						c.push(~reaches[from]);
 						c.push(~l); //~r -> (~reaches[e.from] or ~e.l)
 						outer->addClause(c);
 						r_cur = r;
@@ -1276,9 +1280,9 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 			assert(outer->dbg_notreachable(source, u));
 			//assert(!negative_reach_detector->connected_unsafe(u));
 			//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-			for (int i = 0; i < outer->inv_adj[u].size(); i++) {
-				int v = outer->inv_adj[u][i].v;
-				int from = outer->inv_adj[u][i].from;
+			for (int i = 0; i < g_over.nIncoming(u); i++) {
+				int v = outer->getEdgeVar(g_over.incoming(u,i).id);
+				int from = g_over.incoming(u,i).node;
 				int edge_num = outer->getEdgeID(v);				    	// v-outer->min_edge_var;
 				if (from == u) {
 					assert(g_over.getEdge(edge_num).to == u);
@@ -1286,7 +1290,7 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 					continue;				  //Self loops are allowed, but just make sure nothing got flipped around...
 				}
 				assert(from != u);
-				assert(outer->inv_adj[u][i].to == u);
+
 				//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 
 				if (outer->value(v) == l_False) {
@@ -1550,11 +1554,9 @@ void ReachDetector<Weight,Graph>::buildForcedEdgeReason(int reach_node, int forc
 			assert(seen[u]);
 			assert(!overapprox_reach_detector->connected_unsafe(u));
 			//Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
-			for (int i = 0; i < outer->inv_adj[u].size(); i++) {
-				int v = outer->inv_adj[u][i].v;
-				int from = outer->inv_adj[u][i].from;
-				assert(from != u);
-				assert(outer->inv_adj[u][i].to == u);
+			for (int i = 0; i < g_over.nIncoming(u); i++) {
+				int v = outer->getEdgeVar(g_over.incoming(u,i).id);
+				int from = g_over.incoming(u,i).node;
 				//Note: the variable has to not only be assigned false, but assigned false earlier in the trail than the reach variable...
 				int edge_num = outer->getEdgeID(v);						// v-outer->min_edge_var;
 
