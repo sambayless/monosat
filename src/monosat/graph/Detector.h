@@ -71,7 +71,7 @@ public:
 	
 	virtual void printStats() {
 		if (opt_verb > 0) {
-			printf("Detector %d (%s):\n", getID(), getName());
+			printf("Detector %d (%s):\n", getID(), getName().c_str());
 			//printf("Updates: %d (under), %d over\n", stats_under_updates, stats_over_updates);
 			printf("\tUnder-approx updates: %" PRId64 " (%" PRId64 " skipped) (%f s total, %f s avg)\n", stats_under_updates,
 					stats_skipped_under_updates, (double) stats_under_update_time,

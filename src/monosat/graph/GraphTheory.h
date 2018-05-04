@@ -2792,7 +2792,7 @@ public:
 		}
 		for (int i = 0; i < detectors.size(); i++) {
 			if (!detectors[i]->checkSatisfied()) {
-				printf("Error in solution of graph theory %d, in detector %d (%s)\n", this->getTheoryIndex(), i, detectors[i]->getName());
+				printf("Error in solution of graph theory %d, in detector %d (%s)\n", this->getTheoryIndex(), i, detectors[i]->getName().c_str());
 				throw std::runtime_error("BAD SOLUTION: failure in graph theory detector");
 				return false;
 			}
