@@ -179,7 +179,7 @@ public:
         return base.lastEdgeDecrease();
     }
 
-     void clearHistory(bool forceClear)  override {base.clearHistory();};
+     void clearHistory(bool forceClear = false)  override {base.clearHistory(forceClear);};
 
      void invalidate()  override {base.invalidate();};
      int64_t getPreviousHistorySize()const override {return base.getPreviousHistorySize();};

@@ -131,7 +131,7 @@ public:
 	vec<MaxflowConstraintBV> unimplemented_maxflow_constraints_bv;
 
 	CRef graph_decision_reason = CRef_Undef;
-
+private:
 	DynamicGraph<Weight> g_under;
 	DynamicGraph<Weight> g_over;
 	//Graphs with reversed edges
@@ -140,7 +140,8 @@ public:
 	bool using_neg_weights = false;
 	DynamicGraph<Weight> g_under_weights_over;
 	DynamicGraph<Weight> g_over_weights_under;
-
+	DynamicBackGraph<Weight> g_under_weights_over_back;
+	DynamicBackGraph<Weight> g_over_weights_under_back;
     VMap<Var> pathForwardMap;
     VMap<Var> pathBackMap;
 
@@ -152,7 +153,15 @@ public:
 	 * Otherwise, if edge ID is unassigned or true, then edge ID*2 is disabled in the cutgraph, and
 	 * edge ID*2+1 is enabled.
 	 */
-	DynamicGraph<int64_t> cutGraph;
+	DynamicGraph<Weight> cutGraph;//these technically do not need to have Weights
+	DynamicBackGraph<Weight> cutGraph_back;
+public:
+	DynamicGraph<Weight> & getOverApproximationGraph(){
+		return g_over;
+	}
+	DynamicGraph<Weight> & getUnderApproximationGraph(){
+		return g_under;
+	}
 
 	/*struct ComparisonStatus{//:public BVTheorySolver<int64_t>::CallBack{
 		GraphTheorySolver & outer;
@@ -705,7 +714,9 @@ public:
         return theories;
     }
 	GraphTheorySolver(Solver * S_) :
-			S(S_), cutStatus(*this), propCutStatus(*this),g_under_back(g_under),g_over_back(g_over){
+			S(S_), cutStatus(*this), propCutStatus(*this),g_under_back(g_under),g_over_back(g_over),
+	g_under_weights_over_back(g_under_weights_over),g_over_weights_under_back(g_over_weights_under),
+	cutGraph_back(cutGraph){
 
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
@@ -3269,7 +3280,7 @@ public:
 			within_steps = g_under.nodes();
 		if(!backward) {
 			if (dist_info[from].source < 0) {
-				DistanceDetector<Weight> *d = new DistanceDetector<Weight>(detectors.size(), this, g_under, g_over,
+				DistanceDetector<Weight> *d = new DistanceDetector<Weight>(detectors.size(), this, g_under, g_over,cutGraph,
 																		   from, drand(rnd_seed));
 
 				addDetector(d);
@@ -3286,7 +3297,8 @@ public:
 			d->addUnweightedShortestPathLit(from, to, reach_var, within_steps);
 		}else{
 			if (backward_dist_info[from].source < 0) {
-				DistanceDetector<Weight,DynamicBackGraph<Weight>> *d = new DistanceDetector<Weight,DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back, g_over_back,
+				DistanceDetector<Weight,DynamicBackGraph<Weight>> *d =
+						new DistanceDetector<Weight,DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back, g_over_back, cutGraph_back,
 																		   from, drand(rnd_seed));
 
 				addDetector(d);
@@ -3340,10 +3352,10 @@ public:
 			WeightedDistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
 				enableNegativeWeights();
-				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,cutGraph,
 						from, drand(rnd_seed));
 			}else{
-				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,cutGraph,
 						from, drand(rnd_seed));
 			}
 			addDetector(d);
@@ -3386,10 +3398,10 @@ public:
 			WeightedDistanceDetector<Weight> * d;
 			if(edge_bv_weights.size()>0){
 				enableNegativeWeights();
-				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under_weights_over, g_over_weights_under,cutGraph,
 						from, drand(rnd_seed));
 			}else{
-				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,
+				d = new WeightedDistanceDetector<Weight>(detectors.size(), this,  g_under, g_over,cutGraph,
 						from, drand(rnd_seed));
 			}
 			addDetector(d);
@@ -3516,7 +3528,7 @@ public:
 		if(!backward) {
 			if (reach_info[from].source < 0) {
 
-				addDetector((new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over, drand(rnd_seed))));
+				addDetector((new AllPairsDetector<Weight>(detectors.size(), this, g_under, g_over,cutGraph, drand(rnd_seed))));
 				//reach_detectors.push(reach_detectors.last());
 
 				assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3538,7 +3550,7 @@ public:
 		}else{
 			if (backward_reach_info[from].source < 0) {
 
-				addDetector((new AllPairsDetector<Weight,DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back, g_over_back, drand(rnd_seed))));
+				addDetector((new AllPairsDetector<Weight,DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back, g_over_back,cutGraph_back, drand(rnd_seed))));
 				//reach_detectors.push(reach_detectors.last());
 
 				assert(detectors.last()->getID() == detectors.size() - 1);
@@ -3576,7 +3588,7 @@ public:
 		if(!backward) {
 			if (reach_info[from].source < 0) {
 
-				ReachDetector<Weight> *rd = new ReachDetector<Weight>(detectors.size(), this, g_under, g_over, from,
+				ReachDetector<Weight> *rd = new ReachDetector<Weight>(detectors.size(), this, g_under, g_over,cutGraph, from,
 																	  drand(rnd_seed));
 				addDetector(rd);
 				reach_detectors.push(rd);
@@ -3600,8 +3612,8 @@ public:
 		}else{
 			if (backward_reach_info[from].source < 0) {
 
-				ReachDetector<Weight,DynamicBackGraph<Weight>> *rd = new ReachDetector<Weight,DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back, g_over_back, from,
-																	  drand(rnd_seed));
+				ReachDetector<Weight,DynamicBackGraph<Weight>> *rd = new ReachDetector<Weight,DynamicBackGraph<Weight>>
+						(detectors.size(), this, g_under_back, g_over_back,cutGraph_back, from,drand(rnd_seed));
 				addDetector(rd);
 				reach_back_detectors.push(rd);
 
@@ -3752,7 +3764,7 @@ public:
 
 	void minConnectedComponents(int min_components, Var v) {
 		if (!component_detector) {
-			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,
+			component_detector = new ConnectedComponentsDetector<Weight>(detectors.size(), this, g_under, g_over,cutGraph,
 					drand(rnd_seed));
 			addDetector(component_detector);
 

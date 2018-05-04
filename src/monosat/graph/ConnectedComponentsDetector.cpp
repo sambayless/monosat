@@ -23,8 +23,8 @@
 using namespace Monosat;
 template<typename Weight,typename Graph>
 ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-		Graph  &_g, Graph  &_antig, double seed) :
-		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_component_detector(
+		Graph  &_g, Graph  &_antig, Graph & cutGraph, double seed) :
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig),cutGraph(cutGraph), rnd_seed(seed), underapprox_component_detector(
 				NULL), overapprox_component_detector(NULL), positiveReachStatus(NULL), negativeReachStatus(NULL) {
 	
 	positiveReachStatus = new ConnectedComponentsDetector<Weight,Graph>::ConnectedComponentsStatus(*this, true);
@@ -356,16 +356,16 @@ void ConnectedComponentsDetector<Weight,Graph>::buildNodesNotConnectedReason(int
 	//assert(!negative_reach_detector->connected_unchecked(node));
 	vec<Lit> & reach_lits = reachLits[source];
 	double starttime = rtime(2);
-	outer->cutGraph.clearHistory();
+	cutGraph.clearHistory();
 	outer->stats_mc_calls++;
 	/*	if(opt_conflict_min_cut){
 	 if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 	 //ok, set the weights for each edge in the cut graph.
 	 //Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-	 for(int u = 0;u<outer->cutGraph.nodes();u++){
-	 for(int j = 0;j<outer->cutGraph.nIncident(u);j++){
-	 int v = outer->cutGraph.incident(u,j).node;
-	 int edgeid =  outer->cutGraph.incident(u,j).id;
+	 for(int u = 0;u<cutGraph.nodes();u++){
+	 for(int j = 0;j<cutGraph.nIncident(u);j++){
+	 int v = cutGraph.incident(u,j).node;
+	 int edgeid =  cutGraph.incident(u,j).id;
 	 Var var = outer->getEdgeVar(edgeid);
 	 if(S->value(var)==l_False){
 	 mc.setCapacity(u,v,1);

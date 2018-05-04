@@ -45,8 +45,8 @@ using namespace Monosat;
 
 template<typename Weight,typename Graph>
 DistanceDetector<Weight,Graph>::DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * outer,
-		Graph  &g_under, Graph  &g_over, int from, double seed) :
-		Detector(_detectorID), outer(outer), g_under(g_under), g_over(g_over), source(from), rnd_seed(seed) {
+		Graph  &g_under, Graph  &g_over,Graph & cutGraph, int from, double seed) :
+		Detector(_detectorID), outer(outer), g_under(g_under), g_over(g_over),cutGraph(cutGraph), source(from), rnd_seed(seed) {
 	max_unweighted_distance = -1;
 	rnd_path = NULL;
 
@@ -184,23 +184,23 @@ DistanceDetector<Weight,Graph>::DistanceDetector(int _detectorID, GraphTheorySol
 
 	if (opt_conflict_min_cut) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpDynamic<Weight>(cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<Weight>(cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<Weight>(cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints
-			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<Weight>(cutGraph,  source, 0);
 			
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
-				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph, source, 0,
+				conflict_flow = new KohliTorr<Weight>(cutGraph, source, 0,
 						opt_kt_preserve_order);
 			} else
-				conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
+				conflict_flow = new EdmondsKarpDynamic<Weight>(cutGraph,  source, 0);
 		} else {
-			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<Weight>(cutGraph,  source, 0);
 		}
 	}
 	
@@ -643,7 +643,7 @@ void DistanceDetector<Weight,Graph>::buildUnweightedDistanceGTReason(int node, i
 
 		g_over.drawFull(false);
 		cut.clear();
-		int64_t f;
+		Weight f;
 		
 		assert(conflict_flow->getSource() == source);
 		conflict_flow->setSink(node);
@@ -671,7 +671,7 @@ void DistanceDetector<Weight,Graph>::buildUnweightedDistanceGTReason(int node, i
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
 	//assert(outer->dbg_distance( source,u));
 	
-	outer->cutGraph.clearHistory();
+	cutGraph.clearHistory();
 	outer->stats_mc_calls++;
 	{
 		

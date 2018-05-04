@@ -34,8 +34,8 @@
 using namespace Monosat;
 template<typename Weight,typename Graph>
 ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &g_under,
-									 Graph  &g_over, int from, double seed) :
-		Detector(_detectorID), outer(_outer), g_under(g_under), g_over(g_over), within(-1), source(from), rnd_seed(seed) {
+									 Graph  &g_over,Graph & cutGraph, int from, double seed) :
+		Detector(_detectorID), outer(_outer), g_under(g_under), g_over(g_over), cutGraph(cutGraph), within(-1), source(from), rnd_seed(seed) {
 
 	//opt_path=nullptr;
 	chokepoint_detector = nullptr;
@@ -68,7 +68,7 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 
 	}
 	if (opt_shrink_theory_conflicts) {
-		cutgraph_detector = new UnweightedRamalReps<Weight,DynamicGraph<Weight>,Reach::NullStatus>(from, cutgraph, Reach::nullStatus, 0);
+		cutgraph_detector = new UnweightedRamalReps<Weight,DynamicGraph<Weight>,Reach::NullStatus>(from, localCutGraph, Reach::nullStatus, 0);
 	}
 
 
@@ -253,24 +253,24 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 
 	if (opt_reach_detector_combined_maxflow) {
 		if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-			conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpDynamic<Weight>(cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
-			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<Weight>(cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
-			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<Weight>(cutGraph,  source, 0);
 		} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 			//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 
-			conflict_flow = new Dinitz<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new Dinitz<Weight>(cutGraph,  source, 0);
 
 		} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 			if (opt_use_kt_for_conflicts) {
-				conflict_flow = new KohliTorr<int64_t>(outer->cutGraph,  source, 0,
+				conflict_flow = new KohliTorr<Weight>(cutGraph,  source, 0,
 													   opt_kt_preserve_order);
 			} else
-				conflict_flow = new EdmondsKarpDynamic<int64_t>(outer->cutGraph,  source, 0);
+				conflict_flow = new EdmondsKarpDynamic<Weight>(cutGraph,  source, 0);
 		} else {
-			conflict_flow = new EdmondsKarpAdj<int64_t>(outer->cutGraph,  source, 0);
+			conflict_flow = new EdmondsKarpAdj<Weight>(cutGraph,  source, 0);
 		}
 	}
 
@@ -1067,33 +1067,33 @@ void ReachDetector<Weight,Graph>::addLit(int from, int to, Var outer_reach_var) 
 			conflict_flows.resize(g_under.nodes(), nullptr);
 			for (int i = 0; i < g_under.nodes(); i++) {
 				if (reach_lits[i] != lit_Undef && !conflict_flows[i]) {
-					MaxFlow<int64_t> * conflict_flow_t = nullptr;
+					MaxFlow<Weight> * conflict_flow_t = nullptr;
 					if (mincutalg == MinCutAlg::ALG_EDKARP_DYN) {
-						conflict_flow_t = new EdmondsKarpDynamic< int64_t>(outer->cutGraph,  source,
+						conflict_flow_t = new EdmondsKarpDynamic< Weight>(cutGraph,  source,
 																		   i);
 					} else if (mincutalg == MinCutAlg::ALG_EDKARP_ADJ) {
 
-						conflict_flow_t = new EdmondsKarpAdj< int64_t>(outer->cutGraph,  source, i);
+						conflict_flow_t = new EdmondsKarpAdj< Weight>(cutGraph,  source, i);
 
 					} else if (mincutalg == MinCutAlg::ALG_DINITZ) {
 
-						conflict_flow_t = new Dinitz< int64_t>(outer->cutGraph,  source, i);
+						conflict_flow_t = new Dinitz< Weight>(cutGraph,  source, i);
 
 					} else if (mincutalg == MinCutAlg::ALG_DINITZ_LINKCUT) {
 						//link-cut tree currently only supports ints (enforcing this using tempalte specialization...).
 
-						conflict_flow_t = new Dinitz< int64_t>(outer->cutGraph,  source, i);
+						conflict_flow_t = new Dinitz< Weight>(cutGraph,  source, i);
 
 					} else if (mincutalg == MinCutAlg::ALG_KOHLI_TORR) {
 						if (opt_use_kt_for_conflicts) {
-							conflict_flow_t = new KohliTorr< int64_t>(outer->cutGraph,  source, i,
+							conflict_flow_t = new KohliTorr< Weight>(cutGraph,  source, i,
 																	  opt_kt_preserve_order);
 						} else
-							conflict_flow_t = new EdmondsKarpDynamic< int64_t>(outer->cutGraph,
+							conflict_flow_t = new EdmondsKarpDynamic< Weight>(cutGraph,
 																			   source, i);
 					} else {
 
-						conflict_flow_t = new EdmondsKarpAdj< int64_t>(outer->cutGraph,  source, i);
+						conflict_flow_t = new EdmondsKarpAdj< Weight>(cutGraph,  source, i);
 
 					}
 					conflict_flows[i] = conflict_flow_t;
@@ -1229,7 +1229,7 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 
 		//g_over.drawFull();
 		cut.clear();
-		int64_t f;
+		Weight f;
 		if (!conflict_flow) {
 			assert(conflict_flows[node]->getSink() == node);
 			assert(conflict_flows[node]->getSource() == source);
@@ -1251,9 +1251,9 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 			conflict.push(l);
 		}
 		/*				{
-		 EdmondsKarpAdj<CutStatus,int64_t> ek(outer->cutGraph, cutStatus,source,node);
+		 EdmondsKarpAdj<CutStatus,Weight> ek(cutGraph, cutStatus,source,node);
 		 std::vector<MaxFlowEdge> tmpcut;
-		 int64_t tf = ek.minCut(tmpcut);
+		 Weight tf = ek.minCut(tmpcut);
 		 printf("cut size:%d, %d, expected: %d, %d \n",cut.size(),f, tmpcut.size(), tf);
 		 if(f != tf || cut.size()!= tmpcut.size()){
 		 exit(3);
@@ -1323,20 +1323,20 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 	if (opt_shrink_theory_conflicts) {
 		//visit each edge lit in this initial conflict, and see if unreachability is preserved if we add the edge back in (temporarily)
 		/*	int i,j=0;
-		 outer->cutGraph.clearHistory();
-		 outer->cutGraph.invalidate();
+		 cutGraph.clearHistory();
+		 cutGraph.invalidate();
 		 while(cutgraph.nodes()<g.nodes()){
-		 cutgraph.addNode();
+		 localCutGraph.addNode();
 		 }
 		 while(cutgraph.nEdgeIDs()<g.nEdgeIDs()){
 		 //if an edge hasn't been disabled at level 0, add it here.
-		 int edgeID = cutgraph.nEdgeIDs();
+		 int edgeID = localCutGraph.nEdgeIDs();
 		 Var v = outer->getEdgeVar(edgeID);
 		 Edge & e = outer->edge_list[edgeID];
-		 cutgraph.addEdge(e.from,e.to,edgeID);
+		 localCutGraph.addEdge(e.from,e.to,edgeID);
 		 if(outer->value(v)==l_False && outer->level(v)==0){
 		 //permanently disabled edge
-		 cutgraph.disableEdge(edgeID);
+		 localCutGraph.disableEdge(edgeID);
 		 }
 		 }
 		 //cutgraph.drawFull();
@@ -1354,7 +1354,7 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 		 Lit l = conflict[i];
 		 if(!sign(l) && outer->isEdgeVar(var(l))){
 		 int edgeID = outer->getEdgeID(var(l));
-		 cutgraph.disableEdge(edgeID);
+		 localCutGraph.disableEdge(edgeID);
 		 removed_edges.push(edgeID);
 		 }
 		 }
@@ -1367,9 +1367,9 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 		 assert(!antig.edgeEnabled(edgeID));
 		 assert(!cutgraph.edgeEnabled(edgeID));
 		 assert(!cutgraph_reach_detector->connected(node));
-		 cutgraph.enableEdge(edgeID);
+		 localCutGraph.enableEdge(edgeID);
 		 if(cutgraph_reach_detector->connected(node)){
-		 cutgraph.disableEdge(edgeID);
+		 localCutGraph.disableEdge(edgeID);
 		 conflict[j++]=l;
 		 }else{
 		 //we can drop this edge from the conflict.
@@ -1383,7 +1383,7 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 		 conflict.shrink(i-j);
 		 //restore the state of the graph
 		 for(int edgeID: removed_edges){
-		 cutgraph.enableEdge(edgeID);
+		 localCutGraph.enableEdge(edgeID);
 		 }
 
 		 */
@@ -1491,17 +1491,17 @@ void ReachDetector<Weight,Graph>::buildForcedEdgeReason(int reach_node, int forc
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
 	assert(outer->dbg_notreachable(source, u));
 	double starttime = rtime(2);
-	outer->cutGraph.clearHistory();
+	cutGraph.clearHistory();
 	outer->stats_mc_calls++;
 
 	/*if(opt_conflict_min_cut){
 	 if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
 	 //ok, set the weights for each edge in the cut graph.
 	 //Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-	 for(int u = 0;u<outer->cutGraph.nodes();u++){
-	 for(int j = 0;j<outer->cutGraph.nIncident(u);j++){
-	 int v = outer->cutGraph.incident(u,j).node;
-	 int edgeid =  outer->cutGraph.incident(u,j).id;
+	 for(int u = 0;u<cutGraph.nodes();u++){
+	 for(int j = 0;j<cutGraph.nIncident(u);j++){
+	 int v = cutGraph.incident(u,j).node;
+	 int edgeid =  cutGraph.incident(u,j).id;
 	 Var var = outer->getEdgeVar(edgeid);
 	 //Var var = outer->edges[u][v].v;
 	 if(S->value(var)==l_False){

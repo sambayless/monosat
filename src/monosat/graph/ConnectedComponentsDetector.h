@@ -22,7 +22,7 @@
 #define CONNECTED_COMPONENTS_DETECTOR_H_
 #include "monosat/utils/System.h"
 #include "GraphTheoryTypes.h"
-#include "monosat/dgl/Graph.h"
+#include "monosat/dgl/DynamicGraph.h"
 #include "monosat/dgl/ConnectedComponents.h"
 
 #include "monosat/core/SolverTypes.h"
@@ -43,7 +43,7 @@ public:
 	//int within;
 	Graph  & g_under;
 	Graph  & g_over;
-
+    Graph & cutGraph;
 	double rnd_seed;
 	CRef components_low_marker;
 	CRef components_high_marker;
@@ -135,7 +135,7 @@ public:
 	void addConnectedComponentsLit(Var weight_var, int min_components);
 	void addConnectedLit(Var outer_weight_var, int node1, int node2);
 	ConnectedComponentsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &_g,
-			Graph  &_antig,double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+			Graph  &_antig,Graph & cutGraph,double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
     ~ConnectedComponentsDetector() override {
 		if (positiveReachStatus)
 			delete positiveReachStatus;

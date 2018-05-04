@@ -50,6 +50,7 @@ public:
 
 	Graph  &g_under;
 	Graph  &g_over;
+	Graph & cutGraph;
 	//int within;
 	int source;
 	double rnd_seed;
@@ -78,7 +79,7 @@ public:
 
 	vec<int> unweighted_over_approx_shortest_paths;
 	vec<Weight> over_approx_shortest_paths;
-	MaxFlow<int64_t> * conflict_flow = nullptr;
+	MaxFlow<Weight> * conflict_flow = nullptr;
 
 
 	int max_unweighted_distance=0;
@@ -258,7 +259,7 @@ public:
 	bool getModel_Path(int node, std::vector<int> & store_path);
 	bool getModel_PathByEdgeLit(int node, std::vector<Lit> & store_path);
 	DistanceDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
-			Graph  &g_under, Graph  &g_over, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+			Graph  &g_under, Graph  &g_over,Graph & cutGraph, int _source, double seed = 1);//:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
     ~DistanceDetector() override {
 
 		if (overapprox_unweighted_distance_detector)

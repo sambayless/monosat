@@ -50,7 +50,8 @@ public:
 	GraphTheorySolver<Weight> * outer;
 	Graph &g_under;
 	Graph &g_over;
-	DynamicGraph<Weight> cutgraph;
+	Graph &cutGraph;
+	DynamicGraph<Weight> localCutGraph;//todo: this is not really used any more, remove
 	int within;
 	int source;
 	double rnd_seed;
@@ -173,8 +174,8 @@ public:
 	};
 	ReachStatus *positiveReachStatus = nullptr;
 	ReachStatus *negativeReachStatus = nullptr;
-	MaxFlow<int64_t> * conflict_flow = nullptr;
-	std::vector<MaxFlow<int64_t> *> conflict_flows;
+	MaxFlow<Weight> * conflict_flow = nullptr;
+	std::vector<MaxFlow<Weight> *> conflict_flows;
 
 
 	/*struct OptimalWeightEdgeStatus{
@@ -329,7 +330,7 @@ public:
 	void preprocess() override;
 	void dbg_sync_reachability();
 
-	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &g_under, Graph  &g_over,
+	ReachDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &g_under, Graph  &g_over, Graph & cutGraph,
 				  int _source, double seed = 1);
 	~ReachDetector() override {
 

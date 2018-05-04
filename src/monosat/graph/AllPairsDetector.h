@@ -43,6 +43,7 @@ public:
 	GraphTheorySolver<Weight> * outer;
 	Graph  &g_under;
 	Graph  &g_over;
+	Graph  &cutGraph;
 	int within = 0;
 
 	double rnd_seed;
@@ -150,7 +151,7 @@ public:
 	bool checkSatisfied() override;
 	Lit decide(CRef &decision_reason) override;
 	void addLit(int from, int to, Var reach_var, int within_steps = -1);
-	AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &_g, Graph  &_antig,
+	AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &_g, Graph  &_antig,Graph & cutGraph,
 			double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
     ~AllPairsDetector() override {
 		if (underapprox_path_detector && underapprox_path_detector!=overapprox_reach_detector){

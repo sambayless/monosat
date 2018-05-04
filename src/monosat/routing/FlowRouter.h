@@ -182,7 +182,9 @@ public:
         int netID;
         int dest;
 
-        OpportunisticHeuristic(FlowRouter * router,int netNum, ReachDetector<Weight> * rd,int dest,Lit reach_lit):router(router),outer(rd->outer),netID(netNum),dest(dest),r(rd),g_over(rd->g_over),g_under(rd->g_under),g_h(router->heuristic_graph),reach_lit(reach_lit){
+        OpportunisticHeuristic(FlowRouter * router,int netNum, ReachDetector<Weight> * rd,int dest,Lit reach_lit):
+                router(router),outer(rd->outer),netID(netNum),dest(dest),r(rd),
+                g_over(rd->g_over),g_under(rd->g_under),g_h(router->heuristic_graph),reach_lit(reach_lit){
 
         }
 
@@ -235,7 +237,7 @@ public:
                         last = p;
                         assert(p != r->source);
                         last_edge = over_path->incomingEdge(p);
-                        if(outer->g_over.hasEdge(last_edge)) {
+                        if(g_over.hasEdge(last_edge)) {
                             path_edges.insert(last_edge);
                             Var edge_var = outer->getEdgeVar(last_edge);
                             if (outer->value(edge_var) == l_Undef) {
@@ -799,7 +801,8 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
     disabled_routing_lits.clear();
     inner_conflict.clear();
 
-    DynamicGraph<Weight> & g = g_theory->g_over;
+    DynamicGraph<Weight> & g = g_theory->getOverApproximationGraph();
+
     //vec<int> routing_edges;
 
     /*

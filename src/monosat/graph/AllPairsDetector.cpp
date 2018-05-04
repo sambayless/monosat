@@ -25,10 +25,10 @@
 using namespace Monosat;
 template<typename Weight,typename Graph>
 AllPairsDetector<Weight,Graph>::AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph &_g,
-		Graph &_antig, double seed) :
-		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig), rnd_seed(seed), underapprox_reach_detector(
-        nullptr), overapprox_reach_detector(
-        nullptr), underapprox_path_detector(nullptr), positiveReachStatus(nullptr), negativeReachStatus(nullptr) {
+		Graph &_antig,Graph & cutGraph, double seed) :
+		Detector(_detectorID), outer(_outer), g_under(_g), g_over(_antig),cutGraph(cutGraph), rnd_seed(seed),
+		underapprox_reach_detector(nullptr), overapprox_reach_detector(nullptr),
+		underapprox_path_detector(nullptr), positiveReachStatus(nullptr), negativeReachStatus(nullptr) {
 	
 	positiveReachStatus = new AllPairsDetector<Weight,Graph>::ReachStatus(*this, true);
 	negativeReachStatus = new AllPairsDetector<Weight,Graph>::ReachStatus(*this, false);
@@ -226,7 +226,7 @@ void AllPairsDetector<Weight,Graph>::buildNonReachReason(int source, int node, v
 	//drawFull( non_reach_detectors[detector]->getSource(),u);
 	//assert(outer->dbg_distance( source,u));
 	double starttime = rtime(2);
-	outer->cutGraph.clearHistory();
+	cutGraph.clearHistory();
 	outer->stats_mc_calls++;
 	{
 
