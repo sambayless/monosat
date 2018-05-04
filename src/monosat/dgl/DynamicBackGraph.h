@@ -158,7 +158,7 @@ public:
 		if(alg==nullptr){
 			throw std::runtime_error("Internal error in DynamicBackGraph (null dynamic graph algorithm)");
 		}
-     	base.addDynamicAlgorithm(alg);
+     	return base.addDynamicAlgorithm(alg);
      };
 
      void updateAlgorithmHistory(DynamicGraphAlgorithm * alg, int algorithmID, int historyPos) override {
