@@ -56,21 +56,21 @@ class Circuit{
 			fprintf(outfile, "%d 0\n ", dimacs(a));
 			fflush(outfile);
 		}
-		S.addClause(a);
+		return S.addClause(a);
 	}
 	bool _addClause(Lit a, Lit b){
 		if(outfile) {
 			fprintf(outfile, "%d %d 0\n ", dimacs(a), dimacs(b));
 			fflush(outfile);
 		}
-		S.addClause(a,b);
+		return S.addClause(a,b);
 	}
 	bool _addClause(Lit a, Lit b, Lit c){
 		if(outfile) {
 			fprintf(outfile, "%d %d %d 0\n ", dimacs(a), dimacs(b), dimacs(c));
 			fflush(outfile);
 		}
-		S.addClause(a,b,c);
+		return S.addClause(a,b,c);
 	}
 	bool _addClause(vec<Lit> & clause){
 		if(outfile) {
@@ -80,7 +80,7 @@ class Circuit{
 			fprintf(outfile, "0\n");
 			fflush(outfile);
 		}
-		S.addClause(clause);
+		return S.addClause(clause);
 	}
 	
 	template<typename... Args>

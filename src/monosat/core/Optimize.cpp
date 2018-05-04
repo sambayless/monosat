@@ -1630,7 +1630,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 		return ever_solved? l_True:l_False;
 	}
 	resetDecisionPriority(S,old_decision_priority);
-
+	return l_Undef; //Is this unreachable?
 }
 
 //Reduce the given assumptions to a (locally) minimal unsat core, if they are mutually unsat.

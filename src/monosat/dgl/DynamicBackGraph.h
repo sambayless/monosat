@@ -142,15 +142,15 @@ public:
      void disableEdge(int id)  override {base.disableEdge(id);};
      void enableEdge(int from, int to, int id)  override {base.enableEdge(to,from,id);};
 
-     bool undoEnableEdge(int id)  override {base.undoEnableEdge(id);};
+     bool undoEnableEdge(int id)  override {return base.undoEnableEdge(id);};
 
-     void disableEdge(int from, int to, int id)  override {base.disableEdge(to,from,id);};
-     bool undoDisableEdge(int id)  override {base.undoDisableEdge(id);};
-     Weight  getEdgeWeight(int edgeID) override {base.getEdgeWeight(edgeID);};
+     void disableEdge(int from, int to, int id)  override {return base.disableEdge(to,from,id);};
+     bool undoDisableEdge(int id)  override {return base.undoDisableEdge(id);};
+     Weight  getEdgeWeight(int edgeID) override {return base.getEdgeWeight(edgeID);};
      void setEdgeWeight(int id,const Weight & w)  override {base.setEdgeWeight(id,w);};
 
      void drawFull(bool showWeights = false, bool force_draw=false)  override {base.drawFull(showWeights,force_draw);};
-     bool rewindHistory(int steps)  override {base.rewindHistory(steps);};
+     bool rewindHistory(int steps)  override {return base.rewindHistory(steps);};
     /**
      * Returns a unique identifier for this algorithm.
      */
