@@ -85,6 +85,8 @@ public:
 	vec<Weight> over_approx_shortest_paths;
 	MaxFlow<int64_t> * conflict_flow = nullptr;
 
+	vec<int> to_visit;
+	vec<char> seen;
 
 	int max_unweighted_distance;
 

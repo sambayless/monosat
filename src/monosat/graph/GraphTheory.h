@@ -595,9 +595,10 @@ public:
 	//int n_decisions = 0;
 	//vec<int> var_decision_pos;
 	int n_theory_solves=0;
+private:
 	vec<char> seen;
 	vec<int> to_visit;
-
+public:
 	vec<Lit> tmp_clause;
 	//Data about local theory variables, and how they connect to the sat solver's variables
 	struct VarData {

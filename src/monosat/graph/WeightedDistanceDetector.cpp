@@ -318,8 +318,6 @@ void WeightedDistanceDetector<Weight,Graph>::analyzeDistanceGTReason(int to, Wei
 
 	{
 
-		vec<int>& to_visit = outer->to_visit;
-		vec<char>& seen = outer->seen;
 
 		to_visit.clear();
 		to_visit.push(to);

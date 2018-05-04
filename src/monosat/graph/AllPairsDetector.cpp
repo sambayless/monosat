@@ -229,9 +229,7 @@ void AllPairsDetector<Weight,Graph>::buildNonReachReason(int source, int node, v
 	outer->cutGraph.clearHistory();
 	outer->stats_mc_calls++;
 	{
-		
-		vec<int>& to_visit = outer->to_visit;
-		vec<char>& seen = outer->seen;
+
 		
 		to_visit.clear();
 		to_visit.push(node);

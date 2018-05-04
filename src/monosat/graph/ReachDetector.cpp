@@ -1536,9 +1536,6 @@ void ReachDetector<Weight,Graph>::buildForcedEdgeReason(int reach_node, int forc
 		//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 		//or perhaps we can learn the actual 1-uip cut?
 
-		vec<int>& to_visit = outer->to_visit;
-		vec<char>& seen = outer->seen;
-
 		to_visit.clear();
 		to_visit.push(reach_node);
 		seen.clear();

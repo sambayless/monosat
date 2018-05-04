@@ -83,6 +83,8 @@ public:
 	};
 	vec<Change> changed;
 
+	vec<int> to_visit;
+	vec<char> seen;
 	vec<Change> & getChanged() {
 		return changed;
 	}
