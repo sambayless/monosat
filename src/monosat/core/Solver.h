@@ -570,6 +570,7 @@ public:
 	void budgetOff();
 	void interrupt();          // Trigger a (potentially asynchronous) interruption of the solver.
 	void clearInterrupt();     // Clear interrupt indicator flag.
+	bool isInterrupted(); 		//true if the solver is in an interrupted state.
 
 	// Memory managment:
 	//
@@ -1380,7 +1381,9 @@ inline int64_t Solver::getConflictBudget() {
 inline int64_t Solver::getPropagationBudget() {
 	return propagation_budget>-1? (propagation_budget-propagations) : -1;
 }
-
+inline bool Solver::isInterrupted() {
+	return asynch_interrupt;
+}
 inline void Solver::interrupt() {
 	asynch_interrupt = true;
 }

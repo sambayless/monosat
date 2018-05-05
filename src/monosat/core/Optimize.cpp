@@ -46,13 +46,15 @@ static Solver * solver;
 #ifdef __APPLE__
 using sighandler_t = sig_t; //sighandler_t is a gnu extension
 #endif
-static sighandler_t system_sigxcpu_handler  = nullptr; //void (*system_sigxcpu_handler)(int) is also an option
+//static sighandler_t system_sigxcpu_handler  = nullptr; //void (*system_sigxcpu_handler)(int) is also an option
+static sighandler_t system_sigalarm_handler  = nullptr;
+
 
 //static initializer, following http://stackoverflow.com/a/1681655
 namespace {
 struct initializer {
 	initializer() {
-		system_sigxcpu_handler=nullptr;
+		system_sigalarm_handler=nullptr;
 		time_limit=-1;
 		memory_limit=-1;
 		has_system_time_limit=false;
@@ -79,34 +81,17 @@ static void SIGNAL_HANDLER_api(int signum) {
 void enableResourceLimits(Solver * S){
 	if(!solver){
 		assert(solver==nullptr);
-		solver=S;
+        solver = S;
 
-		struct rusage ru;
-		getrusage(RUSAGE_SELF, &ru);
-		time_t cur_time = ru.ru_utime.tv_sec;
-
+		if(opt_limit_optimization_time>0) {
+            time_limit = opt_limit_optimization_time;
+            if (time_limit < INT32_MAX && time_limit >= 0) {
+                alarm(time_limit);
+            } else {
+            }
+        }
+		//struct rusage ru;
 		rlimit rl;
-		getrlimit(RLIMIT_CPU, &rl);
-		time_limit = opt_limit_optimization_time;
-		if(!has_system_time_limit){
-			has_system_time_limit=true;
-			system_time_limit=rl.rlim_cur;
-		}
-
-		if (time_limit < INT32_MAX && time_limit>=0) {
-			assert(cur_time>=0);
-			int64_t local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
-			if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
-				rl.rlim_cur = local_time_limit;
-				if (setrlimit(RLIMIT_CPU, &rl) == -1)
-					fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
-			}
-		}else{
-			rl.rlim_cur = rl.rlim_max;
-			if (setrlimit(RLIMIT_CPU, &rl) == -1)
-				fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
-		}
-
 		getrlimit(RLIMIT_AS, &rl);
 		if(!has_system_mem_limit){
 			has_system_mem_limit=true;
@@ -126,32 +111,22 @@ void enableResourceLimits(Solver * S){
 					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
 			}
 		}
-		auto old_sigxcpu = signal(SIGXCPU, SIGNAL_HANDLER_api);
-		if(old_sigxcpu != SIGNAL_HANDLER_api){
-			system_sigxcpu_handler = old_sigxcpu;//store this value for later
+
+		auto old_sigalarm = signal(SIGALRM, SIGNAL_HANDLER_api);
+		if(old_sigalarm != SIGNAL_HANDLER_api){
+			system_sigalarm_handler = old_sigalarm;
 		}
+
 	}
 }
 
 void disableResourceLimits(Solver * S){
 	if(solver){
-
+	    if(opt_limit_optimization_time>0) {
+            alarm(0);//cancel any pending alarm
+        }
 		solver=nullptr;
 		rlimit rl;
-		getrlimit(RLIMIT_CPU, &rl);
-		if(has_system_time_limit){
-			has_system_time_limit=false;
-			if (rl.rlim_max == RLIM_INFINITY || (rlim_t)system_time_limit < rl.rlim_max) {
-				rl.rlim_cur = system_time_limit;
-				if (setrlimit(RLIMIT_CPU, &rl) == -1)
-					fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
-			}else{
-				rl.rlim_cur = rl.rlim_max;
-				if (setrlimit(RLIMIT_CPU, &rl) == -1)
-					fprintf(stderr,"WARNING! Could not set resource limit: CPU-time.\n");
-			}
-		}
-		getrlimit(RLIMIT_AS, &rl);
 		if(has_system_mem_limit){
 			has_system_mem_limit=false;
 			if (rl.rlim_max == RLIM_INFINITY || system_mem_limit < rl.rlim_max) {
@@ -164,9 +139,9 @@ void disableResourceLimits(Solver * S){
 					fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
 			}
 		}
-		if (system_sigxcpu_handler){
-			signal(SIGXCPU, system_sigxcpu_handler);
-			system_sigxcpu_handler=nullptr;
+		if (system_sigalarm_handler){
+			signal(SIGALRM, system_sigalarm_handler);
+			system_sigalarm_handler=nullptr;
 		}
 	}
 }
@@ -1286,6 +1261,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 	for(Lit l:assumes)
 		assume.push(l);
 	static int solve_runs=0;
+
 	found_optimal=true;
 	solve_runs++;
 	if(opt_verb>=1 || opt_verb_optimize>=1){
@@ -1305,11 +1281,18 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 		}
 		printf("\n");
 	}
+	//check if the solver is already interrupted, and return in that case (while clearing the interrupt status)
+	if(S.isInterrupted()){
+		S.clearInterrupt();
+		found_optimal=false;
+		return l_Undef;
+	}
 	vec<std::pair<Var,int>> old_decision_priority;
 	if(!objectives.size()){
 
 		lbool r =  S.solveLimited(assume,opt_pre && do_simp, !opt_pre && do_simp);
 		resetDecisionPriority(S,old_decision_priority);
+		found_optimal=r!=l_Undef;
 		return r;
 
 	}else{
@@ -1630,6 +1613,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 		return ever_solved? l_True:l_False;
 	}
 	resetDecisionPriority(S,old_decision_priority);
+	found_optimal=false;
     return l_Undef; //Is this reachable?
 }
 };
