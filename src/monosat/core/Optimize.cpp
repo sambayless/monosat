@@ -1630,7 +1630,7 @@ lbool optimize_and_solve(SimpSolver & S,const vec<Lit> & assumes,const vec<Objec
 		return ever_solved? l_True:l_False;
 	}
 	resetDecisionPriority(S,old_decision_priority);
-
+    return l_Undef; //Is this reachable?
 }
 };
 #endif /* OPTIMIZE_CPP_ */
