@@ -5,9 +5,6 @@ MonoSAT comes with a simplified, Z3-inspired Python 3 interface (see api/python)
 
 To see further examples of use cases for MonoSAT, and details on the (very simple) input file format that MonoSAT accepts, see  [FORMAT].
 
-If you with to cite MonoSAT in a paper, please cite our 2015 AAAI paper: 
-
-
 ### Building
 MonoSAT requires CMake (version 2.7 or higher).
 
@@ -149,7 +146,17 @@ MonoSAT was made possible by the use of several open-source projects, including 
 * [Bayless, S. "SAT Modulo Monotonic Theories." PhD thesis, University of British Columbia (2017)](http://www.cs.ubc.ca/labs/isd/Projects/monosat/sam_bayless_thesis_2017.pdf)
 * [Bayless, S., Kodirov, N., Beschastnikh, N., Hoos, H. H., Hu, A.J. "Scalable Constraint-Based Virtual Data Center Allocation", International Joint Conference on Artificial Intelligence (2017)](http://www.cs.ubc.ca/labs/isd/Projects/monosat/netsolver_ijcai2017.pdf)
 
-#### If you would like your publication listed here, please contact [Sam Bayless](mailto:sbayless@cs.ubc.ca).
+If you would like your publication listed here, please contact [Sam Bayless](mailto:sbayless@cs.ubc.ca).
+
+If you want to cite MonoSAT, please cite our 2015 AAAI paper:
+```
+@article{monosat2015,
+  author	= {Sam Bayless and Noah Bayless and Holger H. Hoos and Alan J. Hu},
+  title		= {{SAT Modulo Monotonic Theories}},
+  booktitle	= {Proceedings of the 29th AAAI Conference on Artificial Intelligence},
+  year		= {2015}
+}
+```
 
 ### Further References
 * <a name="buriol2008speeding">[Buriol, Luciana S., Mauricio GC Resende, and Mikkel Thorup. "Speeding up dynamic shortest-path algorithms." INFORMS Journal on Computing 20.2 (2008): 191-204.](http://dx.doi.org/10.1287/ijoc.1070.0231)</a>
