@@ -5,6 +5,9 @@ MonoSAT comes with a simplified, Z3-inspired Python 3 interface (see api/python)
 
 To see further examples of use cases for MonoSAT, and details on the (very simple) input file format that MonoSAT accepts, see  [FORMAT].
 
+If you with to cite MonoSAT in a paper, please cite our 2015 AAAI paper: 
+
+
 ### Building
 MonoSAT requires CMake (version 2.7 or higher).
 
@@ -138,9 +141,17 @@ MonoSAT was made possible by the use of several open-source projects, including 
 [computational geometry library]:http://www.fluxionsdividebyzero.com/p1/math/geometry/geom.html
 [Disjoint Sets]: http://web.rememberingemil.org/Projects/DisjointSets.aspx.html
 
+### Publications using MonoSAT
+* [Bayless, S., Bayless, N., Hoos, H. H., Hu, A.J. "SAT Modulo Monotonic Theories", Proceedings of the 29th AAAI Conference on Artificial Intelligence (2015)](http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf)
+* [Klenze, T., and Bayless, S., and Hu, A.J. "Fast, Flexible, and Minimal CTL synthesis via SMT", International Conference on Computer Aided Verification (2016)](http://www.cs.ubc.ca/labs/isd/Projects/monosat/monosat_ctl_cav2016.pdf)
+* <a name="nadelruc16">[Nadel, A. "Routing under Constraints." Formal Methods in Computer-Aided Design FMCAD (2016)](http://dl.acm.org/citation.cfm?id=3077653)</a>
+* [Bayless, S., Hoos, H. H., and Hu, A.J. "Scalable, high-quality, SAT-based Multi-Layer Escape Routing", Proceedings of the 35th International Conference on Computer-Aided Design (2016)](http://www.cs.ubc.ca/labs/isd/Projects/monosat/monosat_bga_iccad2016.pdf)
+* [Bayless, S. "SAT Modulo Monotonic Theories." PhD thesis, University of British Columbia (2017)](http://www.cs.ubc.ca/labs/isd/Projects/monosat/sam_bayless_thesis_2017.pdf)
+* [Bayless, S., Kodirov, N., Beschastnikh, N., Hoos, H. H., Hu, A.J. "Scalable Constraint-Based Virtual Data Center Allocation", International Joint Conference on Artificial Intelligence (2017)](http://www.cs.ubc.ca/labs/isd/Projects/monosat/netsolver_ijcai2017.pdf)
 
-### References
-* <a name="nadelruc16">[Nadel, Alexander. "Routing under Constraints." Formal Methods in Computer-Aided Design FMCAD (2016)](http://dl.acm.org/citation.cfm?id=3077653)</a>
+#### If you would like your publication listed here, please contact [Sam Bayless](mailto:sbayless@cs.ubc.ca).
+
+### Further References
 * <a name="buriol2008speeding">[Buriol, Luciana S., Mauricio GC Resende, and Mikkel Thorup. "Speeding up dynamic shortest-path algorithms." INFORMS Journal on Computing 20.2 (2008): 191-204.](http://dx.doi.org/10.1287/ijoc.1070.0231)</a>
 * <a name="dijkstra1959note">[Dijkstra, Edsger W. "A note on two problems in connexion with graphs." Numerische mathematik 1.1 (1959): 269-271](http://dx.doi.org/10.1007%2FBF01386390)</a>
 * <a name="dinitz">[Dinitz, Y. "Algorithm for solution of a problem of maximum flow in a network with power estimation". Doklady Akademii nauk SSSR 11: 1277–1280  (1970)](http://www.cs.bgu.ac.il/~dinitz/D70.pdf)</a>
