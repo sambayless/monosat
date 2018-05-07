@@ -752,7 +752,7 @@ public final class Logic {
 
     public static void assertPB(Collection<Lit> args, Comparison c, int compareTo) {
         Solver solver = getSolver(args);
-        if(args.size()>0) {
+        if(solver!=null){
            solver.assertPB(args, c, compareTo);
         }else{
             int trueCount = 0;
@@ -769,7 +769,7 @@ public final class Logic {
     }
     public static void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
         Solver solver = getSolver(args);
-        if(args.size()>0) {
+        if(solver!=null){
             solver.assertPB(args, c, compareTo);
         }else{
             int trueCount = 0;

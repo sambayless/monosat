@@ -975,12 +975,13 @@ public final class Solver implements Closeable {
      */
     public void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
         validate(args);
-        if(weights.size()>args.size()){
-            throw  new IllegalArgumentException("Must not have more weights then literals.");
-        }
+
         IntBuffer wt_buffer = getBuffer(1, args.size());
         int n_wts = 0;
         if (weights != null) {
+            if(weights.size()>args.size()){
+                throw  new IllegalArgumentException("Must not have more weights then literals.");
+            }
             n_wts = Math.min(args.size(), weights.size());
             int i = 0;
             for(Integer w:weights){
