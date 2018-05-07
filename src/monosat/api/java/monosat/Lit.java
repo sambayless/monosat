@@ -41,19 +41,8 @@ public final class Lit {
     public final static Lit False = new Lit(1, true);
     protected final Solver solver;
 
-    //private final Lit neg; //every literal also has a pointer to its negation.
     //The value of this literal
     protected int l = -2;
-
-/*
-    *//**
-     * Typically, users will create literals using Solver.newLit(), rather than constructing them directly.
-     *//*
-    protected Lit(Solver solver) {
-        this.l = -2;
-        this.solver=solver;
-        //this.neg = Error;
-    }*/
 
     private Lit(int lit, boolean define_literal) {
         //used to define static lits

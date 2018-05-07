@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 public final class Graph {
     Solver solver;
-    int bitwidth = -1;
+    private int bitwidth = -1;
     private long graphPtr;
     private Map<String, Integer> nodeMap = new HashMap<String, Integer>();
     private ArrayList<String> nodeNames = new ArrayList<String>();

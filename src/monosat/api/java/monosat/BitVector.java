@@ -35,17 +35,17 @@ public final class BitVector {
     private Solver solver;
     private ArrayList<Lit> bits = new ArrayList<Lit>();
 
-    public BitVector(Solver solver, ArrayList<Lit> bits) {
+    public BitVector(Solver solver, ArrayList<Lit> literals) {
         this.solver = solver;
-        width = bits.size();
+        width = literals.size();
         if(width<=0){
             throw new IllegalArgumentException("BitVector must have a bit-width >= 0");
         }else if(width>64){
             throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
         }
-        id = MonosatJNI.newBitvector(solver.solverPtr, solver.bvPtr, solver.getLitBuffer(bits), bits.size());
-        for (Lit l : bits) {
-            bits.add(l);
+        id = MonosatJNI.newBitvector(solver.solverPtr, solver.bvPtr, solver.getLitBuffer(literals), literals.size());
+        for (Lit l : literals) {
+            this.bits.add(l);
         }
         solver.registerBitVector(this);
     }

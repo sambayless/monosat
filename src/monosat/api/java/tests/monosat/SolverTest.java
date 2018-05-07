@@ -148,4 +148,12 @@ public class SolverTest {
             boolean val = l.value();
         }
     }
+
+    @Test
+    public void version(){
+        String version  = Solver.getVersion();
+        System.out.println(version);
+        assertFalse(version.isEmpty());
+    }
+
 }

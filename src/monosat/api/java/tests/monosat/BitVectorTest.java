@@ -132,7 +132,7 @@ public class BitVectorTest {
         assertTrue(s.solve(c.not()));
         v1 = bv1.value();
         v2 = bv2.value();
-        assertTrue("BV1 == BV2", v1 == v2);
+        assertEquals("BV1 == BV2", v1 , v2);
     }
 
     @Test
@@ -144,7 +144,7 @@ public class BitVectorTest {
         assertTrue(s.solve(c));
         long v1 = bv1.value();
         long v2 = bv2.value();
-        assertTrue("BV1 == BV2", v1 == v2);
+        assertEquals("BV1 == BV2", v1 , v2);
         assertTrue(s.solve(c.not()));
         v1 = bv1.value();
         v2 = bv2.value();

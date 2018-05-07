@@ -27,12 +27,16 @@ import java.nio.IntBuffer;
 
 /**
  * Low-level JNI mapping of the C interface to MonoSAT.
+ * This class is not intended for end users, and its interface
+ * may change without warning if the native library changes.
+ * See instead monosat.Solver.
  */
-public final class MonosatJNI {
+final class MonosatJNI {//package level access specifier
     static {
         System.loadLibrary("monosat");
     }
 
+    //Get the version string from the native library.
     public native static String getVersion();
 
     //literal/variable transformations

@@ -171,12 +171,19 @@ public final class Solver implements Closeable {
         assert(positiveLiterals.contains(Lit.True));
     }
 
+    /**
+     * @return The version string of the MonoSAT native library.
+     */
+    public static String getVersion(){
+        return MonosatJNI.getVersion();
+    }
+
     private static String collectArgs(ArrayList<String> args) {
-        String arg = "";
+        StringBuilder arg = new StringBuilder();
         for (String s : args) {
-            arg += s + " ";
+            arg.append(s).append(" ");
         }
-        return arg;
+        return arg.toString();
     }
 
     /**
@@ -383,7 +390,6 @@ public final class Solver implements Closeable {
         }
         return buffer;
     }
-
 
     /**
      * Internal method for converting java collections of allLits into
