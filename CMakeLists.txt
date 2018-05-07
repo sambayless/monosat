@@ -481,7 +481,9 @@ if (JAVA)
             WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
             )
 
-    message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_doc.zip")
+
+
+    message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_javadoc.zip")
 
     add_custom_command(TARGET libmonosat
             POST_BUILD
