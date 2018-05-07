@@ -172,7 +172,7 @@ public final class Lit {
      * This can happen only if the literal is not a decision literal.
      */
     public boolean value() throws NoModelException {
-        return getValue(Solver.LBool.Undef);
+        return value(Solver.LBool.Undef);
     }
     /**
      * Query the model in the solver.
@@ -180,7 +180,7 @@ public final class Lit {
      * Else, if the literal is unassigned, defaultVal will be returned.
      */
     public boolean value(boolean defaultVal) throws NoModelException {
-        return getValue(Solver.LBool.fromBool(defaultVal));
+        return value(Solver.LBool.fromBool(defaultVal));
     }
     /**
      * After a solve call, non-decision literals may or may not be assigned to a value.
@@ -231,7 +231,7 @@ public final class Lit {
      * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
      * Else, if the literal is unassigned, defaultVal will be returned.
      */
-    protected boolean getValue(Solver.LBool defaultVal) throws NoModelException {
+    protected boolean value(Solver.LBool defaultVal) throws NoModelException {
         if(this.l<0){
             throw new IllegalArgumentException("Literal " + toString() + " is not a valid literal.");
         }

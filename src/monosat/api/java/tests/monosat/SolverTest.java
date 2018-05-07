@@ -124,4 +124,28 @@ public class SolverTest {
         assertTrue(solver.solve(a));
         assertTrue(solver.solve(a.not(),b.not()));
     }
+
+    @Test
+    public void getLits() {
+        Solver s = new Solver();
+        assertEquals(s.getLits().size(),1);
+        Lit a = new Lit(s);
+        Lit b = new Lit(s);
+        Lit c = new Lit(s);
+        Lit d = new Lit(s);
+        assertEquals(s.getLits().size(),5);
+        s.addClause(a);
+        s.addClause(a,b.not());
+        s.addClause(a.not(),b,c);
+        s.addClause(a.not(),b,c,d.not());
+        assertTrue(s.solve());
+        ArrayList<Lit> clause = new ArrayList<Lit>(Arrays.asList(a,b.not(),c.not(),d));
+        s.addClause(clause);
+        assertTrue(s.solve());
+
+        assertEquals(s.getLits().size(),5); //plus 1, for the constant true literal
+        for(Lit l:s.getLits()){
+            boolean val = l.value();
+        }
+    }
 }

@@ -327,9 +327,11 @@ public class BitVectorTest {
     @Test
     public void getBitVectors() {
         Solver s = new Solver();
+        assertEquals(s.getBitVectors().size(),0);
         BitVector bv1 = new BitVector(s,4);
         BitVector bv2 = new BitVector(s,4);
         BitVector bv3 = Logic.add(bv1,bv2);
+        assertEquals(s.getBitVectors().size(),3);
         s.assertTrue(bv1.gt(1));
         s.assertTrue(bv2.gt(bv1));
         s.solve();
