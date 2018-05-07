@@ -47,6 +47,7 @@ public final class BitVector {
         for (Lit l : bits) {
             bits.add(l);
         }
+        solver.registerBitVector(this);
     }
 
     public BitVector(Solver solver, int width, long constant) {
@@ -71,6 +72,7 @@ public final class BitVector {
                 bits.add(Lit.False);
             }
         }
+        solver.registerBitVector(this);
     }
 
     /**
@@ -97,6 +99,7 @@ public final class BitVector {
             }
             id = MonosatJNI.newBitvector(solver.solverPtr, solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size());
         }
+        solver.registerBitVector(this);
     }
 
     public BitVector(Solver solver, int width) {

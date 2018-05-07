@@ -71,8 +71,12 @@ public final class Solver implements Closeable {
     private ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
 
     //Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
-    private ArrayList<Lit> lits = new ArrayList<>();
+    private ArrayList<Lit> allLits = new ArrayList<>();
 
+    //contains only the positive versions of instianted literals, in the order they were created.
+    private LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
+
+    private ArrayList<BitVector> allBVs = new ArrayList<>();
 
     /**
      * Represents a value that is either true, false, or undefined.
@@ -115,8 +119,8 @@ public final class Solver implements Closeable {
         this(args, false);
     }
 
-    public Solver(boolean enable_preprocessing) {
-        this("", enable_preprocessing);
+    public Solver(boolean enablePreprocessing) {
+        this("", enablePreprocessing);
     }
 
     public Solver(ArrayList<String> args) {
@@ -127,19 +131,19 @@ public final class Solver implements Closeable {
         this(collectArgs(args), false,outputFile);
     }
 
-    public Solver(ArrayList<String> args, boolean enable_preprocessing) {
-        this(collectArgs(args), enable_preprocessing,"");
+    public Solver(ArrayList<String> args, boolean enablePreprocessing) {
+        this(collectArgs(args), enablePreprocessing,"");
     }
-    public Solver(ArrayList<String> args, boolean enable_preprocessing, String outputFile) {
-        this(collectArgs(args), enable_preprocessing,outputFile);
+    public Solver(ArrayList<String> args, boolean enablePreprocessing, String outputFile) {
+        this(collectArgs(args), enablePreprocessing,outputFile);
     }
-    public Solver(String args, boolean enable_preprocessing){
-        this(args,enable_preprocessing,"");
+    public Solver(String args, boolean enablePreprocessing){
+        this(args,enablePreprocessing,"");
     }
     public Solver(String args, String outputFule){
         this(args,false,outputFule);
     }
-    public Solver(String args, boolean enable_preprocessing,String outputFile) {
+    public Solver(String args, boolean enablePreprocessing,String outputFile) {
         if (args != null && args.length() > 0) {
             solverPtr = MonosatJNI.newSolver("monosat " + args);
         } else {
@@ -153,7 +157,7 @@ public final class Solver implements Closeable {
         if(outputFile!=null && outputFile.length()>0){
             MonosatJNI.setOutputFile(solverPtr, outputFile);
         }
-        if (!enable_preprocessing) {
+        if (!enablePreprocessing) {
             disablePreprocessing();
         }
         registerLit(Lit.True,Lit.False);
@@ -164,6 +168,7 @@ public final class Solver implements Closeable {
 
         initBV();
         initBuffers();
+        assert(positiveLiterals.contains(Lit.True));
     }
 
     private static String collectArgs(ArrayList<String> args) {
@@ -381,7 +386,7 @@ public final class Solver implements Closeable {
 
 
     /**
-     * Internal method for converting java collections of lits into
+     * Internal method for converting java collections of allLits into
      * byte buffers (as required by the Monosat JNI)
      * @param clause
      * @param bufferN
@@ -681,6 +686,16 @@ public final class Solver implements Closeable {
         registerLit(l,null);
     }
 
+
+    /**
+     * Internal method used to maintain an iterable list of bitvectors in the solver.
+     *
+     */
+    protected void registerBitVector(BitVector bv){
+        allBVs.add(bv);
+    }
+
+
     /**
      * Internal method used to cache newly instantiated literals,
      * so that literals returned from C++ can reuse the same objects.
@@ -692,12 +707,12 @@ public final class Solver implements Closeable {
         assert (literal >= 0);
         int var = literal / 2;
         assert (var < nVars());//the variable must have already been declared in the sat solver before this call
-        while (var*2+1 >= lits.size()) {
-            lits.add(null);
+        while (var*2+1 >= allLits.size()) {
+            allLits.add(null);
         }
 
-        assert (lits.get(var*2) == null);
-        assert (lits.get(var*2+1) == null);
+        assert (allLits.get(var*2) == null);
+        assert (allLits.get(var*2+1) == null);
 
         if(notL==null){
             if(l.sign()){
@@ -709,19 +724,27 @@ public final class Solver implements Closeable {
 
         if(l.sign()) {
             assert(notL.l==l.l-1);
-            lits.set(var*2, notL);
-            lits.set(var*2+1,l);
+            allLits.set(var*2, notL);
+            allLits.set(var*2+1,l);
         }else {
             assert(notL.l==l.l+1);
-            lits.set(var*2,l);
-            lits.set(var*2+1,notL);
+            allLits.set(var*2,l);
+            allLits.set(var*2+1,notL);
         }
 
-        assert(!lits.get(var*2).sign());
-        assert(lits.get(var*2+1).sign());
+        assert(!allLits.get(var*2).sign());
+        assert(allLits.get(var*2+1).sign());
 
-        assert(lits.get(l.l)!=null);
-        assert(lits.get(l.l)==l);
+        assert(allLits.get(l.l)!=null);
+        assert(allLits.get(l.l)==l);
+
+        if(l.sign()){
+            assert (!positiveLiterals.contains(notL));
+            positiveLiterals.add(notL);
+        }else {
+            assert (!positiveLiterals.contains(l));
+            positiveLiterals.add(l);
+        }
     }
 
     /**
@@ -731,24 +754,42 @@ public final class Solver implements Closeable {
         assert (literal >= 0);
         int var = literal / 2;
         assert (var < nVars());//the variable must have already been declared in the sat solver before this call
-        while (var*2+1 >= lits.size()) {
-            lits.add(null);
+        while (var*2+1 >= allLits.size()) {
+            allLits.add(null);
         }
-        if (lits.get(var*2) == null) {
-            assert(lits.get(var*2+1) == null);
-            lits.set(var*2, new Lit(this,var*2));
-            lits.set(var*2+1, new Lit(this,var*2+1));
-            assert(!lits.get(var*2).sign());
-            assert(lits.get(var*2+1).sign());
+        if (allLits.get(var*2) == null) {
+            assert(allLits.get(var*2+1) == null);
+            Lit l =  new Lit(this,var*2);
+            Lit notL = new Lit(this,var*2+1);
+            allLits.set(var*2,l);
+            allLits.set(var*2+1, notL);
+            assert(!allLits.get(var*2).sign());
+            assert(allLits.get(var*2+1).sign());
+
+            assert (!positiveLiterals.contains(l));
+            positiveLiterals.add(l);
         }
-        assert(lits.get(literal)!=null);
-        assert(lits.get(literal).l==literal);
-        return lits.get(literal);
+        assert(allLits.get(literal)!=null);
+        assert(allLits.get(literal).l==literal);
+        return allLits.get(literal);
+    }
+
+    /**
+     * @return immutable view of the positive literals in the solver.
+     */
+    public Collection<Lit> getLits(){
+        return Collections.unmodifiableSet(positiveLiterals);
+    }
+
+    /**
+     * @return immutable view of the BitVectors in the solver.
+     */
+    public Collection<BitVector> getBitVectors(){
+        return Collections.unmodifiableList(allBVs);
     }
 
 
     //Optimization API
-
 
     /**
      * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
@@ -1049,8 +1090,8 @@ public final class Solver implements Closeable {
         int l = a.toInt();
         l = l^1;//bit twiddle odd to even
         assert(l>=0);
-        assert(l<lits.size());
-        return lits.get(l);
+        assert(l< allLits.size());
+        return allLits.get(l);
     }
 
     public Lit nand(Lit... args) {

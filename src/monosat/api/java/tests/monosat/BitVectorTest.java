@@ -323,4 +323,20 @@ public class BitVectorTest {
             }
         }
     }
+
+    @Test
+    public void getBitVectors() {
+        Solver s = new Solver();
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
+        BitVector bv3 = Logic.add(bv1,bv2);
+        s.assertTrue(bv1.gt(1));
+        s.assertTrue(bv2.gt(bv1));
+        s.solve();
+        for (BitVector bv : s.getBitVectors()){
+            long val = bv.value();
+            assert(val>0);
+        }
+        assertEquals(s.getBitVectors().size(),3);
+    }
 }
