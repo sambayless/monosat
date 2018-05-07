@@ -335,7 +335,7 @@ if (JAVA)
             PRE_BUILD
             #OUTPUT ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h
             OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/__MonosatJNI.h # Using a fake file here that is never actually generated, to ensure that javac is always re-run
-            #javah is now deprecated, using javac -h instead
+            #javah is deprecated, using javac -h instead
             # COMMAND ${Java_JAVAH_EXECUTABLE} -jni -verbose  monosat.MonosatJNI
             #COMMAND echo "Running ${Java_JAVAC_EXECUTABLE} from ${CMAKE_SOURCE_DIR}/src/monosat/api/java/"
             #COMMAND echo "${Java_JAVAC_EXECUTABLE}"
@@ -351,51 +351,8 @@ if (JAVA)
         message (STATUS "JNI_LIBRARIES=${JNI_LIBRARIES}")
     endif()
     include_directories(${JNI_INCLUDE_DIRS})
-
-   #message(STATUS "MonoSAT java source will be compressed to ${CMAKE_BINARY_DIR}/monosat_src.zip")
-   #[[ add_custom_command(
-            PRE_BUILD
-            COMMAND
-            "${Java_JAR_EXECUTABLE}" "cfM" "monosat_src.zip" "-C" "${CMAKE_SOURCE_DIR}" "${JAVA_SOURCE_FILES}"
-            OUTPUT "${CMAKE_BINARY_DIR}/monosat_src.zip"
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )]]
-
-
     set(CMAKE_JNI_TARGET TRUE)
-    add_jar(monosat_jar ${JAVA_SOURCE_FILES} OUTPUT_NAME monosat)
-    get_target_property(_jarFile monosat_jar JAR_FILE)
-    get_target_property(_classDir monosat_jar CLASSDIR)
-    message(STATUS "Monosat jar file will be created at ${CMAKE_BINARY_DIR}/${_jarFile}")
-    #message(STATUS "Monosat Java Classes  will be compiled to ${_classDir}")
-    #[[create_javadoc(javadoc FILES ${JAVA_SOURCE_FILES}
-            WINDOWTITLE "MonoSAT Java Interface"
-            DOCTITLE "<h1>MonoSAT Java Interface</h1>"
-            AUTHOR TRUE
-            USE TRUE
-            VERSION TRUE
-            #OUTPUT ${CMAKE_BINARY_DIR}/javadoc
-            )]]
 
-    #add_custom_command(TARGET monosat_jar
-    #        POST_BUILD
-    #        COMMAND ${CMAKE_COMMAND} -E rename  ${CMAKE_BINARY_DIR}/javadoc/monosat_javadoc ${CMAKE_BINARY_DIR}/javadoc/monosat)
-    #add_custom_command(TARGET monosat_jar
-    #message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_doc.zip")
-    #[[add_custom_command(
-            PRE_BUILD
-            COMMAND
-            "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_BINARY_DIR}/javadoc" "-sourcepath" "${JAVA_SOURCE_FILES}"
-            OUTPUT "${CMAKE_BINARY_DIR}/javadoc"
-            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    )]]
-   #[[ add_custom_command(
-            DEPENDS ${CMAKE_BINARY_DIR}/javadoc
-            COMMAND
-            "${Java_JAR_EXECUTABLE}" "cfM" "monosat_doc.zip" "-C" "${CMAKE_BINARY_DIR}/javadoc" "javadoc"
-            OUTPUT "${CMAKE_BINARY_DIR}/monosat_doc.zip"
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    )]]
 
 
 else()
@@ -504,8 +461,65 @@ if (NOT APPLE)
 endif()
 target_link_libraries(monosat gmpxx)
 target_link_libraries(monosat gmp)
+
 if (JAVA)
-    target_link_libraries(monosat ${JNI_LIBRARIES})
+    target_link_libraries(monosat ${JNI_LIBRARIES}) #Not clear if this is required
+
+    message(STATUS "MonoSAT java source will be compressed to ${CMAKE_BINARY_DIR}/monosat_src.zip")
+    add_custom_command(
+            PRE_BUILD
+            COMMAND
+            "${Java_JAR_EXECUTABLE}" "cfM" "monosat_src.zip" "-C" "${CMAKE_SOURCE_DIR}" "${JAVA_SOURCE_FILES}"
+            OUTPUT "${CMAKE_BINARY_DIR}/monosat_src.zip"
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+
+    add_jar(monosat_jar ${JAVA_SOURCE_FILES} OUTPUT_NAME monosat)
+    get_target_property(_jarFile monosat_jar JAR_FILE)
+    get_target_property(_classDir monosat_jar CLASSDIR)
+    message(STATUS "Monosat jar file will be created at ${CMAKE_BINARY_DIR}/${_jarFile}")
+
+
+    file(GLOB_RECURSE RELATIVE_JAVA_PATHS RELATIVE "${CMAKE_SOURCE_DIR}/src/monosat/api/java/" ${JAVA_SOURCE_FILES} )
+
+    #add source code to the jar
+    add_custom_command(TARGET libmonosat
+            POST_BUILD
+            COMMAND
+            "${Java_JAR_EXECUTABLE}" "uf" "${CMAKE_BINARY_DIR}/monosat.jar" ${RELATIVE_JAVA_PATHS} # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
+            )
+
+
+    #message(STATUS "Monosat Java Classes  will be compiled to ${_classDir}")
+    #[[create_javadoc(javadoc FILES ${JAVA_SOURCE_FILES}
+            WINDOWTITLE "MonoSAT Java Interface"
+            DOCTITLE "<h1>MonoSAT Java Interface</h1>"
+            AUTHOR TRUE
+            USE TRUE
+            VERSION TRUE
+            #OUTPUT ${CMAKE_BINARY_DIR}/javadoc
+            )]]
+
+    #add_custom_command(TARGET monosat_jar
+    #        POST_BUILD
+    #        COMMAND ${CMAKE_COMMAND} -E rename  ${CMAKE_BINARY_DIR}/javadoc/monosat_javadoc ${CMAKE_BINARY_DIR}/javadoc/monosat)
+    #add_custom_command(TARGET monosat_jar
+    #message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_doc.zip")
+    #[[add_custom_command(
+            PRE_BUILD
+            COMMAND
+            "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_BINARY_DIR}/javadoc" "-sourcepath" "${JAVA_SOURCE_FILES}"
+            OUTPUT "${CMAKE_BINARY_DIR}/javadoc"
+            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )]]
+    #[[ add_custom_command(
+             DEPENDS ${CMAKE_BINARY_DIR}/javadoc
+             COMMAND
+             "${Java_JAR_EXECUTABLE}" "cfM" "monosat_doc.zip" "-C" "${CMAKE_BINARY_DIR}/javadoc" "javadoc"
+             OUTPUT "${CMAKE_BINARY_DIR}/monosat_doc.zip"
+             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+     )]]
 endif (JAVA)
 
 if (UNIX)
