@@ -478,8 +478,10 @@ final class MonosatJNI {//package level access specifier
 //if you have more than 20 or so literals, strongly consider using a pseudo-Boolean constraint solver instead
     public native static void AssertExactlyOne(long solverPtr, IntBuffer lits, int n_lits);
 
-
-    // Test Driver
+   /**
+   * Simple test driver, useful for debugging native library linking issues.
+    */
+    @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         System.out.println("Loading native libraries:");
         try {

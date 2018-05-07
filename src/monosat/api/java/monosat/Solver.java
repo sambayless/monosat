@@ -43,7 +43,10 @@ public final class Solver implements Closeable {
     protected static WeakHashMap<Solver,Boolean> solvers = new WeakHashMap<Solver, Boolean>();
     protected static final Logger log = Logger.getLogger("monosat");
 
-
+    /**
+     * Largest constant BitVector value to cache.
+     * This may change in the future.
+     */
     private static long MAX_CACHE_CONST = 255;
 
     /**
@@ -92,6 +95,12 @@ public final class Solver implements Closeable {
             return values()[value?0:1];
         }
 
+        /**
+         * Optional value objects are created statically allocated for each LBool type,
+         * so that we don't need to instantiate new Optional instances on the heap for toOpt() calls.
+         * This matters, as a user may look up the values of millions of literals in common use cases.
+         */
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
         private Optional<Boolean> opt;
 
         static {
@@ -1422,7 +1431,7 @@ public final class Solver implements Closeable {
 
     public BitVector min(BitVector a, BitVector b) {
         validate(a,b);
-        ArrayList pair = new ArrayList();
+        ArrayList<BitVector> pair = new ArrayList<>();
         pair.add(a);
         pair.add(b);
         return min(pair);
@@ -1439,7 +1448,7 @@ public final class Solver implements Closeable {
 
     public BitVector max(BitVector a, BitVector b) {
         validate(a,b);
-        ArrayList pair = new ArrayList();
+        ArrayList<BitVector> pair = new ArrayList<>();
         pair.add(a);
         pair.add(b);
         return max(pair);
