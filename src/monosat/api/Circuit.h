@@ -25,6 +25,7 @@
 #include "monosat/core/SolverTypes.h"
 #include "monosat/mtl/Vec.h"
 #include <list>
+#include <stdio.h>
 
 namespace Monosat{
 

@@ -23,6 +23,7 @@
 #define MONOSAT_H_
 //Monosat library interface, in C
 #include <stdint.h>
+#include <stdio.h>
 #ifdef __cplusplus
 #include "monosat/utils/ParseUtils.h"
 #include "monosat/utils/Options.h"
