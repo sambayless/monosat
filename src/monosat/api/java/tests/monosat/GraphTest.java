@@ -118,11 +118,9 @@ public class GraphTest {
         }
         //create a directed square graph with one diagonal edges
         /*
-
         0 *--* 1
           |/ |
         2 *--* 3
-
          */
 
         Lit e_0_1 = g.addEdge(0, 1);

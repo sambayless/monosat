@@ -791,14 +791,14 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * @return immutable view of the positive literals in the solver.
+     * @return unmodifiable view of the positive literals in the solver.
      */
     public Collection<Lit> getLits(){
         return Collections.unmodifiableSet(positiveLiterals);
     }
 
     /**
-     * @return immutable view of the BitVectors in the solver.
+     * @return unmodifiable view of the BitVectors in the solver.
      */
     public Collection<BitVector> getBitVectors(){
         return Collections.unmodifiableList(allBVs);
