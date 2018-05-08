@@ -40,8 +40,8 @@ public final class Solver implements Closeable {
      * Holds weak references to all currently existing solvers,
      * so that global logic operations on True/False can be applied.
      */
-    protected static WeakHashMap<Solver,Boolean> solvers = new WeakHashMap<Solver, Boolean>();
-    protected static final Logger log = Logger.getLogger("monosat");
+    protected final static WeakHashMap<Solver,Boolean> solvers = new WeakHashMap<Solver, Boolean>();
+    protected final static Logger log = Logger.getLogger("monosat");
 
     /**
      * Largest constant BitVector value to cache.
@@ -71,18 +71,19 @@ public final class Solver implements Closeable {
     private IntBuffer ints2;
 
     //Caches instantiated, small BitVectors
-    private ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
+    private final ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
 
     //Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
-    private ArrayList<Lit> allLits = new ArrayList<>();
+    private final ArrayList<Lit> allLits = new ArrayList<>();
 
     //contains only the positive versions of instantiated literals, in the order they were created.
-    private LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
+    private final LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
 
-    private ArrayList<BitVector> allBVs = new ArrayList<>();
+    private final ArrayList<BitVector> allBVs = new ArrayList<>();
 
     /**
      * Represents a value that is either true, false, or undefined.
+     * Only for internal use, for interfacing with the native library.
      */
     protected enum LBool {
         //Don't change the order of these, as they must match the order of the l_bool enum defined in Monosat.
@@ -968,8 +969,7 @@ public final class Solver implements Closeable {
      */
     public void assertPB(Collection<Lit> args,  Comparison c, int compareTo) {
         validate(args);
-        ArrayList<Lit> tmp = new ArrayList<>();
-        tmp.addAll(args);
+        ArrayList<Lit> tmp = new ArrayList<>(args);
         assertPB(tmp, null,c, compareTo);
     }
 
