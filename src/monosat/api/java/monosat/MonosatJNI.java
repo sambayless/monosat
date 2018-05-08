@@ -70,7 +70,8 @@ final class MonosatJNI {//package level access specifier
     //Sets the maximum number of (additional) conflicts allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
     public native static void setConflictLimit(long solverPtr, int num_conflicts);
 
-    //Sets the maximum number of (additional) propagations allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
+    //Sets the maximum number of (additional) propagation rounds allowed in the solver before returning l_Undef from
+    // solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
     public native static void setPropagationLimit(long solverPtr, int num_propagations);
 
     //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
@@ -134,7 +135,7 @@ final class MonosatJNI {//package level access specifier
     //Prevents this literal from being simplified by the preprocessor
     public native static boolean disallowLiteralSimplification(long solverPtr, int var);
 
-    //permanently disable SAT-based preprocessing in this solver
+    //permanently disable SAT-based pre-processing in this solver
     public native static void disablePreprocessing(long solverPtr);
 
     public native static int nVars(long solverPtr);
@@ -169,7 +170,7 @@ final class MonosatJNI {//package level access specifier
     //theory interface for bitvectors
     public native static long initBVTheory(long solverPtr);
 
-    public native static int newBitvector_const(long solverPtr, long bvPtr, int bvWidth, long constval);
+    public native static int newBitvector_const(long solverPtr, long bvPtr, int bvWidth, long constVal);
 
     public native static int newBitvector_anon(long solverPtr, long bvPtr, int bvWidth);
 
@@ -177,27 +178,27 @@ final class MonosatJNI {//package level access specifier
 
     public native static int bv_width(long solverPtr, long bvPtr, int bvID);
 
-    public native static int newBVComparison_const_lt(long solverPtr, long bvPtr, int bvID, long constval);
+    public native static int newBVComparison_const_lt(long solverPtr, long bvPtr, int bvID, long constVal);
 
     public native static int newBVComparison_bv_lt(long solverPtr, long bvPtr, int bvID, int compareID);
 
-    public native static int newBVComparison_const_leq(long solverPtr, long bvPtr, int bvID, long constval);
+    public native static int newBVComparison_const_leq(long solverPtr, long bvPtr, int bvID, long constVal);
 
     public native static int newBVComparison_bv_leq(long solverPtr, long bvPtr, int bvID, int compareID);
 
-    public native static int newBVComparison_const_gt(long solverPtr, long bvPtr, int bvID, long constval);
+    public native static int newBVComparison_const_gt(long solverPtr, long bvPtr, int bvID, long constVal);
 
     public native static int newBVComparison_bv_gt(long solverPtr, long bvPtr, int bvID, int compareID);
 
-    public native static int newBVComparison_const_geq(long solverPtr, long bvPtr, int bvID, long constval);
+    public native static int newBVComparison_const_geq(long solverPtr, long bvPtr, int bvID, long constVal);
 
     public native static int newBVComparison_bv_geq(long solverPtr, long bvPtr, int bvID, int compareID);
 
-    public native static int newBVComparison_const_eq(long solverPtr, long bvPtr, int bvID, long constval);
+    public native static int newBVComparison_const_eq(long solverPtr, long bvPtr, int bvID, long constVal);
 
     public native static int newBVComparison_bv_eq(long solverPtr, long bvPtr, int bvID, int compareID);
 
-    public native static int newBVComparison_const_neq(long solverPtr, long bvPtr, int bvID, long constval);
+    public native static int newBVComparison_const_neq(long solverPtr, long bvPtr, int bvID, long constVal);
 
     public native static int newBVComparison_bv_neq(long solverPtr, long bvPtr, int bvID, int compareID);
 
@@ -366,12 +367,12 @@ final class MonosatJNI {//package level access specifier
 
     public native static int Ors_(long solverPtr, IntBuffer lits, int n_lits, int lit_out);
 
-    //If this gate is true, then all of vals must be true.
-    //But if this gate is false, vals may be true or false.
+    //If this gate is true, then all of lits must be true.
+    //But if this gate is false, lits may be true or false.
     public native static int ImpliesAnd(long solverPtr, IntBuffer lits, int n_lits, int lit_out);
 
-    //If this gate is true, then at least one of vals must be true.
-    //But if this gate is false, vals may be true or false.
+    //If this gate is true, then at least one of lits must be true.
+    //But if this gate is false, lits may be true or false.
     public native static int ImpliesOr(long solverPtr, IntBuffer lits, int n_lits);
 
     public native static int ImpliesOr_(long solverPtr, IntBuffer lits, int n_lits, int lit_out);

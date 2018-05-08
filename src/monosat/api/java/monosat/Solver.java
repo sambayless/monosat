@@ -76,7 +76,7 @@ public final class Solver implements Closeable {
     //Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
     private ArrayList<Lit> allLits = new ArrayList<>();
 
-    //contains only the positive versions of instianted literals, in the order they were created.
+    //contains only the positive versions of instantiated literals, in the order they were created.
     private LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
 
     private ArrayList<BitVector> allBVs = new ArrayList<>();
@@ -118,7 +118,8 @@ public final class Solver implements Closeable {
 
     /**
      * Instantiate a new Solver.
-     * By default, support for preprocessing is disabled (as solving with preprocessing enabled requires some extra care)
+     * By default, support for pre-processing is disabled (as solving with pre-processing enabled requires some extra
+     * care)
      */
     public Solver() {
         this(false);
@@ -202,7 +203,7 @@ public final class Solver implements Closeable {
      */
     @Override
     public synchronized void close() {
-        //Does this method actually need to be syncronized?
+        //Does this method actually need to be synchronized?
         if (solverPtr != 0) {
             solvers.remove(this);
             MonosatJNI.deleteSolver(solverPtr);
@@ -552,7 +553,7 @@ public final class Solver implements Closeable {
     /**
      * Either find a satisfying solution to the constraints in te formula, or
      * prove the formula to be unsatisfiable.
-     * @return True if a satisfying soltuion was found, false if it does not.
+     * @return True if a satisfying solution was found, false if it does not.
      */
     public boolean solve() {
         return MonosatJNI.solve(solverPtr);
@@ -561,7 +562,7 @@ public final class Solver implements Closeable {
      * Either find a satisfying solution to the constraints in te formula, or
      * prove the formula to be unsatisfiable, while temporarily enforcing the
      * literals in assumptions to be true.     * *
-     * @return True if a satisfying soltuion was found, false if it does not.
+     * @return True if a satisfying solution was found, false if it does not.
      */
     public boolean solve(Lit... assumptions) {
         validate(assumptions);
@@ -571,7 +572,7 @@ public final class Solver implements Closeable {
      * Either find a satisfying solution to the constraints in te formula, or
      * prove the formula to be unsatisfiable, while temporarily enforcing the
      * literals in assumptions to be true.     * *
-     * @return True if a satisfying soltuion was found, false if it does not.
+     * @return True if a satisfying solution was found, false if it does not.
      */
     public boolean solve(Collection<Lit> assumptions) {
         validate(assumptions);
@@ -593,7 +594,8 @@ public final class Solver implements Closeable {
         MonosatJNI.setConflictLimit(solverPtr, num_conflicts);
     }
 
-    //Sets the maximum number of (additional) propagations allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
+    //Sets the maximum number of (additional) propagation rounds allowed in the solver before returning l_Undef from
+    // solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
     public void setPropagationLimit(int num_propagations) {
         MonosatJNI.setPropagationLimit(solverPtr, num_propagations);
     }
@@ -805,16 +807,16 @@ public final class Solver implements Closeable {
     //Optimization API
 
     /**
-     * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
-     * (leaves the original set intact if the literals are not mutualy UNSAT)
+     * Given a set of assumptions which are mutually UNSAT, find a locally minimal subset that remains UNSAT.
+     * (leaves the original set intact if the literals are not mutually UNSAT)
      */
     public List<Lit> minimizeUnsatCore(Lit... literals){
         validate(literals);
         return minimizeUnsatCore(Arrays.asList(literals));
     }
     /**
-     * Given a set of assumptions which are mutualy UNSAT, find a locally minimal subset that remains UNSAT.
-     * (leaves the original set intact if the literals are not mutualy UNSAT)
+     * Given a set of assumptions which are mutually UNSAT, find a locally minimal subset that remains UNSAT.
+     * (leaves the original set intact if the literals are not mutually UNSAT)
      */
     public List<Lit> minimizeUnsatCore(Collection<Lit> literals) {
         validate(literals);
@@ -851,7 +853,7 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * Clear any optimizaiton objectives in the solver.
+     * Clear any optimization objectives in the solver.
      */
     public void clearOptimizationObjectives() {
         MonosatJNI.clearOptimizationObjectives(solverPtr);

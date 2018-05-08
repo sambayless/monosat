@@ -31,7 +31,7 @@ public final class Graph {
     private final long graphPtr;
     private final Map<String, Integer> nodeMap = new HashMap<String, Integer>();
     private final ArrayList<String> nodeNames = new ArrayList<String>();
-    private final Set<Integer> nodes = new HashSet<Integer>();//consider arraylist<Integer>
+    private final Set<Integer> nodes = new HashSet<Integer>();//consider ArrayList<Integer>
     private final ArrayList<Map<Integer, LinkedList<Edge>>> edges = new ArrayList<>();
     private final Map<Lit,Edge> edgeLitMap = new HashMap<>();
     private final ArrayList<Edge> all_edges = new ArrayList<>();
@@ -87,7 +87,8 @@ public final class Graph {
             edges.add(null);
         }
         assert (edges.get(n) == null);
-        edges.set(n, new TreeMap<Integer, LinkedList<Edge>>());//Consider hash map or arraylist here, depending on density of graph...
+        edges.set(n, new TreeMap<Integer, LinkedList<Edge>>());//Consider hash map or ArrayList here, depending on
+        // density of graph...
         nodes.add(n);
         nodeMap.put(name, n);
         nodeNames.add(name);
@@ -646,7 +647,7 @@ public final class Graph {
     }
 
     /**
-     * Prints out a graphviz/.dot formatted representation of this graph
+     * Prints out a Graphviz/.dot formatted representation of this graph
      * @return
      */
     public String draw(boolean showModel, boolean showConstants){
@@ -672,7 +673,7 @@ public final class Graph {
                 }else{
                     writer.append(",color=black");
                     if(weight!=1){
-                        //supress weight 1, as that is the default
+                        //suppress weight 1, as that is the default
                         writer.append(",label=\"" + Long.toString(weight) + "\"");
                     }
                 }
