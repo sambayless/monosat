@@ -117,9 +117,16 @@ public final class Logic {
         }
     }
     //make these literals available to users who import monosat.Logic.*
+    /**
+     * True literal, shared among all solver instances.
+     */
     public final static Lit True = Lit.True; //Is there any possibility that this won't be constructed in the proper order?
+    /**
+     * False literal, shared among all solver instances.
+     */
     public final static Lit False = Lit.False;
-    public final static Lit Undef = Lit.Undef; //Don't import Lit.Error, as it is not typically used.
+
+    //Don't import Lit.Undef or Lit.Error
 
     //make these constants available to users who import monosat.Logic.*
     public final static Comparison EQ = Comparison.EQ;
