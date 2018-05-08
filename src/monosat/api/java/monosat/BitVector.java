@@ -479,10 +479,10 @@ public final class BitVector {
      * Creates a new bitvector consisting of the bits [this[0],..,this[size-1],append[0],..,append[append.size()-1]]
      * Does not introduce any new literals.
      *
-     * @param append BitVector to append.
-     * @return
+     * @param append BitVector to concatenate to this one.
+     * @return a new BitVector, consisting of the concatenation of this bitvector and 'append'
      */
-    public BitVector append(BitVector append) {
+    public BitVector concatenate(BitVector append) {
         int w = width() + append.width();
         BitVector result = new BitVector(solver, w);
         MonosatJNI.bv_concat(solver.solverPtr, solver.bvPtr, this.id, append.id, result.id);

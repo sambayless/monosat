@@ -232,11 +232,11 @@ public class BitVectorTest {
     }
 
     @Test
-    public void append() {
+    public void concatenate() {
         Solver s = new Solver();
         BitVector bv1 = new BitVector(s,4);
         BitVector bv2 = new BitVector(s,3);
-        BitVector bv3 = bv1.append(bv2);
+        BitVector bv3 = bv1.concatenate(bv2);
         assertEquals(bv3.width(), 7);
         assertTrue(s.solve(bv1.get(1), bv3.get(1)));
         assertFalse(s.solve(bv1.get(1), bv3.get(1).not()));
