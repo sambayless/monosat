@@ -34,6 +34,21 @@ import java.util.logging.Logger;
  * Represents a MonoSAT solver instance.
  * Multiple solvers may be instantiated, with separate
  * sets of literals and clauses.
+ *
+ * Example usage:
+ *
+ * <blockquote><pre>{@code
+ * Solver solver = new Solver();
+ * Lit a = new Lit(solver);//create a new, free literal
+ * BitVector b = new BitVector(solver,4);//create a BitVector of width 4.
+ *
+ * solver.addClause(a,b.gt(2)); //add a clause requiring either a to be true, or b to be greater than 2. *
+ * solver.solve();//attempt to solve this formula
+ *
+ * //retrieve the values of the literal and bitvector from the solver's satisfying assignment
+ * bool a_assign = a.value();
+ * long b_assign = b.value();
+ * }</pre></blockquote>
  */
 public final class Solver implements Closeable {
     /**
@@ -41,6 +56,10 @@ public final class Solver implements Closeable {
      * so that global logic operations on True/False can be applied.
      */
     protected final static WeakHashMap<Solver,Boolean> solvers = new WeakHashMap<Solver, Boolean>();
+
+    /**
+     * Logger for warnings in this library.
+     */
     protected final static Logger log = Logger.getLogger("monosat");
 
     /**
@@ -61,24 +80,49 @@ public final class Solver implements Closeable {
      */
     protected long bvPtr = 0;
 
-    //Used internally to manage byte buffers for calls to the C api
+    /**
+     * Used internally to manage byte buffers for calls to the C api
+     */
     private int buffer_size0 = 1024;
+    /**
+     * Used internally to manage byte buffers for calls to the C api
+     */
     private int buffer_size1 = 1024;
+    /**
+     * Used internally to manage byte buffers for calls to the C api
+     */
     private int buffer_size2 = 1024;
 
+    /**
+     * Used internally to manage byte buffers for calls to the C api
+     */
     private IntBuffer ints0;
+    /**
+     * Used internally to manage byte buffers for calls to the C api
+     */
     private IntBuffer ints1;
+    /**
+     * Used internally to manage byte buffers for calls to the C api
+     */
     private IntBuffer ints2;
 
-    //Caches instantiated, small BitVectors
+    /**
+     * Caches instantiated, small BitVectors.
+     */
     private final ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
 
-    //Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
+    /**
+     * Holds instances of all literals, so that we don't need to create multiple literal objects for the same literal
+     */
     private final ArrayList<Lit> allLits = new ArrayList<>();
 
-    //contains only the positive versions of instantiated literals, in the order they were created.
+    /**
+     * Contains only the positive versions of instantiated literals, in the order they were created.
+     */
     private final LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
-
+    /**
+     * Contains all BitVectors in this solver.
+     */
     private final ArrayList<BitVector> allBVs = new ArrayList<>();
 
     /**
@@ -89,9 +133,20 @@ public final class Solver implements Closeable {
         //Don't change the order of these, as they must match the order of the l_bool enum defined in Monosat.
         True, False, Undef;
 
+        /**
+         * Convert an integer to an LBool.
+         * @param value The integer representation of the LBool.
+         * @return The LBool constant corresponding to value.
+         */
         public static LBool toLbool(int value) {
             return values()[value];
         }
+
+        /**
+         * Convert a Boolean to either LBool.True or LBool.False.
+         * @param value The Boolean to convert.
+         * @return The LBool constant corresponding to value.
+         */
         public static LBool fromBool(boolean value) {
             return values()[value?0:1];
         }
@@ -110,6 +165,10 @@ public final class Solver implements Closeable {
             Undef.opt = Optional.empty();
         }
 
+        /**
+         * Convert this LBool into an Optional Boolean.
+         * @return An Optional representing the Boolean value of this LBool.
+         */
         public Optional<Boolean> toOpt(){
             return opt;
         }
@@ -118,42 +177,117 @@ public final class Solver implements Closeable {
 
 
     /**
-     * Instantiate a new Solver.
-     * By default, support for pre-processing is disabled (as solving with pre-processing enabled requires some extra
-     * care)
+     * Instantiate a new Solver, with default settings.
      */
     public Solver() {
         this(false);
     }
 
+    /**
+     * Instantiate a new Solver, with the given settings.
+     * MonoSAT has many command line options, which can be passed here.
+     * A typical usage is:
+     *
+     * <blockquote><pre>{@code
+     * Solver s = new Solver("-decide-theories"); //Create a solver with fast, graph-based decision heuristics enabled.
+     * }</pre></blockquote>
+     *
+     */
     public Solver(String args) {
         this(args, false);
     }
 
+    /**
+     * Instantiate a new Solver, with default settings.
+     *
+     * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+     * improve performance, but requires some extra care in solver usage, and so is disabled by default.
+     */
     public Solver(boolean enablePreprocessing) {
         this("", enablePreprocessing);
     }
 
+    /**
+     * Instantiate a new Solver, with the given list of settings.
+     * MonoSAT has many command line options, which can be passed here.
+     *
+     * @param args A list of strings, with each string representing an argument to pass to the solver.
+     */
     public Solver(ArrayList<String> args) {
         this(collectArgs(args), false);
     }
 
+    /**
+     * Instantiate a new Solver, with the given list of settings, and with
+     * constraints written to the specified output file.
+     * MonoSAT has many command line options, which can be passed here.
+     *
+     * @param args A list of strings, with each string representing an argument to pass to the solver.
+     * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+     */
     public Solver(ArrayList<String> args, String outputFile) {
         this(collectArgs(args), false,outputFile);
     }
 
+    /**
+     * Instantiate a new Solver, with the given list of settings.
+     * MonoSAT has many command line options, which can be passed here.
+     *
+     * @param args A list of strings, with each string representing an argument to pass to the solver.
+     * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+     * improve performance, but requires some extra care in solver usage, and so is disabled by default.
+     */
     public Solver(ArrayList<String> args, boolean enablePreprocessing) {
         this(collectArgs(args), enablePreprocessing,"");
     }
+
+
+    /**
+     * Instantiate a new Solver, with the given list of settings, and with
+     * constraints written to the specified output file.
+     * MonoSAT has many command line options, which can be passed here.
+     *
+     * @param args A list of strings, with each string representing an argument to pass to the solver.
+     * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+     * improve performance, but requires some extra care in solver usage, and so is disabled by default.
+     * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+     */
     public Solver(ArrayList<String> args, boolean enablePreprocessing, String outputFile) {
         this(collectArgs(args), enablePreprocessing,outputFile);
     }
+
+    /**
+     * Instantiate a new Solver, with the given settings.
+     * MonoSAT has many command line options, which can be passed here.
+     *
+     * @param args A string of space-delimited arguments to pass to the solver.
+     * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+     * improve performance, but requires some extra care in solver usage, and so is disabled by default.
+     */
     public Solver(String args, boolean enablePreprocessing){
         this(args,enablePreprocessing,"");
     }
-    public Solver(String args, String outputFule){
-        this(args,false,outputFule);
+
+    /**
+     * Instantiate a new Solver, with the given settings.
+     * MonoSAT has many command line options, which can be passed here.
+     *
+     * @param args A string of space-delimited arguments to pass to the solver.
+     * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+     */
+    public Solver(String args, String outputFile){
+        this(args,false,outputFile);
     }
+
+    /**
+     * Instantiate a new Solver, with the given settings.
+     * MonoSAT has many command line options, which can be passed here.
+     *
+     * @param args A string of space-delimited arguments to pass to the solver.
+     * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+     * improve performance, but requires some extra care in solver usage, and so is disabled by default.
+     * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+     */
     public Solver(String args, boolean enablePreprocessing,String outputFile) {
         if (args != null && args.length() > 0) {
             solverPtr = MonosatJNI.newSolver("monosat " + args);
@@ -189,6 +323,11 @@ public final class Solver implements Closeable {
         return MonosatJNI.getVersion();
     }
 
+    /**
+     * Used internally to convert a list of settings into a single string.
+     * @param args A list of command line settings.
+     * @return A string representation of the settings.
+     */
     private static String collectArgs(ArrayList<String> args) {
         StringBuilder arg = new StringBuilder();
         for (String s : args) {
@@ -219,12 +358,18 @@ public final class Solver implements Closeable {
         close();
     }
 
+    /**
+     * Internal method to initialize buffers for passing arguments to and from the native library.
+     */
     private void initBuffers() {
         initBuffer(0);
         initBuffer(1);
         initBuffer(2);
     }
-
+    /**
+     * Internal method to initialize buffers for passing arguments to and from the native library.
+     * @param bufferN A buffer index to initialize. Must be 0,1, or 2.
+     */
     private void initBuffer(int bufferN) {
         if (bufferN == 0) {
             ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0*4);//4 bytes per integer
@@ -238,11 +383,21 @@ public final class Solver implements Closeable {
             ByteBuffer b = ByteBuffer.allocateDirect(buffer_size0*4);
             b.order(ByteOrder.LITTLE_ENDIAN);
             ints2 = b.asIntBuffer();
+        }else{
+            throw new IllegalArgumentException("Unknown buffer " + bufferN);
         }
     }
 
+    /**
+     * Get an integer direct buffer for passing arguments to and from the native library.
+     * @param bufferN The index of the buffer (must be 0,1, or 2).
+     * @param minsize The minimum size that the buffer must have allocated (must be >=0).
+     * @return A direct integer buffer of sufficient size to hold minsize integers.
+     */
     protected IntBuffer getBuffer(int bufferN, int minsize) {
-
+        if(minsize<0){
+            throw new IllegalArgumentException("minsize must be >=0");
+        }
         if (bufferN == 0) {
             if (minsize >= buffer_size0) {
                 buffer_size0 = minsize * 2;
@@ -262,11 +417,11 @@ public final class Solver implements Closeable {
             }
             return ints2;
         }
-        throw new RuntimeException("BufferN must be between 0 and 3");
+        throw new IllegalArgumentException("BufferN must be between 0 and 2");
     }
 
     /**
-     * Instantiate a bitvector theory this
+     * Instantiate the bitvector theory in this solver.
      */
     private void initBV() {
         assert (bvPtr == 0);
@@ -274,11 +429,18 @@ public final class Solver implements Closeable {
         assert (bvPtr != 0);
     }
 
+    /**
+     * Throw an exception if this literal is invalid.
+     * Otherwise, do nothing.
+     * @param l A literal to check.
+     * @throws NullPointerException If l is null.
+     * @throws IllegalArgumentException If l does not belong to this solver or is not a valid literal.
+     */
     protected void validate(Lit l){
         if(l==Lit.True || l==Lit.False)
             return;
         if(l==null){
-            throw new IllegalArgumentException("Literal is null");
+            throw new NullPointerException("Literal is null");
         }else if (l.l<0 ) {
             throw new IllegalArgumentException("Literal " + l.toString() + " is not a valid literal.");
         }else if (l.solver!=this){
@@ -288,28 +450,54 @@ public final class Solver implements Closeable {
         }
     }
 
+    /**
+     * Check an array of literal arguments.
+     * @param args An array of literals to check.
+     * @throws NullPointerException If any literal in args is null.
+     * @throws IllegalArgumentException If any literal in args does not belong to this solver or is not a valid literal.
+     */
     protected void validate(Lit... args){
         for(Lit l:args){
             validate(l);
         }
     }
+
+    /**
+     * Check a collection of literal arguments.
+     * @param args A collection of literals to check.
+     * @throws NullPointerException If any literal in args is null.
+     * @throws IllegalArgumentException If any literal in args does not belong to this solver or is not a valid literal.
+     */
     protected void validate(Collection<Lit> args){
         for(Lit l:args){
             validate(l);
         }
     }
 
+    /**
+     * Check an array of BitVector arguments.
+     * @param args An array of BitVectors to check.
+     * @throws NullPointerException If any BitVector in args is null.
+     * @throws IllegalArgumentException If any Bitvector in args does not belong to this solver or is not a valid Bitvector.
+     */
     protected void validate(BitVector... args){
         for(BitVector bv:args){
             if(bv==null){
-                throw new IllegalArgumentException("Literal is null");
+                throw new NullPointerException("BitVector is null");
             }else if (bv.getSolver() !=this){
-                throw new IllegalArgumentException("Cannot pass literal belonging to solver " +  (bv.getSolver() == null ? "null" : bv.getSolver().toString()) + " to solver " + toString());
+                throw new IllegalArgumentException("Cannot pass Bitvector belonging to solver " +  (bv.getSolver() == null ? "null" : bv.getSolver().toString()) + " to solver " + toString());
             }else if (bv.id<0 ) {
                 throw new IllegalArgumentException("Bitvector is undefined " + bv.toString());
             }
         }
     }
+
+    /**
+     * Check a collection of BitVector arguments.
+     * @param args A collection of BitVectors to check.
+     * @throws NullPointerException If any BitVector in args is null.
+     * @throws IllegalArgumentException If any Bitvector in args does not belong to this solver or is not a valid Bitvector.
+     */
     protected void validateBV(Collection<BitVector> args){
         for(BitVector bv:args){
             if(bv==null){
@@ -322,6 +510,11 @@ public final class Solver implements Closeable {
         }
     }
 
+    /**
+     * Release this literal in the solver, so that it can be re-used.
+     * Use this method with care, as l may no longer be valid after this call!
+     * @param l The literal to release.
+     */
     public void releaseLiteral(Lit l) {
         validate(l);
         int x = l.l;
@@ -329,54 +522,107 @@ public final class Solver implements Closeable {
         MonosatJNI.releaseLiteral(solverPtr, x);
     }
 
+    /**
+     * Set whether the solver can make decisions on the value of l or not.
+     * By default, all literals are decidable.
+     * @param l The literal to set.
+     * @param decidable If true, the literal can be used in decisions in the solver. else, it cannot be.
+     */
     public void setDecisionLiteral(Lit l, boolean decidable) {
         validate(l);
         MonosatJNI.setDecisionVar(solverPtr, l.toVar(), decidable);
     }
 
+    /**
+     * Check if a literal is decidable.
+     * @param l The literal to check.
+     * @return True if l is decidable.
+     */
     public boolean isDecisionLiteral(Lit l) {
         validate(l);
         return MonosatJNI.isDecisionVar(solverPtr, l.toVar());
     }
 
+    /**
+     * Set the decision priority of a literal in the solver's decision heuristic.
+     * @param l The literal to check.
+     * @param priority The integer decision priority.
+     */
     public void setDecisionPriority(Lit l, int priority) {
         validate(l);
         MonosatJNI.setDecisionPriority(solverPtr, l.toVar(), priority);
     }
 
+    /**
+     * Get the decision priority of a literal.
+     * @param l The literal whose priority should be returned.
+     * @return The decision priority of literal 'l'.
+     */
     public int getDecisionPriority(Lit l) {
         validate(l);
         return MonosatJNI.getDecisionPriority(solverPtr, l.toVar());
     }
 
-    public void setDecisionPolarity(Lit l, boolean b) {
+    /**
+     * Set the decision polarity of a literal in the solver's decision heuristic.
+     * @param l The literal to check.
+     * @param polarity The integer decision polarity.
+     */
+    public void setDecisionPolarity(Lit l, boolean polarity) {
         validate(l);
-        MonosatJNI.setDecisionPolarity(solverPtr, l.toVar(), b);
+        MonosatJNI.setDecisionPolarity(solverPtr, l.toVar(), polarity);
     }
 
+    /**
+     * Get the decision polarity of a literal.
+     * @param l The literal whose polarity should be returned.
+     * @return The decision polarity of literal 'l'.
+     */
     public boolean getDecisionPolarity(Lit l) {
         validate(l);
         return MonosatJNI.getDecisionPolarity(solverPtr, l.toVar());
     }
 
 
+    /**
+     * If preprocessing is enabled in the sovler (by default, it is not),
+     * then prevent this literal from being simplified by preprocessing.
+     * @param l The literal to disable simplification on.
+     */
     public void disallowSimplification(Lit l) {
         validate(l);
         MonosatJNI.disallowLiteralSimplification(solverPtr, l.toVar());
     }
 
+    /**
+     * If preprocessing was enabled in this solver, disable it.
+     * Otherwise, do nothing.
+     * Using preprocessing requires some care, and so by default preprocessing is disabled.
+     */
     public void disablePreprocessing() {
         MonosatJNI.disablePreprocessing(solverPtr);
     }
 
+    /**
+     * Get the number of variables in this solver.
+     * @return The number of variables in this solver.
+     */
     public int nVars() {
         return MonosatJNI.nVars(solverPtr);
     }
 
+    /**
+     * Get the number of (non-learned) clauses in this solver.
+     * @return The number of clauses in this solver.
+     */
     public int nClauses() {
         return MonosatJNI.nClauses(solverPtr);
     }
 
+    /**
+     * Get the number of bitvectors in this solver.
+     * @return The number of bitvectors in this solver.
+     */
     public int nBitvectors() {
         return MonosatJNI.nBitvectors(solverPtr, bvPtr);
     }
@@ -385,16 +631,16 @@ public final class Solver implements Closeable {
     /**
      * Internal method for converting java arrays of bitvectors into
      * byte buffers (as required by the Monosat JNI)
-     * @param clause
-     * @param bufferN
-     * @return
+     * @param bvs A collection of BitVectors whose IDs will be stored in the specified buffer.
+     * @param bufferN The buffer to store BV IDs in.
+     * @return The buffer that the BV ids were stored in.
      */
-    protected IntBuffer getBVBuffer(Collection<BitVector> clause, int bufferN) {
+    protected IntBuffer getBVBuffer(Collection<BitVector> bvs, int bufferN) {
         assert (bufferN < 3);
         assert (bufferN >= 0);
-        IntBuffer buffer = getBuffer(bufferN, clause.size());
+        IntBuffer buffer = getBuffer(bufferN, bvs.size());
         int index = 0;
-        for (BitVector bv : clause) {
+        for (BitVector bv : bvs) {
 
             buffer.put(index, bv.id);
             index++;
@@ -403,11 +649,11 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * Internal method for converting java collections of allLits into
+     * Internal method for converting java collections of literals into
      * byte buffers (as required by the Monosat JNI)
-     * @param clause
-     * @param bufferN
-     * @return
+     * @param clause A collection of literals to store in a buffer.
+     * @param bufferN The buffer to store the literals in.
+     * @return A buffer containing the Variable representation of the specified literals.
      */
     protected IntBuffer getVarBuffer(Collection<Lit> clause, int bufferN) {
         assert (bufferN < 3);
@@ -424,19 +670,18 @@ public final class Solver implements Closeable {
     /**
      * Internal method for converting java collections of Lits into
      * byte buffers (as required by the Monosat JNI)
-     * @param clause
-     * @return
+     * @param clause A collection of literals to store in a buffer.
+     * @return A buffer containing the integer representation of the specified literals.
      */
     protected IntBuffer getLitBuffer(Collection<Lit> clause) {
         return getLitBuffer(clause, 0);
     }
 
     /**
-     * Internal method for converting java arrays of Lits into
+     * Internal method for converting an array of Lits into
      * byte buffers (as required by the Monosat JNI)
-     * @param clause
-     * @param bufferN
-     * @return
+     * @param clause An array of literals to store in a buffer.
+     * @return A buffer containing the integer representation of the specified literals.
      */
     protected IntBuffer getLitBuffer(Lit[] clause, int bufferN) {
         assert (bufferN < 3);
@@ -472,9 +717,9 @@ public final class Solver implements Closeable {
     /**
      * Internal method for converting java collections of integers into
      * byte buffers (as required by the Monosat JNI)
-     * @param ints
-     * @param bufferN
-     * @return
+     * @param ints Integers to store in a buffer.
+     * @param bufferN The buffer to store the integers in.
+     * @return A buffer containing the specified integers.
      */
     protected IntBuffer getIntBuffer(Collection<Integer> ints, int bufferN) {
         assert (bufferN < 3);
@@ -489,6 +734,7 @@ public final class Solver implements Closeable {
     }
 
     //Solver API
+
 
     /**
      * Add a clause to the solver.
@@ -527,6 +773,7 @@ public final class Solver implements Closeable {
      * Add a clause to the solver.
      * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
      * else returns true.
+     * If args is empty, then the solver will be trivially unsatisfiable.
      *
      * @param args The literals to add as a clause to the solver (forcing at least one of them to be true)
      * @return
@@ -540,13 +787,14 @@ public final class Solver implements Closeable {
      * Add a clause to the solver.
      * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
      * else returns true.
+     * If args is empty, then the solver will be trivially unsatisfiable.
      *
-     * @param clause The clause to add to the solver
+     * @param args The clause to add to the solver
      * @return
      */
-    public boolean addClause(Collection<Lit> clause) {
-        validate(clause);
-        return MonosatJNI.addClause(solverPtr, getLitBuffer(clause, 1), clause.size());
+    public boolean addClause(Collection<Lit> args) {
+        validate(args);
+        return MonosatJNI.addClause(solverPtr, getLitBuffer(args, 1), args.size());
     }
 
     //basic this functions
@@ -554,16 +802,17 @@ public final class Solver implements Closeable {
     /**
      * Either find a satisfying solution to the constraints in te formula, or
      * prove the formula to be unsatisfiable.
-     * @return True if a satisfying solution was found, false if it does not.
+     * @return True if a satisfying solution was found, false otherwise.
      */
     public boolean solve() {
         return MonosatJNI.solve(solverPtr);
     }
+
     /**
      * Either find a satisfying solution to the constraints in te formula, or
      * prove the formula to be unsatisfiable, while temporarily enforcing the
-     * literals in assumptions to be true.     * *
-     * @return True if a satisfying solution was found, false if it does not.
+     * literals in assumptions to be true.
+     * @return True if a satisfying solution was found, false otherwise.
      */
     public boolean solve(Lit... assumptions) {
         validate(assumptions);
@@ -572,41 +821,63 @@ public final class Solver implements Closeable {
     /**
      * Either find a satisfying solution to the constraints in te formula, or
      * prove the formula to be unsatisfiable, while temporarily enforcing the
-     * literals in assumptions to be true.     * *
-     * @return True if a satisfying solution was found, false if it does not.
+     * literals in assumptions to be true.
+     * @return True if a satisfying solution was found, false otherwise.
      */
     public boolean solve(Collection<Lit> assumptions) {
         validate(assumptions);
         return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions), assumptions.size());
     }
 
-    //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
+    /**
+     * Sets the (approximate) time limit in seconds before returning Boolean.empty() from solveLimited(); ignored by
+     * solve(). Set to <0 to disable time limit.
+     * Note that the solver will only respect this limit on a best effort basis.
+     * @param seconds The (approximate) number of seconds to limit the solver to, in the next call to solveLimited().
+     */
     public void setTimeLimit(int seconds) {
         MonosatJNI.setTimeLimit(solverPtr, seconds);
     }
 
-    //Sets the (approximate) memory limit in megabytes before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable memory limit.
+    /**
+     * Sets the (approximate) memory limit in megabytes before returning Boolean.empty() from solveLimited(); ignored by
+     * solve(). Set to <0 to disable memory limit.
+     * Note that the solver will only respect this limit on a best effort basis.
+     * @param mb An approximate limit on the memory consumed by the native library, in megabytes, in the next call to
+     *           solveLimited().
+     */
     public void setMemoryLimit(int mb) {
         MonosatJNI.setMemoryLimit(solverPtr, mb);
     }
 
-    //Sets the maximum number of (additional) conflicts allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
-    public void setConflictLimit(int num_conflicts) {
-        MonosatJNI.setConflictLimit(solverPtr, num_conflicts);
+    /**
+     * Sets the maximum number of (further) conflicts allowed in the solver before returning Boolean.empty() from
+     * solveLimited(); ignored by solve().
+     * Set to <0 to disable conflict limit.
+     * @param conflicts The number of additional conflicts rounds allowed by the next call to solveLimited().
+     */
+    public void setConflictLimit(int conflicts) {
+        MonosatJNI.setConflictLimit(solverPtr, conflicts);
+    }
+    /**
+     * Sets the maximum number of (further) propagation rounds allowed in the solver before returning Boolean.empty()
+     * from solveLimited(); ignored by solve(). Set to <0 to disable propagation limit.
+     * @param propagations The number of additional propagation rounds allowed by the next call to solveLimited().
+     */
+    public void setPropagationLimit(int propagations) {
+        MonosatJNI.setPropagationLimit(solverPtr, propagations);
     }
 
-    //Sets the maximum number of (additional) propagation rounds allowed in the solver before returning l_Undef from
-    // solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
-    public void setPropagationLimit(int num_propagations) {
-        MonosatJNI.setPropagationLimit(solverPtr, num_propagations);
-    }
     /**
      * Attempt to find a satisfying solution, but return Optional.empty() if any resource limits
      * are violated. To set resource limits, see:
-     * setTimeLimit()
-     * setMemoryLimit()
-     * setConflictLimit()
-     * setPropagationLimit()
+     * @see #setTimeLimit(int)
+     * @see #setMemoryLimit(int)
+     * @see #setConflictLimit(int)
+     * @see #setPropagationLimit(int)
+     * @return An Optional containing True if a satisfying solution was found, False if the constraints were proven
+     * UNSAT, and Optional.empty() if the solver could neither find a solution nor prove the constraints UNSAT within
+     * the resource limits.
     */
     public Optional<Boolean> solveLimited() {
         int result = MonosatJNI.solveLimited(solverPtr);
@@ -618,10 +889,14 @@ public final class Solver implements Closeable {
     /**
      * Attempt to find a satisfying solution, but return Optional.empty() if any resource limits
      * are violated. To set resource limits, see:
-     * setTimeLimit()
-     * setMemoryLimit()
-     * setConflictLimit()
-     * setPropagationLimit()
+     * @see #setTimeLimit(int)
+     * @see #setMemoryLimit(int)
+     * @see #setConflictLimit(int)
+     * @see #setPropagationLimit(int)
+     * @param assumptions Literals to enforce temporarily during the solve call.
+     * @return An Optional containing True if a satisfying solution was found, False if the constraints were proven
+     * UNSAT, and Optional.empty() if the solver could neither find a solution nor prove the constraints UNSAT within
+     * the resource limits.
      */
     public Optional<Boolean> solveLimited(Collection<Lit> assumptions) {
         validate(assumptions);
@@ -633,10 +908,14 @@ public final class Solver implements Closeable {
     /**
      * Attempt to find a satisfying solution, but return Optional.empty() if any resource limits
      * are violated. To set resource limits, see:
-     * setTimeLimit()
-     * setMemoryLimit()
-     * setConflictLimit()
-     * setPropagationLimit()
+     * @see #setTimeLimit(int)
+     * @see #setMemoryLimit(int)
+     * @see #setConflictLimit(int)
+     * @see #setPropagationLimit(int)
+     * @param assumptions Literals to enforce temporarily during the solve call.
+     * @return An Optional containing True if a satisfying solution was found, False if the constraints were proven
+     * UNSAT, and Optional.empty() if the solver could neither find a solution nor prove the constraints UNSAT within
+     * the resource limits.
      */
     public Optional<Boolean> solveLimited(Lit... assumptions) {
         validate(assumptions);
@@ -646,9 +925,9 @@ public final class Solver implements Closeable {
         return LBool.toLbool(result).toOpt();
     }
     /**
-     * Returns true if the last solve() call found an optimal solution.
+     * Returns true if the last solve() or solveLimited() call found an optimal solution.
      * This is normally always the case, unless resource limits are enforced.
-     * @return
+     * @return True if the most recent solve() or solveLimited() call found an optimal solution.
      */
     public boolean lastSolutionWasOptimal() {
         return MonosatJNI.lastSolutionWasOptimal(solverPtr);
@@ -656,6 +935,8 @@ public final class Solver implements Closeable {
 
     /**
      * If the last solution was unsat, then this get the 'conflict clause' produced by the solver (a subset of the assumptions which are sufficient to cause the instance to be UNSAT).
+     * @return A set of literals, selected from among the assumptions in the most recent solve() call, at least one
+     * of which must be true in any satisfying solution.
      */
     public List<Lit> getConflictClause(){
         return getConflictClause(false);
@@ -666,7 +947,8 @@ public final class Solver implements Closeable {
      * this method returns a subset of those assumption literals that are sufficient to keep make the instance UNSAT.
      * @param minimize If true, a (possibly expensive) search will be applied in the solver to find a locally minimal set of
      * literals that are mutually UNSAT. Else, an inexpensive, best effort set of literals will be returned.
-     * @return
+     * @return A set of literals, selected from among the assumptions in the most recent solve() call, at least one
+     * of which must be true in any satisfying solution.
      */
     public List<Lit> getConflictClause(boolean minimize) {
         ArrayList<Lit> store = new ArrayList<Lit>();
@@ -691,12 +973,10 @@ public final class Solver implements Closeable {
     }
 
 
-
-
     /**
      * Internal method used to cache newly instantiated literals,
      * so that literals returned from C++ can reuse the same objects.
-     * @param l
+     * @param l The literal to add to the solver.
      */
     protected void registerLit(Lit l){
         registerLit(l,null);
@@ -705,7 +985,7 @@ public final class Solver implements Closeable {
 
     /**
      * Internal method used to maintain an iterable list of bitvectors in the solver.
-     *
+     * @param bv The BitVector to add to the solver.
      */
     protected void registerBitVector(BitVector bv){
         allBVs.add(bv);
@@ -715,7 +995,7 @@ public final class Solver implements Closeable {
     /**
      * Internal method used to cache newly instantiated literals,
      * so that literals returned from C++ can reuse the same objects.
-     * @param l
+     * @param l The literal to add to the solver.
      */
     protected void registerLit(Lit l, Lit notL){
         assert(l.l>=0);
@@ -765,6 +1045,8 @@ public final class Solver implements Closeable {
 
     /**
      * Internal method to convert C++ literal integers into java Lits
+     * @param literal A literal to convert into a Lit
+     * @return A Lit object representing the literal.
      */
     protected Lit toLit(int literal) {
         assert (literal >= 0);
@@ -791,6 +1073,7 @@ public final class Solver implements Closeable {
     }
 
     /**
+     * Get a collection of all the literals in this solver.
      * @return unmodifiable view of the positive literals in the solver.
      */
     public Collection<Lit> getLits(){
@@ -798,6 +1081,7 @@ public final class Solver implements Closeable {
     }
 
     /**
+     * Get a collection of all the BitVectors in this solver.
      * @return unmodifiable view of the BitVectors in the solver.
      */
     public Collection<BitVector> getBitVectors(){
@@ -810,6 +1094,8 @@ public final class Solver implements Closeable {
     /**
      * Given a set of assumptions which are mutually UNSAT, find a locally minimal subset that remains UNSAT.
      * (leaves the original set intact if the literals are not mutually UNSAT)
+     * @param literals A set of mutually unsatisfiable literals to minimize.
+     * @return A subset of literals that is still UNSAT.
      */
     public List<Lit> minimizeUnsatCore(Lit... literals){
         validate(literals);
@@ -818,6 +1104,8 @@ public final class Solver implements Closeable {
     /**
      * Given a set of assumptions which are mutually UNSAT, find a locally minimal subset that remains UNSAT.
      * (leaves the original set intact if the literals are not mutually UNSAT)
+     * @param literals A set of mutually unsatisfiable literals to minimize.
+     * @return A subset of literals that is still UNSAT.
      */
     public List<Lit> minimizeUnsatCore(Collection<Lit> literals) {
         validate(literals);
@@ -834,8 +1122,6 @@ public final class Solver implements Closeable {
         validate(store);
         return store;
     }
-
-
 
     /**
      * After UNSAT solve calls with assumptions, the solver will find a 'conflict clause' consisting of a subset of the assumptions
@@ -863,6 +1149,7 @@ public final class Solver implements Closeable {
     /**
      * Add an optimization objective to the solver:
      * maximize the specified BitVector.
+     * @param bv The BitVector to maximize in the next solve() or solveLimited() call.
      */
     public void maximizeBV(BitVector bv) {
         validate(bv);
@@ -872,6 +1159,7 @@ public final class Solver implements Closeable {
     /**
      * Add an optimization objective to the solver:
      * minimize the specified BitVector.
+     * @param bv The BitVector to minimize in the next solve() or solveLimited() call.
      */
     public void minimizeBV(BitVector bv) {
         validate(bv);
@@ -881,6 +1169,7 @@ public final class Solver implements Closeable {
     /**
      * Add an optimization objective to the solver:
      * maximize the number of true literals from among the given literals.
+     * @param literals A collection of literals to maximize in the next solve() or solveLimited() call.
      */
     public void maximizeLits(Collection<Lit> literals) {
         validate(literals);
@@ -890,6 +1179,7 @@ public final class Solver implements Closeable {
     /**
      * Add an optimization objective to the solver:
      * minimize the number of true literals from among the given literals.
+     * @param literals A collection of literals to minimize in the next solve() or solveLimited() call.
      */
     public void minimizeLits(Collection<Lit> literals) {
         validate(literals);
@@ -899,8 +1189,11 @@ public final class Solver implements Closeable {
     /**
      * Add an optimization objective to the solver:
      * maximize the weighted number of true literals from among the given literals.
+     * @param literals A collection of weighted literals to maximize in the next solve() or solveLimited() call.
+     * @param weights Weights for each literal in literals.
+     * @throws IllegalArgumentException If weights.size() != literals.size();
      */
-    public void maximizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
+    public void maximizeWeightedLits(List<Lit> literals, List<Integer> weights) {
         validate(literals);
         if (literals.size()!=weights.size()){
             throw  new IllegalArgumentException("literals and weights must be the same length");
@@ -911,8 +1204,11 @@ public final class Solver implements Closeable {
     /**
      * Add an optimization objective to the solver:
      * minimize the weighted number of true literals from among the given literals.
+     * @param literals A collection of weighted literals to minimze in the next solve() or solveLimited() call.
+     * @param weights Weights for each literal in literals.
+     * @throws IllegalArgumentException If weights.size() != literals.size();
      */
-    public void minimizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
+    public void minimizeWeightedLits(List<Lit> literals, List<Integer> weights) {
         validate(literals);
         if (literals.size()!=weights.size()){
             throw  new IllegalArgumentException("literals and weights must be the same length");
@@ -925,6 +1221,7 @@ public final class Solver implements Closeable {
      * If 1 or fewer arguments are given, has no effect.
      * If exactly 2 arguments are given, this is the same as:
      * assertOr(args[0],args[1])
+     * @param args An array of Lits, at most one of which can be true.
      */
     public void assertAtMostOne(Lit... args) {
         validate(args);
@@ -936,6 +1233,7 @@ public final class Solver implements Closeable {
      * If 1 or fewer arguments are given, has no effect.
      * If exactly 2 arguments are given, this is the same as:
      * assertOr(args[0],args[1])
+     * @param args A collection of Lits, at most one of which can be true.
      */
     public void assertAtMostOne(Collection<Lit> args) {
         //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
@@ -966,6 +1264,9 @@ public final class Solver implements Closeable {
      *
      * For example, if c is Comparison.LEQ, and compareTo is 3,
      * then at most 3 literals from args may be true.
+     * @param args A collection of args, whose sum will be compared.
+     * @param c The comparison operation to perform.
+     * @param compareTo The constant to compare the sum of the true lits in args to.
      */
     public void assertPB(Collection<Lit> args,  Comparison c, int compareTo) {
         validate(args);
@@ -979,6 +1280,11 @@ public final class Solver implements Closeable {
      * The weighted number of true literals from among args must satisfy comparison c
      * relative to compare to.
      *
+     * @param args A collection of args, whose sum will be compared.
+     * @param weights Weights for each literal in args (if fewer weights than args are supplied,
+     *                the remaining weights will be set to '1').
+     * @param c The comparison operation to perform.
+     * @param compareTo The constant to compare the sum of the true lits in args to.
      */
     public void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
         validate(args);
@@ -1012,8 +1318,12 @@ public final class Solver implements Closeable {
                 MonosatJNI.assertPB_geq(solverPtr, compareTo, args.size(), getLitBuffer(args), wt_buffer);
             case GT:
                 MonosatJNI.assertPB_gt(solverPtr, compareTo, args.size(), getLitBuffer(args), wt_buffer);
+            case NEQ:
+            default:
+                throw new IllegalArgumentException("Unsupported comparison");
         }
     }
+
     /**
      * Immediately convert any pseudo Boolean constraints in the solver into clauses.
      * This function does not need to be manually called, as it will be called automatically before 'solve' calls.
@@ -1023,10 +1333,12 @@ public final class Solver implements Closeable {
     }
 
     /**
+     * Create a constant-valued BitVector of the given width.
      * Caches constant bitvectors of value <= MAX_CACHE_CONST
-     * @param width
-     * @param constant
-     * @return
+     *
+     * @param width The width of the Bitvector to create.
+     * @param constant The constant value of the BitVector.
+     * @return A new BitVector of the corresponding size.
      */
     public BitVector bv(int width, long constant) {
         if (constant >= 0 && constant <= MAX_CACHE_CONST) {
@@ -1056,16 +1368,63 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * True if the solver has a satisfying model to its constraints.
-     * @return
+     * Check if the solver has a satisfying model to its constraints.
+     * @return True if the solver has a satisfying model to its constraints.
      */
     public boolean hasModel(){
         return MonosatJNI.hasModel(solverPtr);
     }
 
+    /**
+     * Return the negation of a literal.
+     * <p>
+     * Implementation note:<br>
+     * Lit.not() is well optimized and inexpensive, in both Java and the native library.
+     * Double negations will be eliminated and are essentially free.
+     * No new objects are instantiated by Lit.not().
+     * It is always the case that <code>a.not().not() == a<code/>
+     * @param a The literal to negate.
+     * @return The negation of a.
+     */
+    public Lit not(Lit a) {
+        validate(a);
+        int l = a.toInt();
+        l = l^1;//bit twiddle odd to even
+        assert(l>=0);
+        assert(l< allLits.size());
+        return allLits.get(l);
+    }
 
+    /**
+     * Create a new literal that evaluates to true if
+     * a is false, or if a is true and b is true.
+     * @param a The precondition.
+     * @param b The postcondition.
+     * @return A new literal representing an implication gate.
+     */
+    public Lit implies(Lit a, Lit b){
+        validate(a,b);
+        return or(a.not(), b);
+    }
 
+    /**
+     * Create a new literal, that is true if a and b both evaluate to the same truth value.
+     * @param a The first literal to test equality.
+     * @param b The second literal to test equality.
+     * @return A literal that is true if a and b both evaluate to the same truth value.
+     */
+    public Lit equal(Lit a, Lit b) {
+        validate(a,b);
+        return xnor(a,b);
+    }
 
+    /**
+     * Create a new literal that will evaluate to 'then' if condition is true, and to 'els' otherwise.
+     * @param condition The condition literal to test.
+     * @param then The value of the returned literal if 'condition' is true.
+     * @param els  The value of the returned literal if 'condition' is false.
+     * @return A new literal, equal to 'then' if condition is true, and equal to 'els' if condition is false.
+     */
     public Lit ite(Lit condition, Lit then, Lit els) {
         validate(condition,then,els);
         return this.toLit(MonosatJNI.Ite(this.solverPtr, condition.l, then.l, els.l));
@@ -1074,6 +1433,12 @@ public final class Solver implements Closeable {
     //Higher level constructs for the solver
     //Literal level constructs
 
+    /**
+     * Create a new literal that is true if all the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the And gate.
+     * @return A new literal, true if all the literals in args are true.
+     */
     public Lit and(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1087,6 +1452,22 @@ public final class Solver implements Closeable {
         return and(Arrays.asList(args));
     }
 
+    /**
+     * Create a new literal that is true if all the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the And gate.
+     * @return A new literal, true if all the literals in args are true.
+     */
+    public Lit and(Collection<Lit> args) {
+        validate(args);
+        return this.toLit(MonosatJNI.Ands(this.solverPtr, this.getLitBuffer(args), args.size()));
+    }
+    /**
+     * Create a new literal that is true if any of the literals in args are true.
+     * If args is empty, return Lit.False.
+     * @param args The arguments to the Or gate.
+     * @return A new literal, true if any of the literals in args are true.
+     */
     public Lit or(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1099,15 +1480,23 @@ public final class Solver implements Closeable {
         return or(Arrays.asList(args));
     }
 
-    public Lit not(Lit a) {
-        validate(a);
-        int l = a.toInt();
-        l = l^1;//bit twiddle odd to even
-        assert(l>=0);
-        assert(l< allLits.size());
-        return allLits.get(l);
+    /**
+     * Create a new literal that is true if any of the literals in args are true.
+     * If args is empty, return Lit.False.
+     * @param args The arguments to the Or gate.
+     * @return A new literal, true if any of the literals in args are true.
+     */
+    public Lit or(Collection<Lit> args) {
+        validate(args);
+        return this.toLit(MonosatJNI.Ors(this.solverPtr, this.getLitBuffer(args), args.size()));
     }
 
+    /**
+     * Create a new literal that is true if not all of the literals in args are true.
+     * If args is empty, return Lit.False.
+     * @param args The arguments to the Nand gate.
+     * @return A new literal, true if not all the literals in args are true.
+     */
     public Lit nand(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1121,6 +1510,23 @@ public final class Solver implements Closeable {
         return nand(Arrays.asList(args));
     }
 
+    /**
+     * Create a new literal that is true if not all of the literals in args are true.
+     * If args is empty, return Lit.False.
+     * @param args The arguments to the Nand gate.
+     * @return A new literal, true if not all the literals in args are true.
+     */
+    public Lit nand(Collection<Lit> args) {
+        validate(args);
+        return this.toLit(MonosatJNI.Nands(this.solverPtr, this.getLitBuffer(args), args.size()));
+    }
+
+    /**
+     * Create a new literal that is true if none of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Nor gate.
+     * @return A new literal, true if none of the literals in args are true.
+     */
     public Lit nor(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1133,6 +1539,23 @@ public final class Solver implements Closeable {
         return nor(Arrays.asList(args));
     }
 
+    /**
+     * Create a new literal that is true if none of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Nor gate.
+     * @return A new literal, true if none of the literals in args are true.
+     */
+    public Lit nor(Collection<Lit> args) {
+        validate(args);
+        return this.toLit(MonosatJNI.Nors(this.solverPtr, this.getLitBuffer(args), args.size()));
+    }
+
+    /**
+     * Create a new literal that is true if an odd number of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Xor gate.
+     * @return A new literal, true if an odd number of the literals in args are true.
+     */
     public Lit xor(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1146,6 +1569,23 @@ public final class Solver implements Closeable {
         return xor(Arrays.asList(args));
     }
 
+    /**
+     * Create a new literal that is true if an odd number of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Xor gate.
+     * @return A new literal, true if an odd number of the literals in args are true.
+     */
+    public Lit xor(Collection<Lit> args) {
+        validate(args);
+        return this.toLit(MonosatJNI.Xors(this.solverPtr, this.getLitBuffer(args), args.size()));
+    }
+
+    /**
+     * Create a new literal that is true if an even number of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Xnor gate.
+     * @return A new literal, true if an even number of the literals in args are true.
+     */
     public Lit xnor(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1159,17 +1599,42 @@ public final class Solver implements Closeable {
         return xnor(Arrays.asList(args));
     }
 
+    /**
+     * Create a new literal that is true if an even number of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Xnor gate.
+     * @return A new literal, true if an even number of the literals in args are true.
+     */
+    public Lit xnor(Collection<Lit> args) {
+        validate(args);
+        return this.toLit(MonosatJNI.Xnors(this.solverPtr, this.getLitBuffer(args), args.size()));
+    }
+
     //Assertion forms.
+
+    /**
+     * Assert that Lit a must be true in the solver.
+     * @param a The literal to assert true.
+     */
     public void assertTrue(Lit a) {
         validate(a);
         MonosatJNI.Assert(this.solverPtr, a.l);
     }
 
+    /**
+     * Assert that Lit a must be false in the solver.
+     * @param a The literal to assert false.
+     */
     public void assertFalse(Lit a) {
         validate(a);
         MonosatJNI.Assert(this.solverPtr, a.not().l);
     }
 
+    /**
+     * Assert that all of the literals in args are true.
+     * Trivially satisfied if args is empty.
+     * @param args The arguments to assert true.
+     */
     public void assertAnd(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1182,6 +1647,24 @@ public final class Solver implements Closeable {
         assertAnd(Arrays.asList(args));
     }
 
+    /**
+     * Assert that all of the literals in args are true.
+     * Trivially satisfied if args is empty.
+     * @param args The arguments to assert true.
+     */
+    public void assertAnd(Collection<Lit> args) {
+        validate(args);
+        MonosatJNI.AssertAnds(this.solverPtr, this.getLitBuffer(args), args.size());
+    }
+
+
+    /**
+     * Assert that at least one of the literals in args are true.
+     * Trivially contradictory if args is empty.
+     * <p>
+     * Implementation note: This call is equivalent to Solver.addClause().
+     * @param args The arguments to assert at least one must hold.
+     */
     public void assertOr(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1195,6 +1678,24 @@ public final class Solver implements Closeable {
         assertOr(Arrays.asList(args));
     }
 
+    /**
+     * Assert that at least one of the literals in args are true.
+     * Trivially contradictory if args is empty.
+     * <p>
+     * Implementation note: This call is equivalent to Solver.addClause().
+     * @param args The arguments to assert at least one must hold.
+     */
+    public void assertOr(Collection<Lit> args) {
+        validate(args);
+        MonosatJNI.AssertOrs(this.solverPtr, this.getLitBuffer(args), args.size());
+    }
+
+
+    /**
+     * Assert that at least one of the given args must be false.
+     * Trivially contradictory if args is empty.
+     * @param args The arguments to assert at least one must be false.
+     */
     public void assertNand(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1207,6 +1708,21 @@ public final class Solver implements Closeable {
         assertNand(Arrays.asList(args));
     }
 
+    /**
+     * Assert that at least one of the given args must be false.
+     * Trivially contradictory if args is empty.
+     * @param args The arguments to assert at least one must be false.
+     */
+    public void assertNand(Collection<Lit> args) {
+        validate(args);
+        MonosatJNI.AssertNands(this.solverPtr, this.getLitBuffer(args), args.size());
+    }
+
+    /**
+     * Assert that none of the given args may be true.
+     * Trivially satisfied if args is empty.
+     * @param args The arguments to assert false.
+     */
     public void assertNor(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1219,6 +1735,21 @@ public final class Solver implements Closeable {
         assertNor(Arrays.asList(args));
     }
 
+    /**
+     * Assert that none of the given args may be true.
+     * Trivially satisfied if args is empty.
+     * @param args The arguments to assert false.
+     */
+    public void assertNor(Collection<Lit> args) {
+        validate(args);
+        MonosatJNI.AssertNors(this.solverPtr, this.getLitBuffer(args), args.size());
+    }
+
+    /**
+     * Assert that an odd number of args must hold.
+     * Trivially contradictory if args is empty.
+     * @param args The arguments to the XOR constraint.
+     */
     public void assertXor(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1231,6 +1762,21 @@ public final class Solver implements Closeable {
         assertXor(Arrays.asList(args));
     }
 
+    /**
+     * Assert that an odd number of args must hold.
+     * Trivially contradictory if args is empty.
+     * @param args The arguments to the XOR constraint.
+     */
+    public void assertXor(Collection<Lit> args) {
+        validate(args);
+        MonosatJNI.AssertXors(this.solverPtr, this.getLitBuffer(args), args.size());
+    }
+
+
+    /**
+     * Assert that an even number of args must hold.
+     * @param args The arguments to the XNOR constraint.
+     */
     public void assertXnor(Lit... args) {
         validate(args);
         if (args.length == 0) {
@@ -1243,81 +1789,45 @@ public final class Solver implements Closeable {
         assertXnor(Arrays.asList(args));
     }
 
-    public void assertEqual(Lit a, Lit b) {
-        validate(a,b);
-        assertXnor(a, b);
-    }
-    public void assertImplies(Lit a, Lit b) {
-        validate(a,b);
-        assertOr(a.not(), b);
-    }
-    //Multi-Literal constructs
-    public Lit and(Collection<Lit> args) {
-        validate(args);
-        return this.toLit(MonosatJNI.Ands(this.solverPtr, this.getLitBuffer(args), args.size()));
-    }
-
-    public Lit or(Collection<Lit> args) {
-        validate(args);
-        return this.toLit(MonosatJNI.Ors(this.solverPtr, this.getLitBuffer(args), args.size()));
-    }
-
-    public Lit nand(Collection<Lit> args) {
-        validate(args);
-        return this.toLit(MonosatJNI.Nands(this.solverPtr, this.getLitBuffer(args), args.size()));
-    }
-
-    public Lit nor(Collection<Lit> args) {
-        validate(args);
-        return this.toLit(MonosatJNI.Nors(this.solverPtr, this.getLitBuffer(args), args.size()));
-    }
-
-    public Lit xor(Collection<Lit> args) {
-        validate(args);
-        return this.toLit(MonosatJNI.Xors(this.solverPtr, this.getLitBuffer(args), args.size()));
-    }
-
-    public Lit xnor(Collection<Lit> args) {
-        validate(args);
-        return this.toLit(MonosatJNI.Xnors(this.solverPtr, this.getLitBuffer(args), args.size()));
-    }
-    public Lit implies(Lit a, Lit b){
-        validate(a,b);
-        return or(a.not(), b);
-    }
-
-    //assertion forms
-    public void assertAnd(Collection<Lit> args) {
-        validate(args);
-        MonosatJNI.AssertAnds(this.solverPtr, this.getLitBuffer(args), args.size());
-    }
-
-    public void assertOr(Collection<Lit> args) {
-        validate(args);
-        MonosatJNI.AssertOrs(this.solverPtr, this.getLitBuffer(args), args.size());
-    }
-
-    public void assertNand(Collection<Lit> args) {
-        validate(args);
-        MonosatJNI.AssertNands(this.solverPtr, this.getLitBuffer(args), args.size());
-    }
-
-    public void assertNor(Collection<Lit> args) {
-        validate(args);
-        MonosatJNI.AssertNors(this.solverPtr, this.getLitBuffer(args), args.size());
-    }
-
-    public void assertXor(Collection<Lit> args) {
-        validate(args);
-        MonosatJNI.AssertXors(this.solverPtr, this.getLitBuffer(args), args.size());
-    }
-
+    /**
+     * Assert that an even number of args must hold.
+     * @param args The arguments to the XNOR constraint.
+     */
     public void assertXnor(Collection<Lit> args) {
         validate(args);
         MonosatJNI.AssertXnors(this.solverPtr, this.getLitBuffer(args), args.size());
     }
 
+    /**
+     * Assert that a and b must have the save value.
+     * @param a The first argument to make equal.
+     * @param a The second argument to make equal.
+     */
+    public void assertEqual(Lit a, Lit b) {
+        validate(a,b);
+        assertXnor(a, b);
+    }
+
+    /**
+     * Assert that a implies b: If a is true, then b must be true.
+     * @param a The precondition.
+     * @param a The postcondition.
+     */
+    public void assertImplies(Lit a, Lit b) {
+        validate(a,b);
+        assertOr(a.not(), b);
+    }
+
     //Bitvector constructs
+
+    /**
+     * Create a new BitVector that will evaluate to the same value as 'then' if condition is true, and to 'els'
+     * otherwise.
+     * @param condition The condition literal to test.
+     * @param then The value of the returned BitVector if 'condition' is true.
+     * @param els  The value of the returned BitVector if 'condition' is false.
+     * @return A new literal, equal to 'then' if condition is true, and equal to 'els' if condition is false.
+     */
     public BitVector ite(Lit condition, BitVector then, BitVector els) {
         validate(condition);
         validate(then,els);
@@ -1327,6 +1837,12 @@ public final class Solver implements Closeable {
         return result;
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise and of a and b.
+     * @param a
+     * @param b
+     * @return
+     */
     public BitVector and(BitVector a, BitVector b) {
         validate(a,b);
         assert(a.width()==b.width());

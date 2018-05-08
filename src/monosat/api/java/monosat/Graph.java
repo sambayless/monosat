@@ -64,10 +64,10 @@ import java.util.stream.Collectors;
  * Many common graph predicates are supported:
  * <ul>
  * <li>@see #Graph.reaches(int,int)</li>
- * <li>Graph.distance()</li>
- * <li>Graph.maxflow()</li>
- * <li>Graph.onPath()</li>
- * <li>Graph.acyclic()</li>
+ * <li>@see #Graph.distance()</li>
+ * <li>@see #Graph.maxflow()</li>
+ * <li>@see #Graph.onPath()</li>
+ * <li>@see #Graph.acyclic()</li>
  * </ul>
  *
  */

@@ -119,7 +119,7 @@ public final class Logic {
     //make these literals available to users who import monosat.Logic.*
     public final static Lit True = Lit.True; //Is there any possibility that this won't be constructed in the proper order?
     public final static Lit False = Lit.False;
-    public final static Lit Undef = Lit.Undef;
+    public final static Lit Undef = Lit.Undef; //Don't import Lit.Error, as it is not typically used.
 
     //make these constants available to users who import monosat.Logic.*
     public final static Comparison EQ = Comparison.EQ;
@@ -129,10 +129,29 @@ public final class Logic {
     public final static Comparison LEQ = Comparison.LEQ;
     public final static Comparison LT = Comparison.LT;
 
+
+    /**
+     * Return the negation of a literal.
+     * <p>
+     * Implementation note:<br>
+     * Lit.not() is well optimized and inexpensive, in both Java and the native library.
+     * Double negations will be eliminated and are essentially free.
+     * No new objects are instantiated by Lit.not().
+     * It is always the case that <code>a.not().not() == a<code/>
+     * @param a The literal to negate.
+     * @return The negation of a.
+     */
     public static Lit not(Lit a) {
         return a.not();
     }
 
+    /**
+     * Create a new literal that evaluates to true if
+     * a is false, or if a is true and b is true.
+     * @param a The precondition.
+     * @param b The postcondition.
+     * @return A new literal representing an implication gate.
+     */
     public static Lit implies(Lit a, Lit b){
         Solver solver = getSolver(a,b);
         if(solver!=null) {
@@ -146,6 +165,13 @@ public final class Logic {
         }
     }
 
+    /**
+     * Create a new literal that will evaluate to 'then' if condition is true, and to 'els' otherwise.
+     * @param condition The condition literal to test.
+     * @param then The value of the returned literal if 'condition' is true.
+     * @param els  The value of the returned literal if 'condition' is false.
+     * @return A new literal, equal to 'then' if condition is true, and equal to 'els' if condition is false.
+     */
     public static Lit ite(Lit condition, Lit then, Lit els) {
         Solver solver = getSolver(condition,then,els);
         if(solver!=null) {
@@ -159,6 +185,12 @@ public final class Logic {
         }
     }
 
+    /**
+     * Create a new literal that is true if all the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the And gate.
+     * @return A new literal, true if all the literals in args are true.
+     */
     public static Lit and(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -173,6 +205,12 @@ public final class Logic {
         }
     }
 
+    /**
+     * Create a new literal that is true if all the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the And gate.
+     * @return A new literal, true if all the literals in args are true.
+     */
     public static Lit and(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -186,7 +224,12 @@ public final class Logic {
             return Lit.True;
         }
     }
-
+    /**
+     * Create a new literal that is true if any of the literals in args are true.
+     * If args is empty, return Lit.False.
+     * @param args The arguments to the Or gate.
+     * @return A new literal, true if any of the literals in args are true.
+     */
     public static Lit or(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -200,6 +243,12 @@ public final class Logic {
             return Lit.False;
         }
     }
+    /**
+     * Create a new literal that is true if any of the literals in args are true.
+     * If args is empty, return Lit.False.
+     * @param args The arguments to the Or gate.
+     * @return A new literal, true if any of the literals in args are true.
+     */
     public static Lit or(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -214,7 +263,12 @@ public final class Logic {
         }
     }
 
-
+    /**
+     * Create a new literal that is true if not all of the literals in args are true.
+     * If args is empty, return Lit.False.
+     * @param args The arguments to the Nand gate.
+     * @return A new literal, true if not all the literals in args are true.
+     */
     public static Lit nand(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -229,7 +283,12 @@ public final class Logic {
         }
     }
 
-
+    /**
+     * Create a new literal that is true if not all of the literals in args are true.
+     * If args is empty, return Lit.False.
+     * @param args The arguments to the Nand gate.
+     * @return A new literal, true if not all the literals in args are true.
+     */
     public static Lit nand(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -244,6 +303,12 @@ public final class Logic {
         }
     }
 
+    /**
+     * Create a new literal that is true if none of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Nor gate.
+     * @return A new literal, true if none of the literals in args are true.
+     */
     public static Lit nor(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -257,6 +322,13 @@ public final class Logic {
             return Lit.True;
         }
     }
+
+    /**
+     * Create a new literal that is true if none of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Nor gate.
+     * @return A new literal, true if none of the literals in args are true.
+     */
     public static Lit nor(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -270,6 +342,14 @@ public final class Logic {
             return Lit.True;
         }
     }
+
+
+    /**
+     * Create a new literal that is true if an odd number of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Xor gate.
+     * @return A new literal, true if an odd number of the literals in args are true.
+     */
     public static Lit xor(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -289,6 +369,14 @@ public final class Logic {
            }
         }
     }
+
+
+    /**
+     * Create a new literal that is true if an odd number of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Xor gate.
+     * @return A new literal, true if an odd number of the literals in args are true.
+     */
     public static Lit xor(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -308,6 +396,13 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Create a new literal that is true if an even number of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Xnor gate.
+     * @return A new literal, true if an even number of the literals in args are true.
+     */
     public static Lit xnor(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -327,6 +422,13 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Create a new literal that is true if an even number of the literals in args are true.
+     * If args is empty, return Lit.True.
+     * @param args The arguments to the Xnor gate.
+     * @return A new literal, true if an even number of the literals in args are true.
+     */
     public static Lit xnor(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -346,10 +448,22 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Create a new literal, that is true if a and b both evaluate to the same truth value.
+     * @param a The first literal to test equality.
+     * @param b The second literal to test equality.
+     * @return A literal that is true if a and b both evaluate to the same truth value.
+     */
     public static Lit equal(Lit a, Lit b) {
         return xnor(a,b);
     }
     //Assertion forms.
+
+    /**
+     * Assert that Lit a must be true in the solver.
+     * @param a The literal to assert true.
+     */
     public static void assertTrue(Lit a) {
         Solver solver = getSolver(a);
         if(solver!=null){
@@ -363,6 +477,10 @@ public final class Logic {
         }
     }
 
+    /**
+     * Assert that Lit a must be false in the solver.
+     * @param a The literal to assert false.
+     */
     public static void assertFalse(Lit a) {
         Solver solver = getSolver(a);
         if(solver!=null){
@@ -375,7 +493,11 @@ public final class Logic {
             }
         }
     }
-
+    /**
+     * Assert that all of the literals in args are true.
+     * Trivially satisfied if args is empty.
+     * @param args The arguments to assert true.
+     */
     public static void assertAnd(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -389,6 +511,11 @@ public final class Logic {
             //do nothing
         }
     }
+    /**
+     * Assert that all of the literals in args are true.
+     * Trivially satisfied if args is empty.
+     * @param args The arguments to assert true.
+     */
     public static void assertAnd(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -402,6 +529,13 @@ public final class Logic {
             //do nothing
         }
     }
+    /**
+     * Assert that at least one of the literals in args are true.
+     * Trivially contradictory if args is empty.
+     * <p>
+     * Implementation note: This call is equivalent to Solver.addClause().
+     * @param args The arguments to assert at least one must hold.
+     */
     public static void assertOr(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -415,6 +549,13 @@ public final class Logic {
             contradiction();
         }
     }
+    /**
+     * Assert that at least one of the literals in args are true.
+     * Trivially contradictory if args is empty.
+     * <p>
+     * Implementation note: This call is equivalent to Solver.addClause().
+     * @param args The arguments to assert at least one must hold.
+     */
     public static void assertOr(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -428,6 +569,12 @@ public final class Logic {
             contradiction();
         }
     }
+
+    /**
+     * Assert that at least one of the given args must be false.
+     * Trivially contradictory if args is empty.
+     * @param args The arguments to assert at least one must be false.
+     */
     public static void assertNand(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -441,6 +588,12 @@ public final class Logic {
             contradiction();
         }
     }
+
+    /**
+     * Assert that at least one of the given args must be false.
+     * Trivially contradictory if args is empty.
+     * @param args The arguments to assert at least one must be false.
+     */
     public static void assertNand(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -454,6 +607,12 @@ public final class Logic {
             contradiction();
         }
     }
+
+    /**
+     * Assert that none of the given args may be true.
+     * Trivially satisfied if args is empty.
+     * @param args The arguments to assert false.
+     */
     public static void assertNor(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -466,6 +625,12 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Assert that none of the given args may be true.
+     * Trivially satisfied if args is empty.
+     * @param args The arguments to assert false.
+     */
     public static void assertNor(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -478,6 +643,12 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Assert that an odd number of args must hold.
+     * Trivially contradictory if args is empty.
+     * @param args The arguments to the XOR constraint.
+     */
     public static void assertXor(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -497,6 +668,12 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Assert that an odd number of args must hold.
+     * Trivially contradictory if args is empty.
+     * @param args The arguments to the XOR constraint.
+     */
     public static void assertXor(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -516,6 +693,11 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Assert that an even number of args must hold.
+     * @param args The arguments to the XNOR constraint.
+     */
     public static void assertXnor(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -535,6 +717,11 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Assert that an even number of args must hold.
+     * @param args The arguments to the XNOR constraint.
+     */
     public static void assertXnor(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -554,6 +741,13 @@ public final class Logic {
             }
         }
     }
+
+
+    /**
+     * Assert that a and b must have the save value.
+     * @param a The first argument to make equal.
+     * @param a The second argument to make equal.
+     */
     public static void assertEqual(Lit a, Lit b) {
         Solver solver = getSolver(a,b);
         if(solver!=null) {
@@ -565,6 +759,11 @@ public final class Logic {
         }
     }
 
+    /**
+     * Assert that a implies b: If a is true, then b must be true.
+     * @param a The precondition.
+     * @param a The postcondition.
+     */
     public static void assertImplies(Lit a, Lit b) {
         Solver solver = getSolver(a,b);
         if(solver!=null) {
@@ -681,7 +880,7 @@ public final class Logic {
         }
     }
 
-    public static void maximizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
+    public static void maximizeWeightedLits(List<Lit> literals, List<Integer> weights) {
         Solver solver = getSolver(literals);
         if(solver!=null){
             solver.maximizeWeightedLits(literals, weights);
@@ -690,7 +889,7 @@ public final class Logic {
         }
     }
 
-    public static void minimizeWeightedLits(Collection<Lit> literals, Collection<Integer> weights) {
+    public static void minimizeWeightedLits(List<Lit> literals, List<Integer> weights) {
         Solver solver = getSolver(literals);
         if(solver!=null){
             solver.minimizeWeightedLits(literals, weights);
@@ -699,6 +898,13 @@ public final class Logic {
         }
     }
 
+    /**
+     * Enforce that at most one of the specified literals may be true.
+     * If 1 or fewer arguments are given, has no effect.
+     * If exactly 2 arguments are given, this is the same as:
+     * assertOr(args[0],args[1])
+     * @param args An array of Lits, at most one of which can be true.
+     */
     public static void assertAtMostOne(Lit... args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -715,6 +921,13 @@ public final class Logic {
         }
     }
 
+    /**
+     * Enforce that at most one of the specified literals may be true.
+     * If 1 or fewer arguments are given, has no effect.
+     * If exactly 2 arguments are given, this is the same as:
+     * assertOr(args[0],args[1])
+     * @param args A collection of Lits, at most one of which can be true.
+     */
     public static void assertAtMostOne(Collection<Lit> args) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -731,6 +944,17 @@ public final class Logic {
         }
     }
 
+    /**
+     * Enforce a pseudo-Boolean constraint.
+     * The number of true literals from among args must satisfy comparison c
+     * relative to compare to.
+     *
+     * For example, if c is Comparison.LEQ, and compareTo is 3,
+     * then at most 3 literals from args may be true.
+     * @param args A collection of args, whose sum will be compared.
+     * @param c The comparison operation to perform.
+     * @param compareTo The constant to compare the sum of the true lits in args to.
+     */
     public static void assertPB(Collection<Lit> args, Comparison c, int compareTo) {
         Solver solver = getSolver(args);
         if(solver!=null){
@@ -748,6 +972,18 @@ public final class Logic {
             }
         }
     }
+
+    /**
+     * Enforce a weighted pseudo-Boolean constraint.
+     * The weighted number of true literals from among args must satisfy comparison c
+     * relative to compare to.
+     *
+     * @param args A collection of args, whose sum will be compared.
+     * @param weights Weights for each literal in args (if fewer weights than args are supplied,
+     *                the remaining weights will be set to '1').
+     * @param c The comparison operation to perform.
+     * @param compareTo The constant to compare the sum of the true lits in args to.
+     */
     public static void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
         Solver solver = getSolver(args);
         if(solver!=null){
