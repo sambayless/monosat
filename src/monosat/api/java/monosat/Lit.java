@@ -160,11 +160,25 @@ public final class Lit {
         return (l & 1) == 1;
     }
 
+    /**
+     * Return the negation of this literal.
+     * <p>
+     * Implementation note:<br>
+     * Lit.not() is well optimized and inexpensive, in both Java and the native library.
+     * Double negations will be eliminated and are essentially free.
+     * No new objects are instantiated by Lit.not().
+     * It is always the case that <code>a.not().not() == a<code/>
+     *
+     * @return The negation of this literal.
+     */
     public Lit not() {
         if(this==True){
             return False;
         }else if (this==False){
             return True;
+        }
+        if(this==Error || this==Undef){
+            throw new RuntimeException("Cannot negate literal " + toString());
         }
         return solver.not(this);
     }

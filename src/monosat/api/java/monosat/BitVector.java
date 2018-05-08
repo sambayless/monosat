@@ -191,7 +191,7 @@ public final class BitVector {
     }
 
     /**
-     * Get Lit bit from the bits backing this bitvector.
+     * Get the literal at index 'bit' from the list of bits backing this bitvector.
      * @param bit The index of the literal to retrieve.
      * @return The literal representing bit 'bit'.
      */
