@@ -24,24 +24,67 @@ package monosat;
 import java.util.Optional;
 
 /**
- * Literals are integers in the rance 0..nVars()*2
+ * Represents a signed Boolean literal in MonoSAT.
+ * Internally, literals are integers in the rance 0..(nVars()-1)*2.
  * Literals come in pairs; positive literals are even, negative literals are odd.
- * Finally, there are two reserved literals:
- * lit_Undef and lit_Error, with values -2 and -1, respectively.
- * <p>
- * In an ideal world, this would be _just_ an integer, or a type-checked value class of size 32 bits.
- * However, to deal with
+ * <br>
+ * There are four constant literals that are globally shared among all Solver instances:
+ * Lit.True and Lit.False, with values 0 and 1, and represent constant true and false, and <br>
+ * Lit.Undef and Lit.Error, with values -1 and -2, respectively.
+ * <br>
+ * All other literals belong to specific Solver instances.<p>
+ * Example usage:
+ *
+ * <blockquote><pre>{@code
+ * Solver solver = new Solver();
+ * Lit a = new Lit(solver);//create a new, free literal
+ * Lit b = new Lit(solver);//create another literal
+ *
+ * solver.addClause(a,b.not()); //add a clause requiring either a to be true, or b to be false.
+ * solver.addClause(a.not,b); //add a clause requiring either a to be false, or b to be true.
+ * //Together, the above clauses for a to equal b in any satisfying solution.
+ * //See also monosat.Logic.assertEqual(a,b).
+ * solver.solve();//attempt to solve this formula
+ *
+ * //retrieve the values of each literal from the solver's satisfying assignment
+ * bool a_assign = a.value();
+ * bool b_assign = b.value();
+ * }</pre></blockquote>
  */
 public final class Lit {
+    /**
+     * This constant value represents an undefined literal.
+     */
     public final static Lit Undef = new Lit(-1, true);
+    /**
+     * This constant value represents an invalid literal.
+     */
     public final static Lit Error = new Lit(-2, true);
+    /**
+     * A constant literal, shared among all solver instances, that is true in any satisfying assignment.
+     */
     public final static Lit True = new Lit(0, true);
+
+    /**
+     * A constant literal, shared among all solver instances, that is false in any satisfying assignment.
+     */
     public final static Lit False = new Lit(1, true);
+
+    /**
+     * The solver instance this literal belongs to.
+     */
     protected final Solver solver;
 
-    //The value of this literal
+    /**
+     * The integer value of this literal.
+     */
     protected int l = -2;
 
+    /**
+     * A private constructor used only to initialize the constant, global literals.
+     * @param lit The integer value of this literal.
+     * @param define_literal Ignored.
+     */
     private Lit(int lit, boolean define_literal) {
         //used to define static lits
         assert(lit<=1);
@@ -49,6 +92,11 @@ public final class Lit {
         this.l = lit;
     }
 
+    /**
+     * Used internally by the Solver to create literals.
+     * @param solver Solver this literal will belong to.
+     * @param literal The integer value of this literal.
+     */
     protected Lit(Solver solver,int literal) {
         assert (literal >= 0);
         this.l =literal;
@@ -56,9 +104,14 @@ public final class Lit {
     }
 
     /**
-     * Before you can create a new Literal, you must first create a Solver:
+     * Create a new literal in the specified solver.
+     * Note: Before you can create a new Literal, you must first create a Solver:
+     *
+     * <blockquote><pre>{@code
      * Solver s = new Solver();
      * Lit a = new Lit(s);
+     * }</pre></blockquote>
+     *
      * @param solver The SAT solver in which to create a new literal.
      */
     public Lit(Solver solver){
@@ -66,9 +119,14 @@ public final class Lit {
     }
 
     /**
-     * Before you can create a new Literal, you must first create a Solver:
+     * Create a new literal in the specified solver.
+     * Note: Before you can create a new Literal, you must first create a Solver:
+     *
+     * <blockquote><pre>{@code
      * Solver s = new Solver();
      * Lit a = new Lit(s);
+     * }</pre></blockquote>
+     *
      * @param solver The SAT solver in which to create a new literal.
      * @param decisionLit If true (the default), this literal can be used as a decision Literal in the solver.
      */
@@ -80,6 +138,12 @@ public final class Lit {
         solver.setDecisionLiteral(this,decisionLit);
     }
 
+    /**
+     * Get the solver this literal belongs to.
+     * Note that the 4 constant, global literals (Lit.True,Lit.False,Lit.Undef,Lit.Error)
+     * do not have a solver.
+     * @return The solver this literal belongs to.
+     */
     public Solver getSolver(){
         if(solver==null){
             throw new RuntimeException("Cannot access solver for " + toString());
@@ -88,7 +152,7 @@ public final class Lit {
     }
 
     /**
-     * Check whether the literal has a negation sign.
+     * Check whether this literal has a negation sign.
      *
      * @return True if the literal is negative, false if it is positive.
      */
@@ -104,6 +168,11 @@ public final class Lit {
         }
         return solver.not(this);
     }
+
+    /**
+     * Return this.not() if this has a negation sign, else return this.
+     * @return this.not() if this has a negation sign, else return this.
+     */
     public Lit abs() {
         if (sign()) {
             return this.not();
@@ -113,9 +182,11 @@ public final class Lit {
     }
 
     /**
-     * Convert the literal into dimacs format
+     * Convert the literal into DIMACS format.
+     * Dimacs format literals are non-zero, and are negative if the literal has negative sign.
+     * For example, Lit.True.toDimacs() = 1, and Lit.False.toDimacs() = -1.
      *
-     * @return
+     * @return An integer representation of the literal in dimacs format.
      */
     public int toDimacs() {
         return ((l / 2) + 1) * (this.sign() ? -1 : 1);
@@ -138,7 +209,7 @@ public final class Lit {
     /**
      * Convert the literal into a variable.
      *
-     * @return
+     * @return An integer representation of the variable this literal represents (ignoring sign).
      */
     public int toVar() {
         return l / 2;
@@ -148,7 +219,7 @@ public final class Lit {
     /**
      * Convert the literal into an integer.
      *
-     * @return
+     * @return An integer representation of this literal, even if the literal is positive, odd if it is negative.
      */
     public int toInt() {
         return l;
@@ -157,32 +228,46 @@ public final class Lit {
     /**
      * Query the model in the solver, throwing a NoModelException if the literal is unassigned in the model.
      * This can happen only if the literal is not a decision literal.
+     *
+     * @return The value of this literal in the solvers model (if the solver has a satisfying assignment.)
+     * @throws NoModelException If the solver does not yet have a satisfying assignment (eg, if s.solve() has not yet
+     * returned true.)
      */
     public boolean value() throws NoModelException {
         return value(Solver.LBool.Undef);
     }
+
     /**
-     * Query the model in the solver.
-     * If defaultVal is LBool.Undef, this will throw a NoModelException if the literal is unassigned.
+     * Query the model in the solver.     *
      * Else, if the literal is unassigned, defaultVal will be returned.
+     *
+     * @param defaultVal If the literal is unassigned in the solver, returns defaultVal. Else, returns the value of
+     *                   the literal in the solver.
+     * @return The value of this literal in the solvers model (if the solver has an assignment for this
+     * literal), else defaultVal.
+     * @throws NoModelException If the solver does not yet have a satisfying assignment (eg, if s.solve() has not yet
+     * returned true.)
      */
-    public boolean value(boolean defaultVal) throws NoModelException {
+    public boolean value(boolean defaultVal) {
         return value(Solver.LBool.fromBool(defaultVal));
     }
+
     /**
      * After a solve call, non-decision literals may or may not be assigned to a value.
      * Unassigned literals will have the value LBool.Undef;
+     *
+     * @return An Optional containing the value of this literal if it has an assignment.
      */
     public Optional<Boolean> possibleValue(){
         return getPossibleValue(Solver.LBool.Undef);
-    }
-    public Optional<Boolean> possibleValue(boolean defaultValue){
-        return getPossibleValue(defaultValue ? Solver.LBool.True : Solver.LBool.False);
     }
 
     /**
      * After a solve call, non-decision literals may or may not be assigned to a value.
      * Unassigned literals will have the value defaultValue
+     *
+     * @return An Optional containing the value of this literal if it has an assignment, else return  defaultValue
+     * .toOpt().
      */
     private Optional<Boolean> getPossibleValue( Solver.LBool defaultValue) {
         if(this.l<0){
@@ -202,21 +287,16 @@ public final class Lit {
         }
     }
 
-    protected Solver.LBool getLBoolValue(Solver.LBool defaultValue) {
-
-        Solver.LBool val = Solver.LBool.toLbool(MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
-        if (val==Solver.LBool.Undef){
-            return defaultValue;
-        }else{
-            return val;
-        }
-    }
-
-
     /**
      * Query the model in the solver.
      * If defaultVal is LBool.Undef, this will throw an exception if the literal is unassigned.
      * Else, if the literal is unassigned, defaultVal will be returned.
+     *
+     * @param defaultVal The value to return if this literal is undefined.
+     * @return The value of this literal in the model if it has a value, else if defaultValue != LBool.Undef,
+     * return defaultValue==Solver.LBool.True; else, throw a NoModelException
+     * @throws NoModelException If there is no assignment for this literal in the solver,
+     * and defaultVal is LBool.Undef.
      */
     protected boolean value(Solver.LBool defaultVal) throws NoModelException {
         if(this.l<0){
@@ -251,6 +331,8 @@ public final class Lit {
      *   //l must be constant false, because the constraints are UNSAT if l is true.
      * }
      *
+     * @return An optional containing the constant value of this literal if the solver knows it to be trivially true
+     * or false; Optional.empty if the solver has not proven that the literal is  constant.
      */
     public Optional<Boolean> getConstantValue() {
         if(this.l<0){
@@ -272,6 +354,7 @@ public final class Lit {
      * Note that even if this function returns false, the literal may still in fact be a constant,
      * but this may not yet be known to the solver. As constraints are added, or after calls to solve(),
      * the solver may discover that a literal is constant, and so this return value may change over time.
+     *
      * @return True if the literal is known to the solver to be either always true, or always false, in any satisfying model.
      */
     public boolean isConst(){
@@ -283,6 +366,16 @@ public final class Lit {
         return getConstantValue().isPresent();
     }
 
+
+    /**
+     * If a literal is known to the solver to be a constant (either true or false),
+     * this returns True.
+     * Note that even if this function returns false, the literal may still in fact be a constant,
+     * but this may not yet be known to the solver. As constraints are added, or after calls to solve(),
+     * the solver may discover that a literal is constant, and so this return value may change over time.
+     *
+     * @return True if the literal is known to the solver to be either always true in any satisfying model.
+     */
     public boolean isConstTrue(){
         if(this==Lit.True){
             return true;
@@ -291,6 +384,17 @@ public final class Lit {
         }
         return getConstantValue().orElse(false);
     }
+
+
+    /**
+     * If a literal is known to the solver to be a constant (either true or false),
+     * this returns True.
+     * Note that even if this function returns false, the literal may still in fact be a constant,
+     * but this may not yet be known to the solver. As constraints are added, or after calls to solve(),
+     * the solver may discover that a literal is constant, and so this return value may change over time.
+     *
+     * @return True if the literal is known to the solver to be either always false in any satisfying model.
+     */
     public boolean isConstFalse(){
         if(this==Lit.False){
             return true;

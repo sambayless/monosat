@@ -47,7 +47,7 @@ public final class Solver implements Closeable {
      * Largest constant BitVector value to cache.
      * This may change in the future.
      */
-    private static long MAX_CACHE_CONST = 255;
+    private final static long MAX_CACHE_CONST = 255;
 
     /**
      * Handle to the underlying monosat solver instance.
