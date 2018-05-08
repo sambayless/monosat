@@ -165,7 +165,62 @@ public class BitVectorTest {
         assertTrue(s.solve());
     }
 
+    @Test
+    public void compareBV() {
+        Solver s = new Solver();
+        BitVector bv1 = new BitVector(s,4);
+        BitVector bv2 = new BitVector(s,4);
 
+        for(Comparison c:Comparison.values()){
+            Lit l = bv1.compare(c,bv2);
+            assertTrue(s.solve(l));
+            long v1 = bv1.value();
+            long v2 = bv2.value();
+            assertTrue(c.compare(v1,v2));
+        }
+
+        for(Comparison c:Comparison.values()){
+            Lit l = bv1.compare(c,bv2);
+            assertTrue(s.solve(l.not()));
+            long v1 = bv1.value();
+            long v2 = bv2.value();
+            assertFalse(c.compare(v1,v2));
+        }
+    }
+
+    @Test
+    public void compareConst() {
+        Solver s = new Solver();
+        BitVector bv1 = new BitVector(s,4);
+
+        for(Comparison c:Comparison.values()){
+            //note: the extremal values (0,15) are not satisfiable for
+            //some comparisons, so skipping them here
+            for (long v2 = 1;v2<14;v2++){
+                Lit l = bv1.compare(c,v2);
+                assertTrue(s.solve(l));
+                long v1 = bv1.value();
+                assertTrue(c.compare(v1,v2));
+            }
+        }
+    }
+
+    @Test
+    public void unsatComparisons() {
+        Solver s = new Solver();
+        BitVector bv1 = new BitVector(s,4);
+        assertFalse(s.solve(bv1.compare(Comparison.LT, 0)));
+        assertFalse(s.solve(bv1.compare(Comparison.GT, 15)));
+        assertTrue(s.solve());
+        assertTrue(s.solve(bv1.compare(Comparison.LT, 0).not()));
+        assertTrue(s.solve(bv1.compare(Comparison.GT, 15).not()));
+
+        assertFalse(s.solve(bv1.compare(Comparison.GEQ, 0).not()));
+        assertTrue(s.solve(bv1.compare(Comparison.GEQ, 0)));
+
+        assertFalse(s.solve(bv1.compare(Comparison.LEQ, 15).not()));
+        assertTrue(s.solve(bv1.compare(Comparison.LEQ, 15)));
+    }
 
     @Test
     public void slice() {

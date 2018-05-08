@@ -65,7 +65,13 @@ public class LogicTest {
         assertTrue(solver.solve());
         Logic.assertTrue(True);
         assertTrue(solver.solve());
-        Logic.assertFalse(True);
+        Logic.disallowContradictions();
+        try {
+            Logic.assertFalse(True);
+            fail( "Expected a contradiction exception" );
+        }catch (TrivialContradictionException e){
+            //ok
+        }
         assertFalse(solver.solve());
         Solver solver2 = new Solver();
         assertTrue(solver2.solve());

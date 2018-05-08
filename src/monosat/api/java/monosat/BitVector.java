@@ -35,6 +35,14 @@ public final class BitVector {
     private final Solver solver;
     private final ArrayList<Lit> bits = new ArrayList<Lit>();
 
+    /**
+     * Creates a new BitVector using the given literals.
+     * The width of the bitvector will equal literals.size().
+     *
+     * @param solver The solver that this bitvector will belong to.
+     * @param literals A non-empty set of at most 64 literals that will back this bitvector, in LSB order:
+     * literals.get(0) will represent the 1-bit of the bitvector, literals.get(1) the 2-bit, etc.
+     */
     public BitVector(Solver solver, ArrayList<Lit> literals) {
         this.solver = solver;
         width = literals.size();
@@ -48,6 +56,17 @@ public final class BitVector {
         solver.registerBitVector(this);
     }
 
+    /**
+     * Creates a new BitVector of the specified width, with a constant value.
+     * If introduceLiterals is true, then introduces width literals,
+     * else creates a bitvector that has no literals associated with it.
+     *
+     * @param solver The solver that this bitvector will belong to.
+     * @param width The number of bits in this BitVector.
+     * Width must be a non-zero postiive integer <= 64.
+     * @param constant A non-negative constant value that this BitVector will represent.
+     * constant must be >=0, and < 2<<width.
+     */
     public BitVector(Solver solver, int width, long constant) {
         this.solver = solver;
         if(width<=0){
@@ -74,12 +93,16 @@ public final class BitVector {
     }
 
     /**
-     * Creates a new BitVector if the specified width.
+     * Creates a new BitVector of the specified width.
      * If introduceLiterals is true, then introduces width literals,
      * else creates a bitvector that has no literals associated with it.
      *
-     * @param solver
-     * @param width
+     * @param solver The solver that this bitvector will belong to.
+     * @param width The number of bits in this BitVector.
+     * Width must be a non-zero postiive integer <= 64.
+     * @param introduceLiterals If true (the default), create width number of
+     * new literals to represent the bitvector. If false, the no literals
+     * are introduced for this bitvector.
      */
     public BitVector(Solver solver, int width, boolean introduceLiterals) {
         this.solver = solver;
@@ -118,158 +141,338 @@ public final class BitVector {
         return Objects.hash(id, solver);
     }
 
+    /**
+     * Get the solver that this BitVector belongs to.
+     * @return the solver that this BitVector belongs to.
+     */
     public Solver getSolver(){
         return solver;
     }
 
+    /**
+     * Return an immutable view of the literal that make up this bitvector
+     * (if any). The returned list will either have exactly width literals,
+     * or be empty.
+     * @return the literals (if any) that make up this BitVector.
+     */
     public List<Lit> getBits() {
         return Collections.unmodifiableList(bits);
     }
 
+    /**
+     * Get Lit bit from the bits backing this bitvector.
+     * @param bit The index of the literal to retrieve.
+     * @return The literal representing bit 'bit'.
+     */
     public Lit get(int bit) {
         return bits.get(bit);
     }
 
+    /**
+     * Get the bitwidth of this (eg, number of bits) of this bitvector.
+     * @return the bitwidth of this bitvector.
+     */
     public int width() {
         return width;
     }
 
+    /**
+     * Get the bitwidth of this (eg, number of bits) of this bitvector.
+     * @return the bitwidth of this bitvector.
+     */
     public int size() {
         return width();
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is greater than
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * BitVector b = new BitVector(4);
+     * Lit l = a.gt(b);
+     * //Lit l will be true iff a > b, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The BitVector that this BitVector will be compared to.
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit gt(BitVector compareTo) {
-        int l = MonosatJNI.newBVComparison_bv_gt(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
-        return solver.toLit(l);
+        return compare(Comparison.GT,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is greater or equal to
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * BitVector b = new BitVector(4);
+     * Lit l = a.geq(b);
+     * //Lit l will be true iff a >= b, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The BitVector that this BitVector will be compared to.
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit geq(BitVector compareTo) {
-        int l = MonosatJNI.newBVComparison_bv_geq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
-        return solver.toLit(l);
+        return compare(Comparison.GEQ,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is less than
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * BitVector b = new BitVector(4);
+     * Lit l = a.lt(b);
+     * //Lit l will be true iff a < b, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The BitVector that this BitVector will be compared to.
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit lt(BitVector compareTo) {
-        int l = MonosatJNI.newBVComparison_bv_lt(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
-        return solver.toLit(l);
+        return compare(Comparison.LT,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is less or equal to
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * BitVector b = new BitVector(4);
+     * Lit l = a.leq(b);
+     * //Lit l will be true iff a <= b, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The BitVector that this BitVector will be compared to.
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit leq(BitVector compareTo) {
-        int l = MonosatJNI.newBVComparison_bv_leq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
-        return solver.toLit(l);
+        return compare(Comparison.LEQ,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is not equal to
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * BitVector b = new BitVector(4);
+     * Lit l = a.neq(b);
+     * //Lit l will be true iff a != b, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The BitVector that this BitVector will be compared to.
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit neq(BitVector compareTo) {
-        int l = MonosatJNI.newBVComparison_bv_neq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
-        return solver.toLit(l);
+        return compare(Comparison.NEQ,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is equal to
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * BitVector b = new BitVector(4);
+     * Lit l = a.eq(b);
+     * //Lit l will be true iff a == b, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The BitVector that this BitVector will be compared to.
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit eq(BitVector compareTo) {
-        int l = MonosatJNI.newBVComparison_bv_eq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id);
-        return solver.toLit(l);
+        return compare(Comparison.EQ,compareTo);
     }
 
     //Constant comparisons
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is greater than
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * Lit l = a.gt(5);
+     * //Lit l will be true iff a > 5, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The non-negative long that this bitvector will be compared to.
+     * compareTo must be < 2<<width().
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit gt(long compareTo) {
-        int l = MonosatJNI.newBVComparison_const_gt(solver.solverPtr, solver.bvPtr, this.id, compareTo);
-        return solver.toLit(l);
+        return compare(Comparison.GT,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is greater or equal to
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * Lit l = a.geq(5);
+     * //Lit l will be true iff a >= 5, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The non-negative long that this bitvector will be compared to.
+     * compareTo must be < 2<<width().
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit geq(long compareTo) {
-        int l = MonosatJNI.newBVComparison_const_geq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
-        return solver.toLit(l);
+        return compare(Comparison.GEQ,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is less than
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * Lit l = a.lt(5);
+     * //Lit l will be true iff a < 5, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The non-negative long that this bitvector will be compared to.
+     * compareTo must be < 2<<width().
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit lt(long compareTo) {
-        int l = MonosatJNI.newBVComparison_const_lt(solver.solverPtr, solver.bvPtr, this.id, compareTo);
-        return solver.toLit(l);
+        return compare(Comparison.LT,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is less or equal to
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * Lit l = a.leq(5);
+     * //Lit l will be true iff a <= 5, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The non-negative long that this bitvector will be compared to.
+     * compareTo must be < 2<<width().
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit leq(long compareTo) {
-        int l = MonosatJNI.newBVComparison_const_leq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
-        return solver.toLit(l);
+        return compare(Comparison.LEQ,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is not equal to
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * Lit l = a.neq(5);
+     * //Lit l will be true iff a != 5, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The non-negative long that this bitvector will be compared to.
+     * compareTo must be < 2<<width().
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit neq(long compareTo) {
-        int l = MonosatJNI.newBVComparison_const_neq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
-        return solver.toLit(l);
+        return compare(Comparison.NEQ,compareTo);
     }
 
     /**
-     * Returns a literal which evaluates to true if this comparison holds, false otherwise.
+     * Returns a literal which evaluates to true if this bitvector is equal to
+     * compareTo, false otherwise.
      *
-     * @param compareTo
-     * @return
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * Lit l = a.eq(5);
+     * //Lit l will be true iff a == 5, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * @param compareTo The non-negative long that this bitvector will be compared to.
+     * compareTo must be < 2<<width().
+     * @return a literal that will evaluate to true iff the comparison holds.
      */
     public Lit eq(long compareTo) {
-        int l = MonosatJNI.newBVComparison_const_eq(solver.solverPtr, solver.bvPtr, this.id, compareTo);
-        return solver.toLit(l);
+        return compare(Comparison.EQ,compareTo);
+    }
+
+    /**
+     * Compare this bitvector to the bitvector 'compareTo'.
+     * Returns a literal that will evaluate to true iff the comparison holds.
+     *
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * BitVector b = new BitVector(4);
+     * Lit l = a.compare(Comparison.LT,b);
+     * //Lit l will be true iff a < b, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * See also the short forms: BitVector.gt(),geq(),lt(),leq(),eq(),neq().
+     *
+     * @param c type of comparison to perform (GEQ,EQ,LT, etc.)
+     * @param compareTo The BitVector that this BitVector will be compared to.
+     * @return a literal that will evaluate to true iff the comparison holds.
+     */
+    public Lit compare(Comparison c,BitVector compareTo){
+        switch(c){
+            case GT:
+                return solver.toLit(MonosatJNI.newBVComparison_bv_gt(solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+            case GEQ:
+                return solver.toLit(MonosatJNI.newBVComparison_bv_geq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+            case LT:
+                return solver.toLit(MonosatJNI.newBVComparison_bv_lt(solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+            case LEQ:
+                return solver.toLit(MonosatJNI.newBVComparison_bv_leq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+            case EQ:
+                return solver.toLit(MonosatJNI.newBVComparison_bv_eq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+            case NEQ:
+                return solver.toLit(MonosatJNI.newBVComparison_bv_neq(solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+        }
+        //Comparison c should never be null
+        throw new NullPointerException();
+    }
+
+
+    /**
+     * Compare this bitvector to the bitvector 'compareTo'.
+     * Returns a literal that will evaluate to true iff the comparison holds.
+     *
+     * <blockquote><pre>{@code
+     * BitVector a = new BitVector(4);
+     * Lit l = a.compare(Comparison.EQ,5);
+     * //Lit l will be true iff a == 5, in the assignment chosen by the solver.
+     * }</pre></blockquote>
+     *
+     * See also the short forms: BitVector.gt(),geq(),lt(),leq(),eq(),neq().
+     *
+     * @param c type of comparison to perform (GEQ,EQ,LT, etc.)
+     * @param compareTo The non-negative long that this bitvector will be compared to.
+     * compareTo must be < 2<<width().
+     * @return a literal that will evaluate to true iff the comparison holds.
+     */
+    public Lit compare(Comparison c,long compareTo){
+        switch(c){
+            case GT:
+                return solver.toLit(MonosatJNI.newBVComparison_const_gt(solver.solverPtr, solver.bvPtr, this.id, compareTo));
+            case GEQ:
+                return solver.toLit(MonosatJNI.newBVComparison_const_geq(solver.solverPtr, solver.bvPtr, this.id, compareTo));
+            case LT:
+                return solver.toLit(MonosatJNI.newBVComparison_const_lt(solver.solverPtr, solver.bvPtr, this.id, compareTo));
+            case LEQ:
+                return solver.toLit(MonosatJNI.newBVComparison_const_leq(solver.solverPtr, solver.bvPtr, this.id, compareTo));
+            case EQ:
+                return solver.toLit(MonosatJNI.newBVComparison_const_eq(solver.solverPtr, solver.bvPtr, this.id, compareTo));
+            case NEQ:
+                return solver.toLit(MonosatJNI.newBVComparison_const_neq(solver.solverPtr, solver.bvPtr, this.id, compareTo));
+        }
+        //Comparison c should never be null
+        throw new NullPointerException();
     }
 
     /**

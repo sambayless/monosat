@@ -87,9 +87,9 @@ public final class Logic {
         }
         if(throw_contradictions){
             if (a == Lit.False) {
-                throw new RuntimeException("Constant False asserted to be True (which is almost always an error).");
+                throw new TrivialContradictionException("Constant False asserted to be True (which is almost always an error).");
             } else if (a == Lit.True) {
-                throw new RuntimeException("Constant True asserted to be False (which is almost always an error).");
+                throw new TrivialContradictionException("Constant True asserted to be False (which is almost always an error).");
             }
 
         }
@@ -109,7 +109,7 @@ public final class Logic {
             s.assertFalse(Lit.True);
         }
         if(throw_contradictions){
-                throw new RuntimeException("Statically UNSAT assertion (which is almost always an error).");
+                throw new TrivialContradictionException("Statically UNSAT assertion (which is almost always an error).");
         }
         if(warn_contradictions) {
             warn_contradictions=false;
@@ -730,24 +730,6 @@ public final class Logic {
                 contradiction();
         }
     }
-    private static boolean checkStaticPB(int trueCount, Comparison c, int compareTo){
-        switch(c){
-            case GT:
-                return trueCount>compareTo;
-            case GEQ:
-                return trueCount>=compareTo;
-            case EQ:
-                return trueCount==compareTo;
-            case LT:
-                return trueCount<compareTo;
-            case LEQ:
-                return trueCount<=compareTo;
-            case NEQ:
-                return trueCount!=compareTo;
-        }
-        assert(false);
-        return false;
-    }
 
     public static void assertPB(Collection<Lit> args, Comparison c, int compareTo) {
         Solver solver = getSolver(args);
@@ -761,7 +743,7 @@ public final class Logic {
                 }
             }
             //statically check if the comparison holds
-            if(!checkStaticPB(trueCount,c,compareTo)){
+            if(!c.compare(trueCount,compareTo)){
                 contradiction();
             }
         }
@@ -783,7 +765,7 @@ public final class Logic {
                 }
             }
             //statically check if the comparison holds
-            if(!checkStaticPB(trueCount,c,compareTo)){
+            if(!c.compare(trueCount,compareTo)){
                 contradiction();
             }
         }

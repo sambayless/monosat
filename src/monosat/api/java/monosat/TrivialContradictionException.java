@@ -22,33 +22,12 @@
 package monosat;
 
 /**
- * A comparison between two symbolic values.
+ * Unchecked runtime exception thrown when a trivial contradiction, such as assertFalse(True),
+ * is added to the solver. Such an assertion is usually an error, and the solver
+ * can be configured to (in some cases) detect these errors and throw an exception.
  */
-public enum Comparison {
-    LT, LEQ, EQ, NEQ, GEQ, GT;
-
-    /**
-     * Compare a to b, using this operator.
-     * @param a First argument to compare.
-     * @param b Second argument to compare.
-     * @return True iff a op b holds.
-     */
-    public boolean compare(long a, long b){
-        switch(this){
-            case GT:
-                return a>b;
-            case GEQ:
-                return a>=b;
-            case LT:
-                return a<b;
-            case LEQ:
-                return a<=b;
-            case NEQ:
-                return a!=b;
-            case EQ:
-            default:
-                return a==b;
-        }
-        //unreachable
+public class TrivialContradictionException extends RuntimeException {
+    public TrivialContradictionException(String message) {
+        super(message);
     }
 }

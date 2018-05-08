@@ -75,7 +75,6 @@ public class SolverTest {
         assertTrue(s.solve());
         s.assertOr();
         assertFalse(s.solve());
-
         Solver s2 = new Solver();
         assertTrue(s2.solve());
         assertFalse(s.solve());
