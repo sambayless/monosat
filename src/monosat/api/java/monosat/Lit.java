@@ -20,8 +20,6 @@
  **************************************************************************************************/
 
 package monosat;
-import monosat.Logic;
-import monosat.Solver;
 
 import java.util.Optional;
 

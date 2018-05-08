@@ -544,8 +544,7 @@ public final class Solver implements Closeable {
      */
     public boolean addClause(Collection<Lit> clause) {
         validate(clause);
-        boolean status = MonosatJNI.addClause(solverPtr, getLitBuffer(clause, 1), clause.size());
-        return status;
+        return MonosatJNI.addClause(solverPtr, getLitBuffer(clause, 1), clause.size());
     }
 
     //basic this functions
@@ -556,8 +555,7 @@ public final class Solver implements Closeable {
      * @return True if a satisfying soltuion was found, false if it does not.
      */
     public boolean solve() {
-        boolean r = MonosatJNI.solve(solverPtr);
-        return r;
+        return MonosatJNI.solve(solverPtr);
     }
     /**
      * Either find a satisfying solution to the constraints in te formula, or
@@ -969,9 +967,7 @@ public final class Solver implements Closeable {
     public void assertPB(Collection<Lit> args,  Comparison c, int compareTo) {
         validate(args);
         ArrayList<Lit> tmp = new ArrayList<>();
-        for(Lit l:args){
-            tmp.add(l);
-        }
+        tmp.addAll(args);
         assertPB(tmp, null,c, compareTo);
     }
 
@@ -1422,7 +1418,6 @@ public final class Solver implements Closeable {
 
     public BitVector min(Collection<BitVector> args) {
         validateBV(args);
-        assert (args.size() >= 0);
         int w = args.iterator().next().width();
         BitVector result = new BitVector(this, w);
         MonosatJNI.bv_min(this.solverPtr, this.bvPtr, this.getBVBuffer(args, 0), args.size(), result.id);
@@ -1439,7 +1434,6 @@ public final class Solver implements Closeable {
 
     public BitVector max(Collection<BitVector> args) {
         validateBV(args);
-        assert (args.size() >= 0);
         int w = args.iterator().next().width();
         BitVector result = new BitVector(this, w);
         MonosatJNI.bv_min(this.solverPtr, this.bvPtr, this.getBVBuffer(args, 0), args.size(), result.id);

@@ -21,7 +21,6 @@
 
 package monosat;
 
-import java.util.ArrayList;
 import java.util.Vector;
 import java.nio.IntBuffer;
 

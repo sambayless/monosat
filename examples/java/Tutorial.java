@@ -30,7 +30,8 @@ public class Tutorial {
         In many (but not all) cases, the following option, which enables theory-based decision heuristics,
         is particularly good for performance:
         */
-        s = new Solver("-decide-theories",false,"/tmp/test2.gnf");
+        s = new Solver("-decide-theories"); //create a new solver, store it in s, and allow the previous solver
+        // (which no longer has any variables referring to it) to be garbage collected.
 
         //Create some literals in the solver
         Lit a = new Lit(s);

@@ -21,7 +21,6 @@
 
 package monosat;
 
-import java.nio.IntBuffer;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -532,7 +531,7 @@ public final class Logic {
             if(trueCount%2==1){
                 contradiction();
             }else{
-
+                //do nothing
             }
         }
     }
@@ -551,7 +550,7 @@ public final class Logic {
             if(trueCount%2==1){
                 contradiction();
             }else{
-
+                //do nothing
             }
         }
     }

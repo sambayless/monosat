@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Objects;
 
 public final class BitVector {
-    protected int id;
-    private int width;
-    private Solver solver;
-    private ArrayList<Lit> bits = new ArrayList<Lit>();
+    protected final int id;
+    private final int width;
+    private final Solver solver;
+    private final ArrayList<Lit> bits = new ArrayList<Lit>();
 
     public BitVector(Solver solver, ArrayList<Lit> literals) {
         this.solver = solver;
@@ -44,9 +44,7 @@ public final class BitVector {
             throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
         }
         id = MonosatJNI.newBitvector(solver.solverPtr, solver.bvPtr, solver.getLitBuffer(literals), literals.size());
-        for (Lit l : literals) {
-            this.bits.add(l);
-        }
+        bits.addAll(literals);
         solver.registerBitVector(this);
     }
 

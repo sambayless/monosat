@@ -26,23 +26,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public final class Graph {
-    Solver solver;
-    private int bitwidth = -1;
-    private long graphPtr;
-    private Map<String, Integer> nodeMap = new HashMap<String, Integer>();
-    private ArrayList<String> nodeNames = new ArrayList<String>();
-    private Set<Integer> nodes = new HashSet<Integer>();//consider arraylist<Integer>
-    private ArrayList<Map<Integer, LinkedList<Edge>>> edges = new ArrayList<>();
-    private Map<Lit,Edge> edgeLitMap = new HashMap<>();
-    private ArrayList<Edge> all_edges = new ArrayList<>();
-    private ArrayList<Lit> all_edge_lits = new ArrayList<>();
-    private ArrayList<ArrayList<Lit>> all_out_edge_lits = new ArrayList<>();
-    private ArrayList<ArrayList<Lit>> all_in_edge_lits = new ArrayList<>();
-    private ArrayList<ArrayList<Lit>> all_node_edge_lits = new ArrayList<>();
+    private final Solver solver;
+    private final int bitwidth;
+    private final long graphPtr;
+    private final Map<String, Integer> nodeMap = new HashMap<String, Integer>();
+    private final ArrayList<String> nodeNames = new ArrayList<String>();
+    private final Set<Integer> nodes = new HashSet<Integer>();//consider arraylist<Integer>
+    private final ArrayList<Map<Integer, LinkedList<Edge>>> edges = new ArrayList<>();
+    private final Map<Lit,Edge> edgeLitMap = new HashMap<>();
+    private final ArrayList<Edge> all_edges = new ArrayList<>();
+    private final ArrayList<Lit> all_edge_lits = new ArrayList<>();
+    private final ArrayList<ArrayList<Lit>> all_out_edge_lits = new ArrayList<>();
+    private final ArrayList<ArrayList<Lit>> all_in_edge_lits = new ArrayList<>();
+    private final ArrayList<ArrayList<Lit>> all_node_edge_lits = new ArrayList<>();
 
     public Graph(Solver solver) {
         this.solver = solver;
         graphPtr = MonosatJNI.newGraph(solver.solverPtr);
+        this.bitwidth = -1;
     }
 
     public Graph(Solver solver, int bitwidth) {
@@ -676,7 +677,7 @@ public final class Graph {
                     }
                 }
             }else{
-
+                //do nothing
             }
             writer.append("]\n");
         }
@@ -692,11 +693,11 @@ public final class Graph {
     }
 
     public class Edge {
-        public int from;
-        public int to;
-        public Lit l;
-        private long weight = -1;
-        private BitVector bv = null;
+        public final int from;
+        public final int to;
+        public final Lit l;
+        private final long weight;
+        private final BitVector bv;
 
         protected Edge(int from, int to, Lit l, BitVector weight) {
             this.from = from;
