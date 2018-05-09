@@ -588,10 +588,14 @@ public final class Solver implements Closeable {
      * If preprocessing is enabled in the solver (by default, it is not),
      * then prevent this literal from being simplified by preprocessing.
      * @param l The literal to disable simplification on.
+     * @throws RuntimeException If the Literal has already been eliminated by
+     * preprocessing.
      */
     public void disallowSimplification(Lit l) {
         validate(l);
-        MonosatJNI.disallowLiteralSimplification(solverPtr, l.toVar());
+        if(!MonosatJNI.disallowLiteralSimplification(solverPtr, l.toVar())){
+            throw new RuntimeException("Literal has already been eliminated.");
+        }
     }
 
     /**
