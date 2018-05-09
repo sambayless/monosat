@@ -181,7 +181,7 @@ public final class BitVector {
     }
 
     /**
-     * Return an umodifiable view of the literal that make up this bitvector
+     * Return an unmodifiable view of the literal that make up this bitvector
      * (if any). The returned list will either have exactly width literals,
      * or be empty.
      * @return The literals (if any) that make up this BitVector.

@@ -1027,7 +1027,7 @@ public final class Graph {
      * Retrieve the value of the flow along a given edge in the graph, corresponding to a specified maximum flow
      * comparison literal, from a satisfying solution in the solver.
      * @param flowComparisonLiteral A maximum flow comparison literal.
-     * @param edgeLiteral The edge literal to rereive a flow for.
+     * @param edgeLiteral The edge literal to retrieve a flow for.
      * @return The value of the flow along this edge in this graph, from a satisfying solution in the solver.
      * @throws NoModelException If the solver does not have a satisfying assignment.
      */
@@ -1039,7 +1039,7 @@ public final class Graph {
      * Retrieve the value of the flow along a given edge in the graph, corresponding to a specified maximum flow
      * comparison literal, from a satisfying solution in the solver.
      * @param flowComparisonLiteral A maximum flow comparison literal.
-     * @param edgeLiteral The edge literal to rereive a flow for.
+     * @param edgeLiteral The edge literal to retrieve a flow for.
      * @param forceAcyclicFlow If true, then additional effort will be expended to ensure that the returned flow
      * values are acyclic.
      * @return The value of the flow along this edge in this graph, from a satisfying solution in the solver.

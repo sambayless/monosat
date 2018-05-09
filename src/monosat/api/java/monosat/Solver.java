@@ -585,7 +585,7 @@ public final class Solver implements Closeable {
 
 
     /**
-     * If preprocessing is enabled in the sovler (by default, it is not),
+     * If preprocessing is enabled in the solver (by default, it is not),
      * then prevent this literal from being simplified by preprocessing.
      * @param l The literal to disable simplification on.
      */
@@ -1204,7 +1204,7 @@ public final class Solver implements Closeable {
     /**
      * Add an optimization objective to the solver:
      * minimize the weighted number of true literals from among the given literals.
-     * @param literals A collection of weighted literals to minimze in the next solve() or solveLimited() call.
+     * @param literals A collection of weighted literals to minimize in the next solve() or solveLimited() call.
      * @param weights Weights for each literal in literals.
      * @throws IllegalArgumentException If weights.size() != literals.size();
      */
@@ -1398,8 +1398,8 @@ public final class Solver implements Closeable {
     /**
      * Create a new literal that evaluates to true if
      * a is false, or if a is true and b is true.
-     * @param a The precondition.
-     * @param b The postcondition.
+     * @param a The pre-condition.
+     * @param b The post-condition.
      * @return A new literal representing an implication gate.
      */
     public Lit implies(Lit a, Lit b){
@@ -1810,8 +1810,8 @@ public final class Solver implements Closeable {
 
     /**
      * Assert that a implies b: If a is true, then b must be true.
-     * @param a The precondition.
-     * @param a The postcondition.
+     * @param a The pre-condition.
+     * @param a The post-condition.
      */
     public void assertImplies(Lit a, Lit b) {
         validate(a,b);

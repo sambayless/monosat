@@ -77,7 +77,7 @@ public final class Lit {
 
     /**
      * The integer value of this literal.
-     * Note that this is not marked finall, as released literals may be renumbered.
+     * Note that this is not marked final, as released literals may be renumbered.
      */
     protected int l = -2;
 

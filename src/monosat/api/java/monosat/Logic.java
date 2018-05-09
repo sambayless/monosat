@@ -184,8 +184,8 @@ public final class Logic {
     /**
      * Create a new literal that evaluates to true if
      * a is false, or if a is true and b is true.
-     * @param a The precondition.
-     * @param b The postcondition.
+     * @param a The pre-condition.
+     * @param b The post-condition.
      * @return A new literal representing an implication gate.
      */
     public static Lit implies(Lit a, Lit b){
@@ -797,8 +797,8 @@ public final class Logic {
 
     /**
      * Assert that a implies b: If a is true, then b must be true.
-     * @param a The precondition.
-     * @param a The postcondition.
+     * @param a The pre-condition.
+     * @param a The post-condition.
      */
     public static void assertImplies(Lit a, Lit b) {
         Solver solver = getSolver(a,b);
