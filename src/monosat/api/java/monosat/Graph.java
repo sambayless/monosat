@@ -436,7 +436,7 @@ public final class Graph {
 
     /**
      * Check if this node is a node in the graph.
-     * @param node
+     * @param node The node to test.
      */
     private void validateNode(int node){
         if (node<0 || node>=nNodes()){

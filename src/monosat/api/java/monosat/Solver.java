@@ -681,6 +681,7 @@ public final class Solver implements Closeable {
      * Internal method for converting an array of Lits into
      * byte buffers (as required by the Monosat JNI)
      * @param clause An array of literals to store in a buffer.
+     * @param bufferN The index of the buffer to fill.
      * @return A buffer containing the integer representation of the specified literals.
      */
     protected IntBuffer getLitBuffer(Lit[] clause, int bufferN) {
@@ -698,9 +699,9 @@ public final class Solver implements Closeable {
     /**
      * Internal method for converting java collections of Lits into
      * byte buffers (as required by the Monosat JNI)
-     * @param clause
-     * @param bufferN
-     * @return
+     * @param clause An collection of literals to store in a buffer.
+     * @param bufferN The index of the buffer to fill.
+     * @return A buffer containing the integer representation of the specified literals.
      */
     protected IntBuffer getLitBuffer(Collection<Lit> clause, int bufferN) {
         assert (bufferN < 3);
@@ -737,9 +738,10 @@ public final class Solver implements Closeable {
 
 
     /**
-     * Add a clause to the solver.
-     * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
-     * else returns true.
+     * Add a unit clause to the solver.
+     * @param a The literal to be asserted true in the solver.
+     * @return False if the formula is trivially unsatisfiable after adding this clause (or if it was already
+     * trivially unsatisfiable), else returns true.
      */
     public boolean addClause(Lit a) {
         validate(a);
@@ -747,9 +749,11 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * Add a clause to the solver.
-     * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
-     * else returns true.
+     * Add a binary clause to the solver.
+     * @param a The first literal of the clause.
+     * @param b The second literal of the clause.
+     * @return False if the formula is trivially unsatisfiable after adding this clause (or if it was already
+     * trivially unsatisfiable), else returns true.
      */
     public boolean addClause(Lit a, Lit b) {
         validate(a);
@@ -758,9 +762,12 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * Add a clause to the solver.
-     * Returns false if the formula is trivially unsatisfiable after adding this clause (or if it was already trivially unsatisfiable),
-     * else returns true.
+     * Add a ternary clause to the solver.
+     * @param a The first literal of the clause.
+     * @param b The second literal of the clause.
+     * @param c The third literal of the clause.
+     * @return False if the formula is trivially unsatisfiable after adding this clause (or if it was already
+     * trivially unsatisfiable), else returns true.
      */
     public boolean addClause(Lit a, Lit b,Lit c) {
         validate(a);
@@ -776,7 +783,7 @@ public final class Solver implements Closeable {
      * If args is empty, then the solver will be trivially unsatisfiable.
      *
      * @param args The literals to add as a clause to the solver (forcing at least one of them to be true)
-     * @return
+     * @return False if, after adding the clause, the solver is trivially unsatisfiable; true otherwise.
      */
     public boolean addClause(Lit... args) {
         validate(args);
@@ -790,7 +797,7 @@ public final class Solver implements Closeable {
      * If args is empty, then the solver will be trivially unsatisfiable.
      *
      * @param args The clause to add to the solver
-     * @return
+     * @return False if, after adding the clause, the solver is trivially unsatisfiable; true otherwise.
      */
     public boolean addClause(Collection<Lit> args) {
         validate(args);
@@ -1801,7 +1808,7 @@ public final class Solver implements Closeable {
     /**
      * Assert that a and b must have the save value.
      * @param a The first argument to make equal.
-     * @param a The second argument to make equal.
+     * @param b The second argument to make equal.
      */
     public void assertEqual(Lit a, Lit b) {
         validate(a,b);
@@ -1811,7 +1818,7 @@ public final class Solver implements Closeable {
     /**
      * Assert that a implies b: If a is true, then b must be true.
      * @param a The pre-condition.
-     * @param a The post-condition.
+     * @param b The post-condition.
      */
     public void assertImplies(Lit a, Lit b) {
         validate(a,b);

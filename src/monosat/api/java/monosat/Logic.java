@@ -782,7 +782,7 @@ public final class Logic {
     /**
      * Assert that a and b must have the save value.
      * @param a The first argument to make equal.
-     * @param a The second argument to make equal.
+     * @param b The second argument to make equal.
      */
     public static void assertEqual(Lit a, Lit b) {
         Solver solver = getSolver(a,b);
@@ -798,7 +798,7 @@ public final class Logic {
     /**
      * Assert that a implies b: If a is true, then b must be true.
      * @param a The pre-condition.
-     * @param a The post-condition.
+     * @param b The post-condition.
      */
     public static void assertImplies(Lit a, Lit b) {
         Solver solver = getSolver(a,b);
