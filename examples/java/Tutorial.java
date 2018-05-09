@@ -8,7 +8,7 @@ import static monosat.Logic.*;
 
 /**
  * This is a brief introduction to MonoSAT's Java API,
- * which you can use to conviniently create and solve formulas with MonoSAT.
+ * which you can use to conveniently create and solve formulas with MonoSAT.
  * <p>
  * Before going any further, see the installation instructions for the Java library in [README].
  * You will need to compile with -DJAVA=ON, you will need to include monosat.jar on the classpath, and you will need to
@@ -161,15 +161,14 @@ public class Tutorial {
         /*
         Now, onto the interesting stuff.
         In addition to Boolean logic, MonoSAT supports an extensive theory of finite graphs, including
-        support for many common graph predicates such as reachability, shortest paths, maximum flows, acyclicity, and
-        minimum spanning trees.
+        support for many common graph predicates such as reachability, shortest paths, maximum flows, and acyclicity.
         MonoSAT also has support for BitVectors and Cardinality/Pseudo-Boolean constraints.
         */
 
         // Constructing a graph in MonoSAT is as easy as:
         Graph g = new Graph(s);
 
-        //Create three noodes
+        //Create three nodes
         int n0 = g.addNode();
         int n1 = g.addNode();
         int n2 = g.addNode();
