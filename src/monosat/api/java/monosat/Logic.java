@@ -29,16 +29,35 @@ import java.util.logging.Level;
  * These static methods form a light-weight domain specific language.
  * <p>
  * The expected usage is for all methods of Logic to be statically imported:
+ * <blockquote><pre>{@code
  * import static monosat.Logic.*
+ * }</pre></blockquote>
+ *
+ * Statically importing the methods of this class makes standard Boolean logic
+ * operators such as and(),or(), not(), as well as constants True and False,
+ * available, allowing for concise formula descriptions.
  */
 public final class Logic {
-    //prevent instances of logic from being constructed
+    /**
+     * Private constructor, to prevent instances of logic from being constructed
+     */
     private Logic() {}
-    //log the first time a global contradiction occurs
+
+    /**
+     * If true, log a warning the first time a global contradiction occurs.
+     */
     private static boolean warn_contradictions=true;
-    //throw an exception of global contradictions
+    /**
+     * If true, throw an exception when global trivial contradictions occur,
+     * instead of logging a warning.
+     */
     private static boolean throw_contradictions=false;
 
+    /**
+     * Helper method to retrieve the solver from an array of literals.
+     * @param args An array of literals.
+     * @return The solver of one of the literals, if at least one of the literals has a solver.
+     */
     private static Solver getSolver(Lit... args){
         for(Lit l:args){
             if(l==null || l==Lit.Error || l==Lit.Undef){
@@ -51,6 +70,11 @@ public final class Logic {
         return null;
     }
 
+    /**
+     * Helper method to retrieve the solver from an array of literals.
+     * @param args A collection of literals.
+     * @return The solver of one of the literals, if at least one of the literals has a solver.
+     */
     private static Solver getSolver(Collection<Lit> args){
         for(Lit l:args){
             if(l==null || l==Lit.Error || l==Lit.Undef){
@@ -103,6 +127,11 @@ public final class Logic {
         }
     }
 
+    /**
+     * Helper method, called when a trivial global contradiction is detected.
+     * Makes all existing SAT solvers UNSAT, and possibly logs a warning or
+     * throws an exception.
+     */
     private static synchronized void contradiction(){
         //this global contradiction on True/False makes all existing solvers UNSAT
         for(Solver s: Solver.solvers.keySet()){
@@ -116,7 +145,7 @@ public final class Logic {
             Solver.log.log(Level.WARNING, "Statically UNSAT assertion (which is almost always an error).");
         }
     }
-    //make these literals available to users who import monosat.Logic.*
+
     /**
      * True literal, shared among all solver instances.
      */
@@ -783,58 +812,137 @@ public final class Logic {
     }
 
     //Bitvector constructs
+    /**
+     * Create a new BitVector that will evaluate to the same value as 'then' if condition is true, and to 'els'
+     * otherwise.
+     * @param condition The condition literal to test.
+     * @param then The value of the returned BitVector if 'condition' is true.
+     * @param els  The value of the returned BitVector if 'condition' is false.
+     * @return A new literal, equal to 'then' if condition is true, and equal to 'els' if condition is false.
+     */
     public static BitVector ite(Lit condition, BitVector then, BitVector els) {
         return then.getSolver().ite(condition, then, els);
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise AND of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise AND of a and b.
+     */
     public static BitVector and(BitVector a, BitVector b) {
         return a.getSolver().and(a, b);
     }
-
+    /**
+     * Return a new BitVector, equal to the bit-wise OR of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise OR of a and b.
+     */
     public static BitVector or(BitVector a, BitVector b) {
         return a.getSolver().or(a, b);
     }
-
+    /**
+     * Return a new BitVector, equal to the bit-wise NOT of 'a'.
+     * @param a The BitVector to bit-wise invert.
+     * @return A bitvector of the same width as a, equal to the bit-wise NOT of a.
+     */
     public static BitVector not(BitVector a) {
         return a.getSolver().not(a);
     }
-
+    /**
+     * Return a new BitVector, equal to the bit-wise NAND of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise NAND of a and b.
+     */
     public static BitVector nand(BitVector a, BitVector b) {
         return a.getSolver().nand(a, b);
     }
-
+    /**
+     * Return a new BitVector, equal to the bit-wise NOR of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise NOR of a and b.
+     */
     public static BitVector nor(BitVector a, BitVector b) {
         return a.getSolver().nor(a, b);
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise XOR of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise XOR of a and b.
+     */
     public static BitVector xor(BitVector a, BitVector b) {
         return a.getSolver().xor(a, b);
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise XNOR of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise XNOR of a and b.
+     */
     public static BitVector xnor(BitVector a, BitVector b) {
         return a.getSolver().xnor(a, b);
     }
 
+    /**
+     * Returns a Bitvector that represents the non-wrapping two's complement addition
+     * of a and b. To prevent wrapping, the solver will enforce that a+b<2^width.
+     *
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A new Bitvector with the same width as a, equal to a + b.
+     */
     public static BitVector add(BitVector a, BitVector b) {
         return a.getSolver().add(a, b);
     }
-
+    /**
+     * Returns a Bitvector that represents the non-wrapping two's complement subtraction
+     * of this and other. To prevent wrapping, the solver will enforce that a-b>=0.
+     *
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A new Bitvector with the same width as a, equal to a - b.
+     */
     public static BitVector subtract(BitVector a, BitVector b) {
         return a.getSolver().subtract(a, b);
     }
-
+    /**
+     * Assert that BitVector's a and b are equal to each other.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     */
     public static void assertEqual(BitVector a, BitVector b) {
         a.getSolver().assertEqual(a, b);
     }
 
+    /**
+     * Assert that BitVector's a is equal to a constant.
+     * @param a The BitVector to be constrained.
+     * @param constant Must be non-negative, and < 2^a.width()
+     */
     public static void assertEqual(BitVector a, long constant) {
         a.getSolver().assertEqual(a, constant);
     }
-
+    /**
+     * Assert that BitVector's a is equal to a constant.
+     * @param constant Must be non-negative, and < 2^a.width()
+     * @param a The BitVector to be constrained.
+     */
     public static void assertEqual(long constant, BitVector a) {
         a.getSolver().assertEqual(constant, a);
     }
-
+    /**
+     * Create a new BitVector, and assert that it is equal to the smallest element
+     * of args. Each argument in args must have the same bitwidth.
+     * @param args A non-empty array of BitVectors. Must all have the same bitwidth.
+     * @return A new BitVector, constrained to be equal to the smallest BitVector from args. Will have the same
+     * bitwidth as the elements of args.
+     */
     public static BitVector min(Collection<BitVector> args) {
         if(args.size()>0) {
             return args.iterator().next().getSolver().min(args);
@@ -842,11 +950,23 @@ public final class Logic {
             throw new IllegalArgumentException("min requires at least one argument");
         }
     }
-
-    public static BitVector min(BitVector a, BitVector b) {
-        return a.getSolver().min(a, b);
+    /**
+     * Create a new BitVector, and assert that it is equal to the smallest element
+     * of args. Each argument in args must have the same bitwidth.
+     * @param args A non-empty array of BitVectors. Must all have the same bitwidth.
+     * @return A new BitVector, constrained to be equal to the smallest BitVector from args. Will have the same
+     * bitwidth as the elements of args.
+     */
+    public static BitVector min(BitVector... args) {
+        return min(Arrays.asList(args));
     }
-
+    /**
+     * Create a new BitVector, and assert that it is equal to the largest element
+     * of args. Each argument in args must have the same bitwidth.
+     * @param args A non-empty array of BitVectors. Must all have the same bitwidth.
+     * @return A new BitVector, constrained to be equal to the smallest BitVector from args. Will have the same
+     * bitwidth as the elements of args.
+     */
     public static BitVector max(Collection<BitVector> args) {
         if(args.size()>0) {
             return args.iterator().next().getSolver().max(args);
@@ -854,55 +974,15 @@ public final class Logic {
             throw new IllegalArgumentException("max requires at least one argument");
         }
     }
-
-    public static BitVector max(BitVector a, BitVector b) {
-        return a.getSolver().max(a, b);
-    }
-
-    //Psuedo-Boolean constraints
-
-    public static void maximizeBV(BitVector bv) {
-        bv.getSolver().maximizeBV(bv);
-    }
-
-    public static void minimizeBV(BitVector bv) {
-        bv.getSolver().minimizeBV(bv);
-    }
-
-    public static void maximizeLits(Collection<Lit> args) {
-        Solver solver = getSolver(args);
-        if(solver!=null){
-            solver.maximizeLits(args);
-        }else{
-            //do nothing
-        }
-    }
-
-    public static void minimizeLits(Collection<Lit> args) {
-        Solver solver = getSolver(args);
-        if(solver!=null){
-            solver.minimizeLits(args);
-        }else{
-            //do nothing
-        }
-    }
-
-    public static void maximizeWeightedLits(List<Lit> literals, List<Integer> weights) {
-        Solver solver = getSolver(literals);
-        if(solver!=null){
-            solver.maximizeWeightedLits(literals, weights);
-        }else{
-            //do nothing
-        }
-    }
-
-    public static void minimizeWeightedLits(List<Lit> literals, List<Integer> weights) {
-        Solver solver = getSolver(literals);
-        if(solver!=null){
-            solver.minimizeWeightedLits(literals, weights);
-        }else{
-            //do nothing
-        }
+    /**
+     * Create a new BitVector, and assert that it is equal to the largest element
+     * of args. Each argument in args must have the same bitwidth.
+     * @param args A non-empty array of BitVectors. Must all have the same bitwidth.
+     * @return A new BitVector, constrained to be equal to the smallest BitVector from args. Will have the same
+     * bitwidth as the elements of args.
+     */
+    public static BitVector max(BitVector... args) {
+        return max(Arrays.asList(args));
     }
 
     /**

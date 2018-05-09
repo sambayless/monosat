@@ -1838,10 +1838,10 @@ public final class Solver implements Closeable {
     }
 
     /**
-     * Return a new BitVector, equal to the bit-wise and of a and b.
-     * @param a
-     * @param b
-     * @return
+     * Return a new BitVector, equal to the bit-wise AND of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise AND of a and b.
      */
     public BitVector and(BitVector a, BitVector b) {
         validate(a,b);
@@ -1851,6 +1851,12 @@ public final class Solver implements Closeable {
         return result;
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise OR of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise OR of a and b.
+     */
     public BitVector or(BitVector a, BitVector b) {
         validate(a,b);
         assert(a.width()==b.width());
@@ -1859,6 +1865,12 @@ public final class Solver implements Closeable {
         return result;
     }
 
+
+    /**
+     * Return a new BitVector, equal to the bit-wise NOT of 'a'.
+     * @param a The BitVector to bit-wise invert.
+     * @return A bitvector of the same width as a, equal to the bit-wise NOT of a.
+     */
     public BitVector not(BitVector a) {
         validate(a);
         BitVector result = new BitVector(this, a.width());
@@ -1866,6 +1878,12 @@ public final class Solver implements Closeable {
         return result;
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise NAND of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise NAND of a and b.
+     */
     public BitVector nand(BitVector a, BitVector b) {
         validate(a,b);
         assert(a.width()==b.width());
@@ -1874,6 +1892,12 @@ public final class Solver implements Closeable {
         return result;
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise NOR of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise NOR of a and b.
+     */
     public BitVector nor(BitVector a, BitVector b) {
         validate(a,b);
         assert(a.width()==b.width());
@@ -1882,6 +1906,12 @@ public final class Solver implements Closeable {
         return result;
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise XOR of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise XOR of a and b.
+     */
     public BitVector xor(BitVector a, BitVector b) {
         validate(a,b);
         assert(a.width()==b.width());
@@ -1890,6 +1920,12 @@ public final class Solver implements Closeable {
         return result;
     }
 
+    /**
+     * Return a new BitVector, equal to the bit-wise XNOR of 'a' and 'b'.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A bitvector of the same width as a, equal to the bit-wise XNOR of a and b.
+     */
     public BitVector xnor(BitVector a, BitVector b) {
         validate(a,b);
         assert(a.width()==b.width());
@@ -1898,6 +1934,15 @@ public final class Solver implements Closeable {
         return result;
     }
 
+
+    /**
+     * Returns a Bitvector that represents the non-wrapping two's complement addition
+     * of a and b. To prevent wrapping, the solver will enforce that a+b<2^width.
+     *
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A new Bitvector with the same width as a, equal to a + b.
+     */
     public BitVector add(BitVector a, BitVector b) {
         validate(a,b);
         assert(a.width()==b.width());
@@ -1906,6 +1951,14 @@ public final class Solver implements Closeable {
         return result;
     }
 
+    /**
+     * Returns a Bitvector that represents the non-wrapping two's complement subtraction
+     * of this and other. To prevent wrapping, the solver will enforce that a-b>=0.
+     *
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     * @return A new Bitvector with the same width as a, equal to a - b.
+     */
     public BitVector subtract(BitVector a, BitVector b) {
         validate(a,b);
         assert(a.width()==b.width());
@@ -1914,12 +1967,22 @@ public final class Solver implements Closeable {
         return result;
     }
 
+    /**
+     * Assert that BitVector's a and b are equal to each other.
+     * @param a The first argument. Must have the same bitwidth as 'b'.
+     * @param b The second argument. Must have the same bitwidth as 'a'.
+     */
     public void assertEqual(BitVector a, BitVector b) {
         validate(a,b);
         assertTrue(a.geq(b));
         assertTrue(a.leq(b));
     }
 
+    /**
+     * Assert that BitVector's a is equal to a constant.
+     * @param a The BitVector to be constrained.
+     * @param constant Must be non-negative, and < 2^a.width()
+     */
     public void assertEqual(BitVector a, long constant) {
         validate(a);
         BitVector b = this.bv(a.width(), constant);
@@ -1927,6 +1990,11 @@ public final class Solver implements Closeable {
         assertTrue(a.leq(b));
     }
 
+    /**
+     * Assert that BitVector's a is equal to a constant.
+     * @param constant Must be non-negative, and < 2^a.width()
+     * @param a The BitVector to be constrained.
+     */
     public void assertEqual(long constant, BitVector a) {
         validate(a);
         BitVector b = this.bv(a.width(), constant);
@@ -1934,35 +2002,62 @@ public final class Solver implements Closeable {
         assertTrue(a.leq(b));
     }
 
+    /**
+     * Create a new BitVector, and assert that it is equal to the smallest element
+     * of args. Each argument in args must have the same bitwidth.
+     * @param args A non-empty array of BitVectors. Must all have the same bitwidth.
+     * @return A new BitVector, constrained to be equal to the smallest BitVector from args. Will have the same
+     * bitwidth as the elements of args.
+     */
     public BitVector min(Collection<BitVector> args) {
         validateBV(args);
+        if (args.size()==0){
+            throw new IllegalArgumentException("args must be non-empty");
+        }
         int w = args.iterator().next().width();
         BitVector result = new BitVector(this, w);
         MonosatJNI.bv_min(this.solverPtr, this.bvPtr, this.getBVBuffer(args, 0), args.size(), result.id);
         return result;
     }
 
-    public BitVector min(BitVector a, BitVector b) {
-        validate(a,b);
-        ArrayList<BitVector> pair = new ArrayList<>();
-        pair.add(a);
-        pair.add(b);
-        return min(pair);
+    /**
+     * Create a new BitVector, and assert that it is equal to the smallest element
+     * of args. Each argument in args must have the same bitwidth.
+     * @param args A non-empty array of BitVectors. Must all have the same bitwidth.
+     * @return A new BitVector, constrained to be equal to the smallest BitVector from args. Will have the same
+     * bitwidth as the elements of args.
+     */
+    public BitVector min(BitVector...args) {
+        return max(Arrays.asList(args));
     }
 
+
+    /**
+     * Create a new BitVector, and assert that it is equal to the largest element
+     * of args. Each argument in args must have the same bitwidth.
+     * @param args A non-empty array of BitVectors. Must all have the same bitwidth.
+     * @return A new BitVector, constrained to be equal to the smallest BitVector from args. Will have the same
+     * bitwidth as the elements of args.
+     */
     public BitVector max(Collection<BitVector> args) {
         validateBV(args);
+        if (args.size()==0){
+            throw new IllegalArgumentException("args must be non-empty");
+        }
         int w = args.iterator().next().width();
         BitVector result = new BitVector(this, w);
         MonosatJNI.bv_min(this.solverPtr, this.bvPtr, this.getBVBuffer(args, 0), args.size(), result.id);
         return result;
     }
 
-    public BitVector max(BitVector a, BitVector b) {
-        validate(a,b);
-        ArrayList<BitVector> pair = new ArrayList<>();
-        pair.add(a);
-        pair.add(b);
-        return max(pair);
+    /**
+     * Create a new BitVector, and assert that it is equal to the largest element
+     * of args. Each argument in args must have the same bitwidth.
+     * @param args A non-empty array of BitVectors. Must all have the same bitwidth.
+     * @return A new BitVector, constrained to be equal to the smallest BitVector from args. Will have the same
+     * bitwidth as the elements of args.
+     */
+    public BitVector max(BitVector... args) {
+        return max(Arrays.asList(args));
     }
 }
