@@ -472,31 +472,31 @@ if (JAVA)
     message(STATUS "Monosat jar file will be created at ${CMAKE_BINARY_DIR}/${_jarFile}")
 
 
-    file(GLOB_RECURSE RELATIVE_JAVA_PATHS RELATIVE "${CMAKE_SOURCE_DIR}/src/monosat/api/java/" ${JAVA_SOURCE_FILES} )
+    #file(GLOB_RECURSE RELATIVE_JAVA_PATHS RELATIVE "${CMAKE_SOURCE_DIR}/src/monosat/api/java/" ${JAVA_SOURCE_FILES} )
 
     #add source code to the jar
-    add_custom_command(TARGET libmonosat
-            POST_BUILD
-            COMMAND
-            "${Java_JAR_EXECUTABLE}" "uf" "${CMAKE_BINARY_DIR}/monosat.jar" ${RELATIVE_JAVA_PATHS} # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
-            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
-            )
+    #add_custom_command(TARGET libmonosat
+    #        POST_BUILD
+    #        COMMAND
+    #        "${Java_JAR_EXECUTABLE}" "uf" "${CMAKE_BINARY_DIR}/monosat.jar" ${RELATIVE_JAVA_PATHS} # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
+    #        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
+    #        )
 
-    message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_javadoc.zip")
+    #message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_javadoc.zip")
 
-    add_custom_command(TARGET libmonosat
-            POST_BUILD
-            COMMAND
-            "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_CURRENT_BINARY_DIR}/javadoc"  ${RELATIVE_JAVA_PATHS}
-            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
-    )
-    add_custom_command(TARGET libmonosat
-            POST_BUILD
-             DEPENDS ${CMAKE_BINARY_DIR}/javadoc
-             COMMAND
-             "${Java_JAR_EXECUTABLE}" "cfM" "monosat_javadoc.zip" "-C" "${CMAKE_CURRENT_BINARY_DIR}" "javadoc"
-             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-     )
+    #add_custom_command(TARGET libmonosat
+    #        POST_BUILD
+    #        COMMAND
+    #        "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_CURRENT_BINARY_DIR}/javadoc"  ${RELATIVE_JAVA_PATHS}
+    #        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
+    #)
+    #add_custom_command(TARGET libmonosat
+    #        POST_BUILD
+    #         DEPENDS ${CMAKE_BINARY_DIR}/javadoc
+    #         COMMAND
+    #         "${Java_JAR_EXECUTABLE}" "cfM" "monosat_javadoc.zip" "-C" "${CMAKE_CURRENT_BINARY_DIR}" "javadoc"
+    #         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    # )
 endif (JAVA)
 
 if (UNIX)
