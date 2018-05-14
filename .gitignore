@@ -39,3 +39,14 @@ graph/resources/*
 tests/local/
 venv/
 javadoc/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+libmonosat.a
+libmonosat.dylib
+libmonosat.so
+monosat
+monosat.jar
+monosat
+monosat_javadoc.zip
+
