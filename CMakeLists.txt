@@ -268,7 +268,7 @@ set(SOURCE_FILES
 set(SOURCE_FILES_GPL
         src/monosat/dgl/alg/dyncut/block.h
         src/monosat/dgl/alg/dyncut/graph.h
-)
+        )
 
 set(SOURCE_FILES_PB
         src/monosat/pb/Pb.h
@@ -472,31 +472,49 @@ if (JAVA)
     message(STATUS "Monosat jar file will be created at ${CMAKE_BINARY_DIR}/${_jarFile}")
 
 
-    #file(GLOB_RECURSE RELATIVE_JAVA_PATHS RELATIVE "${CMAKE_SOURCE_DIR}/src/monosat/api/java/" ${JAVA_SOURCE_FILES} )
+    file(GLOB_RECURSE RELATIVE_JAVA_PATHS RELATIVE "${CMAKE_SOURCE_DIR}/src/monosat/api/java/" ${JAVA_SOURCE_FILES} )
 
-    #add source code to the jar
-    #add_custom_command(TARGET libmonosat
-    #        POST_BUILD
-    #        COMMAND
-    #        "${Java_JAR_EXECUTABLE}" "uf" "${CMAKE_BINARY_DIR}/monosat.jar" ${RELATIVE_JAVA_PATHS} # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
-    #        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
-    #        )
+    message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_javadoc.zip")
 
-    #message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_javadoc.zip")
+    message(STATUS "Monosat java source will be stored in to ${CMAKE_BINARY_DIR}/monosat_source.zip")
 
-    #add_custom_command(TARGET libmonosat
-    #        POST_BUILD
-    #        COMMAND
-    #        "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_CURRENT_BINARY_DIR}/javadoc"  ${RELATIVE_JAVA_PATHS}
-    #        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
-    #)
-    #add_custom_command(TARGET libmonosat
-    #        POST_BUILD
-    #         DEPENDS ${CMAKE_BINARY_DIR}/javadoc
-    #         COMMAND
-    #         "${Java_JAR_EXECUTABLE}" "cfM" "monosat_javadoc.zip" "-C" "${CMAKE_CURRENT_BINARY_DIR}" "javadoc"
-    #         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    # )
+    #Appending  "&&" "true" to each of the commands below, to suppress non-zero exit codes in cse of errors,
+    #To ensure that these commands, if they fail, cannot prevent the libmonosat target as a whole from building.
+    #Is there a better way to make custom commands non-failing/optional in cmake?
+    #This will likely only work correctly for unix targets
+    add_custom_command(TARGET libmonosat
+            POST_BUILD
+            COMMAND
+            "${Java_JAR_EXECUTABLE}" "cfM" "${CMAKE_BINARY_DIR}/monosat_source.zip" ${RELATIVE_JAVA_PATHS}  "&&" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
+            #OUTPUT "${CMAKE_BINARY_DIR}/monosat_source.zip"
+            WORKING_DIRECTORY  "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
+            )
+
+    add_custom_command(TARGET libmonosat
+            POST_BUILD
+            COMMAND
+            "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_CURRENT_BINARY_DIR}/javadoc"  ${RELATIVE_JAVA_PATHS} "&&" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
+            #OUTPUT "${CMAKE_BINARY_DIR}/javadoc"
+            )
+    add_custom_command(TARGET libmonosat
+            POST_BUILD
+            DEPENDS ${CMAKE_BINARY_DIR}/javadoc
+            COMMAND
+            "${Java_JAR_EXECUTABLE}" "cfM" "monosat_javadoc.zip" "-C" "${CMAKE_CURRENT_BINARY_DIR}" "javadoc"  "&&" "true"
+            #OUTPUT "${CMAKE_BINARY_DIR}/monosat_javadoc.zip"
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            )
+    add_custom_command(TARGET libmonosat
+            POST_BUILD
+            DEPENDS ${CMAKE_BINARY_DIR}/javadoc
+            COMMAND cmake -E remove_directory  "${CMAKE_BINARY_DIR}/javadoc" "&&" "true"
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            )
+
+
+
+
 endif (JAVA)
 
 if (UNIX)
