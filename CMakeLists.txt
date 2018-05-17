@@ -476,7 +476,7 @@ if (JAVA)
 
     message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_javadoc.zip")
 
-    message(STATUS "Monosat java source will be stored in to ${CMAKE_BINARY_DIR}/monosat_source.zip")
+    message(STATUS "Monosat java source will be stored in to ${CMAKE_BINARY_DIR}/monosat_src.zip")
 
     #Appending  "&&" "true" to each of the commands below, to suppress non-zero exit codes in cse of errors,
     #To ensure that these commands, if they fail, cannot prevent the libmonosat target as a whole from building.
@@ -485,8 +485,8 @@ if (JAVA)
     add_custom_command(TARGET libmonosat
             POST_BUILD
             COMMAND
-            "${Java_JAR_EXECUTABLE}" "cfM" "${CMAKE_BINARY_DIR}/monosat_source.zip" ${RELATIVE_JAVA_PATHS}  "&&" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
-            #OUTPUT "${CMAKE_BINARY_DIR}/monosat_source.zip"
+            "${Java_JAR_EXECUTABLE}" "cfM" "${CMAKE_BINARY_DIR}/monosat_src.zip" ${RELATIVE_JAVA_PATHS}  "&&" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
+            #OUTPUT "${CMAKE_BINARY_DIR}/monosat_src.zip"
             WORKING_DIRECTORY  "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
             )
 
@@ -511,7 +511,9 @@ if (JAVA)
             COMMAND cmake -E remove_directory  "${CMAKE_BINARY_DIR}/javadoc" "&&" "true"
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             )
-
+    #ensure the source, doc archives are cleaned with make clean
+    SET_DIRECTORY_PROPERTIES(PROPERTIES
+            ADDITIONAL_MAKE_CLEAN_FILES "monosat_javadoc.zip;monosat_src.zip")
 
 
 
