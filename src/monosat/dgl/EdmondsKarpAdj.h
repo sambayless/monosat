@@ -375,17 +375,17 @@ public:
 #endif
 		return f;
 	}
-	const Weight getEdgeCapacity(int id) {
+	const Weight getEdgeCapacity(int id) override {
 
 		return g.getWeight(id);
 	}
-	const Weight getEdgeFlow(int id) {
+	const Weight getEdgeFlow(int id) override {
 		if(!g.edgeEnabled(id)){
 			assert(F[id]==0);
 		}
 		return F[id];    	// reserve(id);
 	}
-	const Weight getEdgeResidualCapacity(int id) {
+	const Weight getEdgeResidualCapacity(int id) override {
 		if(!g.edgeEnabled(id)){
 			assert(F[id]==0);
 		}

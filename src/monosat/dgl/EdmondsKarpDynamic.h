@@ -399,13 +399,13 @@ public:
 		last_history_clear = g.nHistoryClears();
 		return f;
 	}
-	void updateHistory(){
+	void updateHistory()override{
 		update();
 	}
-	std::vector<int> & getChangedEdges() {
+	std::vector<int> & getChangedEdges() override {
 		return changed_edges;
 	}
-	void clearChangedEdges() {
+	void clearChangedEdges() override {
 		for (int edgeID : changed_edges) {
 			assert(changed[edgeID]);
 			changed[edgeID] = false;

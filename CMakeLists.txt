@@ -474,7 +474,7 @@ if (JAVA)
 
     file(GLOB_RECURSE RELATIVE_JAVA_PATHS RELATIVE "${CMAKE_SOURCE_DIR}/src/monosat/api/java/" ${JAVA_SOURCE_FILES} )
 
-    message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_javadoc.zip")
+    #message(STATUS "Monosat javadoc will be compiled to ${CMAKE_BINARY_DIR}/javadoc, and ${CMAKE_BINARY_DIR}/monosat_javadoc.zip")
 
     message(STATUS "Monosat java source will be stored in to ${CMAKE_BINARY_DIR}/monosat_src.zip")
 
@@ -490,30 +490,30 @@ if (JAVA)
             WORKING_DIRECTORY  "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
             )
 
-    add_custom_command(TARGET libmonosat
-            POST_BUILD
-            COMMAND
-            "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_CURRENT_BINARY_DIR}/javadoc"  ${RELATIVE_JAVA_PATHS} "&&" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
-            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
-            #OUTPUT "${CMAKE_BINARY_DIR}/javadoc"
-            )
-    add_custom_command(TARGET libmonosat
-            POST_BUILD
-            DEPENDS ${CMAKE_BINARY_DIR}/javadoc
-            COMMAND
-            "${Java_JAR_EXECUTABLE}" "cfM" "monosat_javadoc.zip" "-C" "${CMAKE_CURRENT_BINARY_DIR}" "javadoc"  "&&" "true"
-            #OUTPUT "${CMAKE_BINARY_DIR}/monosat_javadoc.zip"
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            )
-    add_custom_command(TARGET libmonosat
-            POST_BUILD
-            DEPENDS ${CMAKE_BINARY_DIR}/javadoc
-            COMMAND cmake -E remove_directory  "${CMAKE_BINARY_DIR}/javadoc" "&&" "true"
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            )
+    #add_custom_command(TARGET libmonosat
+    #        POST_BUILD
+    #        COMMAND
+    #        "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_CURRENT_BINARY_DIR}/javadoc"  ${RELATIVE_JAVA_PATHS} "&&" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
+    #        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
+    #        #OUTPUT "${CMAKE_BINARY_DIR}/javadoc"
+    #        )
+    #add_custom_command(TARGET libmonosat
+    #        POST_BUILD
+    #        DEPENDS ${CMAKE_BINARY_DIR}/javadoc
+    #        COMMAND
+    #        "${Java_JAR_EXECUTABLE}" "cfM" "monosat_javadoc.zip" "-C" "${CMAKE_CURRENT_BINARY_DIR}" "javadoc"  "&&" "true"
+    #        #OUTPUT "${CMAKE_BINARY_DIR}/monosat_javadoc.zip"
+    #        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    #        )
+    #add_custom_command(TARGET libmonosat
+    #        POST_BUILD
+    #        DEPENDS ${CMAKE_BINARY_DIR}/javadoc
+    #        COMMAND cmake -E remove_directory  "${CMAKE_BINARY_DIR}/javadoc" "&&" "true"
+    #        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    #        )
     #ensure the source, doc archives are cleaned with make clean
     SET_DIRECTORY_PROPERTIES(PROPERTIES
-            ADDITIONAL_MAKE_CLEAN_FILES "monosat_javadoc.zip;monosat_src.zip")
+            ADDITIONAL_MAKE_CLEAN_FILES "monosat_src.zip")
 
 
 
