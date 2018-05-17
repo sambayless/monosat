@@ -331,7 +331,7 @@ public:
     int nAssumptions() override {
         return assumptions.size();
     }
-	Theory* getTheory(CRef cr) const{
+    inline Theory* getTheory(CRef cr) const{
 		assert(isTheoryCause(cr));
 		assert(!isDecisionReason(cr));
 		// UINT32_MAX-cr - 1;
@@ -352,19 +352,19 @@ public:
 
 
 
-	bool hasTheory(Var v) {
+    inline bool hasTheory(Var v) {
 		return v>=0 && v<theory_vars.size() && theory_vars[v].isTheoryVar;
 	}
-	bool hasTheory(Lit l) {
+	inline bool hasTheory(Lit l) {
 		return var(l)>=0 && var(l)<theory_vars.size() && theory_vars[var(l)].isTheoryVar;
 	}
-	int getTheoryID(Var v) {
+    inline int getTheoryID(Var v) {
 		return theory_vars[v].theory - 1;
 	}
-	int getTheoryID(Lit l) {
+    inline int getTheoryID(Lit l) {
 		return theory_vars[var(l)].theory - 1;
 	}
-	Var getTheoryVar(Var v) {
+    inline Var getTheoryVar(Var v) {
 		assert(hasTheory(v));
 		//is this check too expensive? Does getTheoryVar appear in any tight loops?
 		if(!hasTheory(v)){

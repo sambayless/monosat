@@ -46,6 +46,7 @@ public:
 
 	double propagationtime=0;
 	int64_t stats_propagations=0;
+	int64_t stats_lit_propagations=0;
 	int64_t stats_propagations_skipped=0;
 	int64_t stats_shrink_removed = 0;
 	int64_t stats_reasons = 0;
@@ -225,6 +226,7 @@ public:
 			//enqueue all of the remaining lits in the solver, now.
 			for(Var v:amo){
 				if(v!=true_var){
+					stats_lit_propagations++;
 					S->enqueue(mkLit(v,true),assign_false_reason);
 				}
 			}
@@ -235,8 +237,8 @@ public:
 		if(!clausified) {
 			printf("AMO Theory %d stats:\n", this->getTheoryIndex());
 
-			printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped)\n", stats_propagations, propagationtime,
-				   (propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
+			printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped,  %" PRId64 " lits)\n", stats_propagations, propagationtime,
+				   (propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped, stats_lit_propagations);
 
 			printf("Conflicts: %" PRId64 "\n", stats_conflicts);
 			printf("Reasons: %" PRId64 "\n", stats_reasons);
