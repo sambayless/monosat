@@ -1,0 +1,21 @@
+language: cpp
+
+
+os : linux
+
+compiler:
+  - gcc
+  - clang
+
+sudo: required
+
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev
+
+
+install:
+  - cmake .
+  - make
+  - sudo make install
+
