@@ -35,7 +35,7 @@ install:
 
 
 script:
- - if [[ -n "$TEST_PYTHON" ]]; then cd src/monosat/api/python/; sudo python3 setup.py install; python3 -m unittest discover; cd ../../../../; fi
- - if [[ -n "$TEST_JAVA" ]]; then cd src/monosat/api/java/tests; javac -cp ".:../../../../../monosat.jar:/usr/share/java/junit4.jar" monosat/*.java ;java -Djava.library.path=../../../../../ -cp ".:../../../../../monosat.jar:/usr/share/java/junit4.jar" org.junit.runner.JUnitCore  monosat.TestSuite ; cd ../../../../../; fi
+ - if [[ -n "$TEST_PYTHON" ]]; then cd src/monosat/api/python/ && sudo python3 setup.py install && python3 -m unittest discover && cd ../../../../; fi
+ - if [[ -n "$TEST_JAVA" ]]; then cd src/monosat/api/java/tests && javac -cp ".:../../../../../monosat.jar:/usr/share/java/junit4.jar" monosat/*.java && java -Djava.library.path=../../../../../ -cp ".:../../../../../monosat.jar:/usr/share/java/junit4.jar" org.junit.runner.JUnitCore  monosat.TestSuite && cd ../../../../../; fi
 
 
