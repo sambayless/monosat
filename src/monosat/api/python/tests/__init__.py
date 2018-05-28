@@ -1,8 +1,6 @@
 import unittest
 import tests
+import tests.test_logic
+import tests.test_graph
+import tests.test_output
 
-def load_tests(loader, testset, ignore):
-    testset.addTests(tests.TestLogic)
-    testset.addTests(tests.TestGraph)
-    testset.addTests(tests.TestOutput)
-    return testset

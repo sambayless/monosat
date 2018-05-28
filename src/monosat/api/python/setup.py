@@ -6,6 +6,10 @@ import platform
 import shutil
 import sys
 from distutils.core import setup
+
+if sys.version_info[0] < 3:
+    sys.exit('Sorry, Python < 3 is not supported')
+
 monosat_path ="../../../../src/"
 #Set to False to disable compiling cython modules, set to True to enable cython
 use_cython=False
@@ -82,6 +86,7 @@ if use_cython:
     cmdclass.update({ 'build_ext': build_ext })
     setup(
         version='1.4',
+        python_requires='>3.0.0',
         description='MonoSAT Cython Interface',
         author='Sam Bayless',
         author_email='sbayless@cs.ubc.ca',
@@ -100,6 +105,7 @@ if use_cython:
 else:
     setup(name='monosat',
           version='1.4',
+          python_requires='>3.0.0',
           description='MonoSAT Python Interface',
           author='Sam Bayless',
           author_email='sbayless@cs.ubc.ca',
