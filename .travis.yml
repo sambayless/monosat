@@ -16,10 +16,11 @@ jdk:
 
 matrix:
   include:
-    - python: "3.3"
-      env: TEST_PYTHON=1
+    - java: openjdk8
+      python: "3.3"
+      env: TEST_PYTHON=1 JDK_VERSION="openjdk8" PYTHON_VERSION="python3.3"
     - java: oraclejdk8
-      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON"
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" JDK_VERSION="oraclejdk8" PYTHON_VERSION="python3.4"
       python: "3.4"
     - java: openjdk8
       python: "3.5"
@@ -31,7 +32,7 @@ matrix:
           packages:
             - g++-5
       env:
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.5"
     - java: openjdk8
       python: "3.6"
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
@@ -40,18 +41,18 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-6
+            - g++-7
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6"
     - java: openjdk9
       python: "3.6"
-      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
       os: linux
       dist: trusty
       addons:
         apt:
           sources:
-            - llvm-toolchain-trusty-5.0
+            - llvm-toolchain-trusty
           packages:
             - clang-5.0
       env:
@@ -60,15 +61,16 @@ matrix:
       python: "3.6"
       os: osx
       # python doesn't seem to be installing correctly in travis on osx.
-      env: TEST_PYTHON=0 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
+      env: TEST_PYTHON=0 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
 
 before_install:
   - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew outdated python3 || brew upgrade python3 ; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
+  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes ${JDK_VERSION}; fi
   - eval "${MATRIX_EVAL}"
-  - echo "Travis Java ${TRAVIS_JDK_VERSION}"  || true
-  - jdk_switcher use ${TRAVIS_JDK_VERSION}  || true
+  - echo "Selected Java ${JDK_VERSION}"  || true
+  - jdk_switcher use ${JDK_VERSION}  || true
   - java -version  || true
   - python3 --version || true
   - python --version || true
