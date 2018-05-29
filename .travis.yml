@@ -62,7 +62,7 @@ matrix:
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
 
 before_install:
-  #- if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew outdated python3 || brew upgrade python3 ; fi
+  - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew outdated python3 || brew upgrade python3 ; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
 
