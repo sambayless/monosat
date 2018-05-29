@@ -49,17 +49,11 @@ matrix:
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
       os: linux
       dist: trusty
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-trusty
-          packages:
-            - clang-5.0
-      env:
-        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+      compiler: clang
     - java: openjdk9
       python: "3.6"
       os: osx
+      compiler: clang
       # python doesn't seem to be installing correctly in travis on osx.
       env: TEST_PYTHON=0 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
 
