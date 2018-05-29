@@ -24,7 +24,6 @@ class TestLogic(unittest.TestCase):
 
 
     def test_solve(self):
-        self.assertTrue(False) # testing travis errors
         monosat.Monosat().newSolver()
         self.assertTrue(monosat.solver.Solve())
         self.assertTrue(monosat.solver.Solve())

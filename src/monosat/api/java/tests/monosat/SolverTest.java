@@ -44,8 +44,7 @@ public class SolverTest {
         System.out.println("Done");
     }
     @Test
-    public void testArguments() {
-        assertTrue(false); //testing travis errors
+    public void testArguments() {        
         Solver s = new Solver("-no-reach-underapprox-cnf");
         assertTrue(s.solve());
         assertTrue(s.solve());
