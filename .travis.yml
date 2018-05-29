@@ -67,17 +67,16 @@ before_install:
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
   - eval "${MATRIX_EVAL}"
-  - echo "Travis Java Version: ${TRAVIS_JDK_VERSION}"  || true # suppress errors on this line
-  - jdk_switcher use ${TRAVIS_JDK_VERSION}  || true # suppress errors on this line
-  - java -version  || true # suppress errors on this line
-  - python3 --version || true # suppress errors on this line
-  - python --version || true # suppress errors on this line
+  - echo "Travis Java ${TRAVIS_JDK_VERSION}"  || true
+  - jdk_switcher use ${TRAVIS_JDK_VERSION}  || true
+  - java -version  || true
+  - python3 --version || true
+  - python --version || true
 
 install:
   - cmake ${BUILD_ARGS} .
   - make
   - sudo make install
-
 
 script:
  - ROOT=$PWD
