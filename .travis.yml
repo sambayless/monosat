@@ -24,7 +24,7 @@ matrix:
             - ubuntu-toolchain-r-test
             - deadsnakes
           packages:
-            - python3.5
+            - python3.3
       env: TEST_PYTHON=1 JDK_VERSION="openjdk8" PYTHON_VERSION="python3.3"
     - java: oraclejdk8
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" JDK_VERSION="oraclejdk8" PYTHON_VERSION="python3.4"
@@ -71,7 +71,7 @@ matrix:
       os: osx
       compiler: clang
       # python doesn't seem to be installing correctly in travis on osx.
-      env: TEST_PYTHON=0 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
 
 before_install:
   - echo "os is ${TRAVIS_OS_NAME}"
