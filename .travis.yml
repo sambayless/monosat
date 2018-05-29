@@ -1,6 +1,9 @@
 language: cpp
 
-os : linux
+os :
+  - linux
+  - osx
+
 sudo: required
 
 compiler:
@@ -26,8 +29,9 @@ matrix:
     - java: openjdk8
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
 before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev junit4
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; brew install gmp zlib ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; sudo apt-get -qq update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
 
 install:
   - cmake ${BUILD_ARGS} .
@@ -38,6 +42,6 @@ install:
 script:
  - ROOT=$PWD
  - if [[ -n "$TEST_PYTHON" ]]; then cd ${ROOT}/src/monosat/api/python/ && sudo python3 setup.py install && python3 -m unittest discover; fi
- - if [[ -n "$TEST_JAVA" ]]; then cd ${ROOT}/src/monosat/api/java/tests && javac -cp ".:../../../../../monosat.jar:/usr/share/java/junit4.jar" monosat/*.java && java -Djava.library.path=../../../../../ -cp ".:../../../../../monosat.jar:/usr/share/java/junit4.jar" org.junit.runner.JUnitCore  monosat.TestSuite; fi
+ - if [[ -n "$TEST_JAVA" ]]; then cd ${ROOT}/src/monosat/api/java/tests && JUNIT_PATH=junit-4.12.jar && javac -cp ".:../../../../../monosat.jar:${JUNIT_PATH}" monosat/*.java && java -Djava.library.path=../../../../../ -cp ".:../../../../../monosat.jar:${JUNIT_PATH}" org.junit.runner.JUnitCore  monosat.TestSuite; fi
 
 
