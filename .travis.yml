@@ -89,14 +89,15 @@ before_install:
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
   #- if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y $PYTHON_VERSION && alias python3="${PYTHON_VERSION}"; fi
-  - eval "${MATRIX_EVAL}"
   - echo "Selected Java ${JDK_VERSION}"  || true
   - jdk_switcher use ${JDK_VERSION}  || true
   - java -version  || true
   - echo "Selected Python ${PYTHON_VERSION}"
   - python3 --version || true
+  - python --version || true
 
 install:
+  - eval "${MATRIX_EVAL}"
   - cmake ${BUILD_ARGS} .
   - make
   - sudo make install
