@@ -16,24 +16,51 @@ jdk:
 
 matrix:
   include:
-    - python: "3.4"
-      env: TEST_PYTHON=1
-    - python: "3.5"
-      env: TEST_PYTHON=1
-    - python: "3.6"
+    - python: "3.3"
       env: TEST_PYTHON=1
     - java: oraclejdk8
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON"
+      python: "3.4"
     - java: openjdk8
+      python: "3.5"
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
     - java: openjdk8
+      python: "3.6"
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-6
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
     - java: openjdk9
+      python: "3.6"
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
+      os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-5.0
+          packages:
+            - clang-5.0
+      env:
+        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
     - java: openjdk9
-      python: 3.6
+      python: "3.6"
       os: osx
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
+
 before_install:
   #- if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew install -f gmp zlib ; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
