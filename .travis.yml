@@ -28,10 +28,16 @@ matrix:
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON"
     - java: openjdk8
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
+    - java: openjdk9
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
+    - java: openjdk9
+      python: 3.6
+      os: osx
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF"
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; brew install gmp zlib ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; sudo apt-get -qq update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
+  - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew install gmp zlib ; fi
+  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
+  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
 
 install:
   - cmake ${BUILD_ARGS} .
