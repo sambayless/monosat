@@ -146,10 +146,10 @@ public:
 		//setAllEdgeCapacities(1);
 
 	}
-	int getSource() const {
+	int getSource() const override{
 		return source;
 	}
-	int getSink() const {
+	int getSink() const override {
 		return sink;
 	}
 	void setCapacity(int u, int w, Weight c) {
@@ -192,18 +192,18 @@ public:
 #endif
 	}
 	int64_t num_updates = 0;
-	int numUpdates() const {
+	int numUpdates() const override {
 		return num_updates;
 	}
 
-	const Weight update() {
+	const Weight update() override {
 		return maxFlow(source, sink);
 	}
 	std::vector<int> changed_edges;
-	std::vector<int> & getChangedEdges() {
+	std::vector<int> & getChangedEdges() override {
 		return changed_edges;
 	}
-	void clearChangedEdges() {
+	void clearChangedEdges() override {
 		for (int edgeID : changed_edges) {
 			assert(changed[edgeID]);
 			changed[edgeID] = false;
@@ -223,7 +223,7 @@ public:
 	const Weight maxFlow() {
 		return this->maxFlow(source, sink);
 	}
-	const Weight maxFlow(int s, int t) {
+	const Weight maxFlow(int s, int t) override {
 		Weight f = 0;
 
 		if (g.outfile()) {
@@ -295,14 +295,14 @@ public:
 		assert(f>=0);
 		return f;
 	}
-	void setSource(int s) {
+	void setSource(int s) override {
 		if (source == s) {
 			return;
 		}
 		source = s;
 		last_modification = g.getCurrentHistory() - 1;
 	}
-	void setSink(int t) {
+	void setSink(int t) override {
 		if (sink == t) {
 			return;
 		}
@@ -312,7 +312,7 @@ public:
 
 	std::vector<bool> seen;
 	std::vector<bool> visited;
-	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
+	const Weight minCut(std::vector<MaxFlowEdge> & cut) override  {
 		return minCut(source, sink, cut);
 	}
 	const Weight minCut(int s, int t, std::vector<MaxFlowEdge> & cut) {

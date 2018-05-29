@@ -160,10 +160,10 @@ public:
 	std::string getName() override {
 		return "EdmondsKarpDynamic(" + std::to_string(getSource()) +", " + std::to_string(getSink()) + ")" ;
 	}
-	int getSource() const {
+	int getSource() const override {
 		return source;
 	}
-	int getSink() const {
+	int getSink() const override {
 		return sink;
 	}
 	void setCapacity(int u, int w, Weight c) {
@@ -175,24 +175,24 @@ public:
 
 	}
 	int64_t num_updates = 0;
-	int numUpdates() const {
+	int numUpdates() const override {
 		return num_updates;
 	}
-	void setSource(int s) {
+	void setSource(int s) override {
 		if (source == s) {
 			return;
 		}
 		source = s;
 		last_modification = -1; //needs to be -1 here, to trigger a full re-calculation
 	}
-	void setSink(int t) {
+	void setSink(int t) override {
 		if (sink == t) {
 			return;
 		}
 		sink = t;
 		last_modification = -1; //needs to be -1 here, to trigger a full re-calculation
 	}
-	virtual const Weight update() {
+	const Weight update() override {
 		int s = source;
 		int t = sink;
 		//see http://cstheory.stackexchange.com/a/10186
@@ -806,7 +806,7 @@ private:
 	std::vector<bool> seen;
 	std::vector<bool> visited;
 public:
-	const Weight minCut(std::vector<MaxFlowEdge> & cut) {
+	const Weight minCut(std::vector<MaxFlowEdge> & cut) override {
 		Weight f = this->maxFlow();
 		//can this be improved upon, for example as described in this stack overflow?
 		//http://cstheory.stackexchange.com/a/17337
@@ -874,15 +874,15 @@ public:
 #endif
 		return f;
 	}
-	const Weight getEdgeCapacity(int id) {
+	const Weight getEdgeCapacity(int id) override {
 		//assert(g.edgeEnabled(id));
 		return g.getWeight(id);
 	}
-	const Weight getEdgeFlow(int id) {
+	const Weight getEdgeFlow(int id) override {
 		//assert(g.edgeEnabled(id));
 		return F[id];    	// reserve(id);
 	}
-	const Weight getEdgeResidualCapacity(int id) {
+	const Weight getEdgeResidualCapacity(int id) override {
 		//assert(g.edgeEnabled(id));
 		return g.getWeight(id) - F[id];    	// reserve(id);
 	}
