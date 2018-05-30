@@ -1396,6 +1396,9 @@ public final class Solver implements Closeable {
      * @throws IllegalArgumentException If there is no literal in the solver with this integer.
      */
     protected Lit getLiteral(int literal){
+        if(literal<0){
+            throw new IllegalArgumentException("Invalid literal: " + literal);
+        }
         Lit lit = toLit(literal);
         validate(lit);
         return lit;
