@@ -3210,7 +3210,6 @@ void Solver::toDimacs(const char *file, const vec<Lit>& assumps) {
 	if (!f){
 		throw std::runtime_error("could not open file");
 	}
-	//fprintf(stderr, "could not open file %s\n", file), exit(1);
 	toDimacs(f, assumps);
 	fclose(f);
 }
@@ -3350,7 +3349,7 @@ void Solver::setVariableName(Var v, const std::string & name){
 			}
 		}
 
-		varnames.insert(v,name);
+		varnames.insert({v,name});
 		assert(!namemap.count(name) || namemap[name]==var_Undef);
 		namemap[name] = v;
 	}

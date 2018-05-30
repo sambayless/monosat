@@ -23,6 +23,8 @@ package monosat;
 
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -65,6 +67,26 @@ public class SolverTest {
         s.close();
 
         assertTrue(s2.solve());
+    }
+
+    @Test
+    public void testLoad() throws IOException {
+        File f = File.createTempFile("test",".gnf");
+        String filename = f.getAbsolutePath().toString();
+        f.delete();
+        monosat.Solver s = new monosat.Solver("",filename);
+        Lit a = new Lit(s);
+        s.addClause(a.not());
+        assertTrue(s.solve());
+        assertFalse(s.solve(a));
+        assertTrue(s.solve(a.not()));
+        s.close();
+
+        monosat.Solver s2 = new monosat.Solver();
+        assertTrue(s2.solve());
+        s2.loadConstraints(filename);
+        assertTrue(s2.solve());
+
     }
 
     @Test

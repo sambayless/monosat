@@ -157,6 +157,9 @@ public:
 				symbols.push();
 				symbols.last().first = v;
 				symbols.last().second = symbol;
+
+				S.setVariableName(v,symbol);
+
 				return true;
 			} else {
 				//just a comment
@@ -232,16 +235,19 @@ private:
 					return true;
 				}
 			}catch(const parse_error& e){
-				std::cerr << e.what() << "\n";
-				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
-				exit(1);
+			    std::stringstream ss;
+				ss <<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line << "; " ;
+                ss << e.what();
+				throw parse_error(ss.str());
 			}catch(const std::exception & e){
-				std::cerr << e.what() << "\n";
-				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
-				exit(1);
+                std::stringstream ss;
+                ss <<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line << "; " ;
+                ss << e.what();
+                throw parse_error(ss.str());
 			}catch(...){
-				std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line <<"\n";
-				exit(1);
+                std::stringstream ss;
+                ss <<"PARSE ERROR in " << p->getParserName() << " parser at line " << line_number << ": " << line << "; (Unknown Error)" ;
+                throw parse_error(ss.str());
 			}
 		}
 		return false;
@@ -477,12 +483,14 @@ private:
 				try{
 					p->implementConstraints(S);
 				}catch(const std::exception & e){
-					std::cerr << e.what() << "\n";
-					std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
-					exit(1);
+                    std::stringstream ss;
+                    ss <<"PARSE ERROR in " << p->getParserName() << " parser ; " ;
+                    ss << e.what();
+                    throw parse_error(ss.str());
 				}catch(...){
-					std::cerr<<"PARSE ERROR in " << p->getParserName() << " parser.\n";
-					exit(1);
+                    std::stringstream ss;
+                    ss <<"PARSE ERROR in " << p->getParserName() << " parser ; (Unknown Error)" ;
+                    throw parse_error(ss.str());
 				}
 			}
 			for(int i = 0;i<objectives.size();i++){
@@ -496,17 +504,20 @@ private:
 			}
 
 		}catch(const parse_error& e){
-			std::cerr << e.what() << "\n";
-			std::cerr<<"PARSE ERROR in DIMACS parser at line " << line_num << "\n";
-			exit(1);
-		}catch(const std::exception & e){
-			std::cerr << e.what() << "\n";
-			std::cerr<<"PARSE ERROR in DIMACS parser at line " << line_num << "\n";
-			exit(1);
-		}catch(...){
-			std::cerr<<"PARSE ERROR in DIMACS parser at line " << line_num << "\n";
-			exit(1);
-		}
+            std::stringstream ss;
+            ss <<"PARSE ERROR in DIMACS parser at line " << line_num  << "; " ;
+            ss << e.what();
+            throw parse_error(ss.str());
+        }catch(const std::exception & e){
+            std::stringstream ss;
+            ss <<"PARSE ERROR in DIMACS parser at line " << line_num  << "; ";
+            ss << e.what();
+            throw parse_error(ss.str());
+        }catch(...){
+            std::stringstream ss;
+            ss <<"PARSE ERROR in DIMACS parser at line " << line_num << "; (Unknown Error)" ;
+            throw parse_error(ss.str());
+        }
 		return solve;
 	}
 public:

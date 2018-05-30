@@ -23,6 +23,7 @@ package monosat;
 
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -321,6 +322,23 @@ public final class Solver implements Closeable {
      */
     public static String getVersion(){
         return MonosatJNI.getVersion();
+    }
+
+    /**
+     * Load a formula into the solver.
+     * The formula may be in standard DIMACS CNF format,
+     * or MonoSAT's extended GNF format.
+     *
+     * The loaded constraints will exist alongside any constraints already in
+     * the solver (eg, any previously defined literals will still be defined,
+     * and if the solver was previously UNSAT, it will remain UNSAT after
+     * loading new constraints).
+     *
+     * @param filename The CNF or GNF constraints to read.
+     * @throws IOException If the file could not be read.
+     */
+    public void loadConstraints(String filename) throws IOException {
+        MonosatJNI.readGNF(solverPtr,filename);
     }
 
     /**
@@ -1387,7 +1405,7 @@ public final class Solver implements Closeable {
             Lit lit = toLit(variable*2);
             validate(lit);
             assert(!lit.sign());
-            assert(lit.name()==name);
+            assert(lit.name().equals(name));
 
             return lit;
         }else{

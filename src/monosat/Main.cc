@@ -854,7 +854,11 @@ int main(int argc, char** argv) {
 
 		return (ret == l_True ? 10 : ret == l_False ? 20 : 0);
 
-	} catch (OutOfMemoryException&) {
+	}catch(parse_error& e) {
+		std::cerr<<"Parsing error:\n" << e.what();
+
+		exit(1);
+	}catch (OutOfMemoryException&) {
 		printf("===============================================================================\n");
 		printf("Out of memory exception\n");
 		printf("INDETERMINATE\n");

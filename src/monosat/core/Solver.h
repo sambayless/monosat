@@ -396,9 +396,7 @@ public:
 			return;
 		}
 		if (hasTheory(solverVar)) {
-			fprintf(stderr, "Variable %d is used for multiple atoms. Theory variables may not be re-used! Aborting.\n",
-					solverVar + 1);
-			exit(1);
+			throw std::runtime_error("Variable used for multiple atoms.");
 		}
 		assert(!hasTheory(solverVar));
 		theory_vars[solverVar].theory = theory + 1;
@@ -553,7 +551,7 @@ public:
 	void setVariableName(Var v, const std::string & name);
 	//Returns the name associated with this variable, or an empty string of there is no name.
 	const std::string & getVariableName(Var v){
-		if(v<0 || !varnames.has(v)){
+		if(v<0 || !varnames.count(v)){
 			return empty_name;
 		}
 		return varnames[v];
@@ -697,7 +695,7 @@ public:
 	int super_offset = -1;
 	DimacsMap * varRemap=nullptr;
 
-	VMap<std::string> varnames;  //Optional names associated with each variable
+    std::map<int,std::string> varnames;  //Optional names associated with each variable
 	std::map<std::string, int> namemap; //variable name lookup map
     static const std::string empty_name;
 	// Mode of operation:

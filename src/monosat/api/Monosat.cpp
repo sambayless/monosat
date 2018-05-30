@@ -935,6 +935,7 @@ void setVariableName(Monosat::SimpSolver * S, int variable, const char  * varnam
 	}else{
 		std::string name(varname);
 		S->setVariableName(variable, varname);
+		write_out(S, "symbol %d %s\n", variable + 1, varname);
 	}
 }
 bool hasVariableName(Monosat::SimpSolver * S, int variable){
