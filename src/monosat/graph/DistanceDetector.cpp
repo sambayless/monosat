@@ -570,18 +570,9 @@ void DistanceDetector<Weight,Graph>::buildUnweightedDistanceLEQReason(int node, 
 	double starttime = rtime(2);
 	d.update();
 	assert(outer->dbg_reachable(d.getSource(), node));
-	/*
-	 if(!outer->dbg_reachable(d.getSource(),node)){
-	 outer->drawFull();
 
-	 d.drawFull();
-
-	 assert(false);
-	 }*/
 	assert(underapprox_unweighted_distance_detector->connected(node));
-	/*if(!d.connected_unchecked(node)){
-	 exit(3);
-	 }*/
+
 	assert(d.connected_unchecked(node));
 	//if(opt_learn_reaches ==0 || opt_learn_reaches==2)
 	{

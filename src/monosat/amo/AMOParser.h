@@ -60,8 +60,7 @@ public:
 				if (parsed_var == 0)
 					break;
 				if(parsed_var<0){
-					fprintf(stderr,"at-most-one constraints currently only accept variables (eg, must be >0), not literals, but found %d\n",parsed_var);
-					exit(1);
+					throw parse_error("at-most-one constraints currently only accept variables (eg, must be >0), not literals");
 				}
 				Var var = parsed_var-1;
 				var= mapVar(S,var);

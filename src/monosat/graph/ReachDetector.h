@@ -261,11 +261,11 @@ public:
 		}
 		int previous(int node) override {
 			assert(false);
-			exit(5); //not supported
+			throw std::runtime_error("Unsupported operation"); //not supported
 		}
 		int incomingEdge(int node) override {
 			assert(false);
-			exit(5); //not supported
+			throw std::runtime_error("Unsupported operation");
 		}
 
 	};
@@ -411,7 +411,7 @@ public:
 		int flow = check.minCut(check_cut);
 		assert(flow < 0xFFFF);
 		if (flow < 0xFFFF) {
-			exit(4);
+			throw std::runtime_error("bad cut");
 		}
 
 #endif

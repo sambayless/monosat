@@ -19,7 +19,7 @@
  **************************************************************************************************/
 
 #include "monosat/utils/System.h"
-
+#include <stdexcept>
 #if defined(__linux__)
 
 #include <cstdio>
@@ -41,8 +41,9 @@ static inline int memReadStat(int field) {
 		return 0;
 	
 	for (; field >= 0; field--)
-		if (fscanf(in, "%d", &value) != 1)
-			printf("ERROR! Failed to parse memory statistics from \"/proc\".\n"), exit(1);
+		if (fscanf(in, "%d", &value) != 1) {
+			throw std::runtime_error("Failed to parse memory statistics from \"/proc\".\n");
+		}
 	fclose(in);
 	return value;
 }

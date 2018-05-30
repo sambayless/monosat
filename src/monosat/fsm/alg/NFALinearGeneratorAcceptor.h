@@ -98,9 +98,7 @@ public:
 				int edgeID = gen.incident(n,i).id;
 				if(gen.transitionEnabled(edgeID,-1,-1)){
 					if(to!=-1){
-						fprintf(stderr,"Error! FSM generator is not linear!");
-						exit(1);
-						break;
+						throw std::runtime_error("Error! FSM generator is not linear!");
 					}
 					to = t;
 				}

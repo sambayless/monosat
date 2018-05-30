@@ -472,7 +472,7 @@ void MaxflowDetector<Weight,Graph>::analyzeMaxFlowLEQ(Weight flow, vec<Lit> & co
          int64_t tf = ek.minCut(tmpcut);
          printf("cut size:%d, %d, expected: %d, %d \n",cut.size(),f, tmpcut.size(), tf);
          if(f != tf || cut.size()!= tmpcut.size()){
-         exit(3);
+         throw std::runtime_error("bad cut");
          }
 
 
@@ -670,12 +670,6 @@ void MaxflowDetector<Weight,Graph>::buildMaxFlowTooLowReason(Weight maxflow, vec
         outer->bvTheory->analyze(conflict);
 
     }
-    /*if(conflict.size()<dbg_minconflict()){
-     exit(4);
-     }*/
-
-
-
 
     if (g_under.outfile()) {
         std::sort(conflict.begin(), conflict.end());

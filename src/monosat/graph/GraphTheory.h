@@ -1817,7 +1817,7 @@ public:
 							if(bv_decision==lit_Undef)
                                 bv_decision = bvTheory->decideBV(Comparison::geq, getEdgeBV(edgeID).getID(), edgeWeight);
 						}else{
-							exit(1);//ne not supported yet...
+							throw std::runtime_error("Unsupported decision heuristic");//ne not supported yet...
 						}
 
 						if(bv_decision!=lit_Undef){
@@ -1964,7 +1964,7 @@ public:
 				assert(g_over.edgeEnabled(i));
 				if(using_neg_weights){
 					if(!g_over_weights_under.edgeEnabled(i)){
-						exit(3);
+						throw std::runtime_error("Error in graph theory");
 					}
 				}
 				//assert(antig.hasEdge(e.from,e.to));
@@ -1972,7 +1972,7 @@ public:
 				assert(!g_over.edgeEnabled(i));
 				if(using_neg_weights){
 					if(g_over_weights_under.edgeEnabled(i)){
-						exit(3);
+						throw std::runtime_error("Error in graph theory");
 					}
 				}
 				//assert(!antig.hasEdge(e.from,e.to));
@@ -1980,22 +1980,22 @@ public:
 			if(val==l_True) {
 				assert(g_under.edgeEnabled(i));
 				if(!g_under.edgeEnabled(i)){
-					exit(3);
+					throw std::runtime_error("Error in graph theory");
 				}
 				if(using_neg_weights){
 					if(!g_under_weights_over.edgeEnabled(i)){
-						exit(3);
+						throw std::runtime_error("Error in graph theory");
 					}
 				}
 				//assert(g.hasEdge(e.from,e.to));
 			} else {
 				if(g_under.edgeEnabled(i)){
-					exit(3);
+					throw std::runtime_error("Error in graph theory");
 				}
 				assert(!g_under.edgeEnabled(i));
 				if(using_neg_weights){
 					if(g_under_weights_over.edgeEnabled(i)){
-						exit(3);
+						throw std::runtime_error("Error in graph theory");
 					}
 				}
 				//assert(!g.hasEdge(e.from,e.to));
@@ -2365,7 +2365,7 @@ public:
 				lbool val = value(v);
 				lbool solverVal = S->value(solverVar);
 				if (val != solverVal) {
-					exit(2);
+					throw std::runtime_error("Error in graph theory");
 				}
 			}
 		}
@@ -3039,7 +3039,7 @@ public:
 	Lit newEdgeBV(int from, int to, Var outerVar,vec<Var> & bitVector) {
         checkFrozen();
 		if(!bvTheory ){
-			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
+			throw std::runtime_error("No bitvector theory initialized");
 		}
 		while(from>=nNodes()||to>=nNodes())
 			newNode();
@@ -3063,8 +3063,7 @@ public:
 			bitvector_data.growTo(bv.getID()+1);
 			if(bitvector_data[bv.getID()].edgeID!=-1 || bitvector_data[bv.getID()].detectorID!=-1){
 				//else, this is already used!
-				fprintf(stderr,"Each bitvector can only be used for one edge!\n");
-				exit(1);
+				throw std::runtime_error("Each bitvector can only be used for one edge");
 			}
 			bitvector_data[bv.getID()].edgeID=index;
 			//bv_needs_update.growTo(bv.getID()+1);
@@ -3134,16 +3133,16 @@ public:
 	Lit newEdgeBV(int from, int to, Var outerVar,int bvID) {
         checkFrozen();
 		if(!bvTheory){
-			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
+			throw std::runtime_error("No bitvector theory initialized");
 		}
 		if(!bvTheory->hasBV(bvID)){
-			fprintf(stderr,"Undefined bitvector\n");exit(1);
+			throw std::runtime_error("Undefined bitvector");
 		}
 		if(bvTheory->hasTheory(bvID)){
 			bvID = bvTheory->duplicateBV(bvID).getID();
 		}
 		if(isEdgeBV(bvID)){
-			fprintf(stderr,"Bitvector %d used for multiple edge weights\n", bvID);exit(1);
+			throw std::runtime_error("Each bitvector can only be used for one edge");
 		}
 		while(from>=nNodes()||to>=nNodes())
 			newNode();
@@ -3269,12 +3268,10 @@ public:
 			newNode();
 		}
 		if(to >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+			throw std::runtime_error("Undefined node");
 		}
 		if(from >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+			throw std::runtime_error("Undefined node");
 		}
 		if (within_steps <= -1)
 			within_steps = g_under.nodes();
@@ -3282,7 +3279,6 @@ public:
 			if (dist_info[from].source < 0) {
 				DistanceDetector<Weight> *d = new DistanceDetector<Weight>(detectors.size(), this, g_under, g_over,cutGraph,
 																		   from, drand(rnd_seed));
-
 				addDetector(d);
 
 				distance_detectors.push(d);
@@ -3337,12 +3333,10 @@ public:
 
 	void reachesWithinDistance(int from, int to, Var reach_var, Weight distance, bool strictComparison) {
 		if(to >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+			throw std::runtime_error("Undefined node");
 		}
 		if(from >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+			throw std::runtime_error("Undefined node");
 		}
 		
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
@@ -3378,18 +3372,16 @@ public:
 			newNode();
 		}
 		if(to >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+			throw std::runtime_error("Undefined node");
 		}
 		if(from >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+			throw std::runtime_error("Undefined node");
 		}
 		if(!bvTheory){
-			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
+			throw std::runtime_error("No bitvector theory initialized");
 		}
 		if(!bvTheory->hasBV(bvID)){
-			fprintf(stderr,"Undefined bitvector\n");exit(1);
+			throw std::runtime_error("Undefined bitvector");
 		}
 		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		assert(from < g_under.nodes());
@@ -3432,10 +3424,10 @@ public:
 			return;
 		}
 		if(!bvTheory){
-			fprintf(stderr,"No bitvector theory initialized\n");exit(1);
+			throw std::runtime_error("No bitvector theory initialized");
 		}
 		if(!bvTheory->hasBV(bvID)){
-			fprintf(stderr,"Undefined bitvector\n");exit(1);
+			throw std::runtime_error("Undefined bitvector");
 		}
 		bvTheory->setBitvectorTheory(bvID,this->getTheoryIndex());
 		for (int i = 0; i < flow_detectors.size(); i++) {
@@ -3715,15 +3707,13 @@ public:
 		}
 		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())
 				|| !isEdgeVar(S->getTheoryVar(edgeVar))) {
-			fprintf(stderr, "%d is not an edge variable for theory %d! Aborting\n", edgeVar + 1, getTheoryIndex());
-			exit(1);
+			throw std::runtime_error("Bad edge variable");
 		}
 		edgeVar = S->getTheoryVar(edgeVar);
 		int edgeid = getEdgeID(edgeVar);
 		assert(edgeid >= 0);
 		if (edge_list[edgeid].v == var_Undef) {
-			printf("MST edge constraint for undefined edge %d with variable %d, aborting.\n", edgeid, edgeVar + 1);
-			exit(1);
+			throw std::runtime_error("MST edge constraint for undefined edge");
 		}
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
@@ -3732,12 +3722,10 @@ public:
 			newNode();
 		}
 		if(to >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+			throw std::runtime_error("Undefined node");
 		}
 		if(from >= g_under.nodes()){
-			fprintf(stderr, "Undefined node %d\n",to);
-			exit(1);
+			throw std::runtime_error("Undefined node");
 		}
 
 		if(from==to){
@@ -3796,8 +3784,7 @@ public:
 	
 	void addSteinerWeightConstraint(int steinerTreeID, Weight weight, Var outerVar) {
 		if (steinerTreeID >= steiner_detectors.size()) {
-			fprintf(stderr, "invalid steinerTreeID %d\n", steinerTreeID);
-			exit(1);
+			throw std::runtime_error("invalid steinerTreeID");
 		}
 		steiner_detectors[steinerTreeID]->addWeightLit(weight, outerVar);
 	}

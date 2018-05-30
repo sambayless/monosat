@@ -9128,7 +9128,7 @@ Weight BVTheorySolver<Weight>::refine_lbound_check(int bvID, Weight bound, Var i
 #ifdef DEBUG_BV
 		if(refined_bound!=expected){
 			assert(false);
-			exit(5);
+			throw std::runtime_error("Bad bound refinement in BV theory");
 		}
 #endif
 	    return refined_bound;
@@ -9233,7 +9233,7 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 #ifdef DEBUG_BV
 		if(refined_bound!=expected){
 			assert(false);
-			exit(5);
+			throw std::runtime_error("Bad bound refinement in BV theory");
 		}
 #endif
 	return refined_bound;

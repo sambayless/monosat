@@ -206,7 +206,9 @@ bool PbSolver::normalizePb(vec<Lit> &ps, vec<Int> &Cs, Int &C) {
     Int sum = 0;
     for (int i = 0; i < Csps.size(); i++) {
         Cs[i] = Csps[i].fst, ps[i] = Csps[i].snd, sum += Cs[i];
-        if (sum < 0) fprintf(stderr, "ERROR! Too large constants encountered in constraint.\n"), exit(1);
+        if (sum < 0){
+            throw std::runtime_error("Too large constants encountered in constraint");
+        }
     }
     ps.shrink(ps.size() - Csps.size());
     Cs.shrink(Cs.size() - Csps.size());
@@ -584,11 +586,6 @@ void PbSolver::solve(solve_Command cmd) {
     if(cmd== sc_Convert){
         return;
     }
-
-    /*   if (opt_cnf != NULL)
-           reportf("Exporting CNF to: \b%s\b\n", opt_cnf),
-                   sat_solver.toDimacs(opt_cnf),
-                   exit(0);*/
 
     bool sat = false;
     int n_solutions = 0;    // (only for AllSolutions mode)

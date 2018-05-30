@@ -189,7 +189,7 @@ void AllPairsDetector<Weight,Graph>::buildReachReason(int source, int to, vec<Li
 #ifdef DEBUG_ALLPAIRS
 	if(!dbg_positive_reach_detector->connected(source,to)) {
 		assert(false);
-		exit(4);
+	   	throw std::runtime_error("Critical error in all pairs detector");
 	}
 #endif
 	//d.update();
@@ -414,11 +414,11 @@ bool AllPairsDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 					int dbg_neg_d=dbg_negative_reach_detector->distance(s,u);
 					if(dbg_pos_d!=pos_d) {
 						assert(false);
-						exit(2);
+						throw std::runtime_error("Critical error in all pairs detector");
 					}
 					if(dbg_neg_d!=neg_d) {
 						assert(false);
-						exit(7);
+						throw std::runtime_error("Critical error in all pairs detector");
 					}
 
 				}
@@ -527,12 +527,12 @@ Lit AllPairsDetector<Weight,Graph>::decide(CRef &decision_reason) {
 #ifdef DEBUG_ALLPAIRS
 							if(!overapprox_reach_detector->connected(s,j)) {
 								assert(false);
-								exit(4);
+								throw std::runtime_error("Critical error in all pairs detector");
 							}
 
 							if(!(overapprox_reach_detector->distance(s,j)<=min_dist)) {
 								assert(false);
-								exit(4);
+								throw std::runtime_error("Critical error in all pairs detector");
 							}
 #endif
 							tmp_path.clear();

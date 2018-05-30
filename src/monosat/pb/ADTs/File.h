@@ -24,6 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <fcntl.h>
 #include <sys/stat.h>
 #include "Global.h"
+#include <ios>
 
 namespace Monosat {
 namespace PB {
@@ -122,7 +123,9 @@ public:
 #endif
         if (pos == File_BufSize) {
             ssize_t wrote = write(fd, buf, File_BufSize);
-            if (wrote != File_BufSize) printf("ERROR! Write failed.\n"), exit(1);
+            if (wrote != File_BufSize) {
+                throw std::ios_base::failure("Write failed.");
+            }
             pos = 0;
         }
         return buf[pos++] = (uchar) chr;
@@ -151,7 +154,9 @@ public:
     void flush() {
         assert(mode == WRITE);
         ssize_t wrote = write(fd, buf, pos);
-        if (wrote != pos) printf("ERROR! Write failed.\n"), exit(1);
+        if (wrote != pos){
+            throw std::ios_base::failure("Write failed.");
+        }
         pos = 0;
     }
 

@@ -85,14 +85,14 @@ static void parse_Assumptions(gzFile input_stream, vec<Lit>& assumptions, Solver
 				}
 				if (symbol.size() > 0) {
 					if (symbol_table.count(symbol) == 0) {
-						parse_errorf("Unknown symbol: %s\n", symbol.c_str()), exit(3);
+						parse_errorf("Unknown symbol: %s\n", symbol.c_str());
 					} else {
 						int v = symbol_table[symbol];
 						Lit l = mkLit(v, neg);
 						assumptions.push(l);
 					}
 				} else {
-					parse_errorf("Empty symbol!\n"), exit(3);
+					parse_errorf("Empty symbol!\n");
 				}
 				
 			}

@@ -1250,15 +1250,7 @@ void ReachDetector<Weight,Graph>::buildNonReachReason(int node, vec<Lit> & confl
 			assert(outer->value(l)==l_False);
 			conflict.push(l);
 		}
-		/*				{
-		 EdmondsKarpAdj<CutStatus,Weight> ek(cutGraph, cutStatus,source,node);
-		 std::vector<MaxFlowEdge> tmpcut;
-		 Weight tf = ek.minCut(tmpcut);
-		 printf("cut size:%d, %d, expected: %d, %d \n",cut.size(),f, tmpcut.size(), tf);
-		 if(f != tf || cut.size()!= tmpcut.size()){
-		 exit(3);
-		 }
-		 }*/
+
 	} else {
 		//We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
 		//or perhaps we can learn something equivalent to the 1-uip cut?

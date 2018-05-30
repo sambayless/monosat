@@ -694,8 +694,7 @@ bool MSTDetector<Weight,Graph>::propagate(vec<Lit> & conflict) {
 		int a = 1;
 	}
 	if(outer->has_any_bitvector_edges){
-		fprintf(stderr,"MST constraints don't yet support bitvector weight edges, aborting!\n");
-		exit(1);
+		throw std::runtime_error("MST constraints don't yet support bitvector weight edges");
 	}
 	//printf("it %d: \n",it);
 //	changed_edges.clear();

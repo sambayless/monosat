@@ -47,7 +47,6 @@ inline void parse_errorf(const char *fmt, ...) {
     vsnprintf(buf, sizeof buf,fmt, args);
     va_end(args);
     throw parse_error(buf);
-
 }
 static const int buffer_size = 1048576;
 
