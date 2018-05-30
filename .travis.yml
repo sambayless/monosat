@@ -1,5 +1,11 @@
 language: cpp
 
+branches:
+  only:
+    - master
+    - dev
+    - travis # specifically for experimenting with travis builds
+
 os :
   - linux
   - osx
@@ -32,7 +38,6 @@ matrix:
       python: "3.6"
       os: osx
       compiler: clang
-      # python doesn't seem to be installing correctly in travis on osx.
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
   allow_failures:
     - java: openjdk8
