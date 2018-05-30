@@ -46,7 +46,9 @@ try:
     #cython doesn't use these conversion functions, but ctypes does, so define them as passthroughs if cython is used
     def c_int(x):
         return x
-    def c_long(x):
+    def c_int64(x):
+        return x
+    def c_int64(x):
         return x
     def c_bvID(x):
         return x
@@ -107,13 +109,15 @@ except:
 
     c_uint_p = POINTER(c_int)
     c_int_p = POINTER(c_int)
-    c_long_p = POINTER(c_long)
 
-    c_solver_p = c_void_p
-    c_graph_p = c_void_p
-    c_bv_p = c_void_p
-    c_fsm_theory_p = c_void_p
-    c_fsm_p = c_void_p
+    #Note: longs specified as 64bit on all platforms.
+    c_long_p = POINTER(c_int64)
+
+    c_solver_p = POINTER(c_int64)
+    c_graph_p = POINTER(c_int64)
+    c_bv_p = POINTER(c_int64)
+    c_fsm_theory_p = POINTER(c_int64)
+    c_fsm_p = POINTER(c_int64)
 
     c_literal = c_int
     c_literal_p = c_int_p
@@ -154,7 +158,7 @@ class Solver():
         self.arguments=None
         self.symbolmap=dict()  
         self.graphs = []
-        self.graph_ids=dict()
+
         self._true = None
       
     def delete(self):        
@@ -174,7 +178,7 @@ class Monosat(metaclass=Singleton):
             self.monosat_c=_monosat_c
             self._int_array = (c_int * (1024))()
             self._int_array2 = (c_int * (1024))()
-            self._long_array= (c_long * (1024))()
+            self._long_array= (c_int64 * (1024))()
             #Set the return types for each function
 
             self.monosat_c.getVersion.argtypes=[]
@@ -287,7 +291,7 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.newBitvector_anon.argtypes=[c_solver_p,c_bv_p, c_int]
             self.monosat_c.newBitvector_anon.restype=c_bvID
 
-            self.monosat_c.newBitvector_const.argtypes=[c_solver_p,c_bv_p, c_int, c_long]
+            self.monosat_c.newBitvector_const.argtypes=[c_solver_p,c_bv_p, c_int, c_int64]
             self.monosat_c.newBitvector_const.restype=c_bvID
 
             self.monosat_c.newBitvector.argtypes=[c_solver_p,c_bv_p, c_var_p, c_int]
@@ -295,25 +299,25 @@ class Monosat(metaclass=Singleton):
 
             self.monosat_c.nBitvectors.argtypes=[c_solver_p,c_bv_p]
             self.monosat_c.nBitvectors.restype=c_int
-            self.monosat_c.newBVComparison_const_lt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+            self.monosat_c.newBVComparison_const_lt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_int64]
             self.monosat_c.newBVComparison_const_lt.restype=c_literal
 
             self.monosat_c.newBVComparison_bv_lt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
             self.monosat_c.newBVComparison_bv_lt.restype=c_literal
 
-            self.monosat_c.newBVComparison_const_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+            self.monosat_c.newBVComparison_const_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_int64]
             self.monosat_c.newBVComparison_const_leq.restype=c_literal
 
             self.monosat_c.newBVComparison_bv_leq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
             self.monosat_c.newBVComparison_bv_leq.restype=c_literal
 
-            self.monosat_c.newBVComparison_const_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+            self.monosat_c.newBVComparison_const_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_int64]
             self.monosat_c.newBVComparison_const_gt.restype=c_literal
 
             self.monosat_c.newBVComparison_bv_gt.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
             self.monosat_c.newBVComparison_bv_gt.restype=c_literal
 
-            self.monosat_c.newBVComparison_const_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_long]
+            self.monosat_c.newBVComparison_const_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_int64]
             self.monosat_c.newBVComparison_const_geq.restype=c_literal
 
             self.monosat_c.newBVComparison_bv_geq.argtypes=[c_solver_p,c_bv_p,c_bvID, c_bvID]
@@ -362,7 +366,7 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.nEdges.argtypes=[c_solver_p,c_graph_p]
             self.monosat_c.nEdges.restype=c_int
 
-            self.monosat_c.newEdge.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_long]
+            self.monosat_c.newEdge.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_int64]
             self.monosat_c.newEdge.restype=c_literal
 
 
@@ -381,17 +385,17 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.onPath.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_int]
             self.monosat_c.onPath.restype=c_literal
 
-            self.monosat_c.shortestPathUnweighted_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
+            self.monosat_c.shortestPathUnweighted_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_int64]
             self.monosat_c.shortestPathUnweighted_lt_const.restype=c_literal
 
-            self.monosat_c.shortestPathUnweighted_leq_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
+            self.monosat_c.shortestPathUnweighted_leq_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_int64]
             self.monosat_c.shortestPathUnweighted_leq_const.restype=c_literal
 
 
-            self.monosat_c.shortestPath_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
+            self.monosat_c.shortestPath_lt_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_int64]
             self.monosat_c.shortestPath_lt_const.restype=c_literal
 
-            self.monosat_c.shortestPath_leq_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
+            self.monosat_c.shortestPath_leq_const.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_int64]
             self.monosat_c.shortestPath_leq_const.restype=c_literal
 
 
@@ -407,10 +411,10 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.nClauses.argtypes=[c_solver_p]
             self.monosat_c.nClauses.restype=c_int
 
-            self.monosat_c.maximumFlow_geq.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
+            self.monosat_c.maximumFlow_geq.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_int64]
             self.monosat_c.maximumFlow_geq.restype=c_literal
 
-            self.monosat_c.maximumFlow_gt.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_long]
+            self.monosat_c.maximumFlow_gt.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_int64]
             self.monosat_c.maximumFlow_gt.restype=c_literal
 
 
@@ -420,10 +424,10 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.maximumFlow_gt_bv.argtypes=[c_solver_p,c_graph_p, c_int, c_int,c_bvID]
             self.monosat_c.maximumFlow_gt_bv.restype=c_literal
 
-            self.monosat_c.minimumSpanningTree_leq.argtypes=[c_solver_p,c_graph_p, c_long]
+            self.monosat_c.minimumSpanningTree_leq.argtypes=[c_solver_p,c_graph_p, c_int64]
             self.monosat_c.minimumSpanningTree_leq.restype=c_literal
 
-            self.monosat_c.minimumSpanningTree_lt.argtypes=[c_solver_p,c_graph_p, c_long]
+            self.monosat_c.minimumSpanningTree_lt.argtypes=[c_solver_p,c_graph_p, c_int64]
             self.monosat_c.minimumSpanningTree_lt.restype=c_literal
 
             self.monosat_c.acyclic_undirected.argtypes=[c_solver_p,c_graph_p]
@@ -459,19 +463,19 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.getModel_Literal.restype=c_int
 
             self.monosat_c.getModel_BV.argtypes=[c_solver_p,c_bv_p, c_bvID, c_bool]
-            self.monosat_c.getModel_BV.restype=c_long
+            self.monosat_c.getModel_BV.restype=c_int64
 
             self.monosat_c.getModel_MaxFlow.argtypes=[c_solver_p,c_graph_p, c_literal]
-            self.monosat_c.getModel_MaxFlow.restype=c_long
+            self.monosat_c.getModel_MaxFlow.restype=c_int64
 
             self.monosat_c.getModel_EdgeFlow.argtypes=[c_solver_p,c_graph_p, c_literal, c_literal]
-            self.monosat_c.getModel_EdgeFlow.restype=c_long
+            self.monosat_c.getModel_EdgeFlow.restype=c_int64
 
             self.monosat_c.getModel_AcyclicEdgeFlow.argtypes=[c_solver_p,c_graph_p, c_literal, c_literal]
-            self.monosat_c.getModel_AcyclicEdgeFlow.restype=c_long
+            self.monosat_c.getModel_AcyclicEdgeFlow.restype=c_int64
 
             self.monosat_c.getModel_MinimumSpanningTreeWeight.argtypes=[c_solver_p,c_graph_p, c_literal]
-            self.monosat_c.getModel_MinimumSpanningTreeWeight.restype=c_long
+            self.monosat_c.getModel_MinimumSpanningTreeWeight.restype=c_int64
 
             self.monosat_c.getModel_Path_Nodes_Length.argtypes=[c_solver_p,c_graph_p, c_literal]
             self.monosat_c.getModel_Path_Nodes_Length.restype=c_int
@@ -486,11 +490,11 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.getModel_Path_EdgeLits.restype=c_int
 
             self.monosat_c.createFlowRouting.argtypes=[c_solver_p,c_graph_p, c_int, c_int, c_literal]
-            self.monosat_c.createFlowRouting.restype=c_void_p
+            self.monosat_c.createFlowRouting.restype=c_int64
 
-            self.monosat_c.addRoutingNet.argtypes=[c_solver_p,c_graph_p,c_void_p, c_literal,c_int, c_literal_p, c_literal_p]
+            self.monosat_c.addRoutingNet.argtypes=[c_solver_p,c_graph_p,c_int64, c_literal,c_int, c_literal_p, c_literal_p]
 
-            self.monosat_c.graph_setAssignEdgesToWeight.argtypes=[c_solver_p,c_graph_p,c_long]
+            self.monosat_c.graph_setAssignEdgesToWeight.argtypes=[c_solver_p,c_graph_p,c_int64]
 
 
         self.solver=None
@@ -498,9 +502,7 @@ class Monosat(metaclass=Singleton):
         #For many (but not all) instances, the following settings may give good performance: 
         #self.newSolver("-verb=0 -verb-time=0 -rnd-theory-freq=0.99 -no-decide-bv-intrinsic  -decide-bv-bitwise  -decide-graph-bv -decide-theories -no-decide-graph-rnd   -lazy-maxflow-decisions -conflict-min-cut -conflict-min-cut-maxflow -reach-underapprox-cnf -check-solution ")
 
-    def getGID(self,graph):
-        return self.solver.graph_ids[graph]
-    
+
     
     def _getManagers(self):
         solver = self.getSolver()
@@ -566,9 +568,9 @@ class Monosat(metaclass=Singleton):
         if use_cython:
             return nums;
         if len(nums)>len(self._long_array):
-            self._long_array = (c_long * len(nums))()
+            self._long_array = (c_int64 * len(nums))()
         for i,n in enumerate(nums):
-            self._long_array[i]=c_long(n)
+            self._long_array[i]=c_int64(n)
         return self._long_array
 
     def intArrayToList(self, array_pointer,length):
@@ -855,7 +857,7 @@ class Monosat(metaclass=Singleton):
     
     def newBitvector_const(self, width,val):
         self.backtrack()
-        bvID = self.monosat_c.newBitvector_const(self.solver._ptr,self.solver.bvtheory, width, c_long(val))
+        bvID = self.monosat_c.newBitvector_const(self.solver._ptr,self.solver.bvtheory, width, c_int64(val))
         return bvID
     
     
@@ -879,7 +881,7 @@ class Monosat(metaclass=Singleton):
     
     def newBVComparison_const_lt(self, bvID, val):
         self.backtrack()
-        l = self.monosat_c.newBVComparison_const_lt(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_long(val))
+        l = self.monosat_c.newBVComparison_const_lt(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_int64(val))
         return l
         
     def newBVComparison_bv_lt(self, bvID1, bvID2):
@@ -889,7 +891,7 @@ class Monosat(metaclass=Singleton):
 
     def newBVComparison_const_leq(self, bvID, val):
         self.backtrack()
-        l= self.monosat_c.newBVComparison_const_leq(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_long(val))
+        l= self.monosat_c.newBVComparison_const_leq(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_int64(val))
         return l
     
     def newBVComparison_bv_leq(self, bvID1, bvID2):
@@ -899,7 +901,7 @@ class Monosat(metaclass=Singleton):
     
     def newBVComparison_const_gt(self, bvID, val):
         self.backtrack()
-        l= self.monosat_c.newBVComparison_const_gt(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_long(val))
+        l= self.monosat_c.newBVComparison_const_gt(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_int64(val))
         return l
     
     def newBVComparison_bv_gt(self, bvID1, bvID2):
@@ -909,7 +911,7 @@ class Monosat(metaclass=Singleton):
     
     def newBVComparison_const_geq(self, bvID, val):
         self.backtrack()
-        l= self.monosat_c.newBVComparison_const_geq(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_long(val))
+        l= self.monosat_c.newBVComparison_const_geq(self.solver._ptr, self.solver.bvtheory,c_bvID(bvID),c_int64(val))
         return l
     
     def newBVComparison_bv_geq(self, bvID1, bvID2):
@@ -1060,7 +1062,7 @@ class Monosat(metaclass=Singleton):
         g = self.monosat_c.newGraph(self.solver._ptr)
         gid = len(self.solver.graphs)
         self.solver.graphs.append(g)
-        self.solver.graph_ids[g]=gid
+
 
         return g
 
@@ -1070,8 +1072,7 @@ class Monosat(metaclass=Singleton):
     def nGraphs(self):
         return len(self.solver.graphs)
     
-    def hasGraph(self,gID):
-        return gID in self.solver.graph_ids
+
     
     def newNode(self, graph):
         self.backtrack()
@@ -1085,7 +1086,7 @@ class Monosat(metaclass=Singleton):
 
     def newEdge(self, graph, u,v, weight):
         #self.backtrack()
-        l = self.monosat_c.newEdge(self.solver._ptr,graph,c_int(u),c_int(v),c_long(weight))
+        l = self.monosat_c.newEdge(self.solver._ptr,graph,c_int(u),c_int(v),c_int64(weight))
         return l
     
     def newEdge_double(self, graph, u,v, weight):
@@ -1105,7 +1106,7 @@ class Monosat(metaclass=Singleton):
 
 
     def assignWeightsTo(self,graph,weight):
-        self.monosat_c.graph_setAssignEdgesToWeight(self.solver._ptr,graph,c_long(weight))
+        self.monosat_c.graph_setAssignEdgesToWeight(self.solver._ptr,graph,c_int64(weight))
 
 
     def enforceRouting(self,graph,source,destination,nets,maxflowlit):
@@ -1142,28 +1143,28 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,u);
         self.checkNode(graph,v);
         self.backtrack()
-        l= self.monosat_c.shortestPathUnweighted_lt_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
+        l= self.monosat_c.shortestPathUnweighted_lt_const(self.solver._ptr,graph,c_int(u),c_int(v),c_int64(dist))
         return l
     
     def shortestPathUnweighted_leq_const(self, graph, u,v,dist):
         self.checkNode(graph,u);
         self.checkNode(graph,v);
         self.backtrack()
-        l= self.monosat_c.shortestPathUnweighted_leq_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
+        l= self.monosat_c.shortestPathUnweighted_leq_const(self.solver._ptr,graph,c_int(u),c_int(v),c_int64(dist))
         return l
 
     def shortestPath_lt_const(self, graph, u,v,dist):
         self.checkNode(graph,u);
         self.checkNode(graph,v);
         self.backtrack()
-        l= self.monosat_c.shortestPath_lt_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
+        l= self.monosat_c.shortestPath_lt_const(self.solver._ptr,graph,c_int(u),c_int(v),c_int64(dist))
         return l
     
     def shortestPath_leq_const(self, graph, u,v,dist):
         self.checkNode(graph,u);
         self.checkNode(graph,v);
         self.backtrack()
-        l= self.monosat_c.shortestPath_leq_const(self.solver._ptr,graph,c_int(u),c_int(v),c_long(dist))
+        l= self.monosat_c.shortestPath_leq_const(self.solver._ptr,graph,c_int(u),c_int(v),c_int64(dist))
         return l
     
     def shortestPath_lt_bv(self, graph, u,v,bvID):
@@ -1186,14 +1187,14 @@ class Monosat(metaclass=Singleton):
         self.checkNode(graph,s);
         self.checkNode(graph,t);
         self.backtrack()
-        l= self.monosat_c.maximumFlow_geq(self.solver._ptr,graph,c_int(s),c_int(t),c_long(flow))
+        l= self.monosat_c.maximumFlow_geq(self.solver._ptr,graph,c_int(s),c_int(t),c_int64(flow))
         return l
     
     def maximumFlow_gt(self, graph, s,t,flow):
         self.checkNode(graph,s);
         self.checkNode(graph,t);
         self.backtrack()
-        l= self.monosat_c.maximumFlow_gt(self.solver._ptr,graph,c_int(s),c_int(t),c_long(flow))
+        l= self.monosat_c.maximumFlow_gt(self.solver._ptr,graph,c_int(s),c_int(t),c_int64(flow))
         return l
                
     def maximumFlow_geq_bv(self, graph, s,t,bvID):
@@ -1214,12 +1215,12 @@ class Monosat(metaclass=Singleton):
     
     def minimumSpanningTree_leq(self, graph,weight):
         self.backtrack()
-        l= self.monosat_c.minimumSpanningTree_leq(self.solver._ptr,graph,c_long(weight))
+        l= self.monosat_c.minimumSpanningTree_leq(self.solver._ptr,graph,c_int64(weight))
         return l
             
     def minimumSpanningTree_lt(self, graph,weight):
         self.backtrack()
-        l= self.monosat_c.minimumSpanningTree_lt(self.solver._ptr,graph,c_long(weight))
+        l= self.monosat_c.minimumSpanningTree_lt(self.solver._ptr,graph,c_int64(weight))
         return l    
     
     def acyclic_undirected(self, graph):

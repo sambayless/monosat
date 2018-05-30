@@ -39,10 +39,7 @@ class GraphManager(metaclass=Manager):
     
     def addGraph(self, g):
         self.graphs.append(g)
-    
-    def getGraph(self,gid):
-        return self.graphs[gid]
-    
+
 
 
 class Graph():
