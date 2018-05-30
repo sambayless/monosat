@@ -23,7 +23,7 @@ matrix:
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" JDK_VERSION="oraclejdk8" PYTHON_VERSION="python3.4"
       python: "3.4"
     - java: openjdk8
-      python: "3.6"
+      python: "3.4"
       addons:
         apt:
           sources:
@@ -31,9 +31,9 @@ matrix:
           packages:
             - g++-5
       env:
-        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" MATRIX_EVAL="CC=gcc-5 && CXX=g++-5" JDK_VERSION="oraclejdk9" PYTHON_VERSION="python3.6"
+        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" MATRIX_EVAL="CC=gcc-5 && CXX=g++-5" JDK_VERSION="oraclejdk9" PYTHON_VERSION="python3.4"
     - java: openjdk8
-      python: "3.6"
+      python: "3.4"
       addons:
         apt:
           sources:
@@ -41,18 +41,12 @@ matrix:
           packages:
             - g++-7
       env:
-        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6"
+        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.4"
     - java: openjdk9
-      python: "3.6"
-      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
+      python: "3.4"
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.4"
       os: linux
       dist: trusty
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - python3.6
       compiler: clang
     - java: openjdk9
       python: "3.6"
@@ -66,7 +60,6 @@ before_install:
   - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew update; brew install python3 || brew outdated python3 || brew upgrade python3 ; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
-  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes $PYTHON_VERSION && alias python3=${PYTHON_VERSION}; fi
   - eval "${MATRIX_EVAL}"
   - echo "Selected Java ${JDK_VERSION}"  || true
   - jdk_switcher use ${JDK_VERSION}  || true
