@@ -59,7 +59,7 @@ matrix:
           packages:
             - g++-5
       env:
-        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" MATRIX_EVAL="CC=gcc-5 && CXX=g++-5" JDK_VERSION="oraclejdk9" PYTHON_VERSION="python3.5"
+        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" MATRIX_EVAL="export CC=gcc-5 && export CXX=g++-5" JDK_VERSION="oraclejdk9" PYTHON_VERSION="python3.5"
     - language: python
       jdk: openjdk8
       python: "3.6"
@@ -70,7 +70,7 @@ matrix:
           packages:
             - g++-7
       env:
-        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6"
+        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" MATRIX_EVAL="export CC=gcc-7 && export CXX=g++-7" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6"
     - language: java
       jdk: openjdk9
       python: "3.4"
@@ -98,7 +98,7 @@ before_install:
 
 install:
   - eval "${MATRIX_EVAL}"
-  - CXX=${CC}
+  - export CXX=${CC}
   - cmake ${BUILD_ARGS} .
   - make
   - sudo make install
