@@ -5,7 +5,7 @@ sudo: required
 
 matrix:
   include:
-    - language: cpp
+    - language: c
       os :
         - linux
       compiler:
@@ -14,7 +14,7 @@ matrix:
         - oraclejdk8
       env: TEST_PYTHON=1 JDK_VERSION="oraclejdk8" PYTHON_VERSION="python3.4"
       python: "3.4"
-    - language: cpp
+    - language: c
       os :
         - linux
       compiler:
@@ -23,7 +23,7 @@ matrix:
         - openjdk8
       env: TEST_PYTHON=1 JDK_VERSION="openjdk8" PYTHON_VERSION="python3.4"
       python: "3.4"
-    - language: cpp
+    - language: c
       os :
         - osx
       compiler:
@@ -32,7 +32,7 @@ matrix:
         - openjdk8
       env: TEST_PYTHON=1 JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6"
       python: "3.6"
-    - language: cpp
+    - language: c
       os :
         - osx
       compiler:
@@ -98,6 +98,7 @@ before_install:
 
 install:
   - eval "${MATRIX_EVAL}"
+  - CXX=${CC}
   - cmake ${BUILD_ARGS} .
   - make
   - sudo make install
