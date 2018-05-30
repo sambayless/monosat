@@ -145,11 +145,10 @@ typedef int64_t Weight;
   //To convert a variable into a literal, use varToLit(variable)
   int newVar(SolverPtr S);
 
-  //Associate a unique name with this variable (replacing any previous name for this variable).
+  //Associate a unique name with this variable.
   //varname must consist of printable ascii characters, and may not contain a newline.
   //If varname is null or length-0, then this will remove any existing name.
-  //If varname is non-unique, this function will have no effect and return false.
-  //If the variable name is succesfully set, return true.
+  //If varname is non-unique, or if this variable already has a name, throw an excpetion
   void setVariableName(SolverPtr S, int variable, const char  * varname);
   bool hasVariableName(SolverPtr S, int variable);
   const char * getVariableName(SolverPtr S, int variable);

@@ -3334,8 +3334,11 @@ void Solver::garbageCollect() {
 void Solver::setVariableName(Var v, const std::string & name){
 	assert(v>=0);
 	assert(v<nVars());
-	removeVariableName(v);
 	if(name.size()>0){
+		if(hasName(v)){
+			throw std::invalid_argument("Cannot name the same variable multiple times.");
+		}
+
 		if (hasVariable(name)){
 			throw std::invalid_argument("All variable names must be unique.");
 		}else{
@@ -3351,17 +3354,4 @@ void Solver::setVariableName(Var v, const std::string & name){
 		assert(!namemap.count(name) || namemap[name]==var_Undef);
 		namemap[name] = v;
 	}
-}
-
-//Remove any string names associated with v
-void Solver::removeVariableName(Var v){
-	if(varnames.has(v)){
-		std::string name = varnames[v];
-		if(name.size()>0) {
-			namemap.erase(name);
-			assert(!hasVariable(name));
-		}
-		varnames[v]=empty_name;
-	}
-	assert(!varnames.has(v)|| varnames[v].size()==0);
 }

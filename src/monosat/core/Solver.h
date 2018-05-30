@@ -558,8 +558,7 @@ public:
 		}
 		return varnames[v];
 	}
-	//Remove any string names associated with v
-	void removeVariableName(Var v);
+
 	//Get the variable associated with this name (if any).
 	//Returns Var_Undef if there is no variable assocaited with this name.
 	Var getVariable(const std::string & name){
