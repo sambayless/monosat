@@ -144,6 +144,17 @@ typedef int64_t Weight;
   //Note: Most functions expect a literal, not a variable.
   //To convert a variable into a literal, use varToLit(variable)
   int newVar(SolverPtr S);
+
+  //Associate a unique name with this variable (replacing any previous name for this variable).
+  //varname must consist of printable ascii characters, and may not contain a newline.
+  //If varname is null or length-0, then this will remove any existing name.
+  //If varname is non-unique, this function will have no effect and return false.
+  //If the variable name is succesfully set, return true.
+  void setVariableName(SolverPtr S, int variable, const char  * varname);
+  bool hasVariableName(SolverPtr S, int variable);
+  const char * getVariableName(SolverPtr S, int variable);
+  int getVariable(SolverPtr S, const char * varname);
+
   //Release this literal back to the sat solver, so that its variable can be eventually reused (after the next backtrack to 0).
   //The literal will be assigned to true in this process.
   void releaseLiteral(SolverPtr S, int literal);

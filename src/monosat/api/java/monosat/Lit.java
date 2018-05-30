@@ -55,42 +55,43 @@ public final class Lit {
     /**
      * This constant value represents an undefined literal.
      */
-    public final static Lit Undef = new Lit(-1, true);
+    public final static Lit Undef = new Lit(-1, "Undef");
     /**
      * This constant value represents an invalid literal.
      */
-    public final static Lit Error = new Lit(-2, true);
+    public final static Lit Error = new Lit(-2, "Error");
     /**
      * A constant literal, shared among all solver instances, that is true in any satisfying assignment.
      */
-    public final static Lit True = new Lit(0, true);
+    public final static Lit True = new Lit(0, "True");
 
     /**
      * A constant literal, shared among all solver instances, that is false in any satisfying assignment.
      */
-    public final static Lit False = new Lit(1, true);
+    public final static Lit False = new Lit(1, "False");
 
     /**
      * The solver instance this literal belongs to.
      */
-    protected final Solver solver;
+    protected final monosat.Solver solver;
 
     /**
      * The integer value of this literal.
      * Note that this is not marked final, as released literals may be renumbered.
      */
     protected int l = -2;
-
+    private final String _name;
     /**
      * A private constructor used only to initialize the constant, global literals.
      * @param lit The integer value of this literal.
-     * @param define_literal Ignored.
+     * @param name The name for this literal.
      */
-    private Lit(int lit, boolean define_literal) {
+    private Lit(int lit,String name) {
         //used to define static lits
         assert(lit<=1);
         this.solver=null;
         this.l = lit;
+        this._name= name;
     }
 
     /**
@@ -98,10 +99,11 @@ public final class Lit {
      * @param solver Solver this literal will belong to.
      * @param literal The integer value of this literal.
      */
-    protected Lit(Solver solver,int literal) {
+    protected Lit(monosat.Solver solver,int literal) {
         assert (literal >= 0);
         this.l =literal;
         this.solver=solver;
+        this._name = ""; //fix this
     }
 
     /**
@@ -115,9 +117,10 @@ public final class Lit {
      *
      * @param solver The SAT solver in which to create a new literal.
      */
-    public Lit(Solver solver){
+    public Lit(monosat.Solver solver){
         this(solver,true);
     }
+
 
     /**
      * Create a new literal in the specified solver.
@@ -131,10 +134,59 @@ public final class Lit {
      * @param solver The SAT solver in which to create a new literal.
      * @param decisionLit If true (the default), this literal can be used as a decision Literal in the solver.
      */
-    public Lit(Solver solver, boolean decisionLit){
-        int var = MonosatJNI.newVar(solver.solverPtr);
+    public Lit(monosat.Solver solver, boolean decisionLit){
+        this(solver,"",decisionLit);
+    }
+
+    /**
+     * Create a new literal in the specified solver.
+     * Note: Before you can create a new Literal, you must first create a Solver:
+     *
+     * <blockquote><pre>{@code
+     * Solver s = new Solver();
+     * Lit a = new Lit(s);
+     * }</pre></blockquote>
+     *
+     * @param solver The SAT solver in which to create a new literal.
+     * @param name A string naming this literal. If the string is empty, then no name will be associated with the
+     *             literal. Otherwise, the name must be unique.
+     */
+    public Lit(monosat.Solver solver, String name){
+        this(solver,name,true);
+    }
+
+    /**
+     * Create a new literal in the specified solver.
+     * Note: Before you can create a new Literal, you must first create a Solver:
+     *
+     * <blockquote><pre>{@code
+     * Solver s = new Solver();
+     * Lit a = new Lit(s);
+     * }</pre></blockquote>
+     *
+     * @param solver The SAT solver in which to create a new literal.
+     * @param name A string naming this literal. If the string is empty, then no name will be associated with the
+     *             literal. Otherwise, the name must be unique, and are restricted to printable ASCII characters.
+     * @param decisionLit If true (the default), this literal can be used as a decision Literal in the solver.
+     */
+    public Lit(monosat.Solver solver, String name, boolean decisionLit){
+        int var = monosat.MonosatJNI.newVar(solver.solverPtr);
         this.l = var*2;
         this.solver = solver;
+        if(name != null && !name.isEmpty()){
+            this._name = name;
+            /*
+            Check that the string contains only printable ascii characters
+             */
+            if(name.chars().allMatch(c -> ( c < 128 && !Character.isISOControl(c) && ! Character.isWhitespace(c)))){
+                monosat.MonosatJNI.setVariableName(solver.solverPtr,toVar(),name);
+            }else{
+                throw new IllegalArgumentException("Literal names are restricted to printable ASCII characeters, and " +
+                        "may not include whitespace or newlines: \"" + name + "\" is not a valid name.");
+            }
+        }else{
+            this._name="";
+        }
         solver.registerLit(this);
         solver.setDecisionLiteral(this,decisionLit);
     }
@@ -145,7 +197,7 @@ public final class Lit {
      * do not have a solver.
      * @return The solver this literal belongs to.
      */
-    public Solver getSolver(){
+    public monosat.Solver getSolver(){
         if(solver==null){
             throw new RuntimeException("Cannot access solver for " + toString());
         }
@@ -207,6 +259,10 @@ public final class Lit {
         return ((l / 2) + 1) * (this.sign() ? -1 : 1);
     }
 
+    public String name(){
+        return _name;
+    }
+
     @Override
     public String toString() {
         if(l==-2){
@@ -217,6 +273,8 @@ public final class Lit {
             return "True";
         }else if (l==1){
             return "False";
+        }else if (!_name.isEmpty()){
+            return _name + " (" + "Lit" + l + ")";
         }
         return "Lit" + l;
     }
@@ -248,8 +306,8 @@ public final class Lit {
      * @throws NoModelException If the solver does not yet have a satisfying assignment (eg, if s.solve() has not yet
      * returned true.)
      */
-    public boolean value() throws NoModelException {
-        return value(Solver.LBool.Undef);
+    public boolean value() throws monosat.NoModelException {
+        return value(monosat.Solver.LBool.Undef);
     }
 
     /**
@@ -264,7 +322,7 @@ public final class Lit {
      * returned true.)
      */
     public boolean value(boolean defaultVal) {
-        return value(Solver.LBool.fromBool(defaultVal));
+        return value(monosat.Solver.LBool.fromBool(defaultVal));
     }
 
     /**
@@ -274,7 +332,7 @@ public final class Lit {
      * @return An Optional containing the value of this literal if it has an assignment.
      */
     public Optional<Boolean> possibleValue(){
-        return getPossibleValue(Solver.LBool.Undef);
+        return getPossibleValue(monosat.Solver.LBool.Undef);
     }
 
     /**
@@ -284,18 +342,18 @@ public final class Lit {
      * @return An Optional containing the value of this literal if it has an assignment, else return  defaultValue
      * .toOpt().
      */
-    private Optional<Boolean> getPossibleValue( Solver.LBool defaultValue) {
+    private Optional<Boolean> getPossibleValue( monosat.Solver.LBool defaultValue) {
         if(this.l<0){
             throw new IllegalArgumentException("Literal " + toString() + " is not a valid literal.");
         }
         if(this==Lit.True){
-            return Solver.LBool.True.toOpt();
+            return monosat.Solver.LBool.True.toOpt();
         }else if(this==Lit.False){
-            return Solver.LBool.False.toOpt();
+            return monosat.Solver.LBool.False.toOpt();
         }
 
-        Solver.LBool val = Solver.LBool.toLbool(MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
-        if (val==Solver.LBool.Undef){
+        monosat.Solver.LBool val = monosat.Solver.LBool.toLbool(monosat.MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
+        if (val== monosat.Solver.LBool.Undef){
             return defaultValue.toOpt();
         }else{
             return val.toOpt();
@@ -313,7 +371,7 @@ public final class Lit {
      * @throws NoModelException If there is no assignment for this literal in the solver,
      * and defaultVal is LBool.Undef.
      */
-    protected boolean value(Solver.LBool defaultVal) throws NoModelException {
+    protected boolean value(monosat.Solver.LBool defaultVal) throws monosat.NoModelException {
         if(this.l<0){
             throw new IllegalArgumentException("Literal " + toString() + " is not a valid literal.");
         }
@@ -323,15 +381,15 @@ public final class Lit {
             return false;
         }
 
-        Solver.LBool val = Solver.LBool.toLbool(MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
-        if (val == Solver.LBool.Undef) {
-            if (defaultVal == Solver.LBool.Undef) {
-                throw new NoModelException("Literal " + toString() + " is unassigned in the current model");
+        monosat.Solver.LBool val = monosat.Solver.LBool.toLbool(monosat.MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
+        if (val == monosat.Solver.LBool.Undef) {
+            if (defaultVal == monosat.Solver.LBool.Undef) {
+                throw new monosat.NoModelException("Literal " + toString() + " is unassigned in the current model");
             } else {
                 val = defaultVal;
             }
         }
-        return val == Solver.LBool.True;
+        return val == monosat.Solver.LBool.True;
     }
 
     /**
@@ -354,11 +412,11 @@ public final class Lit {
             throw new IllegalArgumentException("Literal " + toString() + " is not a valid literal.");
         }
         if(this==Lit.True){
-            return Solver.LBool.True.toOpt();
+            return monosat.Solver.LBool.True.toOpt();
         }else if(this==Lit.False){
-            return Solver.LBool.False.toOpt();
+            return monosat.Solver.LBool.False.toOpt();
         }
-        Solver.LBool val = Solver.LBool.toLbool(MonosatJNI.getConstantModel_Literal(solver.solverPtr, l));
+        monosat.Solver.LBool val = monosat.Solver.LBool.toLbool(monosat.MonosatJNI.getConstantModel_Literal(solver.solverPtr, l));
         return val.toOpt();
     }
 

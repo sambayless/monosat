@@ -12,7 +12,7 @@ set (JAVA_SOURCE_FILES "")
 set (JAVA_NATIVE_SOURCE_FILES "")
 
 #set(CMAKE_ENABLE_COMPILE_COMMANDS ON) # set to enable clang tidy
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Werror=return-type -Wno-unknown-warning-option -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DNO_GMP -std=c++11 -Werror=return-stack-address -Werror=return-type -Wno-unknown-warning-option -Wno-unused-variable -Wno-unused-but-set-variable   -Wno-sign-compare  -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -DDEBUG_MONOSAT -DDEBUG_CORE " ) #  -DDEBUG_GRAPH -DDEBUG_BV -DDEBUG_THEORY -DDEBUG_DGL -DDEBUG_GRAPH -DDEBUG_CORE -DEBUG_GEOMETRY -DEBUG_FSM -DEBUG_PB
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -O3") #it is _critically_ important that release builds specify -DNDEBUG!
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG -O2") #it is _critically_ important that release builds specify -DNDEBUG!
@@ -388,7 +388,7 @@ endif (SHOW_GIT_VERSION)
 add_library(libmonosat_static STATIC ${SOURCE_FILES})
 set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat_static z.a)
-target_link_libraries(libmonosat_static m.a)
+#target_link_libraries(libmonosat_static m.a) # c++ doesn't require libm to be explicitly linked
 target_link_libraries(libmonosat_static gmpxx.a)
 target_link_libraries(libmonosat_static gmp.a)
 
@@ -412,7 +412,7 @@ if (NOT APPLE)
 endif()
 target_link_libraries(monosat_static libmonosat_static)
 target_link_libraries(monosat_static z.a)
-target_link_libraries(monosat_static m.a)
+#target_link_libraries(monosat_static m.a)  # c++ doesn't require libm to be explicitly linked
 target_link_libraries(monosat_static gmpxx.a)
 target_link_libraries(monosat_static gmp.a)
 
@@ -434,7 +434,7 @@ add_library(libmonosat SHARED ${SOURCE_FILES} ${JAVA_NATIVE_SOURCE_FILES})
 set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
 target_link_libraries(libmonosat z)
 if (NOT APPLE)
-    target_link_libraries(libmonosat m)
+    #target_link_libraries(libmonosat m)  # c++ doesn't require libm to be explicitly linked
 endif()
 target_link_libraries(libmonosat gmpxx)
 target_link_libraries(libmonosat gmp)
@@ -458,7 +458,7 @@ set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
 target_link_libraries(monosat libmonosat)
 target_link_libraries(monosat z)
 if (NOT APPLE)
-    target_link_libraries(monosat m)
+   # target_link_libraries(monosat m) # c++ doesn't require libm to be explicitly linked
 endif()
 target_link_libraries(monosat gmpxx)
 target_link_libraries(monosat gmp)

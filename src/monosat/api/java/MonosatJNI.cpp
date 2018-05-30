@@ -84,7 +84,6 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__Ljava_lang_String_2
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_deleteSolver
         (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
     deleteSolver(reinterpret_cast<SolverPtr>(solverPtr));
-
 }catch(...) { 
     javaThrow(env);
 }
@@ -109,6 +108,47 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
     javaThrow(env);
 }
 
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setVariableName
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable, jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    setVariableName(solver,variable,str);
+    env->ReleaseStringUTFChars(name, str);
+}catch(...) {
+    javaThrow(env);
+}
+
+JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char * name = getVariableName(solver,variable);
+    return env->NewStringUTF(name);
+}catch(...) {
+    javaThrow(env);
+    return env->NewStringUTF("Error"); //unreachable
+}
+
+
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableName
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return hasVariableName(solver,variable);
+}catch(...) {
+    javaThrow(env);
+    return false;
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getVariable
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    int var = getVariable(solver,str);
+    env->ReleaseStringUTFChars(name, str);
+    return jint(var);
+}catch(...) {
+    javaThrow(env);
+    return -1;
+}
 
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
         (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {

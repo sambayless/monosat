@@ -26,6 +26,7 @@
 #include <algorithm>
 #include "monosat/mtl/Sort.h"
 #include "monosat/graph/GraphTheory.h"
+#include <ctype.h>
 using namespace Monosat;
 #ifndef NDEBUG
 #define DEBUG_SOLUTION
@@ -77,7 +78,7 @@ Solver::~Solver() {
 	}
 	delete pbsolver;
 }
-
+const std::string Solver::empty_name = "";
 //=================================================================================================
 // Minor methods:
 
@@ -3330,3 +3331,37 @@ void Solver::garbageCollect() {
 	to.moveTo(ca);
 }
 
+void Solver::setVariableName(Var v, const std::string & name){
+	assert(v>=0);
+	assert(v<nVars());
+	removeVariableName(v);
+	if(name.size()>0){
+		if (hasVariable(name)){
+			throw std::invalid_argument("All variable names must be unique.");
+		}else{
+			//check if any chars of name are illegal
+			for(char c:name){
+				if(!isascii(c) || !isprint(c) || isspace(c)){
+					throw std::invalid_argument(std::string("Variable names must consist only of printable, non-whitespace ASCII. Invalid character in variable name: ") + name);
+				}
+			}
+		}
+
+		varnames.insert(v,name);
+		assert(!namemap.count(name) || namemap[name]==var_Undef);
+		namemap[name] = v;
+	}
+}
+
+//Remove any string names associated with v
+void Solver::removeVariableName(Var v){
+	if(varnames.has(v)){
+		std::string name = varnames[v];
+		if(name.size()>0) {
+			namemap.erase(name);
+			assert(!hasVariable(name));
+		}
+		varnames[v]=empty_name;
+	}
+	assert(!varnames.has(v)|| varnames[v].size()==0);
+}

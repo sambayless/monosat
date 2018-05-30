@@ -7,7 +7,8 @@ import org.junit.runners.Suite;
         monosat.BitVectorTest.class,
         monosat.GraphTest.class,
         monosat.LogicTest.class,
-        monosat.SolverTest.class
+        monosat.SolverTest.class,
+        monosat.LitTest.class
 })
 
 public class TestSuite {

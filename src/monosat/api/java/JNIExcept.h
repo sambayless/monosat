@@ -67,6 +67,8 @@ void javaThrow(JNIEnv * env) {
     } catch(const std::ios_base::failure& rhs) { //sample translation
         //translate IO C++ exception to a Java exception
         NewJavaException(env, "java/io/IOException", rhs.what());
+    }catch(const std::invalid_argument& e) {
+        NewJavaException(env, "java/lang/IllegalArgumentException", e.what());
     }catch(const std::runtime_error& e) {
         //translate C++ runtime exception to a Java runtime exception
         NewJavaException(env, "java/lang/RuntimeException", e.what());

@@ -23,7 +23,7 @@ def Solve(*assumptions, preprocessing=True,bvs_to_minimize=None,time_limit_secon
      
     #if preprocessing:
     #    Monosat().preprocess();
-    print("Solving in Monosat...")
+    #print("Solving in Monosat...")
     t = time.clock()
 
 

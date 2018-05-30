@@ -34,6 +34,7 @@
 #include "monosat/core/TheorySolver.h"
 #include "monosat/core/Config.h"
 #include <cinttypes>
+#include <map>
 
 
 
@@ -528,7 +529,9 @@ public:
 			const_true=mkLit(newVar(false,false));
 			addClause(const_true);
 			assert(isConstantTrue(const_true));
-			//}
+			if(!hasName(var(const_true))) {
+				setVariableName(var(const_true), "True");
+			}
 		}
 
 		return const_true;
@@ -538,6 +541,34 @@ public:
 	void setVarMap(DimacsMap * map){
 		varRemap=map;
 	}
+
+	bool hasVariable(const std::string & name){
+		return getVariable(name)!=var_Undef;
+	}
+	bool hasName(Var v){
+		return getVariableName(v).size()>0;
+	}
+	//Associate variable v with a name.
+	//If name is empty, then remove any existing name associated with v
+	void setVariableName(Var v, const std::string & name);
+	//Returns the name associated with this variable, or an empty string of there is no name.
+	const std::string & getVariableName(Var v){
+		if(v<0 || !varnames.has(v)){
+			return empty_name;
+		}
+		return varnames[v];
+	}
+	//Remove any string names associated with v
+	void removeVariableName(Var v);
+	//Get the variable associated with this name (if any).
+	//Returns Var_Undef if there is no variable assocaited with this name.
+	Var getVariable(const std::string & name){
+		if (!namemap.count(name)){
+			return var_Undef;
+		}
+		return namemap[name];
+	}
+
 
 	void toDimacs(FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
 	void toDimacs(const char *file, const vec<Lit>& assumps);
@@ -559,6 +590,7 @@ public:
 	bool isDecisionVar(Var v){
 		return decision[v];
 	}
+
 	// Read state:
 	//
 	lbool value(Var x) const override;       // The current value of a variable.
@@ -665,6 +697,10 @@ public:
 	Var max_local = var_Undef;
 	int super_offset = -1;
 	DimacsMap * varRemap=nullptr;
+
+	VMap<std::string> varnames;  //Optional names associated with each variable
+	std::map<std::string, int> namemap; //variable name lookup map
+    static const std::string empty_name;
 	// Mode of operation:
 	//
 	bool printed_header = false;
@@ -843,6 +879,7 @@ protected:
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, vec<Watcher>, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
 	Heuristic* conflicting_heuristic=nullptr;
+
 	vec<lbool> assigns;          // The current assignments.
 	vec<char> polarity;         // The preferred polarity of each variable.
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
@@ -865,6 +902,7 @@ protected:
 	Heap<Var,VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 	double theory_inc;
 	double theory_decay;
+
 	struct HeuristicToInt {
 		int operator()(Heuristic * h) const { return h->getHeuristicIndex(); }
 	};

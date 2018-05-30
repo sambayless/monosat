@@ -929,6 +929,26 @@ int newVar(Monosat::SimpSolver * S){
 	return S->newVar();
 }
 
+void setVariableName(Monosat::SimpSolver * S, int variable, const char  * varname){
+	if(varname==nullptr){
+		S->setVariableName(variable, "");
+	}else{
+		std::string name(varname);
+		S->setVariableName(variable, varname);
+	}
+}
+bool hasVariableName(Monosat::SimpSolver * S, int variable){
+	return S->hasName(variable);
+}
+Var getVariable(Monosat::SimpSolver * S, const char * varname){
+	return S->getVariable(varname);
+}
+//Return the name associated with this string, or the empty string if there is no name associated with this string.
+const char * getVariableName(Monosat::SimpSolver * S, int variable){
+	return S->getVariableName(variable).c_str();
+}
+
+
 void releaseLiteral(Monosat::SimpSolver * S, int literal){
     assert(literal>=0);
     S->releaseVar(toLit(literal));

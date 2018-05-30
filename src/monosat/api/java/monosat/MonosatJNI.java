@@ -56,6 +56,18 @@ final class MonosatJNI {//package level access specifier
     //load constraints from a file
     public native static void readGNF(long solverPtr, String filename);
 
+    //Set a variable name. Name must consist of printable ascii characeters,
+    //and must be unique (or it may be empty). If variable previously had a name
+    //that name will be replaced by this one. If name is empty, then
+    //variable will no longer have a name after this call.
+    public native static void setVariableName(long solverPtr, int variable, String name);
+
+    public native static String getVariableName(long solverPtr, int variable);
+    public native static boolean hasVariableName(long solverPtr, int variable);
+    public native static int getVariable(long solverPtr, String name);
+
+
+
     //basic solver functions
     public native static boolean solve(long solverPtr);
 

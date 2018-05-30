@@ -41,7 +41,7 @@ public class SolverTest {
         assertFalse(s.solve(monosat.Lit.False));
         assertFalse(s.solve(monosat.Lit.True, monosat.Lit.False));
         assertTrue(s.solve());
-        System.out.println("Done");
+
     }
     @Test
     public void testArguments() {        
@@ -52,7 +52,7 @@ public class SolverTest {
         assertFalse(s.solve(monosat.Lit.False));
         assertFalse(s.solve(monosat.Lit.True, monosat.Lit.False));
         assertTrue(s.solve());
-        System.out.println("Done");
+
     }
     @Test
     public void testMultipleSolvers() {

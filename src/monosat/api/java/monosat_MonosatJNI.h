@@ -73,6 +73,38 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    setVariableName
+ * Signature: (JILjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setVariableName
+  (JNIEnv *, jclass, jlong, jint, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getVariableName
+ * Signature: (JI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    hasVariableName
+ * Signature: (JI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableName
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getVariable
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getVariable
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    solve
  * Signature: (J)Z
  */
