@@ -174,6 +174,12 @@ public final class Lit {
         this.l = var*2;
         this.solver = solver;
         if(name != null && !name.isEmpty()){
+            if(name=="True"){
+                throw new IllegalArgumentException("Only the built-in True literal may be named \"True\"");
+            }else if(name=="False"){
+                throw new IllegalArgumentException("Only the built-in False literal may be named \"False\"");
+            }
+
             this._name = name;
             /*
             Check that the string contains only printable ascii characters

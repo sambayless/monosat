@@ -1378,11 +1378,17 @@ public final class Solver implements Closeable {
      */
     Lit getLiteral(String name){
         int variable = MonosatJNI.getVariable(solverPtr, name);
+        if(name=="True"){
+            return Lit.True;
+        }else if(name=="False"){
+            return Lit.False;
+        }
         if(variable>=0){
             Lit lit = toLit(variable*2);
             validate(lit);
             assert(!lit.sign());
             assert(lit.name()==name);
+
             return lit;
         }else{
             throw new IllegalArgumentException("No variable with name " + name);
