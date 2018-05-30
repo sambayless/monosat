@@ -1371,6 +1371,37 @@ public final class Solver implements Closeable {
     }
 
     /**
+     * Retrieve an existing named literal from the solver, by looking up its names.
+     * @param name The name of the literal to check for.
+     * @return The matching literal, if it exists.
+     * @throws IllegalArgumentException If there is no literal in the solver with this name (or if name is empty).
+     */
+    Lit getLiteral(String name){
+        int variable = MonosatJNI.getVariable(solverPtr, name);
+        if(variable>=0){
+            Lit lit = toLit(variable*2);
+            validate(lit);
+            assert(!lit.sign());
+            assert(lit.name()==name);
+            return lit;
+        }else{
+            throw new IllegalArgumentException("No variable with name " + name);
+        }
+    }
+
+    /**
+     * Retrieve an existing literal from the solver, by looking up its internal integer ID.
+     * @param literal The integer of the literal to check for.
+     * @return The matching literal, if it exists.
+     * @throws IllegalArgumentException If there is no literal in the solver with this integer.
+     */
+    protected Lit getLiteral(int literal){
+        Lit lit = toLit(literal);
+        validate(lit);
+        return lit;
+    }
+
+    /**
      * Reset any decisions in the solver, while preserving the current constraints.
      * There is normally no need to manually call restart(), as this is called automatically before calling solve().
      */

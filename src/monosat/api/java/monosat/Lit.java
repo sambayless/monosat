@@ -103,7 +103,7 @@ public final class Lit {
         assert (literal >= 0);
         this.l =literal;
         this.solver=solver;
-        this._name = ""; //fix this
+        this._name = MonosatJNI.getVariableName(solver.solverPtr,toVar());
     }
 
     /**
