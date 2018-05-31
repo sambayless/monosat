@@ -135,6 +135,9 @@ public:
 	//Theory interface
 	void addTheory(Theory*t) override {
 		if(t->getName().size()>0) {
+		    if (theorymap.count(t->getName())>0){
+                throw std::invalid_argument("All theory names must be unique.");
+		    }
 			theorymap.insert({t->getName(), t});
 		}
 		satisfied_theory_trail_pos.push(-1);

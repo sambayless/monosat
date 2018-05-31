@@ -21,15 +21,19 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 package monosat;
 
+import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.*;
 
 public class GraphTest {
-
+static final String tricky_name =
+        "~`Name-with/\"\'//<>printable_\\characters?!@#$%^&*()-+{}[]|1234567890";
   @Test
   public void nNodes() {
     Solver s = new Solver();
@@ -1257,4 +1261,171 @@ public class GraphTest {
 
     }
   }
+
+
+
+
+    @Test
+    public void testNamedGraphs() {
+        monosat.Solver s = new monosat.Solver();
+        Graph g1 = new Graph(s, 4);
+        Graph g2 = new Graph(s);
+        Graph g3 = new Graph(s, 4,"");
+        Graph g4 = new Graph(s, "");
+        Graph g5 = new Graph(s, 4,"MyGraph1");
+        Graph g6 = new Graph(s, "MyGraph2");
+
+
+        try {
+            new Graph(s, "MyGraph1");
+            Assert.fail("No two graphs can have the same name");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+        try {
+            new Graph(s, 4,"MyGraph2");
+            Assert.fail("No two graphs can have the same name");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+        try {
+            new Graph(s, 4,"Name With Spaces");
+            Assert.fail("Expected a bad name exception");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        try {
+            new Graph(s, "Name With Spaces");
+            Assert.fail("Expected a bad name exception");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        Graph g7 =  new Graph(s, tricky_name);
+
+
+        try {
+            new Graph(s, 4,"Name With \n NewLine");
+            Assert.fail("Expected a bad name exception");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+        try {
+            new Graph(s, "Name With \t tab");
+            Assert.fail("Expected a bad name exception");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        assertEquals(g1.name(), "");
+        assertEquals(g2.name(), "");
+        assertEquals(g3.name(), "");
+        assertEquals(g5.name(), "MyGraph1");
+        assertEquals(g6.name(), "MyGraph2");
+        assertEquals(g7.name(), tricky_name);
+        try {
+            s.getGraph("");
+            Assert.fail("Expected a bad name exception");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        assertEquals(s.getGraph("MyGraph1"), g5);
+        assertEquals(s.getGraph(tricky_name), g7);
+    }
+    @Test
+    public void testLoadingGraphs() throws IOException {
+        File file = File.createTempFile("test", ".gnf");
+        String filename = file.getAbsolutePath().toString();
+        System.out.println(filename);
+        file.delete();
+
+        {
+            monosat.Solver s = new monosat.Solver("", filename);
+            Graph g1 = new Graph(s, 4);
+            Graph g2 = new Graph(s);
+            Graph g3 = new Graph(s, 4,"");
+            Graph g4 = new Graph(s, "");
+            Graph g5 = new Graph(s, 4,"MyGraph1");
+            Graph g6 = new Graph(s, "MyGraph2");
+
+
+            try {
+                new Graph(s, "MyGraph1");
+                Assert.fail("No two graphs can have the same name");
+            } catch (IllegalArgumentException except) {
+                // ok
+            }
+            try {
+                new Graph(s, 4,"MyGraph2");
+                Assert.fail("No two graphs can have the same name");
+            } catch (IllegalArgumentException except) {
+                // ok
+            }
+            try {
+                new Graph(s, 4,"Name With Spaces");
+                Assert.fail("Expected a bad name exception");
+            } catch (IllegalArgumentException except) {
+                // ok
+            }
+
+            try {
+                new Graph(s, "Name With Spaces");
+                Assert.fail("Expected a bad name exception");
+            } catch (IllegalArgumentException except) {
+                // ok
+            }
+
+            Graph g7 =  new Graph(s, tricky_name);
+
+
+            try {
+                new Graph(s, 4,"Name With \n NewLine");
+                Assert.fail("Expected a bad name exception");
+            } catch (IllegalArgumentException except) {
+                // ok
+            }
+            try {
+                new Graph(s, "Name With \t tab");
+                Assert.fail("Expected a bad name exception");
+            } catch (IllegalArgumentException except) {
+                // ok
+            }
+
+            assertEquals(g1.name(), "");
+            assertEquals(g2.name(), "");
+            assertEquals(g3.name(), "");
+            assertEquals(g5.name(), "MyGraph1");
+            assertEquals(g6.name(), "MyGraph2");
+            assertEquals(g7.name(), tricky_name);
+            try {
+                s.getGraph("");
+                Assert.fail("Expected a bad name exception");
+            } catch (IllegalArgumentException except) {
+                // ok
+            }
+
+            assertEquals(s.getGraph("MyGraph1"), g5);
+            assertEquals(s.getGraph(tricky_name), g7);
+
+            s.close();
+        }
+
+        monosat.Solver s = new monosat.Solver();
+        assertTrue(s.solve());
+        s.loadConstraints(filename);
+        assertTrue(s.solve());
+        Graph g1 = s.getGraph("MyGraph1");
+        Graph g2 = s.getGraph("MyGraph2");
+        assertEquals(g1.bitwidth(),4);
+        assertEquals(g2.bitwidth(),-1);
+        Graph g3 = s.getGraph(tricky_name);
+
+        assertEquals(s.getGraph("MyGraph1"), g1);
+        assertEquals(s.getGraph("MyGraph2"), g2);
+        assertEquals(s.getGraph(tricky_name), g3);
+
+        assertTrue(s.solve());
+    }
 }
