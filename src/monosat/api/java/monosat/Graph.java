@@ -157,6 +157,20 @@ public final class Graph {
     this(solver,bitwidth,name,true);
   }
 
+  /**
+   * For internal use only. Instantiate a graph from an existing graph pointer in the solver.
+   * @param solver
+   * @param graphPtr
+   */
+  protected Graph(Solver solver, long graphPtr) {
+    this.solver = solver;
+    this.graphPtr = graphPtr;
+    this._name = MonosatJNI.getGraphName(solver.solverPtr,graphPtr);
+    solver.allGraphs.put(graphPtr,this);
+
+    this.bitwidth = MonosatJNI.getGraphWidth(solver.solverPtr,graphPtr);
+
+  }
 
   /**
    * Instantiate a graph in solver, with either weighted or unweighted edges. Each edge in this
@@ -202,15 +216,15 @@ public final class Graph {
         graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr,name);
       } else {
         throw new IllegalArgumentException(
-            "Literal names are restricted to printable ASCII characeters, and "
+            "Graph names are restricted to printable ASCII characeters, and "
                 + "may not include whitespace or newlines: \""
-                + name
-                + "\" is not a valid name.");
+                + name + "\" is not a valid name.");
       }
     } else {
       this._name = "";
       graphPtr = MonosatJNI.newGraph(solver.solverPtr);
     }
+    solver.allGraphs.put(graphPtr,this);
   }
 
   /**

@@ -77,6 +77,10 @@ public final class Solver implements Closeable {
   private final LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
   /** Contains all BitVectors in this solver. */
   private final ArrayList<BitVector> allBVs = new ArrayList<>();
+
+  //Map from native pointers to graph objects, to avoid re-instantiating the same graph multiple times
+  protected final HashMap<Long,Graph> allGraphs = new HashMap<Long,Graph>();
+
   /**
    * Handle to the underlying monosat solver instance. This is really a pointer, masquerading as a
    * long.
@@ -1392,7 +1396,7 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Retrieve an existing named literal from the solver, by looking up its names.
+   * Retrieve an existing named literal from the solver, by looking up its name.
    *
    * @param name The name of the literal to check for.
    * @return The matching literal, if it exists.
@@ -1418,7 +1422,30 @@ public final class Solver implements Closeable {
     }
   }
 
-  /**
+    /**
+     * Retrieve an existing named graph from the solver, by looking up its name.
+     *
+     * @param name The name of the literal to check for.
+     * @return The matching literal, if it exists.
+     * @throws IllegalArgumentException If there is no literal in the solver with this name (or if
+     *     name is empty).
+     */
+    Graph getGraph(String name) {
+        if(name.length()==0){
+            throw new IllegalArgumentException("Graph string name must have length > 0");
+        }
+        long graphPtr = MonosatJNI.getGraph(solverPtr, name);
+        if(allGraphs.containsKey(graphPtr)){
+            return allGraphs.get(graphPtr);
+        }else{
+            Graph g = new Graph(this,graphPtr);
+            assert(g.name().equals(name));
+            return g;
+        }
+    }
+
+
+    /**
    * Retrieve an existing literal from the solver, by looking up its internal integer ID.
    *
    * @param literal The integer of the literal to check for.

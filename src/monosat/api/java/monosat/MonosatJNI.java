@@ -333,7 +333,8 @@ final class MonosatJNI { // package level access specifier
   public static native long newGraph(long solverPtr);
 
   public static native long newGraph_Named(long solverPtr, String name);
-
+  public static native String getGraphName(long solverPtr, long graphPtr);
+  public static native int getGraphWidth(long solverPtr, long graphPtr);
   /**
    * Get a pointer to a graph with this name, that is already defined in the solver (or return 0, if
    * there is no such graph)
