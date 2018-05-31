@@ -54,30 +54,44 @@ CycleDetector<Weight,Graph>::CycleDetector(int _detectorID, GraphTheorySolver<We
 	//forced_reach_marker=outer->newReasonMarker(getID());
 }
 template<typename Weight,typename Graph>
-void CycleDetector<Weight,Graph>::addAcyclicLit(bool directed, Var outer_reach_var) {
-	Var v = outer->newVar(outer_reach_var, getID());
-	Lit l = mkLit(v, false);
+Lit CycleDetector<Weight,Graph>::addAcyclicLit(bool directed, Var outer_reach_var) {
 	g_under.invalidate();
 	g_over.invalidate();
 	if (!directed) {
 		if (undirected_acyclic_lit == lit_Undef) {
+
+			Var v = outer->newVar(outer_reach_var, getID());
+			Lit l = mkLit(v, false);
 			undirected_acyclic_lit = l;
-			
+			return l;
 		} else {
-			outer->makeEqual(l,undirected_acyclic_lit,true);
-			/*outer->S->addClause(undirected_cycle_lit, ~l);
-			 outer->S->addClause(~undirected_cycle_lit, l);*/
+			if(outer_reach_var==var_Undef){
+				return undirected_acyclic_lit;
+			}else {
+				Var v = outer->newVar(outer_reach_var, getID());
+				Lit l = mkLit(v, false);
+				outer->makeEqual(l, undirected_acyclic_lit, true);
+				return l;
+			}
 		}
 	} else {
 		if (directed_acyclic_lit == lit_Undef) {
+			Var v = outer->newVar(outer_reach_var, getID());
+			Lit l = mkLit(v, false);
 			directed_acyclic_lit = l;
-			
+			return l;
 		} else {
-			outer->makeEqual(l,directed_acyclic_lit,true);
-			/*			outer->S->addClause(directed_cycle_lit, ~l);
-			 outer->S->addClause(~directed_cycle_lit, l);*/
+			if(outer_reach_var==var_Undef){
+				return directed_acyclic_lit;
+			}else {
+				Var v = outer->newVar(outer_reach_var, getID());
+				Lit l = mkLit(v, false);
+				outer->makeEqual(l,directed_acyclic_lit,true);
+				return l;
+			}
 		}
 	}
+
 }
 template<typename Weight,typename Graph>
 void CycleDetector<Weight,Graph>::buildNoUndirectedCycleReason(vec<Lit> & conflict) {

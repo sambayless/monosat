@@ -301,8 +301,8 @@ public:
 		refined_flow_model.clear();
 	}
 	void setFlowBV(const BitVector<Weight>  &bv);
-	void addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
-	void addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var v, bool inclusive);
+	Lit addFlowLit(Weight max_flow, Var reach_var, bool inclusive);
+	Lit addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var v, bool inclusive);
 	MaxflowDetector(int _detectorID, GraphTheorySolver<Weight> * _outer,
 					Graph  &_g, Graph  &_antig, int _source, int _target, double seed = 1, bool overIsEdgeSet=false); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
 	~MaxflowDetector() override {

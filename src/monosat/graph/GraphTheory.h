@@ -66,7 +66,7 @@
 #include <sstream>
 #include <string>
 #include <monosat/amo/AMOTheory.h>
-
+#include <map>
 using namespace dgl;
 namespace Monosat {
 
@@ -102,6 +102,9 @@ public:
 		Var reach_var;
 		bool backward;
 	};
+	Map<std::tuple<int,int,int,bool>,Lit> existing_reach_constraints;
+
+	Map<std::tuple<int,int,int>,Lit> existing_on_path_constraints;
 
 	vec<ReachabilityConstraint> unimplemented_reachability_constraints;
 	struct DistanceConstraint {
@@ -111,6 +114,7 @@ public:
 		Var reach_var;
 		bool strict;
 	};
+	Map<std::tuple<int,int,Weight,bool>,Lit> existing_distance_constraints;
 	vec<DistanceConstraint> unimplemented_distance_constraints;
 
 	struct DistanceConstraintBV {
@@ -120,6 +124,7 @@ public:
 			Var var;
 			bool strict;
 		};
+    Map<std::tuple<int,int,int,bool>,Lit> existing_distance_bv_constraints;
 	vec<DistanceConstraintBV> unimplemented_distance_constraints_bv;
 
 	struct MaxflowConstraintBV {
@@ -129,6 +134,7 @@ public:
 			Var var;
 			bool strict;
 		};
+    Map<std::tuple<int,int,int,bool>,Lit> existing_maxflow_bv_constraints;
 	vec<MaxflowConstraintBV> unimplemented_maxflow_constraints_bv;
 
 	CRef graph_decision_reason = CRef_Undef;
@@ -143,8 +149,8 @@ private:
 	DynamicGraph<Weight> g_over_weights_under;
 	DynamicBackGraph<Weight> g_under_weights_over_back;
 	DynamicBackGraph<Weight> g_over_weights_under_back;
-    VMap<Var> pathForwardMap;
-    VMap<Var> pathBackMap;
+    VMap<Lit> pathForwardMap;
+    VMap<Lit> pathBackMap;
     std::vector<std::string> node_names;
 
 	/**
@@ -542,6 +548,7 @@ public:
 	vec<ReachInfo> reach_info;
     vec<ReachInfo> backward_reach_info;
 	vec<ReachInfo> connect_info;
+
 public:
 	vec<Theory*> theories;
 	vec<bool> satisfied_detectors;
@@ -567,7 +574,7 @@ public:
 
 	//Full matrix
 	//vec<vec<Edge> > edges;
-	
+
 	//Just a list of the edges
 private:
 	vec<Edge> edge_list;
@@ -693,13 +700,13 @@ public:
 		CutStatus(GraphTheorySolver & _outer) :
 				outer(_outer) {
 		}
-		
+
 	} cutStatus;
 
 	struct PropCutStatus {
 		GraphTheorySolver & outer;
 		int operator ()(int id) const {
-			
+
 			if (outer.value(outer.edge_list[id].v) == l_Undef) {
 				return 1;
 			} else {
@@ -710,7 +717,7 @@ public:
 		PropCutStatus(GraphTheorySolver & _outer) :
 				outer(_outer) {
 		}
-		
+
 	} propCutStatus;
     vec<Theory*> & getTheories() override {
         return theories;
@@ -761,7 +768,7 @@ public:
 		g_under.dynamic_history_clears=opt_dynamic_history_clear;
 		g_over.dynamic_history_clears=opt_dynamic_history_clear;
 		cutGraph.dynamic_history_clears=opt_dynamic_history_clear;
-		
+
 
 
 
@@ -804,7 +811,7 @@ public:
 
 	void printStats(int detailLevel) override {
 
-		
+
 		printf("Graph %d stats:\n", getGraphID());
 		/*		printf("Decision Time: %f\n", stats_decision_time);
 		 printf("Prop Time: %f (initial: %f)\n", propagationtime,stats_initial_propagation_time);
@@ -837,16 +844,16 @@ public:
 		}
 		fflush(stdout);
 	}
-	
+
 	void writeTheoryWitness(std::ostream& write_to) override {
-		
+
 		for (Detector * d : detectors) {
 			write_to << "Graph " << this->getGraphID() << ", detector " << d->getID() << ":\n";
 			d->printSolution(write_to);
 		}
-		
+
 	}
-	
+
 	inline int getTheoryIndex()const override {
 		return theory_index;
 	}
@@ -887,7 +894,7 @@ public:
 		assert(!isEdgeVar(v));
 		return vars[v].detector_edge;
 	}
-	
+
 	inline Var getEdgeVar(int edgeID) {
 		Var v = edge_list[edgeID].v;
 		assert(v < vars.size());
@@ -1019,7 +1026,7 @@ public:
 		tmp_clause.clear();
 		c.copyTo(tmp_clause);
 		toSolver(tmp_clause);
-		
+
 		S->addClauseSafely(tmp_clause);
 	}
 	Var newVar(bool polarity = true, bool dvar = true) override {
@@ -1073,7 +1080,9 @@ public:
 	}
 	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar) override {
         S->backtrackUntil(0);
-
+		if(solverVar==var_Undef){
+			solverVar = S->newVar();
+		}
 		Var v = vars.size();
 
 		S->newTheoryVar(solverVar,getTheoryIndex(),v);
@@ -1094,7 +1103,10 @@ public:
 		return v;
 	}
 	Var newVar(Var solverVar, int detector, bool isEdge = false, bool connectToTheory = true) {
-		S->backtrackUntil(0);
+		S->cancelUntil(0);
+		if(solverVar==var_Undef){
+			solverVar = S->newVar();
+		}
 	    while (S->nVars() <= solverVar)
 			S->newVar();
 
@@ -1140,7 +1152,7 @@ public:
 		//assert(S->getTheoryVar(vars[v].solverVar)==v);
 		return vars[v].solverVar;
 	}
-	
+
 	inline Lit toSolver(Lit l)const {
 		if(l==lit_Undef)
 			return lit_Undef;
@@ -1148,17 +1160,17 @@ public:
 		//assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
 		return mkLit(vars[var(l)].solverVar, sign(l));
 	}
-	
+
 	void toSolver(vec<Lit> & c) {
 		for (int i = 0; i < c.size(); i++) {
 			c[i] = toSolver(c[i]);
 		}
 	}
-	
+
 	double & getRandomSeed()override{
 		return rnd_seed;
 	}
-	
+
 	inline bool edgeWeightDecidable(int edgeID,DetectorComparison op, Weight edgeWeight) {
 		if (! hasBitVector(edgeID) || !opt_decide_graph_bv)
 			return false;
@@ -1210,7 +1222,7 @@ public:
 	}
 	inline bool enqueue(Lit l, CRef reason) override {
 		assert(assigns[var(l)]==l_Undef);
-		
+
 		Lit sl = toSolver(l);
 		if (S->enqueue(sl, reason)) {
 			enqueueTheory(l);//is this still needed?
@@ -1364,7 +1376,7 @@ public:
 	bool isNode(int n) {
 		return n >= 0 && n < nNodes();
 	}
-	
+
 	bool hasBitVector(int edgeID){
 		return edge_list[edgeID].bvID>=0;
 	}
@@ -1388,7 +1400,7 @@ public:
 				Edge & e = edge_list[getEdgeID(v)];
 				c.push(l);
 			}
-			
+
 			/*		if(v>=min_edge_var && v<min_edge_var+num_edges){
 			 if(edge_list[v-min_edge_var].v<0)
 			 continue;
@@ -1402,11 +1414,11 @@ public:
 #endif
 		return true;
 	}
-	
+
 	void dbg_sync_reachability() {
 /*
 #ifdef DEBUG_GRAPH
-		
+
 		for(int i = 0;i<reach_detectors.size();i++) {
 			ReachDetector* d = reach_detectors[i];
 			d->dbg_sync_reachability();
@@ -1857,7 +1869,7 @@ public:
 		stats_decision_time += rtime(1) - start;
 		return lit_Undef;
 	}
-	
+
 
 	void newDecisionLevel() override {
 		//trail_lim.push(trail.size());
@@ -1893,7 +1905,7 @@ public:
 			stats_reason_time += finish - start;
 			stats_num_reasons++;
 		}else{
-		
+
 			int d = marker_map[pos].id;
 			//double initial_start = rtime(1);
 			double start = rtime(1);
@@ -1908,10 +1920,10 @@ public:
 			//stats_reason_initial_time+=start-initial_start;
 		}
 	}
-	
+
 	bool dbg_reachable(int from, int to, bool undirected = false) {
 #ifdef DEBUG_DIJKSTRA
-		
+
 		if(undirected) {
 			UnweightedDijkstra<Weight,Distance<int>::NullStatus, true> d(from,g_under);
 			d.update();
@@ -1926,17 +1938,17 @@ public:
 		return true;
 #endif
 	}
-	
+
 	bool dbg_notreachable(int from, int to, bool undirected = false) {
-		
+
 #ifdef DEBUG_GRAPH
 		//drawFull(from,to);
-		
+
 		/*DynamicGraph<Weight> g;
 		for (int i = 0; i < nNodes(); i++) {
 			g.addNode();
 		}
-		
+
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
@@ -1948,18 +1960,18 @@ public:
 		}
 		if (undirected) {
 			UnweightedDijkstra<Weight,typename Distance<int>::NullStatus, true> d(from, g);
-			
+
 			return !d.connected(to);
 		} else {
 			UnweightedDijkstra<Weight,typename Distance<int>::NullStatus, false> d(from, g);
-			
+
 			return !d.connected(to);
 		}*/
 #endif
 		return true;
-		
+
 	}
-	
+
 	bool dbg_graphsUpToDate() {
 #ifdef DEBUG_GRAPH2
 		for(int i = 0;i<edge_list.size();i++) {
@@ -2013,7 +2025,7 @@ public:
 #endif
 		return true;
 	}
-	
+
 	/*	int getEdgeID(Var v){
 	 assert(v>= min_edge_var && v<min_edge_var+edge_list.size());
 
@@ -2059,9 +2071,9 @@ public:
 			//else if (sign(l) && vars[var(l)].occursNegative != occurs)
 			//	detectors[getDetector(var(l))]->setOccurs(l, occurs);
 		}
-		
+
 	}
-	
+
 	void enqueueBV(int bvID) override {
 		if(!S->model.size() && theoryIsSatisfied()){
 			stats_bv_enqueue_while_sat++;
@@ -2228,7 +2240,7 @@ public:
 
 		if (g_under.outfile()) {
 			fprintf(g_under.outfile(), "enqueue %d\n", dimacs(l));
-			
+
 			fprintf(g_under.outfile(), "\n");
 			fflush(g_under.outfile());
 		}
@@ -2257,11 +2269,11 @@ public:
 		}
 
 		if (isEdgeVar(var(l))) {
-			
+
 			//this is an edge assignment
 			int edge_num = getEdgeID(var(l)); //v-min_edge_var;
 			assert(edge_list[edge_num].v == var(l));
-			
+
 			int from = edge_list[edge_num].from;
 			int to = edge_list[edge_num].to;
 			if (!sign(l)) {
@@ -2438,11 +2450,11 @@ public:
 		}
 		bool any_change = false;
 		double startproptime = rtime(1);
-		
+
 		conflict.clear();
 		//Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
 		//That second one especially.
-		
+
 		//At level 0, need to propagate constant reaches/source nodes/edges...
 
 /*		for (int bvID:bvs_to_update){
@@ -2585,12 +2597,12 @@ public:
 		}
 
 		dbg_full_sync();
-		
+
 		requiresPropagation = false;
 		g_under.clearChanged();
 		g_over.clearChanged();
 		cutGraph.clearChanged();
-		
+
 		g_under.clearHistory();
 		g_over.clearHistory();
 		cutGraph.clearHistory();
@@ -2644,7 +2656,7 @@ public:
 			} else
 				printf("n%d\n", i);
 		}
-		
+
 		for (int i = 0; i < edge_list.size(); i++) {
 			if (edge_list[i].v < 0)
 				continue;
@@ -2656,7 +2668,7 @@ public:
 				s = "red";
 			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
 		}
-		
+
 		printf("}\n");
 	}
 	void drawFull(bool forceDraw=false, bool drawDisabled=true) {
@@ -2696,7 +2708,7 @@ public:
 		printf("}\n");
 
 	}
-	
+
 	bool check_solved() override {
 		if (opt_print_graph) {
 			drawFull();
@@ -2712,7 +2724,7 @@ public:
 				throw std::runtime_error("BAD SOLUTION: Unassigned edge!");
 				return false;
 			}*/
-			
+
 			if (val == l_True) {
 				/*	if(!g.hasEdge(e.from,e.to)){
 				 return false;
@@ -2807,7 +2819,7 @@ public:
 		}
 		return true;
 	}
-	
+
 	bool dbg_solved() {
 #ifdef DEBUG_GRAPH
 		for(int i = 0;i<edge_list.size();i++) {
@@ -2848,7 +2860,7 @@ public:
 #endif
 		return true;
 	}
-	
+
 	void drawCurrent() {
 #ifdef DEBUG_GRAPH
 		int from = -1;
@@ -2875,7 +2887,7 @@ public:
 				//s = "red";
 			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
 		}
-		
+
 		printf("}\n");
 #endif
 	}
@@ -3242,7 +3254,7 @@ public:
 			edge_weights.resize(index + 1);
 		}
 		edge_weights[index] = weight;
-		
+
 		//edges[from][to]= {v,outerVar,from,to,index};
 		g_under.addEdge(from, to, index,weight);
 		g_under.disableEdge(from, to, index);
@@ -3257,7 +3269,7 @@ public:
 		cutGraph.addEdge(from, to, index * 2,1);
 		cutGraph.addEdge(from, to, index * 2 + 1,0xFFFF);
 		cutGraph.disableEdge(from, to, index * 2);
-		
+
 
 
 
@@ -3345,7 +3357,7 @@ public:
 		if(from >= g_under.nodes()){
 			throw std::runtime_error("Undefined node");
 		}
-		
+
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();
 		}
@@ -3369,9 +3381,9 @@ public:
 
 		WeightedDistanceDetector<Weight> * d = (WeightedDistanceDetector<Weight>*) weighted_dist_info[from].detector;
 		assert(d);
-		
+
 		d->addWeightedShortestPathLit(from, to, reach_var, distance,strictComparison);
-		
+
 	}
 
 	void reachesWithinDistanceBV(int from, int to, Var reach_var, int bvID, bool strictComparison) {
@@ -3461,7 +3473,7 @@ public:
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 				reaches_private(c.from, c.to, c.reach_var, c.distance,c.backward);
 			}
-			
+
 		} else if (opt_allpairs_percentage == 0) {
 			for (int i = 0; i < unimplemented_reachability_constraints.size(); i++) {
 				ReachabilityConstraint c = unimplemented_reachability_constraints[i];
@@ -3480,12 +3492,12 @@ public:
 					}
 				}
 				double frac = ((double) count) / ((double) nNodes());
-				
+
 				if (opt_verb > 0 && frac >= opt_allpairs_percentage) {
 					printf("Allpairs solver triggered for graph %d by percentage of source nodes: %d/%d=%f>%f\n",
 							getGraphID(), count, nNodes(), frac, (double) opt_allpairs_percentage);
 				}
-				
+
 				for (int i = 0; i < unimplemented_reachability_constraints.size(); i++) {
 					ReachabilityConstraint c = unimplemented_reachability_constraints[i];
 					if (frac >= opt_allpairs_percentage)
@@ -3496,7 +3508,7 @@ public:
 			}
 		}
 		unimplemented_reachability_constraints.clear();
-		
+
 		for(auto & d:unimplemented_distance_constraints){
 			reachesWithinDistance(d.from, d.to, d.reach_var, d.distance,d.strict);
 		}
@@ -3515,8 +3527,8 @@ public:
 	void allpairs_undirected(int from, int to, Var reach_var, int within_steps = -1) {
 	    throw std::runtime_error("Unsupported constraint");
 	}
-	
-	void allpairs(int from, int to, Var reach_var, int within_steps = -1, bool backward=false) {
+
+	Lit allpairs(int from, int to, Var reach_var, int within_steps = -1, bool backward=false) {
 		//for now, reachesWithinSteps to be called instead
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();
@@ -3569,8 +3581,9 @@ public:
 
 			d->addLit(from, to, reach_var, within_steps);
 		}
+		return mkLit(reach_var);
 	}
-	
+
 	void reaches_private(int from, int to, Var reach_var, int within_steps, bool backward) {
 		//for now, reachesWithinSteps to be called instead
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
@@ -3580,7 +3593,7 @@ public:
 			reachesWithinSteps(from, to, reach_var, within_steps, backward);
 			return;
 		}
-		
+
 		assert(from < g_under.nodes());
 		if (within_steps > g_under.nodes())
 			within_steps = -1;
@@ -3633,67 +3646,112 @@ public:
 			assert(within_steps == -1);
 			d->addLit(from, to, reach_var);
 		}
-		
-	}
-	
-	void reaches(int from, int to, Var reach_var, int within_steps = -1) {
-		unimplemented_reachability_constraints.push( { from, to, within_steps, reach_var,false });
-		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
-		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
+
 	}
 
-    void reachesBackward(int from, int to, Var reach_var, int within_steps = -1) {
-        unimplemented_reachability_constraints.push( { from, to, within_steps, reach_var,true});
+	Lit reaches(int from, int to, Var reach_var=var_Undef, int within_steps = -1) {
+		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,within_steps,false);
+		if(existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
+			return existing_reach_constraints[constraint_set];
+		}
+		if (reach_var==var_Undef){
+			reach_var = S->newVar();
+		}
+		unimplemented_reachability_constraints.push( { from, to, within_steps, reach_var,false });
+
+		existing_reach_constraints.insert(constraint_set,mkLit(reach_var));
+		return mkLit(reach_var);
+	}
+
+	Lit reachesBackward(int from, int to, Var reach_var=var_Undef, int within_steps = -1) {
+		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,within_steps,true);
+		if(existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
+			return existing_reach_constraints[constraint_set];
+		}
+		if (reach_var==var_Undef){
+			reach_var = S->newVar();
+		}
+		unimplemented_reachability_constraints.push( { from, to, within_steps, reach_var,true});
+
+		existing_reach_constraints.insert(constraint_set,mkLit(reach_var));
+		return mkLit(reach_var);
+
     }
 
     //True iff there exists a path from 'from' to 'to' that crosses the node 'nodeOnPath'
-    void onPath(int nodeOnPath,int from, int to, Var on_path_var) {
+	Lit onPath(int nodeOnPath,int from, int to, Var on_path_var=var_Undef) {
+		;
 
-        Var v1 =  S->newVar();
-        Var v2 =  S->newVar();
+		std::tuple<int,int,int> constraint_set = std::make_tuple(from,to,nodeOnPath);
+		if(existing_on_path_constraints.has(constraint_set) && existing_on_path_constraints[constraint_set] !=lit_Undef ){
+			return existing_on_path_constraints[constraint_set];
+		}
+		if (on_path_var==var_Undef){
+			on_path_var = S->newVar();
+		}
+
+       /* Var v1 =  S->newVar();
+        Var v2 =  S->newVar();*/
         //normally, we would add this literal as a theory var, which would
 		//prevent it's elimination.
 		//however, since we are not turning this var into a theory var, we need
 		//to explicitly prevent its elimination here.
 		S->disableElimination(on_path_var);
         //on_path_var is true iff v1 AND v2 are true
-        S->addClause(mkLit(v1),~mkLit(on_path_var));
-        S->addClause(mkLit(v2),~mkLit(on_path_var));
-        S->addClause(~mkLit(v1),~mkLit(v2),mkLit(on_path_var));
-        reaches(from,nodeOnPath,v1);
-        reachesBackward(to,nodeOnPath,v2);
-        pathForwardMap.insert(on_path_var,v1,var_Undef);
-        pathBackMap.insert(on_path_var,v2,var_Undef);
+
+        Lit l1 = reaches(from,nodeOnPath);
+        Lit l2 = reachesBackward(to,nodeOnPath);
+
+		S->addClause(l1,~mkLit(on_path_var));
+		S->addClause(l2,~mkLit(on_path_var));
+		S->addClause(~l1,~l2,mkLit(on_path_var));
+
+        pathForwardMap.insert(on_path_var,l1,lit_Undef);
+        pathBackMap.insert(on_path_var,l2,lit_Undef);
+
+		existing_on_path_constraints.insert(constraint_set,mkLit(on_path_var));
+		return mkLit(on_path_var);
     }
-	void distance(int from, int to, Var reach_var,  Weight distance_lt,bool inclusive) {
+	Lit distance(int from, int to, Weight distance_lt,bool inclusive,Var reach_var = var_Undef) {
+		std::tuple<int,int,Weight,bool> constraint_set = std::make_tuple(from,to,distance_lt,inclusive);
+		if(existing_distance_constraints.has(constraint_set) && existing_distance_constraints[constraint_set] !=lit_Undef ){
+			return existing_distance_constraints[constraint_set];
+		}
+		if (reach_var==var_Undef){
+			reach_var = S->newVar();
+		}
 		unimplemented_distance_constraints.push( { from, to, distance_lt, reach_var,!inclusive });
-		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
-		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
+
+		existing_distance_constraints.insert(constraint_set,mkLit(reach_var));
+		return mkLit(reach_var);
 	}
 
-	void distanceBV(int from, int to, Var reach_var, int bvID, bool inclusive) {
+	Lit distanceBV(int from, int to, int bvID, bool inclusive, Var reach_var=var_Undef) {
+        std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,bvID,inclusive);
+        if(existing_distance_bv_constraints.has(constraint_set) && existing_distance_bv_constraints[constraint_set] !=lit_Undef ){
+            return existing_distance_bv_constraints[constraint_set];
+        }
+        if (reach_var==var_Undef){
+            reach_var = S->newVar();
+        }
+
+
 		unimplemented_distance_constraints_bv.push( { from, to, bvID, reach_var, !inclusive});
-		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
-		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
+        existing_distance_bv_constraints.insert(constraint_set,mkLit(reach_var));
+		return mkLit(reach_var);
 	}
-	void maxflowBV(int s, int t, Var reach_var, int bvID, bool inclusive) {
+	Lit maxflowBV(int s, int t, int bvID, bool inclusive, Var reach_var=var_Undef) {
+        std::tuple<int,int,int,bool> constraint_set = std::make_tuple(s,t,bvID,inclusive);
+        if(existing_maxflow_bv_constraints.has(constraint_set) && existing_maxflow_bv_constraints[constraint_set] !=lit_Undef ){
+            return existing_maxflow_bv_constraints[constraint_set];
+        }
+        if (reach_var==var_Undef){
+            reach_var = S->newVar();
+        }
+
 		unimplemented_maxflow_constraints_bv.push( { s, t, bvID, reach_var, !inclusive});
-		//to allow us to alter the solving algorithm based on the number and type of constraints, we aren't implementing them here directly any more - instead,
-		//we just store the constraints in this vector, then implement them later when 'implementConstraints' is called.
-	}
-	void reachesAny(int from, Var firstVar, int within_steps = -1) {
-		for (int i = 0; i < g_under.nodes(); i++) {
-			reaches(from, i, firstVar + i, within_steps);
-		}
-	}
-	
-	void reachesAny(int from, vec<Lit> & reachlits_out, int within_steps = -1) {
-		for (int i = 0; i < g_under.nodes(); i++) {
-			Var reachVar = S->newVar();
-			//reaches(from,i,reachVar,within_steps);
-			reaches(from, i, reachVar, within_steps);
-			reachlits_out.push(mkLit(reachVar, false));
-		}
+		existing_maxflow_bv_constraints.insert(constraint_set,mkLit(reach_var));
+		return mkLit(reach_var);
 	}
 
 
@@ -3724,7 +3782,7 @@ public:
 		}
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
-	void maxflow(int from, int to,Var v, Weight  max_flow,  bool inclusive=true) {
+	Lit maxflow(int from, int to, Weight  max_flow,  bool inclusive=true,Var v=var_Undef) {
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();
 		}
@@ -3739,14 +3797,15 @@ public:
 			//The maxflow from a node to itself is always infinite, and so that flow is never less than any specific weight
 			if(v!=var_Undef) {
 				S->addClause(~mkLit(v));
+				return mkLit(v);
+			}else{
+				return S->True();
 			}
-			return;
 		}
 
 		for (int i = 0; i < flow_detectors.size(); i++) {
 			if (flow_detectors[i]->source == from && flow_detectors[i]->target == to) {
-				flow_detectors[i]->addFlowLit(max_flow, v,inclusive);
-				return;
+				return toSolver(flow_detectors[i]->addFlowLit(max_flow, v,inclusive));
 			}
 		}
 		MaxflowDetector<Weight> *f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over, from,
@@ -3754,7 +3813,7 @@ public:
 		flow_detectors.push(f);
 		addDetector(f);
 
-		f->addFlowLit(max_flow, v,inclusive);
+		return toSolver(f->addFlowLit(max_flow, v,inclusive));
 	}
 
 	void minConnectedComponents(int min_components, Var v) {
@@ -3770,14 +3829,14 @@ public:
 		detectors.push(detector);
 		satisfied_detectors.push(false);
 	}
-	void acyclic(Var v,bool directed) {
+	Lit acyclic(Var v=var_Undef,bool directed=false) {
 		if (!cycle_detector) {
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));
 			addDetector(cycle_detector);
 		}
-		cycle_detector->addAcyclicLit(directed, v);
+		return toSolver(cycle_detector->addAcyclicLit(directed, v));
 	}
-	
+
 	void steinerTree(const vec<std::pair<int, Var> > & terminals, int steinerTreeID) {
 		steiner_detectors.growTo(steinerTreeID + 1);
 		assert(!steiner_detectors[steinerTreeID]);
@@ -3788,14 +3847,14 @@ public:
 			steiner_detectors[steinerTreeID]->addTerminalNode(terminals[i].first, terminals[i].second);
 		}
 	}
-	
+
 	void addSteinerWeightConstraint(int steinerTreeID, Weight weight, Var outerVar) {
 		if (steinerTreeID >= steiner_detectors.size()) {
 			throw std::runtime_error("invalid steinerTreeID");
 		}
 		steiner_detectors[steinerTreeID]->addWeightLit(weight, outerVar);
 	}
-	
+
 	/*	void inTerminalSet(int node, int terminalSet, Var outerVar){
 	 terminalSets.growTo(terminalSet+1);
 	 while(terminalSets[terminalSet].nodes()<node){
@@ -3809,7 +3868,7 @@ public:
 	 }*/
 
 	void printSolution() override {
-		
+
 		for (auto * d : detectors) {
 			assert(d);
 			d->printSolution();
@@ -3925,15 +3984,15 @@ public:
 		store_path.clear();
         solverLit = getCanonicalSolverLit(solverLit);
 
-		if(pathForwardMap.has(var(solverLit)) && pathForwardMap[var(solverLit)]!=var_Undef){
+		if(pathForwardMap.has(var(solverLit)) && pathForwardMap[var(solverLit)]!=lit_Undef){
 		    assert(pathBackMap.has(var(solverLit)));
             //if the forward node has an associated
-            Var v1 = pathForwardMap[var(solverLit)];
-            Var v2 = pathBackMap[var(solverLit)];
+            Lit l1 = pathForwardMap[var(solverLit)];
+            Lit l2 = pathBackMap[var(solverLit)];
 
             std::vector<int> store_backward;
-            bool r1 = getModel_Path(mkLit(v1),store_path);
-            bool r2 = getModel_Path(mkLit(v2),store_backward);
+            bool r1 = getModel_Path(l1,store_path);
+            bool r2 = getModel_Path(l2,store_backward);
             for(int i = store_backward.size()-2;i>=0;i--){
                 store_path.push_back(store_backward[i]);
             }
@@ -3974,15 +4033,15 @@ public:
 		store_path.clear();
          solverLit= getCanonicalSolverLit(solverLit);
 
-         if(pathForwardMap.has(var(solverLit)) && pathForwardMap[var(solverLit)]!=var_Undef){
+         if(pathForwardMap.has(var(solverLit)) && pathForwardMap[var(solverLit)]!=lit_Undef){
              assert(pathBackMap.has(var(solverLit)));
              //if the forward node has an associated
-             Var v1 = pathForwardMap[var(solverLit)];
-             Var v2 = pathBackMap[var(solverLit)];
+             Lit l1 = pathForwardMap[var(solverLit)];
+			 Lit l2 = pathBackMap[var(solverLit)];
 
              std::vector<Lit> store_backward;
-             bool r1 = getModel_PathByEdgeLit(mkLit(v1),store_path);
-             bool r2 = getModel_PathByEdgeLit(mkLit(v2),store_backward);
+             bool r1 = getModel_PathByEdgeLit(l1,store_path);
+             bool r2 = getModel_PathByEdgeLit(l2,store_backward);
              for(int i = store_backward.size()-1;i>=0;i--){
                  store_path.push_back(store_backward[i]);
              }

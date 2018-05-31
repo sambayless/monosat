@@ -107,13 +107,13 @@ static inline bool isWhitespace(const char in) {
 
 template<class B>
 static void skipWhitespace(B& in) {
-	while ((*in >= 9 && *in <= 13) || *in == 32)
+	while (!isEof(in) && ((*in >= 9 && *in <= 13) || *in == 32))
 		++in;
 }
 
 template<class B>
 static void skipWhitespaceNoNewLines(B& in) {
-	while ((*in == 9 || *in == 11 || *in == 12) || *in == 32)
+	while (!isEof(in) && ((*in == 9 || *in == 11 || *in == 12) || *in == 32))
 		++in;
 }
 

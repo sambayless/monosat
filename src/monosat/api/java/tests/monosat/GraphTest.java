@@ -143,6 +143,8 @@ public class GraphTest {
     }
     // the solver should still be useable after this
     assertTrue(s.solve(r));
+
+    assertSame(r, g.reaches(0, 3));
   }
 
   @Test
@@ -183,6 +185,8 @@ public class GraphTest {
     }
     // the solver should still be useable after this
     assertTrue(s.solve(r));
+
+    assertSame(r, g.reaches(0, 3));
   }
 
   @Test
@@ -230,6 +234,8 @@ public class GraphTest {
     assertFalse(e_1_3.value());
 
     assertTrue(s.solve(r));
+
+    assertSame(r, g.reaches(0, 3));
   }
 
   @Test
@@ -281,6 +287,9 @@ public class GraphTest {
     assertFalse(e_1_3.value());
 
     assertTrue(s.solve(r));
+
+    assertSame(r, g.reachesBackward(3, 0));
+    assertSame(r2, g.reachesBackward(0, 3));
   }
 
   @Test
@@ -334,6 +343,9 @@ public class GraphTest {
     ArrayList<Lit> edges2 = g.getPathEdges(r2);
     assert (nodes2.size() == nodes.size());
     assertTrue(s.solve(r));
+
+
+    assertSame(r, g.onPath(1, 0, 3));
   }
 
   @Test
@@ -367,6 +379,8 @@ public class GraphTest {
     assertFalse(s.solve(f, e_0_1.not(), e_2_3.not(), cmp.eq(1)));
     assertTrue(s.solve(f, e_0_2.not(), e_1_3.not()));
     assertTrue(s.solve(f));
+
+    assertSame(f,g.compareMaximumFlow(0, 3, Comparison.GEQ, cmp));
   }
 
   @Test
@@ -402,6 +416,9 @@ public class GraphTest {
     assertTrue(s.solve(f, e_0_2.not(), e_1_3.not()));
     assertFalse(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()));
     assertTrue(s.solve(f));
+
+
+    assertSame(f,g.compareMaximumFlow(0, 3, Comparison.GT, cmp));
   }
 
   @Test
@@ -440,6 +457,9 @@ public class GraphTest {
     assertTrue(s.solve(f, e_0_2.not(), e_1_3.not()));
     assertTrue(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()));
     assertTrue(s.solve(f));
+
+
+    assertSame(f,g.compareMaximumFlow(0, 3, Comparison.LEQ, cmp));
   }
 
   @Test
@@ -479,6 +499,8 @@ public class GraphTest {
     assertTrue(s.solve(f, e_0_2.not(), e_1_3.not()));
     assertTrue(s.solve(f, e_0_2.not(), e_1_3.not(), e_2_3.not()));
     assertTrue(s.solve(f));
+
+    assertSame(f,g.compareMaximumFlow(0, 3, Comparison.LT, cmp));
   }
 
   @Test
@@ -518,6 +540,8 @@ public class GraphTest {
     assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()));
+
+    //assertSame(flow,g.maximumFlow(0, 3));
   }
 
   @Test
@@ -557,6 +581,9 @@ public class GraphTest {
     assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()));
+
+
+   //assertSame(dist,g.distance(0, 3));
   }
 
   @Test
@@ -596,6 +623,8 @@ public class GraphTest {
     assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not()));
+
+    //assertSame(dist,g.distance(0, 3));
   }
 
   @Test
@@ -636,6 +665,8 @@ public class GraphTest {
     assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
+
+    assertSame(d,g.compareDistance(0, 3, Comparison.GEQ, dist));
   }
 
   @Test
@@ -676,6 +707,8 @@ public class GraphTest {
     assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
+
+    assertSame(d, g.compareDistance(0, 3, Comparison.GT, dist));
   }
 
   @Test
@@ -716,6 +749,8 @@ public class GraphTest {
     assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
+
+    assertSame(d,g.compareDistance(0, 3, Comparison.LT, dist));
   }
 
   @Test
@@ -756,6 +791,8 @@ public class GraphTest {
     assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
+
+    assertSame(d, g.compareDistance(0, 3, Comparison.LEQ, dist));
   }
 
   @Test
@@ -796,6 +833,8 @@ public class GraphTest {
     assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
+
+    assertSame(d, g.compareDistance(0, 3, Comparison.GEQ, dist));
   }
 
   @Test
@@ -836,6 +875,8 @@ public class GraphTest {
     assertTrue(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
+
+    assertSame(d, g.compareDistance(0, 3, Comparison.GT, dist));
   }
 
   @Test
@@ -876,6 +917,8 @@ public class GraphTest {
     assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
+
+    assertSame(d, g.compareDistance(0, 3, Comparison.LEQ, dist));
   }
 
   @Test
@@ -916,6 +959,8 @@ public class GraphTest {
     assertFalse(s.solve(e_0_1.not(), e_2_3.not()));
     assertTrue(s.solve(e_0_2.not(), e_1_3.not()));
     assertFalse(s.solve(e_0_2.not(), e_1_3.not(), e_2_3.not(), dist.eq(1)));
+
+    assertSame(d, g.compareDistance(0, 3, Comparison.LT, dist));
   }
 
   @Test
@@ -953,6 +998,8 @@ public class GraphTest {
     assertTrue(s.solve(r.not(), e_0_1, e_1_2, e_2_3, e_3_0));
     assertTrue(s.solve(r.not()));
     assertTrue(s.solve(r));
+
+    assertSame(r, g.acyclic());
   }
 
   @Test
@@ -993,6 +1040,8 @@ public class GraphTest {
     assertTrue(s.solve(r.not(), e_0_1, e_1_2, e_2_3, e_3_0));
     assertTrue(s.solve(r.not()));
     assertTrue(s.solve(r));
+
+    assertSame(r, g.acyclic(false));
   }
 
   @Test

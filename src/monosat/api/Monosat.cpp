@@ -1501,123 +1501,80 @@ int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,i
 }
 
 int reaches(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-
+	Lit l = G->reaches(from, to, var_Undef,-1);
 	write_out(S,"reach %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l));
-	G->reaches(from, to, v);
-
 	return toInt(l);
 }
 int reachesBackward(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-
+	Lit l = G->reachesBackward(from, to);
 	write_out(S,"reach_backward %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l));
-	G->reachesBackward(from, to, v);
-
 	return toInt(l);
 }
 int onPath(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int nodeOnPath,int from, int to){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	write_out(S,"on_path %d %d %d %d %d\n",G->getGraphID(),nodeOnPath,from,to, dimacs(l));
-	G->onPath(nodeOnPath,from, to, v);
 
+
+	Lit l = G->onPath(nodeOnPath,from, to);
+	write_out(S,"on_path %d %d %d %d %d\n",G->getGraphID(),nodeOnPath,from,to, dimacs(l));
 	return toInt(l);
 }
 int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
+	Lit l = G->reaches(from, to, var_Undef,steps-1);
 	write_out(S,"distance_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),steps);
-	G->reaches(from, to, v,steps-1);
-
 	return toInt(l);
 }
 int shortestPathUnweighted_lt_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
 int shortestPathUnweighted_leq_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
 
 int shortestPathUnweighted_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
-    Var v = newVar(S);
-    Lit l =mkLit(v);
-    write_out(S,"distance_bv_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
-    G->distanceBV(from,to, v, bvID,false);
-
+    Lit l = G->distanceBV(from,to, bvID,false);
+	write_out(S,"distance_bv_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
     return toInt(l);
 }
 int shortestPathUnweighted_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int steps){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
+	Lit l = G->reaches(from, to, var_Undef,steps);
 	write_out(S,"distance_leq %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),steps);
-	G->reaches(from, to, v,steps);
-
 	return toInt(l);
 }
 int shortestPath_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int64_t dist){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_lt %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),dist);
-	G->distance(from, to, v,dist, false);
-
+	Lit l = G->distance(from, to, dist, false);
+	write_out(S,"weighted_distance_lt %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),dist);
 	return toInt(l);
 }
 int shortestPath_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int64_t dist){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_leq %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),dist);
-	G->distance(from, to, v,dist, true);
-
+	Lit l = G->distance(from, to, dist, true);
+	write_out(S,"weighted_distance_leq %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(l),dist);
 	return toInt(l);
 }
 
-
-
 int shortestPath_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_bv_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
-	G->distanceBV(from,to, v, bvID,false);
-
+	Lit l = G->distanceBV(from,to, bvID,false);
+	write_out(S,"weighted_distance_bv_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
 	return toInt(l);
 }
 int shortestPath_leq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	  write_out(S,"weighted_distance_bv_leq %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
-	G->distanceBV(from,to, v, bvID,true);
-
+	Lit l = G->distanceBV(from,to, bvID,true);
+	write_out(S,"weighted_distance_bv_leq %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(l),bvID);
 	return toInt(l);
 }
 int maximumFlow_geq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	  write_out(S,"maximum_flow_geq %d %d %d %d %" PRId64 "\n",G->getGraphID(),source,sink, dimacs(l),weight);
-	G->maxflow(source, sink, v, weight,true);
-
+	Lit l = G->maxflow(source, sink, weight,true);
+	write_out(S,"maximum_flow_geq %d %d %d %d %" PRId64 "\n",G->getGraphID(),source,sink, dimacs(l),weight);
 	return toInt(l);
 }
 int maximumFlow_gt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int64_t weight){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	 write_out(S,"maximum_flow_gt %d %d %d %d %" PRId64 "\n",G->getGraphID(),source,sink, dimacs(l),weight);
-	G->maxflow(source, sink, v, weight,false);
-
+	Lit l = G->maxflow(source, sink, weight,false);
+	write_out(S,"maximum_flow_gt %d %d %d %d %" PRId64 "\n",G->getGraphID(),source,sink, dimacs(l),weight);
 	return toInt(l);
 }
 int maximumFlow_geq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	  write_out(S,"maximum_flow_bv_geq %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
-	G->maxflowBV(source, sink, v, bvID,true);
-
+	Lit l = G->maxflowBV(source, sink, bvID,true);
+	write_out(S,"maximum_flow_bv_geq %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
 	return toInt(l);
 }
 int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	  write_out(S,"maximum_flow_bv_gt %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
-	G->maxflowBV(source, sink, v, bvID,false);
 
+	Lit l = G->maxflowBV(source, sink, bvID,false);
+	write_out(S,"maximum_flow_bv_gt %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(l),bvID);
 	return toInt(l);
 }
 int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
@@ -1637,19 +1594,14 @@ int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<in
 	return toInt(l);
 }
 int acyclic_undirected(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
+	Lit l = G->acyclic(var_Undef,false);
 	write_out(S,"forest %d %d \n",G->getGraphID(), dimacs(l));
-	G->acyclic(v,false);
-
 	return toInt(l);
 }
 int acyclic_directed(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
-	Var v = newVar(S);
-	Lit l =mkLit(v);
-	write_out(S,"acyclic %d %d \n",G->getGraphID(), dimacs(l));
-	G->acyclic(v,true);
 
+	Lit l = G->acyclic(var_Undef,true);
+    write_out(S,"acyclic %d %d \n",G->getGraphID(), dimacs(l));
 	return toInt(l);
 }
 

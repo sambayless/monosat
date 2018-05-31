@@ -183,7 +183,7 @@ private:
 		//  ev = parseInt(in);//the variable of the first graph edge.
 		g = parseInt(in);  //id of the graph
 		skipWhitespace(in);
-		while (*in != '\n' && !isWhitespace(*in)) {
+		while (!isEof(in) && *in != '\n' && !isWhitespace(*in)) {
 			name <<(*in);
 			++in;
 		}
@@ -1293,42 +1293,38 @@ public:
 		}
 		edge_sets.clear();
 
-
-
-
-
 		for (auto & e: distances_int64_t){
-			graphs[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+			graphs[e.graphID]->distance(e.from, e.to, e.weight,!e.strict,e.var);
 		}
 		distances_int64_t.clear();
 		for (auto & e: distances_float){
-			graphs_float[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+			graphs_float[e.graphID]->distance(e.from, e.to, e.weight,!e.strict,e.var);
 		}
 		distances_float.clear();
 		for (auto & e: distances_rational){
-			graphs_rational[e.graphID]->distance(e.from, e.to, e.var, e.weight,!e.strict);
+			graphs_rational[e.graphID]->distance(e.from, e.to, e.weight,!e.strict,e.var);
 		}
 		distances_rational.clear();
 		for(auto & e:bvdistances){
-			graphs[e.graphID]->distanceBV(e.from, e.to, e.var, mapBV(S,e.bvID),!e.strict);
+			graphs[e.graphID]->distanceBV(e.from, e.to, mapBV(S,e.bvID),!e.strict,e.var);
 
 		}
 		bvdistances.clear();
 
 		for (auto & e: maxflows_int64_t){
-			graphs[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+			graphs[e.graphID]->maxflow(e.s, e.t, e.weight,!e.strict,e.var);
 		}
 		maxflows_int64_t.clear();
 		for (auto & e: maxflows_float){
-			graphs_float[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+			graphs_float[e.graphID]->maxflow(e.s, e.t, e.weight,!e.strict,e.var);
 		}
 		maxflows_float.clear();
 		for (auto & e: maxflows_rational){
-			graphs_rational[e.graphID]->maxflow(e.s, e.t, e.var, e.weight,!e.strict);
+			graphs_rational[e.graphID]->maxflow(e.s, e.t, e.weight,!e.strict,e.var);
 		}
 		maxflows_rational.clear();
 		for(auto & e:bvmaxflows){
-			graphs[e.graphID]->maxflowBV(e.s, e.t, e.var, mapBV(S,e.bvID),!e.strict);
+			graphs[e.graphID]->maxflowBV(e.s, e.t, mapBV(S,e.bvID),!e.strict,e.var);
 		}
 		bvmaxflows.clear();
 

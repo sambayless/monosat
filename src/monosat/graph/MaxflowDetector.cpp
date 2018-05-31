@@ -152,23 +152,24 @@ MaxflowDetector<Weight,Graph>::MaxflowDetector(int _detectorID, GraphTheorySolve
 
 
 template<typename Weight,typename Graph>
-void MaxflowDetector<Weight,Graph>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
+Lit MaxflowDetector<Weight,Graph>::addFlowLit(Weight maxflow, Var outer_reach_var, bool inclusive) {
 
     if(maxflow==0){
         //The max flow of a graph is _always_ at least 0.
         //so this literal is trivially true
-        outer->addClauseToSolver(mkLit(outer_reach_var));
-        return;
+        if(outer_reach_var!=var_Undef) {
+            outer->addClauseToSolver(mkLit(outer_reach_var));
+        }
+        return outer->True();
     }else {
         g_under.invalidate();
         g_over.invalidate();
-        Var reach_var = outer->newVar(outer_reach_var, getID());
+        Var flow_var = outer->newVar(outer_reach_var, getID());
         if (first_reach_var == var_Undef) {
-            first_reach_var = reach_var;
+            first_reach_var = flow_var;
         } else {
-            assert(reach_var > first_reach_var);
+            assert(flow_var > first_reach_var);
         }
-
 
         assert(maxflow >= 0);
 
@@ -179,24 +180,25 @@ void MaxflowDetector<Weight,Graph>::addFlowLit(Weight maxflow, Var outer_reach_v
         /*	while(outer->S->nVars()<=reach_var)
          outer->S->newVar();*/
 
-        Lit reachLit = mkLit(reach_var, false);
+        Lit flowLit = mkLit(flow_var, false);
         bool found = false;
 
 
         flow_lits.push();
-        flow_lits.last().l = reachLit;
+        flow_lits.last().l = flowLit;
         flow_lits.last().max_flow = maxflow;
         flow_lits.last().inclusive = inclusive;
-        while (reach_lit_map.size() <= reach_var - first_reach_var) {
+        while (reach_lit_map.size() <= flow_var - first_reach_var) {
             reach_lit_map.push(-1);
         }
 
-        reach_lit_map[reach_var - first_reach_var] = flow_lits.size() - 1;
+        reach_lit_map[flow_var - first_reach_var] = flow_lits.size() - 1;
+        return flowLit;
     }
 }
 
 template<typename Weight,typename Graph>
-void MaxflowDetector<Weight,Graph>::addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var outer_reach_var, bool inclusive) {
+Lit MaxflowDetector<Weight,Graph>::addMaxFlowGEQ_BV(const BitVector<Weight> &bv, Var outer_reach_var, bool inclusive) {
     g_under.invalidate();
     g_over.invalidate();
     Var reach_var = outer->newVar(outer_reach_var, getID());
@@ -206,11 +208,11 @@ void MaxflowDetector<Weight,Graph>::addMaxFlowGEQ_BV(const BitVector<Weight> &bv
         assert(reach_var > first_reach_var);
     }
     int bvID = bv.getID();
-    Lit reachLit = mkLit(reach_var, false);
+    Lit flowLit = mkLit(reach_var, false);
     bool found = false;
 
     flow_lits.push();
-    flow_lits.last().l = reachLit;
+    flow_lits.last().l = flowLit;
     flow_lits.last().bv = bv;
     flow_lits.last().max_flow = -1;
     flow_lits.last().inclusive=inclusive;
@@ -228,6 +230,7 @@ void MaxflowDetector<Weight,Graph>::addMaxFlowGEQ_BV(const BitVector<Weight> &bv
         FlowOp *flowOp = new FlowOp(*bvTheory, this,bvID);
         flow_lits.last().op=flowOp;
     }
+    return flowLit;
 }
 
 

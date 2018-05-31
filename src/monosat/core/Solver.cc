@@ -602,8 +602,11 @@ void Solver::cancelUntil(int lev) {
 }
 
 void Solver::backtrackUntil(int lev) {
-	if (S->trail.size() < super_qhead)
-		super_qhead = S->trail.size();
+	if(S) {
+		if (S->trail.size() < super_qhead)
+			super_qhead = S->trail.size();
+	}
+	cancelUntil(0);
 }
 
 //=================================================================================================

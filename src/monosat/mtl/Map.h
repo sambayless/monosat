@@ -22,13 +22,22 @@
 
 #include "monosat/mtl/IntTypes.h"
 #include "monosat/mtl/Vec.h"
-
+#include <tuple>
+#include <string>
+#include <functional>
+#include <gmpxx.h>
 namespace Monosat {
 
 //=================================================================================================
 // Default hash/equals functions
 //
-
+static inline uint32_t hash(bool x) {
+	return (uint32_t)x;
+}
+static inline uint32_t hash(double x) {
+	uint32_t* p = reinterpret_cast<uint32_t*>(&x);
+	return *p;
+}
 static inline uint32_t hash(uint32_t x) {
 	return x;
 }
@@ -41,6 +50,57 @@ static inline uint32_t hash(int32_t x) {
 static inline uint32_t hash(int64_t x) {
 	return (uint32_t) x;
 }
+
+static inline uint32_t hash(std::string x) {
+	std::hash<std::string> h;
+	return (uint32_t) h(x);
+}
+static inline uint32_t hash(mpq_class x) {
+	return hash(x.get_str());
+}
+
+namespace {
+
+// Code from boost
+// Reciprocal of the golden ratio helps spread entropy
+//     and handles duplicates.
+// See Mike Seymour in magic-numbers-in-boosthash-combine:
+//     https://stackoverflow.com/questions/4948780
+//https://stackoverflow.com/a/21439212
+template <class T>
+inline uint32_t hash_combine(uint32_t seed, T const& v)
+{
+	return ((uint32_t)hash(v)) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+}
+// Recursive template code derived from Matthieu M.
+//https://stackoverflow.com/a/21439212
+template<class Tuple, size_t Index = std::tuple_size<Tuple>::value - 1>
+struct HashValueImpl {
+	static uint32_t apply(size_t seed, Tuple const &tuple) {
+		HashValueImpl<Tuple, Index - 1>::apply(seed, tuple);
+		return hash_combine(seed, std::get<Index>(tuple));
+	}
+};
+
+template<class Tuple>
+struct HashValueImpl<Tuple, 0> {
+	static uint32_t apply(uint32_t seed, Tuple const &tuple) {
+		return hash_combine(seed, std::get<0>(tuple));
+	}
+};
+}
+
+
+static inline uint32_t hash(std::pair<int32_t,int32_t> x) {
+	//return ((uint32_t) x.first) ^ (31 + (uint32_t)x.second);
+	return hash_combine((uint32_t)x.first,x.second);
+}
+
+template <typename ... TT>
+inline uint32_t  hash	(std::tuple<TT...> const& tt){
+	uint32_t seed = 0;
+	return HashValueImpl<std::tuple<TT...> >::apply(seed, tt);
+};
 
 template<class K> struct Hash {
 	uint32_t operator()(const K& k) const {
