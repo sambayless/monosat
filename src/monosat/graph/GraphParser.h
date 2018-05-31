@@ -184,7 +184,7 @@ private:
 		g = parseInt(in);  //id of the graph
 		skipWhitespace(in);
 		while (!isEof(in) && *in != '\n' && !isWhitespace(*in)) {
-			name <<(*in);
+			name <<((char)*in);
 			++in;
 		}
 		graphs.growTo(g + 1);

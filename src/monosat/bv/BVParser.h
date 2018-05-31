@@ -48,8 +48,8 @@ class BVParser: public Parser<B, Solver> {
 public:
 	BVTheorySolver<int64_t>* theory=nullptr;
 private:
-	vec<std::pair<int, std::string> >  symbols;
-	std::string symbol;
+	std::vector<std::pair<int, std::string> >  symbols;
+	std::stringstream ss;
 
 	struct BV{
 		int id=-1;
@@ -316,13 +316,13 @@ private:
 		skipWhitespace(in);
 		Var v = parseInt(in);
 		v= mapVar(S,v);
-		symbol.clear();
+		ss.str(std::string());
 		skipWhitespace(in);
-		while (*in != '\n' && !isWhitespace(*in)) {
-			symbol.push_back(*in);
+		while (!isEof(in) && *in != '\n' && !isWhitespace(*in)) {
+			ss<< ((char)*in);
 			++in;
 		}
-		if (symbol.size() == 0) {
+		if (ss.str().size() == 0) {
 			parse_errorf("Empty symbol: %c\n", *in);
 		}
 		/*   		if(symbols && used_symbols.count(symbol)){
@@ -330,9 +330,7 @@ private:
 		 }
 		 used_symbols.insert(symbol);*/
 
-		symbols.push();
-		symbols.last().first = v;
-		symbols.last().second = symbol;
+		symbols.push_back({v,ss.str()});
 	}
 
 	void readBitblast(B& in, Solver& S){
@@ -744,11 +742,11 @@ public:
 			for (int i = 0; i < symbols.size(); i++) {
 				symbols[i].first = mapBV(S,symbols[i].first);
 				int bvID = symbols[i].first;
-				std::string & s = symbols[i].second;
+
 				if (theory->hasBV(bvID)){
-					theory->setSymbol(bvID, s.c_str());
+					theory->setSymbol(bvID, symbols[i].second);
 				}else{
-					fprintf(stderr,"Unmatched bv symbol definition for %d : %s\n",bvID,s.c_str());
+					fprintf(stderr,"Unmatched bv symbol definition for %d : %s\n",bvID,symbols[i].second.c_str());
 				}
 			}
 			symbols.clear();

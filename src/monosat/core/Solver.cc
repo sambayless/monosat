@@ -3334,6 +3334,9 @@ void Solver::garbageCollect() {
 }
 
 void Solver::setVariableName(Var v, const std::string & name){
+	if(v<0 || v>=nVars()){
+		throw std::invalid_argument("No such variable");
+	}
 	assert(v>=0);
 	assert(v<nVars());
 	if(name.size()>0){

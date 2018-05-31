@@ -34,6 +34,7 @@
 #include <stdexcept>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <cstdarg>
 #include "monosat/core/Remap.h"
 namespace Monosat {
@@ -117,8 +118,8 @@ public:
 template<class B, class Solver>
 class SymbolParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
-	vec<std::pair<int, std::string> >  symbols;
-	std::string symbol;
+	//std::vector<std::pair<int, std::string> >  symbols;
+	std::stringstream ss;
 public:
 	SymbolParser():Parser<B, Solver>("Symbol"){
 
@@ -140,13 +141,18 @@ public:
 
 				v--; //subtract one to get the variable id
 				v = mapVar(S,v);
-				symbol.clear();
+				ss.str(std::string());
 				skipWhitespace(in);
-				while (*in != '\n' && !isWhitespace(*in)) {
+			/*	while (*in != '\n' && !isWhitespace(*in)) {
 					symbol.push_back(*in);
 					++in;
+				}*/
+				while (!isEof(in) && *in != '\n' && !isWhitespace(*in)) {
+					ss<<((char)*in);
+					++in;
 				}
-				if (symbol.size() == 0) {
+
+				if (ss.str().size() == 0) {
 					parse_errorf("Empty symbol: %c\n", *in);
 				}
 				/*   		if(symbols && used_symbols.count(symbol)){
@@ -154,11 +160,9 @@ public:
 				 }
 				 used_symbols.insert(symbol);*/
 
-				symbols.push();
-				symbols.last().first = v;
-				symbols.last().second = symbol;
+				//symbols.push_back({v,ss.str()});
 
-				S.setVariableName(v,symbol);
+				S.setVariableName(v,ss.str());
 
 				return true;
 			} else {
@@ -169,21 +173,9 @@ public:
 		return false;
 	}
 	void implementConstraints(Solver & S){
-		//clear any unmapped symbols (have to do this _before_ implementing constraints, which may introduce new variables)
-		int i, j = 0;
-		for (i = 0; i < symbols.size(); i++) {
-			std::pair<int, std::string> p = symbols[i];
-			Var v = p.first;
-			if (v <= S.nVars()) {
-				//keep this symbol
-				symbols[j++] = symbols[i];
-			}
-		}
-		symbols.shrink(i - j);
+
 	}
-	vec<std::pair<int, std::string> > &  getSymbols(){
-		return symbols;
-	}
+
 };
 
 

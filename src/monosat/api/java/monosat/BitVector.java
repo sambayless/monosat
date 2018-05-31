@@ -68,7 +68,7 @@ public final class BitVector {
    * literals.size().
    *
    * @param solver The solver that this bitvector will belong to.
-   * @param literals A non-empty set of at most 64 literals that will back this bitvector, in LSB
+   * @param literals A non-empty set of at most 63 literals that will back this bitvector, in LSB
    *     order: literals.get(0) will represent the 1-bit of the bitvector, literals.get(1) the
    *     2-bit, etc.
    */
@@ -81,7 +81,7 @@ public final class BitVector {
      * literals.size().
      *
      * @param solver The solver that this bitvector will belong to.
-     * @param literals A non-empty set of at most 64 literals that will back this bitvector, in LSB
+     * @param literals A non-empty set of at most 63 literals that will back this bitvector, in LSB
      *     order: literals.get(0) will represent the 1-bit of the bitvector, literals.get(1) the
      *     2-bit, etc.
      * @param name An (optional) name for the bitvector. Must be unique, and may not contain spaces or non-printable
@@ -93,8 +93,8 @@ public final class BitVector {
         width = literals.size();
         if (width <= 0) {
             throw new IllegalArgumentException("BitVector must have a bit-width >= 0");
-        } else if (width > 64) {
-            throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
+        } else if (width > 63) {
+            throw new IllegalArgumentException("BitVector must have a bit-width <= 63");
         }
         id = MonosatJNI.newBitvector(
                         solver.solverPtr, solver.bvPtr, solver.getLitBuffer(literals), literals.size());
@@ -113,16 +113,16 @@ public final class BitVector {
    *
    * @param solver The solver that this bitvector will belong to.
    * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
-   *     64.
+   *     63.
    * @param constant A non-negative constant value that this BitVector will represent. constant must
    *     be >=0, and < 1<<width.
    */
   public BitVector(Solver solver, int width, long constant) {
     this.solver = solver;
     if (width <= 0) {
-      throw new IllegalArgumentException("BitVector must have a bit-width >= 0");
-    } else if (width > 64) {
-      throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
+      throw new IllegalArgumentException("BitVector must have a bit-width > 0");
+    } else if (width > 63) {
+      throw new IllegalArgumentException("BitVector must have a bit-width <= 63");
     }
     if (constant < 0) {
       throw new IllegalArgumentException("BitVectors can only represent values >=0");
@@ -153,7 +153,7 @@ public final class BitVector {
      *
      * @param solver The solver that this bitvector will belong to.
      * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
-     *     64.
+     *     63.
      * @param introduceLiterals If true (the default), create width number of new literals to
      *     represent the bitvector. If false, the no literals are introduced for this bitvector.
      */
@@ -167,7 +167,7 @@ public final class BitVector {
      *
      * @param solver The solver that this bitvector will belong to.
      * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
-     *     64.
+     *     63.
      * @param name An (optional) name for the bitvector. Must be unique, and may not contain spaces or
      *     non-printable * characters. May be the empty string (in which case the bitvector is
      *     unnamed).
@@ -182,7 +182,7 @@ public final class BitVector {
      *
      * @param solver The solver that this bitvector will belong to.
      * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
-     *     64.
+     *     63.
      */
     public BitVector(Solver solver, int width) {
         this(solver, width,"", true);
@@ -195,7 +195,7 @@ public final class BitVector {
    *
    * @param solver The solver that this bitvector will belong to.
    * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
-   *     64.
+   *     63.
    * @param name An (optional) name for the bitvector. Must be unique, and may not contain spaces or
    *     non-printable * characters. May be the empty string (in which case the bitvector is
    *     unnamed).
@@ -204,10 +204,10 @@ public final class BitVector {
    */
   public BitVector(Solver solver, int width, String name, boolean introduceLiterals) {
     this.solver = solver;
-    if (width < 0) {
-      throw new IllegalArgumentException("BitVector width must be >=0");
-    } else if (width > 64) {
-      throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
+    if (width <= 0) {
+      throw new IllegalArgumentException("BitVector width must be >0");
+    } else if (width > 63) {
+      throw new IllegalArgumentException("BitVector must have a bit-width <= 63");
     }
     this.width = width;
     if (!introduceLiterals) {

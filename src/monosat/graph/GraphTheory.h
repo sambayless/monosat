@@ -3651,7 +3651,7 @@ public:
 
 	Lit reaches(int from, int to, Var reach_var=var_Undef, int within_steps = -1) {
 		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,within_steps,false);
-		if(existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
+		if(reach_var==var_Undef && existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
 			return existing_reach_constraints[constraint_set];
 		}
 		if (reach_var==var_Undef){
@@ -3665,7 +3665,7 @@ public:
 
 	Lit reachesBackward(int from, int to, Var reach_var=var_Undef, int within_steps = -1) {
 		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,within_steps,true);
-		if(existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
+		if(reach_var==var_Undef && existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
 			return existing_reach_constraints[constraint_set];
 		}
 		if (reach_var==var_Undef){
@@ -3683,7 +3683,7 @@ public:
 		;
 
 		std::tuple<int,int,int> constraint_set = std::make_tuple(from,to,nodeOnPath);
-		if(existing_on_path_constraints.has(constraint_set) && existing_on_path_constraints[constraint_set] !=lit_Undef ){
+		if(on_path_var==var_Undef && existing_on_path_constraints.has(constraint_set) && existing_on_path_constraints[constraint_set] !=lit_Undef ){
 			return existing_on_path_constraints[constraint_set];
 		}
 		if (on_path_var==var_Undef){
@@ -3714,7 +3714,7 @@ public:
     }
 	Lit distance(int from, int to, Weight distance_lt,bool inclusive,Var reach_var = var_Undef) {
 		std::tuple<int,int,Weight,bool> constraint_set = std::make_tuple(from,to,distance_lt,inclusive);
-		if(existing_distance_constraints.has(constraint_set) && existing_distance_constraints[constraint_set] !=lit_Undef ){
+		if(reach_var==var_Undef && existing_distance_constraints.has(constraint_set) && existing_distance_constraints[constraint_set] !=lit_Undef ){
 			return existing_distance_constraints[constraint_set];
 		}
 		if (reach_var==var_Undef){
@@ -3728,7 +3728,7 @@ public:
 
 	Lit distanceBV(int from, int to, int bvID, bool inclusive, Var reach_var=var_Undef) {
         std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,bvID,inclusive);
-        if(existing_distance_bv_constraints.has(constraint_set) && existing_distance_bv_constraints[constraint_set] !=lit_Undef ){
+        if(reach_var==var_Undef && existing_distance_bv_constraints.has(constraint_set) && existing_distance_bv_constraints[constraint_set] !=lit_Undef ){
             return existing_distance_bv_constraints[constraint_set];
         }
         if (reach_var==var_Undef){
@@ -3742,7 +3742,7 @@ public:
 	}
 	Lit maxflowBV(int s, int t, int bvID, bool inclusive, Var reach_var=var_Undef) {
         std::tuple<int,int,int,bool> constraint_set = std::make_tuple(s,t,bvID,inclusive);
-        if(existing_maxflow_bv_constraints.has(constraint_set) && existing_maxflow_bv_constraints[constraint_set] !=lit_Undef ){
+        if(reach_var==var_Undef && existing_maxflow_bv_constraints.has(constraint_set) && existing_maxflow_bv_constraints[constraint_set] !=lit_Undef ){
             return existing_maxflow_bv_constraints[constraint_set];
         }
         if (reach_var==var_Undef){

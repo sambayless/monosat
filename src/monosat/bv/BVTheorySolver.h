@@ -4686,7 +4686,7 @@ public:
 	CRef bvprop_marker;
 	CRef popcount_marker;
 	Lit const_true=lit_Undef;
-	vec<const char*> symbols;
+	std::vector<std::string> symbols;
 	std::map<std::string,int> symbol_map;
 	vec<Assignment> trail;
 	vec<int> trail_lim;
@@ -7474,27 +7474,33 @@ public:
 		requiresPropagation=true;
 		return getBV(resultID);
 	}
-	void setSymbol(int bvID, const char* symbol){
+	void setSymbol(int bvID, const std::string & symbol){
 	    if(bvID<0 || bvID>=symbols.size()){
-	        throw std::runtime_error("No such bitvector");
+			throw std::invalid_argument("No such bitvector");
 	    }
-	    if (symbols[bvID]!=nullptr){
-            throw std::runtime_error("Redefined bitvector symbol");
+	    if (symbols[bvID].size()>0){
+			throw std::invalid_argument("Redefined bitvector symbol");
 	    }
 
-		if (symbol!=nullptr && strlen(symbol)>0){
+		if (symbol.size()>0){
+
+	    	if (symbol_map.count(symbol)>0){
+				throw std::invalid_argument("All bitvector names must be unique");
+	    	}
+
             symbols[bvID]=symbol;
-            symbol_map.insert({std::string(symbol),bvID});
+            symbol_map.insert({symbol,bvID});
 		}else{
-
+	    	//do nothing
 	    }
 	}
 
-	const char * getSymbol(int bvID){
-		if(bvID>=0 && bvID<symbols.size() && symbols[bvID]!=nullptr) {
+	const std::string & getSymbol(int bvID){
+		static std::string empty("");
+		if(bvID>=0 && bvID<symbols.size()) {
 			return symbols[bvID];
 		}else{
-			return "";
+			return empty;
 		}
 	}
 
@@ -7562,7 +7568,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		symbols.growTo(bvID+1,nullptr);
+		symbols.resize(bvID+1,std::string());
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -7811,7 +7817,7 @@ public:
 
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		symbols.growTo(bvID+1,nullptr);
+		symbols.resize(bvID+1,std::string());
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -7875,7 +7881,7 @@ public:
 
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		symbols.growTo(bvID+1,nullptr);
+		symbols.resize(bvID+1,std::string());
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);

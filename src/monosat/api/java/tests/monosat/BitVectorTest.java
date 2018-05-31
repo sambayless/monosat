@@ -403,12 +403,12 @@ public class BitVectorTest {
     BitVector bv0 = new BitVector(s, 1);
     assertEquals(bv0.width(),1);
 
-    BitVector bv1 = new BitVector(s, 64);
-    assertEquals(bv1.width(),64);
+    BitVector bv1 = new BitVector(s, 63);
+    assertEquals(bv1.width(),63);
 
     try {
-      new BitVector(s, 65,"MyBitvector");
-      fail("Maximum BV size is 64");
+      new BitVector(s, 64,"MyBitvector");
+      fail("Maximum BV size is 63");
     } catch (IllegalArgumentException except) {
       // ok
     }
@@ -479,10 +479,11 @@ public class BitVectorTest {
   public void testLoadingBV() throws IOException {
     File file = File.createTempFile("test", ".gnf");
     String filename = file.getAbsolutePath().toString();
+    System.out.println(filename);
     file.delete();
 
     {
-      monosat.Solver s = new monosat.Solver();
+      monosat.Solver s = new monosat.Solver("", filename);
       BitVector bv0 = new BitVector(s, 4);
       BitVector bv1 = new BitVector(s, 4,"");
       BitVector bv2 = new BitVector(s, 4,"");

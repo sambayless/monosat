@@ -1117,11 +1117,12 @@ int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 void setBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, const char * name){
 	if(name != nullptr && strlen(name)>0) {
 		bv->setSymbol(bvID, name);
+		write_out(S, "bv symbol %d %s\n", bvID, name);
 	}
 }
 
 const char * getBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
-	return bv->getSymbol(bvID);
+	return bv->getSymbol(bvID).c_str();
 }
 
 /*
