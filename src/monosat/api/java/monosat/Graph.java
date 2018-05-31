@@ -107,6 +107,8 @@ public final class Graph {
    */
   private final ArrayList<ArrayList<Lit>> all_node_edge_lits = new ArrayList<>();
 
+  private final String _name;
+
   /**
    * Instantiate a graph in solver. This graph can have unweighted edges, or constant (long)
    * weighted edges. To create a graph with variable (BitVector) weighted edges @see #Graph(Solver,
@@ -115,9 +117,20 @@ public final class Graph {
    * @param solver The solver instance in which to create this graph.
    */
   public Graph(Solver solver) {
-    this.solver = solver;
-    graphPtr = MonosatJNI.newGraph(solver.solverPtr);
-    this.bitwidth = -1;
+    this(solver, "");
+  }
+
+  /**
+   * Instantiate a graph in solver. This graph can have unweighted edges, or constant (long)
+   * weighted edges. To create a graph with variable (BitVector) weighted edges @see #Graph(Solver,
+   * int).
+   *
+   * @param solver The solver instance in which to create this graph.
+   * @param name A name for the graph. If empty, the graph will be unnamed. Otherwise, the name must
+   *     be unique.
+   */
+  public Graph(Solver solver, String name) {
+    this(solver,-1,name,false);
   }
 
   /**
@@ -128,10 +141,76 @@ public final class Graph {
    * @param solver The solver instance in which to create this graph.
    */
   public Graph(Solver solver, int bitwidth) {
+    this(solver, bitwidth, "");
+  }
+
+  /**
+   * Instantiate a graph in solver, with BitVector weighted edges. Each edge in this graph must be
+   * weighted by a BitVector of width 'bitwidth'. To create a graph with unweighted or constant
+   * weighted edges @see #Graph(Solver).
+   *
+   * @param solver The solver instance in which to create this graph.
+   * @param name A name for the graph. If empty, the graph will be unnamed. Otherwise, the name must
+   *     be unique.
+   */
+  public Graph(Solver solver, int bitwidth, String name) {
+    this(solver,bitwidth,name,true);
+  }
+
+
+  /**
+   * Instantiate a graph in solver, with either weighted or unweighted edges. Each edge in this
+   *
+   * @param solver The solver instance in which to create this graph.
+   * @param bitwidth The width of the bitvectors on the edges, or -1 if weighted edges are not used.
+   * @param name A name for the graph. If empty, the graph will be unnamed. Otherwise, the name must
+   *     be unique.
+   * @weighted_edges Whether or not to use weighted edges.
+   */
+  private Graph(Solver solver, int bitwidth, String name, boolean weighted_edges) {
     this.solver = solver;
-    graphPtr = MonosatJNI.newGraph(solver.solverPtr);
-    assert (bitwidth >= 0);
+
     this.bitwidth = bitwidth;
+
+    if(weighted_edges){
+      if (bitwidth <= 0) {
+        throw new IllegalArgumentException(
+                "Graphs may either have unweighted edges, or have bit-vector weighted "
+                        + "edges with bit-width >= 0");
+      } else if (bitwidth > 64) {
+        throw new IllegalArgumentException("Graphs may either have unweighted edges, or have bit-vector weighted "
+                + "edges with bit-width <= 64");
+      }
+    }else{
+      assert(bitwidth==-1);
+    }
+
+    if (name != null && !name.isEmpty()) {
+      if (name == "True") {
+        throw new IllegalArgumentException("Only the built-in True literal may be named \"True\"");
+      } else if (name == "False") {
+        throw new IllegalArgumentException(
+            "Only the built-in False literal may be named \"False\"");
+      }
+
+      this._name = name;
+      /*
+      Check that the string contains only printable ascii characters
+       */
+      if (name.chars()
+          .allMatch(c -> (c < 128 && !Character.isISOControl(c) && !Character.isWhitespace(c)))) {
+        graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr,name);
+      } else {
+        throw new IllegalArgumentException(
+            "Literal names are restricted to printable ASCII characeters, and "
+                + "may not include whitespace or newlines: \""
+                + name
+                + "\" is not a valid name.");
+      }
+    } else {
+      this._name = "";
+      graphPtr = MonosatJNI.newGraph(solver.solverPtr);
+    }
   }
 
   /**
@@ -141,6 +220,10 @@ public final class Graph {
    */
   public Solver getSolver() {
     return solver;
+  }
+
+  public String name() {
+    return _name;
   }
 
   /**

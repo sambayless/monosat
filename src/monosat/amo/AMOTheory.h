@@ -57,7 +57,9 @@ public:
 	bool needs_propagation=false;
 	bool clausified = false;
 public:
-
+    const char * getTheoryType()override{
+		return "AMO";
+	}
 	AMOTheory(Solver * S) :
 			S(S) {
 		S->addTheory(this);

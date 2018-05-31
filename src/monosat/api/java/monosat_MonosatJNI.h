@@ -761,6 +761,22 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    newGraph_Named
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph_1Named
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getGraph
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getGraph
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    newNode
  * Signature: (JJ)I
  */

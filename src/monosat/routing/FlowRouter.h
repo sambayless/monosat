@@ -91,7 +91,9 @@ private:
     //UnweightedRamalReps<Weight> * reach=nullptr;
 public:
     FlowRouter(Solver * S,GraphTheorySolver<Weight> * g,int sourceNode,int destNode,Lit maxflowLit);
-
+    const char * getTheoryType()override{
+        return "FlowRouter";
+    }
     int getRouterID(){
         return routerID;
     }

@@ -29,6 +29,7 @@
 #include "monosat/core/SolverTypes.h"
 #include "monosat/core/Heuristic.h"
 #include <ostream>
+#include <string>
 namespace Monosat {
 /**
  * Abstract interface to SMT theory solvers, as accessed by the SAT solver
@@ -83,8 +84,12 @@ public:
 	virtual bool supportsLazyBacktracking(){
 		return false;
 	}
-
-
+	//Not all theories have a name; if they do not, they can just return the empty string.
+	virtual const std::string & getName(){
+		static const std::string empty("");
+		return empty;
+	}
+	virtual const char * getTheoryType()=0;
 
 protected:
 	virtual void buildReason(Lit p, vec<Lit> & reason){

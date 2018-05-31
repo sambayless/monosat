@@ -332,6 +332,19 @@ final class MonosatJNI { // package level access specifier
   // theory interface for graphs
   public static native long newGraph(long solverPtr);
 
+  public static native long newGraph_Named(long solverPtr, String name);
+
+  /**
+   * Get a pointer to a graph with this name, that is already defined in the solver (or return 0, if
+   * there is no such graph)
+   *
+   * @param solverPtr
+   * @param name
+   * @return a pointer to a graph with this name, that is already defined in the solver (or return
+   *     0, if there is no such * graph)
+   */
+  public static native long getGraph(long solverPtr, String name);
+
   public static native int newNode(long solverPtr, long graphPtr);
 
   public static native int newEdge(

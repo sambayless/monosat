@@ -4831,7 +4831,9 @@ public:
 	int64_t propagations = -1;
 	int64_t stats_propagations_skipped = 0;
 	int64_t statis_bv_updates = 0;
-
+	const char * getTheoryType()override{
+		return "BV";
+	}
 	BVTheorySolver(TheorySolver * S ) :
 			S(S){
 		rnd_seed = drand(S->getRandomSeed());

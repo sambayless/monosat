@@ -134,6 +134,9 @@ public:
 	}
 	//Theory interface
 	void addTheory(Theory*t) override {
+		if(t->getName().size()>0) {
+			theorymap.insert({t->getName(), t});
+		}
 		satisfied_theory_trail_pos.push(-1);
 		post_satisfied_theory_trail_pos.push(-1);
 		theories.push(t);
@@ -411,7 +414,19 @@ public:
 		//the next call to propagate, and initialPropagate is being used to force that.
 
 	}
+	void setTheoryName(int theory, const std::string & name) {
 
+	}
+	const char * getTheoryType()override{
+		return "Solver";
+	}
+	Theory * getTheory(const std::string & name){
+		if(theorymap.count(name)>0){
+			return theorymap[name];
+		}else{
+			return nullptr;
+		}
+	}
 	void remapTheoryVar(Var solverVar, Var newTheoryVar) {
 		assert(hasTheory(solverVar));
 		theory_vars[solverVar].theory_var = newTheoryVar;
@@ -698,6 +713,9 @@ public:
     std::map<int,std::string> varnames;  //Optional names associated with each variable
 	std::map<std::string, int> namemap; //variable name lookup map
     static const std::string empty_name;
+
+
+	std::map<std::string,Theory*> theorymap;
 	// Mode of operation:
 	//
 	bool printed_header = false;
@@ -1192,6 +1210,9 @@ private:
 		Solver & S;
 		int theoryID=0;
 	public:
+		const char * getTheoryType()override{
+			return "DecisionTheory";
+		}
 		SolverDecisionTheory(Solver & S):S(S){
 
 		}

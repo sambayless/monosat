@@ -250,9 +250,14 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   void assertPB_gt(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
   //Convert any pb constraints in the solver into cnf (will be called automatically before solve())
   void flushPB(SolverPtr S);
-//theory interface for graphs
+  //theory interface for graphs
 
   GraphTheorySolver_long newGraph(SolverPtr S);
+  //Create a new graph with the given name (or an unamed graph, if name is null or empty).
+  //If name is non-null and not empty, then it must be unique.
+  GraphTheorySolver_long newGraph_Named(SolverPtr S, const char * name);
+  //If there exists a graph in the solver with the given name, return a pointer to it.
+  GraphTheorySolver_long getGraph(SolverPtr S, const char * name);
 
   int newNode(SolverPtr S,GraphTheorySolver_long G);
   int newEdge(SolverPtr S, GraphTheorySolver_long G,int from,int  to,  Weight weight);

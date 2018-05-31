@@ -769,16 +769,39 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 }
 
 Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
-	MonosatData * d = (MonosatData*) S->_external_data;
-	Monosat::GraphTheorySolver<int64_t> *graph = new Monosat::GraphTheorySolver<int64_t>(S);
-
-	d->graphs.push(graph);
-	if( d->bv_theory){
-		graph->setBVTheory(d->bv_theory);
-	}
-	write_out(S,"digraph 0 0 %d\n",graph->getTheoryIndex() );
-	return graph;
+	return newGraph_Named(S,"");
 }
+
+Monosat::GraphTheorySolver<int64_t> *  newGraph_Named(Monosat::SimpSolver * S, const char * _name){
+    MonosatData * d = (MonosatData*) S->_external_data;
+    std::string name = (_name==nullptr)?std::string(""):std::string(_name);
+    Monosat::GraphTheorySolver<int64_t> *graph = new Monosat::GraphTheorySolver<int64_t>(S,name);
+
+    d->graphs.push(graph);
+    if( d->bv_theory){
+        graph->setBVTheory(d->bv_theory);
+    }
+    if (name.size()>0){
+        write_out(S,"digraph 0 0 %d %s\n",graph->getTheoryIndex(),name.c_str());
+    }else{
+        write_out(S,"digraph 0 0 %d\n",graph->getTheoryIndex());
+    }
+    return graph;
+}
+
+Monosat::GraphTheorySolver<int64_t> *  getGraph(Monosat::SimpSolver * S, const char * _name){
+	std::string name = (_name==nullptr)?std::string(""):std::string(_name);
+	if(name.size()==0){
+		return nullptr;
+	}
+	Theory * theory = S->getTheory(name);
+	if(theory==nullptr){
+		return nullptr;
+	}
+	assert(theory->getName()==name);
+	return dynamic_cast<Monosat::GraphTheorySolver<int64_t>*>(theory);
+}
+
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
 }

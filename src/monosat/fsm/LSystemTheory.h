@@ -73,7 +73,9 @@ private:
 
 public:
 	int id;
-
+    const char * getTheoryType()override{
+		return "LSystem";
+	}
 	vec<lbool> assigns;
 
 	int n_in_alphabet=0;

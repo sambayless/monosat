@@ -52,7 +52,9 @@ private:
 	Solver * S;
 public:
 	int id;
-
+    const char * getTheoryType()override{
+		return "Geometry";
+	}
 	vec<lbool> assigns;
 
 	std::vector<PointSet<D, T> > under_sets;
@@ -150,7 +152,7 @@ public:
 		}
 	}
 
-	void printStats(int detailLevel) {
+	void printStats(int detailLevel) override {
 		if (detailLevel > 0) {
 			for (GeometryDetector * d : detectors)
 				d->printStats();
@@ -179,10 +181,10 @@ public:
 	inline int nPointSets() const {
 		return under_sets.size();
 	}
-	inline int getTheoryIndex()const {
+	inline int getTheoryIndex()const override{
 		return theory_index;
 	}
-	inline void setTheoryIndex(int id) {
+	inline void setTheoryIndex(int id) override{
 		theory_index = id;
 	}
 	inline int getGraphID() {
@@ -402,7 +404,7 @@ public:
 #endif
 	}
 
-	void backtrackUntil(int level) {
+	void backtrackUntil(int level) override{
 		static int it = 0;
 
 		bool changed = false;
@@ -446,10 +448,10 @@ public:
 		assert(dbg_graphsUpToDate());
 	}
 	;
-	virtual bool supportsDecisions() {
+	bool supportsDecisions() override{
 		return true;
 	}
-	Lit decideTheory(CRef & decision_reason) {
+	Lit decideTheory(CRef & decision_reason) override{
 		decision_reason=CRef_Undef;
 		if (!opt_decide_theories)
 			return lit_Undef;
@@ -515,12 +517,12 @@ public:
 	}
 	;
 
-	void newDecisionLevel() {
+	void newDecisionLevel() override{
 		trail_lim.push(trail.size());
 	}
 	;
 
-	void buildReason(Lit p, vec<Lit> & reason) {
+	void buildReason(Lit p, vec<Lit> & reason) override{
 		CRef marker = S->reason(var(toSolver(p)));
 		assert(marker != CRef_Undef);
 		int pos = CRef_Undef - marker;
@@ -574,12 +576,12 @@ public:
 	 return point_num;
 	 }*/
 
-	void preprocess() {
+	void preprocess() override{
 		for (int i = 0; i < detectors.size(); i++) {
 			detectors[i]->preprocess();
 		}
 	}
-	void setLiteralOccurs(Lit l, bool occurs) {
+	void setLiteralOccurs(Lit l, bool occurs) override {
 		if (isPointVar(var(l))) {
 			//don't do anything
 		} else {
@@ -591,12 +593,12 @@ public:
 		}
 
 	}
-	void printSolution() {
+	void printSolution() override {
 		for (GeometryDetector* d : detectors) {
 			d->printSolution();
 		}
 	}
-	void enqueueTheory(Lit l) {
+	void enqueueTheory(Lit l) override {
 		Var v = var(l);
 		assert(S->value(toSolver(l))==l_True);
 		int lev = level(v);
@@ -669,7 +671,7 @@ public:
 
 	}
 	;
-	bool propagateTheory(vec<Lit> & conflict) {
+	bool propagateTheory(vec<Lit> & conflict) override {
 		static int itp = 0;
 		++itp;
 		/*if(	++itp>=955880){
@@ -780,7 +782,7 @@ public:
 	}
 	;
 
-	bool solveTheory(vec<Lit> & conflict) {
+	bool solveTheory(vec<Lit> & conflict) override {
 
 		for (int i = 0; i < nPointSets(); i++) {
 			//Just to be on the safe side, force all detectors to propagate... this shouldn't really be required.
@@ -800,7 +802,7 @@ public:
 
 	}
 
-	bool check_solved() {
+	bool check_solved() override{
 		dbg_full_sync();
 		for (int i = 0; i < vars.size(); i++) {
 			if (value(i) != dbg_value(i)) {

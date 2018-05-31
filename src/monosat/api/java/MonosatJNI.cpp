@@ -128,7 +128,6 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
     return env->NewStringUTF("Error"); //unreachable
 }
 
-
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableName
         (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
@@ -966,6 +965,30 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     return reinterpret_cast<jlong>(newGraph(solver));
 }catch(...) { 
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph_1Named
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    jlong g = reinterpret_cast<jlong>(newGraph_Named(solver,str));
+    env->ReleaseStringUTFChars(name, str);
+    return g;
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getGraph
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    jlong g = reinterpret_cast<jlong>(getGraph(solver,str));
+    env->ReleaseStringUTFChars(name, str);
+    return g;
+}catch(...) {
     javaThrow(env);
     return 0;
 }

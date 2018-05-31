@@ -78,6 +78,7 @@ public:
 
 private:
     Solver * S;
+    const std::string name;
 	int local_q = 0;
 	bool lazy_backtracking_enabled=false;
 	vec<Theory*> propagation_required_theories;
@@ -713,8 +714,14 @@ public:
     vec<Theory*> & getTheories() override {
         return theories;
     }
-	GraphTheorySolver(Solver * S_) :
-			S(S_), cutStatus(*this), propCutStatus(*this),g_under_back(g_under),g_over_back(g_over),
+	const std::string & getName()override{
+		return name;
+	}
+	const char * getTheoryType()override{
+		return "Graph";
+	}
+	GraphTheorySolver(Solver * S_,const std::string & name = "") :
+			S(S_),name(name), cutStatus(*this), propCutStatus(*this),g_under_back(g_under),g_over_back(g_over),
 	g_under_weights_over_back(g_under_weights_over),g_over_weights_under_back(g_over_weights_under),
 	cutGraph_back(cutGraph){
 

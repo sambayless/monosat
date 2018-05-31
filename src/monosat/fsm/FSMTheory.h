@@ -81,7 +81,9 @@ private:
 
 public:
 	int id;
-
+	const char * getTheoryType()override{
+		return "FSM";
+	}
 	vec<lbool> assigns;
 
 	vec<int> n_in_alphabets;//number of transition labels. Transition labels start from 0 (which is the non-consuming epsilon transition) and go to n_labels-1.

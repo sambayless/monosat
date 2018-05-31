@@ -38,6 +38,7 @@
 #include <sstream>
 #include <cstdarg>
 #include <cstdio>
+
 namespace Monosat {
 
 struct SteinerStruct {
@@ -174,31 +175,35 @@ private:
 				graph_type = GraphType::FLOAT;
 			}
 		}
-		
+		std::stringstream name;
 		int g, n, e, ev;
 		
 		n = parseInt(in); //num nodes
 		e = parseInt(in); //num edges (I'm ignoring this currently)
 		//  ev = parseInt(in);//the variable of the first graph edge.
 		g = parseInt(in);  //id of the graph
+		skipWhitespace(in);
+		while (*in != '\n' && !isWhitespace(*in)) {
+			name <<(*in);
+			++in;
+		}
 		graphs.growTo(g + 1);
 		graphs_float.growTo(g + 1);
 		graphs_rational.growTo(g + 1);
 		if (graph_type == GraphType::INTEGER) {
-			GraphTheorySolver<int64_t> *graph = new GraphTheorySolver<int64_t>(&S);
+			GraphTheorySolver<int64_t> *graph = new GraphTheorySolver<int64_t>(&S,name.str());
 			graph->newNodes(n);
 			graphs[g] = graph;
 
 		} else if (graph_type == GraphType::FLOAT) {
-			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S);
+			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S,name.str());
 			graph->newNodes(n);
 			graphs_float[g] = graph;
 
 		} else if (graph_type == GraphType::RATIONAL) {
-			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S);
+			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S,name.str());
 			graph->newNodes(n);
 			graphs_rational[g] = graph;
-
 		}
 		//  return ev;
 	}

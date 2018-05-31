@@ -135,6 +135,9 @@ private:
 
 	 return v;
 	 }*/
+    const char * getTheoryType()override{
+		return "PB";
+	}
 	Var newVar(Var solverVar, int clauseID, int weight, bool sign, bool isRHS = false) {
 		while (S->nVars() <= solverVar)
 			S->newVar();
