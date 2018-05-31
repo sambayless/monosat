@@ -441,11 +441,51 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
 
 /*
  * Class:     monosat_MonosatJNI
- * Method:    bv_width
+ * Method:    setBitvectorName
+ * Signature: (JJILjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setBitvectorName
+  (JNIEnv *, jclass, jlong, jlong, jint, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getBitvectorName
+ * Signature: (JJI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getBitvectorName
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getBitvectorWidth
  * Signature: (JJI)I
  */
-JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_bv_1width
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorWidth
   (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    nBitvectorBits
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectorBits
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getBitvector
+ * Signature: (JJLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvector
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getBitvectorBit
+ * Signature: (JJII)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorBit
+  (JNIEnv *, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI

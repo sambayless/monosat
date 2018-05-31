@@ -213,7 +213,17 @@ final class MonosatJNI { // package level access specifier
 
   public static native int newBitvector(long solverPtr, long bvPtr, IntBuffer bits, int n_bits);
 
-  public static native int bv_width(long solverPtr, long bvPtr, int bvID);
+  public static native void setBitvectorName(long solverPtr, long bvPtr, int bvID, String name);
+
+  public static native String getBitvectorName(long solverPtr, long bvPtr, int bvID);
+
+  public static native int getBitvectorWidth(long solverPtr, long bvPtr, int bvID);
+  //Number of defined literals in the BV, which may be 0 or the bitvector width
+  public static native int nBitvectorBits(long solverPtr, long bvPtr, int bvID);
+
+  public static native int getBitvector(long solverPtr, long bvPtr, String name);
+
+  public static native int getBitvectorBit(long solverPtr, long bvPtr, int bvID, int bit);
 
   public static native int newBVComparison_const_lt(
       long solverPtr, long bvPtr, int bvID, long constVal);

@@ -61,6 +61,7 @@ public final class BitVector {
   private final int width;
   private final Solver solver;
   private final ArrayList<Lit> bits = new ArrayList<Lit>();
+  private final String _name;
 
   /**
    * Creates a new BitVector using the given literals. The width of the bitvector will equal
@@ -72,18 +73,37 @@ public final class BitVector {
    *     2-bit, etc.
    */
   public BitVector(Solver solver, ArrayList<Lit> literals) {
-    this.solver = solver;
-    width = literals.size();
-    if (width <= 0) {
-      throw new IllegalArgumentException("BitVector must have a bit-width >= 0");
-    } else if (width > 64) {
-      throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
-    }
-    id =
-        MonosatJNI.newBitvector(
-            solver.solverPtr, solver.bvPtr, solver.getLitBuffer(literals), literals.size());
-    bits.addAll(literals);
-    solver.registerBitVector(this);
+    this(solver,literals,"");
+  }
+
+    /**
+     * Creates a new BitVector using the given literals. The width of the bitvector will equal
+     * literals.size().
+     *
+     * @param solver The solver that this bitvector will belong to.
+     * @param literals A non-empty set of at most 64 literals that will back this bitvector, in LSB
+     *     order: literals.get(0) will represent the 1-bit of the bitvector, literals.get(1) the
+     *     2-bit, etc.
+     * @param name An (optional) name for the bitvector. Must be unique, and may not contain spaces or non-printable
+     *             characters. May be the empty string (in which case the bitvector is unnamed).
+     *
+     */
+  public BitVector(Solver solver, ArrayList<Lit> literals, String name) {
+        this.solver = solver;
+        width = literals.size();
+        if (width <= 0) {
+            throw new IllegalArgumentException("BitVector must have a bit-width >= 0");
+        } else if (width > 64) {
+            throw new IllegalArgumentException("BitVector must have a bit-width <= 64");
+        }
+        id = MonosatJNI.newBitvector(
+                        solver.solverPtr, solver.bvPtr, solver.getLitBuffer(literals), literals.size());
+        bits.addAll(literals);
+        solver.registerBitVector(this);
+      this._name = name;
+      if (name.length() > 0) {
+          MonosatJNI.setBitvectorName(solver.solverPtr, solver.bvPtr,id, MonosatJNI.validID(name));
+      }
   }
 
   /**
@@ -112,27 +132,77 @@ public final class BitVector {
     }
     id = MonosatJNI.newBitvector_const(solver.solverPtr, solver.bvPtr, width, constant);
     this.width = width;
-    for (int i = 0; i < width; i++) {
+    for (int i = 0; i < MonosatJNI.nBitvectorBits(solver.solverPtr,solver.bvPtr,id); i++) {
+          int l = MonosatJNI.getBitvectorBit(solver.solverPtr,solver.bvPtr,id, i);
+          bits.add(solver.getLiteral(l));
+    }
+ /*   for (int i = 0; i < width; i++) {
       if ((constant & (1 << i)) == 1) {
         bits.add(Lit.True);
       } else {
         bits.add(Lit.False);
       }
-    }
+    }*/
+    this._name = "";
     solver.registerBitVector(this);
   }
 
-  /**
+    /**
+     * Creates a new BitVector of the specified width. If introduceLiterals is true, then introduces
+     * width literals, else creates a bitvector that has no literals associated with it.
+     *
+     * @param solver The solver that this bitvector will belong to.
+     * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
+     *     64.
+     * @param introduceLiterals If true (the default), create width number of new literals to
+     *     represent the bitvector. If false, the no literals are introduced for this bitvector.
+     */
+    public BitVector(Solver solver, int width,  boolean introduceLiterals) {
+      this(solver,width,"",introduceLiterals);
+    }
+
+    /**
+     * Creates a new BitVector of the specified width. If introduceLiterals is true, then introduces
+     * width literals, else creates a bitvector that has no literals associated with it.
+     *
+     * @param solver The solver that this bitvector will belong to.
+     * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
+     *     64.
+     * @param name An (optional) name for the bitvector. Must be unique, and may not contain spaces or
+     *     non-printable * characters. May be the empty string (in which case the bitvector is
+     *     unnamed).
+     */
+    public BitVector(Solver solver, int width,  String name) {
+        this(solver,width,name,true);
+    }
+
+    /**
+     * Creates a new BitVector of the specified width. If introduceLiterals is true, then introduces
+     * width literals, else creates a bitvector that has no literals associated with it.
+     *
+     * @param solver The solver that this bitvector will belong to.
+     * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
+     *     64.
+     */
+    public BitVector(Solver solver, int width) {
+        this(solver, width,"", true);
+    }
+
+
+    /**
    * Creates a new BitVector of the specified width. If introduceLiterals is true, then introduces
    * width literals, else creates a bitvector that has no literals associated with it.
    *
    * @param solver The solver that this bitvector will belong to.
    * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
    *     64.
+   * @param name An (optional) name for the bitvector. Must be unique, and may not contain spaces or
+   *     non-printable * characters. May be the empty string (in which case the bitvector is
+   *     unnamed).
    * @param introduceLiterals If true (the default), create width number of new literals to
    *     represent the bitvector. If false, the no literals are introduced for this bitvector.
    */
-  public BitVector(Solver solver, int width, boolean introduceLiterals) {
+  public BitVector(Solver solver, int width, String name, boolean introduceLiterals) {
     this.solver = solver;
     if (width < 0) {
       throw new IllegalArgumentException("BitVector width must be >=0");
@@ -146,16 +216,39 @@ public final class BitVector {
       for (int i = 0; i < width; i++) {
         bits.add(new Lit(solver));
       }
-      id =
-          MonosatJNI.newBitvector(
+      id = MonosatJNI.newBitvector(
               solver.solverPtr, solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size());
+    }
+    assert(id>=0);
+    this._name = name;
+    if (name.length() > 0) {
+      MonosatJNI.setBitvectorName(solver.solverPtr, solver.bvPtr,id, MonosatJNI.validID(name));
     }
     solver.registerBitVector(this);
   }
 
-  public BitVector(Solver solver, int width) {
-    this(solver, width, true);
-  }
+    /**
+     * Private constructor; create a Bitvector object to represent an already existing bitvector in the solver.
+     * Creates a new BitVector of the specified width. If introduceLiterals is true, then introduces
+     * width literals, else creates a bitvector that has no literals associated with it.
+     *
+     * @param solver The solver that this bitvector will belong to.
+     * @param ignore This parameter exists only to distinguish this constructor from the publicly available ones.
+     *               Ignore it.
+     * @param bvID The ID of the bitvector in the solver
+     */
+    protected BitVector(Solver solver, Solver ignore, int bvID) {
+        this.solver = solver;
+        this.id = bvID;
+        this.width = MonosatJNI.getBitvectorWidth(solver.solverPtr,solver.bvPtr,bvID);
+        for (int i = 0; i < MonosatJNI.nBitvectorBits(solver.solverPtr,solver.bvPtr,bvID); i++) {
+            int l = MonosatJNI.getBitvectorBit(solver.solverPtr,solver.bvPtr,bvID, i);
+            bits.add(solver.getLiteral(l));
+        }
+        _name = MonosatJNI.getBitvectorName(solver.solverPtr, solver.bvPtr,id);
+        solver.registerBitVector(this);
+    }
+
 
   @Override
   public boolean equals(Object o) {
@@ -701,5 +794,18 @@ public final class BitVector {
    */
   public long value() {
     return this.value(false);
+  }
+
+  public String name(){
+      return this._name;
+  }
+
+  public String toString(){
+      if(this._name.length()>0){
+          return _name + " (BV " + id + ", width" + width() + ")";
+      }else{
+          return "BV " + id + ", width" + width();
+      }
+
   }
 }

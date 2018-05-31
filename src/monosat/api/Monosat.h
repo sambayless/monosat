@@ -201,7 +201,16 @@ typedef int64_t Weight;
   int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, Weight constval);
   int newBitvector_anon(SolverPtr S, BVTheoryPtr bv, int bvWidth);
   int newBitvector(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits);
+
+  void setBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID, const char * name);
+  const char * getBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID);
+  int getBitvector(SolverPtr S, BVTheoryPtr bv, const char * name);
+
   int bv_width(SolverPtr S, BVTheoryPtr  bv,int bvID);
+  int bv_nBits(SolverPtr S, BVTheoryPtr  bv,int bvID);
+  int bv_bit(SolverPtr S, BVTheoryPtr  bv,int bvID, int bit);
+
+
   int newBVComparison_const_lt(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
   int newBVComparison_bv_lt(SolverPtr S, BVTheoryPtr bv, int bvID, int compareID);
   int newBVComparison_const_leq(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
@@ -269,7 +278,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int newEdge_bv(SolverPtr S, GraphTheorySolver_long G,int from,int  to, int bvID);
   int nNodes(SolverPtr S,GraphTheorySolver_long G);
   int nEdges(SolverPtr S,GraphTheorySolver_long G);
-  
+
 
   int reaches(SolverPtr S,GraphTheorySolver_long G,int from, int to);
   int reachesBackward(SolverPtr S,GraphTheorySolver_long G,int from, int to);

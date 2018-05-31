@@ -547,7 +547,29 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
 }
 
 
-JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_bv_1width
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setBitvectorName
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    setBitvectorName(solver,bv,bvID,str);
+    env->ReleaseStringUTFChars(name, str);
+
+}catch(...) {
+    javaThrow(env);
+}
+
+JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getBitvectorName
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return  env->NewStringUTF(getBitvectorName(solver,bv,bvID));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorWidth
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
@@ -555,6 +577,39 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_bv_1width
 }catch(...) { 
     javaThrow(env);
     return 0;
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectorBits
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return bv_nBits(solver, bv, bvID);
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorBit
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, jint bit) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return bv_bit(solver, bv, bvID, bit);
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvector
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr,jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    int bvID = getBitvector(solver,bv,str);
+    env->ReleaseStringUTFChars(name, str);
+    return jint(bvID);
+}catch(...) {
+    javaThrow(env);
+    return -1;
 }
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1eq

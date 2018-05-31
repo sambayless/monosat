@@ -1113,9 +1113,47 @@ int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 	write_out(S,"\n");
 	return bvID;
 }
+
+void setBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, const char * name){
+	if(name != nullptr && strlen(name)>0) {
+		bv->setSymbol(bvID, name);
+	}
+}
+
+const char * getBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
+	return bv->getSymbol(bvID);
+}
+
+/*
+ * The width of the bitvector.
+ */
 int bv_width(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int bvID){
 	return bv->getWidth(bvID);
 }
+/*
+ * The number of defined literals making up the bits of this bitvector.
+ * May be equal to the width of the bitvector, or exactly 0.
+ */
+int bv_nBits(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int bvID){
+	return bv->getBits(bvID).size();
+}
+
+/*
+ * Retrieve the nth bit of this bitvector.
+ * Note: 'bit' must  be less than the number of bits in the bitvector.
+ * Some bitvectors have 0 defined bits, even if they have non-zero width.
+ */
+int bv_bit(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int bvID, int bit){
+	if(bit<0|| bit>=bv_nBits(S,bv,bvID)){
+		throw std::runtime_error("BV bit out of range");
+	}
+	return toInt(bv->toSolver(bv->getBits(bvID)[bit]));
+}
+
+int getBitvector(SolverPtr S, BVTheoryPtr bv, const char * name){
+    return bv->getBitvector(name);
+}
+
 int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
@@ -1511,8 +1549,6 @@ int reachesBackward(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> 
 	return toInt(l);
 }
 int onPath(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int nodeOnPath,int from, int to){
-
-
 	Lit l = G->onPath(nodeOnPath,from, to);
 	write_out(S,"on_path %d %d %d %d %d\n",G->getGraphID(),nodeOnPath,from,to, dimacs(l));
 	return toInt(l);

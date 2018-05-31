@@ -43,7 +43,7 @@
 #include <iostream>
 #include <exception>
 #include "monosat/api/Circuit.h"
-
+#include <map>
 namespace Monosat {
 template<typename Weight>
 class BVTheorySolver;
@@ -4687,7 +4687,7 @@ public:
 	CRef popcount_marker;
 	Lit const_true=lit_Undef;
 	vec<const char*> symbols;
-
+	std::map<std::string,int> symbol_map;
 	vec<Assignment> trail;
 	vec<int> trail_lim;
 
@@ -7475,12 +7475,41 @@ public:
 		return getBV(resultID);
 	}
 	void setSymbol(int bvID, const char* symbol){
-		symbols[bvID]=symbol;
+	    if(bvID<0 || bvID>=symbols.size()){
+	        throw std::runtime_error("No such bitvector");
+	    }
+	    if (symbols[bvID]!=nullptr){
+            throw std::runtime_error("Redefined bitvector symbol");
+	    }
+
+		if (symbol!=nullptr && strlen(symbol)>0){
+            symbols[bvID]=symbol;
+            symbol_map.insert({std::string(symbol),bvID});
+		}else{
+
+	    }
 	}
 
 	const char * getSymbol(int bvID){
-		return symbols[bvID];
+		if(bvID>=0 && bvID<symbols.size() && symbols[bvID]!=nullptr) {
+			return symbols[bvID];
+		}else{
+			return "";
+		}
 	}
+
+	int getBitvector(const std::string & name){
+        if(symbol_map.count(name)>0){
+            int bvID = symbol_map[name];
+            if(bvID<0){
+                throw std::runtime_error("No such bitvector");
+            }
+            return bvID;
+        }else{
+            throw std::runtime_error("No such bitvector");
+        }
+	}
+
 	int nBitvectors()const{
 		return bitvectors.size();
 	}
