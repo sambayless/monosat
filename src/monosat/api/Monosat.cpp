@@ -802,6 +802,14 @@ Monosat::GraphTheorySolver<int64_t> *  getGraph(Monosat::SimpSolver * S, const c
 	return dynamic_cast<Monosat::GraphTheorySolver<int64_t>*>(theory);
 }
 
+const char * getGraphName(SolverPtr S, GraphTheorySolver_long G){
+	return G->getName().c_str();
+}
+
+int getGraphWidth(SolverPtr S, GraphTheorySolver_long G){
+	return G->getEdgeWeightBitWidth();
+}
+
 void backtrack(Monosat::SimpSolver * S){
 	S->cancelUntil(0);
 }
@@ -1448,8 +1456,19 @@ void assertPB_gt(Monosat::SimpSolver * S, int _rhs, int n_args, int * literals, 
 //theory interface for graphs
 
 int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
-	return G->newNode();
+	return newNode_Named(S,G,"");
 }
+int newNode_Named(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, const char * name){
+	int n = G->newNode();
+	if(name != nullptr && strlen(name)>0) {
+		G->setNodeName(n, name);
+	}
+	return n;
+}
+const char * getNodeName(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int node){
+	return G->getNodeName(node);
+}
+
 int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to,  int64_t weight){
 	Var v = newVar(S);
 	Lit l =mkLit(v);

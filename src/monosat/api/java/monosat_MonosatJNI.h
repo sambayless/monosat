@@ -769,6 +769,22 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph_1Named
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    getGraphName
+ * Signature: (JJ)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getGraphName
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getGraphWidth
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getGraphWidth
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    getGraph
  * Signature: (JLjava/lang/String;)J
  */
@@ -782,6 +798,22 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getGraph
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
   (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    newNode_Named
+ * Signature: (JJLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode_1Named
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getNodeName
+ * Signature: (JJI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getNodeName
+  (JNIEnv *, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI

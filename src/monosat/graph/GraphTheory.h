@@ -145,6 +145,7 @@ private:
 	DynamicBackGraph<Weight> g_over_weights_under_back;
     VMap<Var> pathForwardMap;
     VMap<Var> pathBackMap;
+    std::vector<std::string> node_names;
 
 	/**
 	 * The cutgraph is (optionally) used for conflict analysis by some graph theories.
@@ -1071,7 +1072,7 @@ public:
 		S->disableElimination(toSolver(v));
 	}
 	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar) override {
-
+        S->backtrackUntil(0);
 
 		Var v = vars.size();
 
@@ -1093,7 +1094,8 @@ public:
 		return v;
 	}
 	Var newVar(Var solverVar, int detector, bool isEdge = false, bool connectToTheory = true) {
-		while (S->nVars() <= solverVar)
+		S->backtrackUntil(0);
+	    while (S->nVars() <= solverVar)
 			S->newVar();
 
 		if(S->hasTheory(solverVar) &&  S->getTheoryID(solverVar)==getTheoryIndex()){
@@ -1350,7 +1352,6 @@ public:
 		g_under_weights_over.addNode();
 		g_over_weights_under.addNode();
 		seen.growTo(nNodes());
-		
 		return g_under.addNode();
 	}
 	void newNodes(int n) {
@@ -3031,7 +3032,6 @@ public:
 		if(edge_bv_weights.size()>0){
 			return edge_bv_weights[0].width();
 		}else{
-			assert(false);
 			return -1;
 		}
 	}

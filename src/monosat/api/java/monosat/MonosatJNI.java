@@ -347,7 +347,8 @@ final class MonosatJNI { // package level access specifier
   public static native long getGraph(long solverPtr, String name);
 
   public static native int newNode(long solverPtr, long graphPtr);
-
+  public static native int newNode_Named(long solverPtr, long graphPtr, String name);
+  public static native String getNodeName(long solverPtr, long graphPtr, int node);
   public static native int newEdge(
       long solverPtr, long graphPtr, int from, int to, long constweight);
 
@@ -643,6 +644,26 @@ final class MonosatJNI { // package level access specifier
       System.out.println("Loaded MonoSAT: " + version);
     } catch (Exception e) {
       e.printStackTrace();
+    }
+  }
+
+  /**
+   * Check whether a string is a valid monosat ID.
+   * If not, throw an exception; if it is, return that string.
+   * @param name The string to check
+   * @return str, unaltered.
+   * @throws IllegalArgumentException If the string contains illegal characters
+   */
+  protected static String validID(String name){
+    if (name.chars()
+            .allMatch(c -> (c < 128 && !Character.isISOControl(c) && !Character.isWhitespace(c)))) {
+       return name;
+    } else {
+      throw new IllegalArgumentException(
+              "IDs are restricted to printable ASCII characeters, and "
+                      + "may not include whitespace or newlines: \""
+                      + name
+                      + "\" is not a valid name.");
     }
   }
 }

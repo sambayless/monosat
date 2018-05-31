@@ -993,6 +993,35 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getGraph
     return 0;
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getGraphWidth
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jlong graphPtr) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return getGraphWidth(solver,graph);
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getGraphName
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jlong graphPtr) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return  env->NewStringUTF(getGraphName(solver,graph));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getNodeName
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jlong graphPtr,int nodeID) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return  env->NewStringUTF(getNodeName(solver,graph,nodeID));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr) try {
@@ -1004,6 +1033,18 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
     return 0;
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode_1Named
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr,jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    jint n = jint(newNode_Named(solver, graph,str));
+    env->ReleaseStringUTFChars(name, str);
+    return n;
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jlong weight) try {

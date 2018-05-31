@@ -130,7 +130,7 @@ public final class Graph {
    *     be unique.
    */
   public Graph(Solver solver, String name) {
-    this(solver,-1,name,false);
+    this(solver, -1, name, false);
   }
 
   /**
@@ -154,22 +154,25 @@ public final class Graph {
    *     be unique.
    */
   public Graph(Solver solver, int bitwidth, String name) {
-    this(solver,bitwidth,name,true);
+    this(solver, bitwidth, name, true);
   }
 
   /**
-   * For internal use only. Instantiate a graph from an existing graph pointer in the solver.
+   * For internal use only. Reconstruct a graph from an existing graph pointer in the solver.
+   *
    * @param solver
    * @param graphPtr
    */
   protected Graph(Solver solver, long graphPtr) {
     this.solver = solver;
     this.graphPtr = graphPtr;
-    this._name = MonosatJNI.getGraphName(solver.solverPtr,graphPtr);
-    solver.allGraphs.put(graphPtr,this);
+    this._name = MonosatJNI.getGraphName(solver.solverPtr, graphPtr);
+    solver.allGraphs.put(graphPtr, this);
 
-    this.bitwidth = MonosatJNI.getGraphWidth(solver.solverPtr,graphPtr);
-
+    this.bitwidth = MonosatJNI.getGraphWidth(solver.solverPtr, graphPtr);
+    for (int n = 0; n < nNodes(); n++) {
+      addNode(MonosatJNI.getNodeName(solver.solverPtr, graphPtr, n), n);
+    }
   }
 
   /**
@@ -186,17 +189,18 @@ public final class Graph {
 
     this.bitwidth = bitwidth;
 
-    if(weighted_edges){
+    if (weighted_edges) {
       if (bitwidth <= 0) {
         throw new IllegalArgumentException(
-                "Graphs may either have unweighted edges, or have bit-vector weighted "
-                        + "edges with bit-width >= 0");
+            "Graphs may either have unweighted edges, or have bit-vector weighted "
+                + "edges with bit-width >= 0");
       } else if (bitwidth > 64) {
-        throw new IllegalArgumentException("Graphs may either have unweighted edges, or have bit-vector weighted "
+        throw new IllegalArgumentException(
+            "Graphs may either have unweighted edges, or have bit-vector weighted "
                 + "edges with bit-width <= 64");
       }
-    }else{
-      assert(bitwidth==-1);
+    } else {
+      assert (bitwidth == -1);
     }
 
     if (name != null && !name.isEmpty()) {
@@ -211,20 +215,14 @@ public final class Graph {
       /*
       Check that the string contains only printable ascii characters
        */
-      if (name.chars()
-          .allMatch(c -> (c < 128 && !Character.isISOControl(c) && !Character.isWhitespace(c)))) {
-        graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr,name);
-      } else {
-        throw new IllegalArgumentException(
-            "Graph names are restricted to printable ASCII characeters, and "
-                + "may not include whitespace or newlines: \""
-                + name + "\" is not a valid name.");
-      }
+
+      graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr, MonosatJNI.validID(name));
+
     } else {
       this._name = "";
       graphPtr = MonosatJNI.newGraph(solver.solverPtr);
     }
-    solver.allGraphs.put(graphPtr,this);
+    solver.allGraphs.put(graphPtr, this);
   }
 
   /**
@@ -283,28 +281,42 @@ public final class Graph {
    * @return A new node, represented by an integer.
    */
   public int addNode(String name) {
-    if (nodeMap.containsKey(name)) {
+    return addNode(name, -1);
+  }
+
+  /**
+   * Create a new node, with the given name.
+   *
+   * @param nodeID If the node already exists in the solver, specify its ID here. Otherwise, specify
+   *     -1.
+   * @return A new node, represented by an integer.
+   */
+  private int addNode(String name, int nodeID) {
+    if (name.length() > 0 && nodeMap.containsKey(name)) {
       throw new RuntimeException("Node names must be unique");
     }
-    int n = MonosatJNI.newNode(solver.solverPtr, graphPtr);
-    while (adjacencyList.size() <= n) {
+
+    if (nodeID < 0) {
+      nodeID = MonosatJNI.newNode_Named(solver.solverPtr, graphPtr, MonosatJNI.validID(name));
+    }
+    while (adjacencyList.size() <= nodeID) {
       adjacencyList.add(null);
     }
-    assert (adjacencyList.get(n) == null);
-    adjacencyList.set(
-        n,
-        new TreeMap<
-            Integer, LinkedList<Edge>>()); // Consider hash map or ArrayList here, depending on
+    assert (adjacencyList.get(nodeID) == null);
+    // Consider hash map or ArrayList here, depending on
+    adjacencyList.set(nodeID, new TreeMap<Integer, LinkedList<Edge>>());
     // density of graph...
-    nodes.add(n);
-    nodeMap.put(name, n);
-    nodeNames.add(name);
-    while (all_in_edge_lits.size() <= n) {
+    nodes.add(nodeID);
+    if (name.length() > 0) {
+      nodeMap.put(name, nodeID);
+      nodeNames.add(name);
+    }
+    while (all_in_edge_lits.size() <= nodeID) {
       all_in_edge_lits.add(new ArrayList<>());
       all_out_edge_lits.add(new ArrayList<>());
       all_node_edge_lits.add(new ArrayList<>());
     }
-    return n;
+    return nodeID;
   }
 
   /**
@@ -641,6 +653,7 @@ public final class Graph {
       return l;
     }
   }
+
 
   /**
    * Add a new directed edge to the graph, from node 'from' to node 'to', with a BitVector edge

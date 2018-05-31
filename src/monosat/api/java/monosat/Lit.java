@@ -201,19 +201,7 @@ public final class Lit {
       }
 
       this._name = name;
-      /*
-      Check that the string contains only printable ascii characters
-       */
-      if (name.chars()
-          .allMatch(c -> (c < 128 && !Character.isISOControl(c) && !Character.isWhitespace(c)))) {
-        monosat.MonosatJNI.setVariableName(solver.solverPtr, toVar(), name);
-      } else {
-        throw new IllegalArgumentException(
-            "Literal names are restricted to printable ASCII characeters, and "
-                + "may not include whitespace or newlines: \""
-                + name
-                + "\" is not a valid name.");
-      }
+      monosat.MonosatJNI.setVariableName(solver.solverPtr, toVar(), MonosatJNI.validID(name));
     } else {
       this._name = "";
     }

@@ -259,12 +259,18 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   //If there exists a graph in the solver with the given name, return a pointer to it.
   GraphTheorySolver_long getGraph(SolverPtr S, const char * name);
 
+  const char * getGraphName(SolverPtr S, GraphTheorySolver_long G);
+  int getGraphWidth(SolverPtr S, GraphTheorySolver_long G);
   int newNode(SolverPtr S,GraphTheorySolver_long G);
+  int newNode_Named(SolverPtr S,GraphTheorySolver_long G,  const char * name);
+  const char * getNodeName(SolverPtr S, GraphTheorySolver_long G, int nodeID);
   int newEdge(SolverPtr S, GraphTheorySolver_long G,int from,int  to,  Weight weight);
   int newEdge_double(SolverPtr S, GraphTheorySolver_double G,int from,int  to,  double weight);
   int newEdge_bv(SolverPtr S, GraphTheorySolver_long G,int from,int  to, int bvID);
   int nNodes(SolverPtr S,GraphTheorySolver_long G);
   int nEdges(SolverPtr S,GraphTheorySolver_long G);
+  
+
   int reaches(SolverPtr S,GraphTheorySolver_long G,int from, int to);
   int reachesBackward(SolverPtr S,GraphTheorySolver_long G,int from, int to);
   int onPath(SolverPtr S,GraphTheorySolver_long G,int nodeOnPath,int from, int to);
