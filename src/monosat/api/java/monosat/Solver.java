@@ -76,18 +76,17 @@ public final class Solver implements Closeable {
    */
   private final LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
 
-    /**
-     * Each unique bitvector, stored by bvID.
-     */
+  /** Each unique bitvector, stored by bvID. */
   private final ArrayList<BitVector> bvmap = new ArrayList<>();
-   /**
-   Contains all unique BitVectors in this solver. No two bitvectors in this list have the same bvID.
+  /**
+   * Contains all unique BitVectors in this solver. No two bitvectors in this list have the same
+   * bvID.
    */
   private final ArrayList<BitVector> allBVs = new ArrayList<>();
 
-
-  //Map from native pointers to graph objects, to avoid re-instantiating the same graph multiple times
-  protected final HashMap<Long,Graph> allGraphs = new HashMap<Long,Graph>();
+  // Map from native pointers to graph objects, to avoid re-instantiating the same graph multiple
+  // times
+  protected final HashMap<Long, Graph> allGraphs = new HashMap<Long, Graph>();
 
   /**
    * Handle to the underlying monosat solver instance. This is really a pointer, masquerading as a
@@ -1015,12 +1014,12 @@ public final class Solver implements Closeable {
    */
   protected void registerBitVector(BitVector bv) {
     int id = bv.id;
-    while(id>=bvmap.size()){
-        bvmap.add(null);
+    while (id >= bvmap.size()) {
+      bvmap.add(null);
     }
     if (bvmap.get(id) == null) {
-        bvmap.set(id,bv);
-        allBVs.add(bv);
+      bvmap.set(id, bv);
+      allBVs.add(bv);
     }
   }
 
@@ -1408,7 +1407,7 @@ public final class Solver implements Closeable {
       return cached_bvs.get(width).get(small_const);
     }
     return new BitVector(this, width, constant);
-  }
+   }
 
   /**
    * Retrieve an existing named literal from the solver, by looking up its name.
@@ -1418,9 +1417,9 @@ public final class Solver implements Closeable {
    * @throws IllegalArgumentException If there is no literal in the solver with this name (or if
    *     name is empty).
    */
-  Lit getLiteral(String name) {
-    if (name==null || name.length()==0){
-        throw new IllegalArgumentException("Name must not be empty");
+  public Lit getLiteral(String name) {
+    if (name == null || name.length() == 0) {
+      throw new IllegalArgumentException("Name must not be empty");
     }
     int variable = MonosatJNI.getVariable(solverPtr, MonosatJNI.validID(name));
     if (name == "True") {
@@ -1440,54 +1439,53 @@ public final class Solver implements Closeable {
     }
   }
 
-    /**
-     * Retrieve an existing named bitvector from the solver, by looking up its name.
-     *
-     * @param name The name of the bitvector to check for.
-     * @return The matching bitvector, if it exists.
-     * @throws IllegalArgumentException If there is no bitvector in the solver with this name (or if
-     *     name is empty).
-     */
-  BitVector getBitvector(String name) {
-      if (name==null || name.length()==0){
-          throw new IllegalArgumentException("Name must not be empty");
-      }
-      int bvID = MonosatJNI.getBitvector(solverPtr,bvPtr, MonosatJNI.validID(name));
+  /**
+   * Retrieve an existing named bitvector from the solver, by looking up its name.
+   *
+   * @param name The name of the bitvector to check for.
+   * @return The matching bitvector, if it exists.
+   * @throws IllegalArgumentException If there is no bitvector in the solver with this name (or if
+   *     name is empty).
+   */
+  public BitVector getBitvector(String name) {
+    if (name == null || name.length() == 0) {
+      throw new IllegalArgumentException("Name must not be empty");
+    }
+    int bvID = MonosatJNI.getBitvector(solverPtr, bvPtr, MonosatJNI.validID(name));
 
-      if (bvID >= 0) {
-        return new BitVector(this,this,bvID);
-      } else {
-          throw new IllegalArgumentException("No Btivector with name " + name);
-      }
+    if (bvID >= 0) {
+      return new BitVector(this, this, bvID);
+    } else {
+      throw new IllegalArgumentException("No Btivector with name " + name);
+    }
   }
 
-    /**
-     * Retrieve an existing named graph from the solver, by looking up its name.
-     *
-     * @param name The name of the literal to check for.
-     * @return The matching literal, if it exists.
-     * @throws IllegalArgumentException If there is no literal in the solver with this name (or if
-     *     name is empty).
-     */
-    Graph getGraph(String name) {
-        if (name==null || name.length()==0){
-            throw new IllegalArgumentException("Name must not be empty");
-        }
-        if(name.length()==0){
-            throw new IllegalArgumentException("Graph string name must have length > 0");
-        }
-        long graphPtr = MonosatJNI.getGraph(solverPtr, MonosatJNI.validID(name));
-        if(allGraphs.containsKey(graphPtr)){
-            return allGraphs.get(graphPtr);
-        }else{
-            Graph g = new Graph(this,graphPtr);
-            assert(g.name().equals(name));
-            return g;
-        }
+  /**
+   * Retrieve an existing named graph from the solver, by looking up its name.
+   *
+   * @param name The name of the literal to check for.
+   * @return The matching literal, if it exists.
+   * @throws IllegalArgumentException If there is no literal in the solver with this name (or if
+   *     name is empty).
+   */
+  public Graph getGraph(String name) {
+    if (name == null || name.length() == 0) {
+      throw new IllegalArgumentException("Name must not be empty");
     }
+    if (name.length() == 0) {
+      throw new IllegalArgumentException("Graph string name must have length > 0");
+    }
+    long graphPtr = MonosatJNI.getGraph(solverPtr, MonosatJNI.validID(name));
+    if (allGraphs.containsKey(graphPtr)) {
+      return allGraphs.get(graphPtr);
+    } else {
+      Graph g = new Graph(this, graphPtr);
+      assert (g.name().equals(name));
+      return g;
+    }
+  }
 
-
-    /**
+  /**
    * Retrieve an existing literal from the solver, by looking up its internal integer ID.
    *
    * @param literal The integer of the literal to check for.

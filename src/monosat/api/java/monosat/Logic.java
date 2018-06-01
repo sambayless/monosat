@@ -551,7 +551,7 @@ public final class Logic {
 
   /**
    * Assert that all of the literals in args are true. Trivially satisfied if args is empty.
-   * Equivalent to assertAnd(args)
+   * Equivalent to assertAnd(args).
    * @param args The arguments to assert true.
    */
   public static void assertTrue(Lit... args) {
@@ -560,7 +560,7 @@ public final class Logic {
 
   /**
    * Assert that all of the literals in args are true. Trivially satisfied if args is empty.
-   * Equivalent to assertAnd(args)
+   * Equivalent to assertAnd(args).
    * @param args The arguments to assert true.
    */
   public static void assertTrue(Collection<Lit> args) {
@@ -569,7 +569,7 @@ public final class Logic {
 
   /**
    * Assert that all of the literals in args are false. Trivially satisfied if args is empty.
-   * Equivalent to assertNor(args)
+   * Equivalent to assertNor(args).
    * @param args The arguments to assert true.
    */
   public static void assertFalse(Lit... args) {
@@ -578,7 +578,7 @@ public final class Logic {
 
   /**
    * Assert that all of the literals in args are false. Trivially satisfied if args is empty.
-   * Equivalent to assertNor(args)
+   * Equivalent to assertNor(args).
    * @param args The arguments to assert true.
    */
   public static void assertFalse(Collection<Lit> args) {
