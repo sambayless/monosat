@@ -805,7 +805,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
  * Signature: (JLjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph_1Named
-  (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jstring,jint);
 
 /*
  * Class:     monosat_MonosatJNI

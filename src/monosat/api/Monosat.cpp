@@ -769,23 +769,25 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 }
 
 Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
-	return newGraph_Named(S,"");
+	return newGraph_Named(S,"",-2);
 }
 
-Monosat::GraphTheorySolver<int64_t> *  newGraph_Named(Monosat::SimpSolver * S, const char * _name){
+Monosat::GraphTheorySolver<int64_t> *  newGraph_Named(Monosat::SimpSolver * S, const char * _name, int bitwidth){
     MonosatData * d = (MonosatData*) S->_external_data;
     std::string name = (_name==nullptr)?std::string(""):std::string(_name);
-    Monosat::GraphTheorySolver<int64_t> *graph = new Monosat::GraphTheorySolver<int64_t>(S,name);
+    Monosat::GraphTheorySolver<int64_t> *graph = new Monosat::GraphTheorySolver<int64_t>(S,name,bitwidth);
 
     d->graphs.push(graph);
     if( d->bv_theory){
         graph->setBVTheory(d->bv_theory);
     }
+	write_out(S,"digraph 0 0 %d %d",graph->getTheoryIndex(), graph->getEdgeWeightBitWidth());
     if (name.size()>0){
-        write_out(S,"digraph 0 0 %d %s\n",graph->getTheoryIndex(),name.c_str());
+		write_out(S," %s\n",name.c_str());
     }else{
-        write_out(S,"digraph 0 0 %d\n",graph->getTheoryIndex());
+		write_out(S,"\n");
     }
+
     return graph;
 }
 

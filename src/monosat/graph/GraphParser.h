@@ -183,6 +183,13 @@ private:
 		//  ev = parseInt(in);//the variable of the first graph edge.
 		g = parseInt(in);  //id of the graph
 		skipWhitespace(in);
+		int bitwidth = -2;
+		//The original digraph format didn't specify a bitwidth or a name, so those are both optional parameters
+		if (!isEof(in) && *in != '\n') {
+			bitwidth = parseInt(in);  //id of the graph
+			skipWhitespace(in);
+		}
+
 		while (!isEof(in) && *in != '\n' && !isWhitespace(*in)) {
 			name <<((char)*in);
 			++in;
@@ -191,17 +198,17 @@ private:
 		graphs_float.growTo(g + 1);
 		graphs_rational.growTo(g + 1);
 		if (graph_type == GraphType::INTEGER) {
-			GraphTheorySolver<int64_t> *graph = new GraphTheorySolver<int64_t>(&S,name.str());
+			GraphTheorySolver<int64_t> *graph = new GraphTheorySolver<int64_t>(&S,name.str(),bitwidth);
 			graph->newNodes(n);
 			graphs[g] = graph;
 
 		} else if (graph_type == GraphType::FLOAT) {
-			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S,name.str());
+			GraphTheorySolver<double> *graph = new GraphTheorySolver<double>(&S,name.str(),bitwidth);
 			graph->newNodes(n);
 			graphs_float[g] = graph;
 
 		} else if (graph_type == GraphType::RATIONAL) {
-			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S,name.str());
+			GraphTheorySolver<mpq_class> *graph = new GraphTheorySolver<mpq_class>(&S,name.str(),bitwidth);
 			graph->newNodes(n);
 			graphs_rational[g] = graph;
 		}

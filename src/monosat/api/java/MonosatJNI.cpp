@@ -1025,10 +1025,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
 }
 
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph_1Named
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jstring name) try {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jstring name,jint bitwidth) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     const char *str = env->GetStringUTFChars(name, 0);
-    jlong g = reinterpret_cast<jlong>(newGraph_Named(solver,str));
+    jlong g = reinterpret_cast<jlong>(newGraph_Named(solver,str,bitwidth));
     env->ReleaseStringUTFChars(name, str);
     return g;
 }catch(...) {

@@ -216,11 +216,11 @@ public final class Graph {
       Check that the string contains only printable ascii characters
        */
 
-      graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr, MonosatJNI.validID(name));
+      graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr, MonosatJNI.validID(name),bitwidth);
 
     } else {
       this._name = "";
-      graphPtr = MonosatJNI.newGraph(solver.solverPtr);
+      graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr, "",bitwidth);
     }
     solver.allGraphs.put(graphPtr, this);
   }

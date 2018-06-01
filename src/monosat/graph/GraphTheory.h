@@ -583,6 +583,8 @@ public:
 
 	//vector of the weights for each edge
 	std::vector<Weight> edge_weights;
+	bool has_fixed_bitwidth = false;
+	int bitwidth = -1;
 	std::vector<BitVector<Weight>> edge_bv_weights;
 	struct ComparisonID{
 		Weight w;
@@ -728,11 +730,21 @@ public:
 	const char * getTheoryType()override{
 		return "Graph";
 	}
-	GraphTheorySolver(Solver * S_,const std::string & name = "") :
+	//A bitwidth of -2 means that the graph will detect the bitwidth
+    //itself, based on the edges added to it.
+    //A bitwidth of -1 means: constant weight, non-bitvector edges.
+    //A bitwidth >=0 means bitvector edge weights.
+	GraphTheorySolver(Solver * S_,const std::string & name = "", int fixed_bitwidth = -2) :
 			S(S_),name(name), cutStatus(*this), propCutStatus(*this),g_under_back(g_under),g_over_back(g_over),
 	g_under_weights_over_back(g_under_weights_over),g_over_weights_under_back(g_over_weights_under),
 	cutGraph_back(cutGraph){
-
+        if(fixed_bitwidth>-2){
+            has_fixed_bitwidth=true;
+            bitwidth = fixed_bitwidth;
+        }else{
+            bitwidth = -2;
+            has_fixed_bitwidth=false;
+        }
 		if(opt_record){
 			std::string t = (const char*)opt_record_file;
 			t+="/LOG_GRAPH_UNDER" +std::to_string(S->getTheories().size());
@@ -3041,11 +3053,12 @@ public:
 		return vars[v].detector_edge;
 	}
 	int getEdgeWeightBitWidth(){
-		if(edge_bv_weights.size()>0){
+        return bitwidth;
+		/*if(edge_bv_weights.size()>0){
 			return edge_bv_weights[0].width();
 		}else{
 			return -1;
-		}
+		}*/
 	}
 	//Create a fresh bitvector
 	BitVector<Weight> newBV(Weight constval=-1,int bitwidth=-1) {

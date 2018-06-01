@@ -342,7 +342,7 @@ final class MonosatJNI { // package level access specifier
   // theory interface for graphs
   public static native long newGraph(long solverPtr);
 
-  public static native long newGraph_Named(long solverPtr, String name);
+  public static native long newGraph_Named(long solverPtr, String name,int bitwidth);
   public static native String getGraphName(long solverPtr, long graphPtr);
   public static native int getGraphWidth(long solverPtr, long graphPtr);
   /**

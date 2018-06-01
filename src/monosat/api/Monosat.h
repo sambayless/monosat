@@ -264,7 +264,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   GraphTheorySolver_long newGraph(SolverPtr S);
   //Create a new graph with the given name (or an unamed graph, if name is null or empty).
   //If name is non-null and not empty, then it must be unique.
-  GraphTheorySolver_long newGraph_Named(SolverPtr S, const char * name);
+  GraphTheorySolver_long newGraph_Named(SolverPtr S, const char * name, int bitwidth);
   //If there exists a graph in the solver with the given name, return a pointer to it.
   GraphTheorySolver_long getGraph(SolverPtr S, const char * name);
 
