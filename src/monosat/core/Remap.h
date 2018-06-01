@@ -41,7 +41,10 @@ public:
 			return v;
 		}
 	}
-
+	inline Lit mapLit(Solver & S, Lit lit){
+		Var v = mapVar(S,var(lit));
+		return mkLit(v,sign(lit));
+	}
 	inline bool inVarMap(Var externalVar){
 		if(externalVar==var_Undef){
 			return false;

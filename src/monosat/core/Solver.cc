@@ -3189,7 +3189,13 @@ Lit Solver::unmap(Lit l)  {
 		return l;
 	}
 }
-
+Lit Solver::mapLit(Lit l)  {
+	if(varRemap){
+		return varRemap->mapLit(l);
+	}else{
+		return l;
+	}
+}
 static Var mapVar(Var x, vec<Var>& map, Var& max) {
 	if (map.size() <= x || map[x] == -1) {
 		map.growTo(x + 1, -1);

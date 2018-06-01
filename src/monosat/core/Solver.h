@@ -554,6 +554,7 @@ public:
 	}
 
 	Lit unmap(Lit l) override;
+	Lit mapLit(Lit l);
 	void setVarMap(DimacsMap * map){
 		varRemap=map;
 	}
