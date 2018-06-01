@@ -55,10 +55,17 @@ struct MonosatData{
     bool last_solution_optimal=true;
     bool has_conflict_clause_from_last_solution=false;
     vec<Objective> optimization_objectives;
+    Dimacs<StreamBuffer, SimpSolver> * parser=nullptr;
     FILE * outfile =nullptr;
     string args = "";
     MonosatData(SimpSolver * solver):circuit(*solver){
 
+    }
+    ~MonosatData(){
+        for(auto * p:parser->getParsers()){
+            delete(p);
+        }
+        delete(parser);
     }
 };
 #endif //MONOSAT_MONOSATINTERNAL_H

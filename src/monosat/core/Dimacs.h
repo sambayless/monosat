@@ -197,7 +197,9 @@ public:
 	~Dimacs() override {
 	}
 
-
+	vec<Parser<char*, Solver>*> & getParsers(){
+		return parsers;
+	};
 
 
 private:

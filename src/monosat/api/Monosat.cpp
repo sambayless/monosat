@@ -400,6 +400,16 @@ Lit internalLit(Monosat::SimpSolver * S, int l){
 int externalLit(Monosat::SimpSolver * S, Lit l){
 	return toInt(S->unmap(l));
 }
+
+Var internalVar(Monosat::SimpSolver * S, int v){
+    return S->mapVar(v);
+}
+//Convert an internal solver lit into an external integer representation
+Var externalVar(Monosat::SimpSolver * S, Var v){
+    return S->unmap(v);
+}
+
+
 //Convert an external integer representation of a lit into dimacs format
 inline int dimacs(int externalLit) {
 	Lit l = toLit(externalLit);
@@ -515,6 +525,27 @@ Monosat::SimpSolver * newSolver_args(int argc,  char**argv){
 	}
 	((MonosatData*)S->_external_data)->pbsolver = new PB::PbSolver(*S);
 	S->setPBSolver(((MonosatData*)S->_external_data)->pbsolver);
+
+	{
+
+		Dimacs<StreamBuffer, SimpSolver> * parser = new Dimacs<StreamBuffer, SimpSolver>();
+		BVParser<char *, SimpSolver>* bvParser = new BVParser<char *, SimpSolver>();
+		parser->addParser(bvParser);
+
+		SymbolParser<char*,SimpSolver>* symbolParser = new SymbolParser<char*,SimpSolver>() ;
+		parser->addParser(symbolParser);
+		bool precise = true;
+		GraphParser<char *, SimpSolver>* graphParser = new GraphParser<char *, SimpSolver>(precise,bvParser->theory);
+		parser->addParser(graphParser);
+
+		PBParser<char *, SimpSolver>* pbParser = new PBParser<char *, SimpSolver>(*S);
+		parser->addParser(pbParser);
+
+		AMOParser<char *, SimpSolver> * amo = new AMOParser<char *, SimpSolver>();
+		parser->addParser(amo);
+
+		((MonosatData*)S->_external_data)->parser = parser;
+	}
 	return S ;
 }
 void deleteSolver (Monosat::SimpSolver * S)
@@ -728,28 +759,12 @@ void minimizeConflictClause(Monosat::SimpSolver * S){
 
 
 void readGNF(Monosat::SimpSolver * S, const char  * filename){
-	bool precise = true;
 
 	gzFile in = gzopen(filename, "rb");
 	if (in == nullptr)
 		throw std::runtime_error("ERROR! Could not open file");
 	MonosatData * d = (MonosatData*) S->_external_data;
-
-	Dimacs<StreamBuffer, SimpSolver> parser;
-	BVParser<char *, SimpSolver> bvParser;
-	parser.addParser(&bvParser);
-
-	SymbolParser<char*,SimpSolver> symbolParser;
-	parser.addParser(&symbolParser);
-
-	GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
-	parser.addParser(&graphParser);
-
-    PBParser<char *, SimpSolver> pbParser(*S);
-    parser.addParser(&pbParser);
-
-	AMOParser<char *, SimpSolver> amo;
-	parser.addParser(&amo);
+	auto & parser = *d->parser;
 
 	StreamBuffer strm(in);
 	vec<int> assumps;
@@ -978,27 +993,27 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 
 
 int newVar(Monosat::SimpSolver * S){
-	return S->newVar();
+	return externalVar(S, S->newVar());
 }
 
 void setVariableName(Monosat::SimpSolver * S, int variable, const char  * varname){
 	if(varname==nullptr){
-		S->setVariableName(variable, "");
+		S->setVariableName(internalVar(S,variable), "");
 	}else{
 		std::string name(varname);
-		S->setVariableName(variable, varname);
+		S->setVariableName(internalVar(S,variable), varname);
 		write_out(S, "symbol %d %s\n", variable + 1, varname);
 	}
 }
 bool hasVariableName(Monosat::SimpSolver * S, int variable){
-	return S->hasName(variable);
+	return S->hasName(internalVar(S,variable));
 }
 Var getVariable(Monosat::SimpSolver * S, const char * varname){
-	return S->getVariable(varname);
+	return externalVar(S,S->getVariable(varname));
 }
 //Return the name associated with this string, or the empty string if there is no name associated with this string.
 const char * getVariableName(Monosat::SimpSolver * S, int variable){
-	return S->getVariableName(variable).c_str();
+	return S->getVariableName(internalVar(S,variable)).c_str();
 }
 
 
@@ -1020,35 +1035,37 @@ void disablePreprocessing(Monosat::SimpSolver * S){
 }
 
 void setDecisionVar(Monosat::SimpSolver * S,int variable,bool decidable){
-	if(S->isDecisionVar(variable)!=decidable) {
+	if(S->isDecisionVar(internalVar(S,variable))!=decidable) {
 		write_out(S, "decision %d %d\n", variable + 1, decidable);//add 1 for dimacs
-		S->setDecisionVar(variable, decidable);
+		S->setDecisionVar(internalVar(S,variable), decidable);
 	}
 }
 void setDecisionPriority(Monosat::SimpSolver * S,int variable, int priority){
-	if(S->getDecisionPriority(variable)!=priority) {
+	if(S->getDecisionPriority(internalVar(S,variable))!=priority) {
 		write_out(S, "priority %d %d\n", variable + 1, priority);//add 1 for dimacs
-		S->setDecisionPriority(variable, priority);
+		S->setDecisionPriority(internalVar(S,variable), priority);
 	}
 }
 bool isDecisionVar(Monosat::SimpSolver * S,int variable){
-	return S->isDecisionVar(variable);
+	return S->isDecisionVar(internalVar(S,variable));
 }
 int getDecisionPriority(Monosat::SimpSolver * S,int variable){
-	return S->getDecisionPriority(variable);
+	return S->getDecisionPriority(internalVar(S,variable));
 }
 
-void setDecisionPolarity(Monosat::SimpSolver * S,Var v, bool b){
-	S->setPolarity(v,b);
+void setDecisionPolarity(Monosat::SimpSolver * S,Var variable, bool b){
+	S->setPolarity(internalVar(S,variable),b);
 }
 
-bool getDecisionPolarity(Monosat::SimpSolver * S,Var v){
-	return S->getPolarity(v);
+bool getDecisionPolarity(Monosat::SimpSolver * S,Var variable){
+	return S->getPolarity(internalVar(S,variable));
 }
 
 
 int nVars(Monosat::SimpSolver * S){
-	return S->nVars();
+    //Return the number of _externally visible_ variables.
+    return S->nMappedVars();
+	//return S->nVars();
 }
 
 int nClauses(Monosat::SimpSolver * S){
@@ -1433,7 +1450,7 @@ void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars){
 		write_out(S," 0\n");
 		AMOTheory* amo = new  AMOTheory(S);
 		for(int i = 0;i<n_vars;i++){
-			Var v = vars[i];
+			Var v = internalVar(S,vars[i]);
 			amo->addVar(v);
 		}
 	}

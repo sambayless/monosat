@@ -554,7 +554,13 @@ public:
 	}
 
 	Lit unmap(Lit l) override;
+    Var unmap(Var v);
 	Lit mapLit(Lit l);
+    Var mapVar(Var v);
+    /*
+     * The number of externally visible variables (which may be different from the number of internal variables).
+     */
+    int nMappedVars();
 	void setVarMap(DimacsMap * map){
 		varRemap=map;
 	}
@@ -584,17 +590,6 @@ public:
 		}
 		return namemap[name];
 	}
-
-
-	void toDimacs(FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
-	void toDimacs(const char *file, const vec<Lit>& assumps);
-	void toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max);
-
-	// Convenience versions of 'toDimacs()':
-	void toDimacs(const char* file);
-	void toDimacs(const char* file, Lit p);
-	void toDimacs(const char* file, Lit p, Lit q);
-	void toDimacs(const char* file, Lit p, Lit q, Lit r);
 
 	// Variable mode:
 	//
@@ -1527,28 +1522,6 @@ inline bool Solver::okay() const {
 	return ok;
 }
 
-inline void Solver::toDimacs(const char* file) {
-	vec<Lit> as;
-	toDimacs(file, as);
-}
-inline void Solver::toDimacs(const char* file, Lit p) {
-	vec<Lit> as;
-	as.push(p);
-	toDimacs(file, as);
-}
-inline void Solver::toDimacs(const char* file, Lit p, Lit q) {
-	vec<Lit> as;
-	as.push(p);
-	as.push(q);
-	toDimacs(file, as);
-}
-inline void Solver::toDimacs(const char* file, Lit p, Lit q, Lit r) {
-	vec<Lit> as;
-	as.push(p);
-	as.push(q);
-	as.push(r);
-	toDimacs(file, as);
-}
 inline ClauseIterator Solver::clausesBegin() const { return ClauseIterator(ca, &clauses[0]); }
 inline ClauseIterator Solver::clausesEnd  () const { return ClauseIterator(ca, &clauses[clauses.size()]); }
 inline TrailIterator  Solver::trailBegin  () const { return TrailIterator(&trail[0]); }

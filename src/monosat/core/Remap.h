@@ -41,6 +41,9 @@ public:
 			return v;
 		}
 	}
+	inline int nMappedVars(){
+	    return var_map.size();
+	}
 	inline Lit mapLit(Solver & S, Lit lit){
 		Var v = mapVar(S,var(lit));
 		return mkLit(v,sign(lit));
@@ -52,25 +55,33 @@ public:
 		return externalVar< var_map.size() && var_map[externalVar] !=var_Undef;
 	}
 	inline	Var unmap(Var internalVar){
-			if(!remap_vars){
-				return internalVar;
-			}
-			if (internalVar< var_reverse_map.size() && var_reverse_map[internalVar]!=var_Undef){
-				return var_reverse_map[internalVar];
-			}
-			return var_Undef;
-		}
+        if(!remap_vars){
+            return internalVar;
+        }
+        if (internalVar< var_reverse_map.size() && var_reverse_map[internalVar]!=var_Undef){
+            return var_reverse_map[internalVar];
+        }
+        //map this variable on the fly.
+        Var externalVar = var_map.size();
+        assert(!inVarMap(externalVar));
+        var_map.growTo(externalVar+1,var_Undef);
+        var_map[externalVar]=internalVar;
+        var_reverse_map.growTo(internalVar+1,var_Undef);
+        var_reverse_map[internalVar]=externalVar;
+        //return var_Undef;
+        return externalVar;
+    }
 	inline	Lit unmap(Lit internalLit){
 		if(!remap_vars){
 			return internalLit;
 		}
 		Var internalVar = var(internalLit);
-		if(internalVar==var_Undef)
-			return lit_Undef;
-		if (internalVar< var_reverse_map.size() && var_reverse_map[internalVar]!=var_Undef){
-			return mkLit(var_reverse_map[internalVar],sign(internalLit));
+		Var externalVar = unmap(internalVar);
+		if(externalVar==var_Undef) {
+            return lit_Undef;
+        }else{
+		    return mkLit(externalVar,sign(internalLit));
 		}
-		return lit_Undef;
 	}
 	inline	void addVarToMap(Var v, Var map_to){
 			if(!remap_vars || v==var_Undef){
