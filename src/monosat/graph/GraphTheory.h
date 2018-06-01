@@ -3053,12 +3053,14 @@ public:
 		return vars[v].detector_edge;
 	}
 	int getEdgeWeightBitWidth(){
-        return bitwidth;
-		/*if(edge_bv_weights.size()>0){
+	    if(has_fixed_bitwidth) {
+            return bitwidth;
+        }
+		if(edge_bv_weights.size()>0){
 			return edge_bv_weights[0].width();
 		}else{
 			return -1;
-		}*/
+		}
 	}
 	//Create a fresh bitvector
 	BitVector<Weight> newBV(Weight constval=-1,int bitwidth=-1) {
