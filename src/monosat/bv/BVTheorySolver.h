@@ -4686,6 +4686,7 @@ public:
 	CRef bvprop_marker;
 	CRef popcount_marker;
 	Lit const_true=lit_Undef;
+	vec<int> named_bvs;//all bit vectors with names, in the order they were created
 	std::vector<std::string> symbols;
 	std::map<std::string,int> symbol_map;
 	vec<Assignment> trail;
@@ -7487,7 +7488,7 @@ public:
 	    	if (symbol_map.count(symbol)>0){
 				throw std::invalid_argument("All bitvector names must be unique");
 	    	}
-
+			named_bvs.push(bvID);
             symbols[bvID]=symbol;
             symbol_map.insert({symbol,bvID});
 		}else{
@@ -7518,6 +7519,10 @@ public:
 
 	int nBitvectors()const{
 		return bitvectors.size();
+	}
+
+	const vec<int> & namedBitvectors(){
+		return named_bvs;
 	}
 
     bool has_warned_unary=false;

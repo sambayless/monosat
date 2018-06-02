@@ -591,6 +591,10 @@ public:
 		return namemap[name];
 	}
 
+	const vec<Var> & namedVariables(){
+        return named_variables;
+	}
+
 	// Variable mode:
 	//
 	void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
@@ -711,6 +715,7 @@ public:
 
     std::map<int,std::string> varnames;  //Optional names associated with each variable
 	std::map<std::string, int> namemap; //variable name lookup map
+    vec<Var> named_variables;//all variables that have names, in the order they were named
     static const std::string empty_name;
 
 

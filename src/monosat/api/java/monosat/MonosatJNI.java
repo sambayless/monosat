@@ -65,6 +65,11 @@ final class MonosatJNI { // package level access specifier
 
   public static native boolean hasVariableName(long solverPtr, int variable);
 
+  //get the number of named variables in the solver
+  public static native int nNamedVariables(long solverPtr);
+  //Get the nth named variable
+  public static native int getNamedVariableN(long solverPtr, int n);
+
   public static native int getVariable(long solverPtr, String name);
 
   // basic solver functions
@@ -145,6 +150,8 @@ final class MonosatJNI { // package level access specifier
 
   public static native int newVar(long solverPtr);
 
+  public static native int newNamedVar(long solverPtr, String name);
+
   public static native void releaseLiteral(long solverPtr, int literal);
 
   public static native void setDecisionVar(long solverPtr, int var, boolean decidable);
@@ -218,10 +225,15 @@ final class MonosatJNI { // package level access specifier
   public static native String getBitvectorName(long solverPtr, long bvPtr, int bvID);
 
   public static native int getBitvectorWidth(long solverPtr, long bvPtr, int bvID);
-  //Number of defined literals in the BV, which may be 0 or the bitvector width
+  // Number of defined literals in the BV, which may be 0 or the bitvector width
   public static native int nBitvectorBits(long solverPtr, long bvPtr, int bvID);
 
   public static native int getBitvector(long solverPtr, long bvPtr, String name);
+
+  //get the number of named bitvector in the solver
+  public static native int nNamedBitvectors(long solverPtr,long bvPtr);
+  //Get the nth named bitvector
+  public static native int getNamedBitvectorN(long solverPtr,long bvPtr, int n);
 
   public static native int getBitvectorBit(long solverPtr, long bvPtr, int bvID, int bit);
 
@@ -342,8 +354,10 @@ final class MonosatJNI { // package level access specifier
   // theory interface for graphs
   public static native long newGraph(long solverPtr);
 
-  public static native long newGraph_Named(long solverPtr, String name,int bitwidth);
+  public static native long newGraph_Named(long solverPtr, String name, int bitwidth);
+
   public static native String getGraphName(long solverPtr, long graphPtr);
+
   public static native int getGraphWidth(long solverPtr, long graphPtr);
   /**
    * Get a pointer to a graph with this name, that is already defined in the solver (or return 0, if
@@ -357,8 +371,11 @@ final class MonosatJNI { // package level access specifier
   public static native long getGraph(long solverPtr, String name);
 
   public static native int newNode(long solverPtr, long graphPtr);
+
   public static native int newNode_Named(long solverPtr, long graphPtr, String name);
+
   public static native String getNodeName(long solverPtr, long graphPtr, int node);
+
   public static native int newEdge(
       long solverPtr, long graphPtr, int from, int to, long constweight);
 
@@ -658,22 +675,23 @@ final class MonosatJNI { // package level access specifier
   }
 
   /**
-   * Check whether a string is a valid monosat ID.
-   * If not, throw an exception; if it is, return that string.
+   * Check whether a string is a valid monosat ID. If not, throw an exception; if it is, return that
+   * string.
+   *
    * @param name The string to check
    * @return str, unaltered.
    * @throws IllegalArgumentException If the string contains illegal characters
    */
-  protected static String validID(String name){
+  protected static String validID(String name) {
     if (name.chars()
-            .allMatch(c -> (c < 128 && !Character.isISOControl(c) && !Character.isWhitespace(c)))) {
-       return name;
+        .allMatch(c -> (c < 128 && !Character.isISOControl(c) && !Character.isWhitespace(c)))) {
+      return name;
     } else {
       throw new IllegalArgumentException(
-              "IDs are restricted to printable ASCII characeters, and "
-                      + "may not include whitespace or newlines: \""
-                      + name
-                      + "\" is not a valid name.");
+          "IDs are restricted to printable ASCII characeters, and "
+              + "may not include whitespace or newlines: \""
+              + name
+              + "\" is not a valid name.");
     }
   }
 }

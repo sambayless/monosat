@@ -35,7 +35,8 @@ import static org.junit.Assert.*;
  */
 public class BitVectorTest {
   static final String tricky_name =
-          "~`Name-with/\"\'//<>printable_\\characters?!@#$%^&*()-+{}[]|1234567890";
+      "~`Name-with/\"\'//<>printable_\\characters?!@#$%^&*()-+{}[]|1234567890";
+
   @Test
   public void getBits() {
     Solver s = new Solver();
@@ -401,60 +402,57 @@ public class BitVectorTest {
   public void maxMinBVSize() {
     Solver s = new Solver();
     BitVector bv0 = new BitVector(s, 1);
-    assertEquals(bv0.width(),1);
+    assertEquals(bv0.width(), 1);
 
     BitVector bv1 = new BitVector(s, 63);
-    assertEquals(bv1.width(),63);
+    assertEquals(bv1.width(), 63);
 
     try {
-      new BitVector(s, 64,"MyBitvector");
+      new BitVector(s, 64, "MyBitvector");
       fail("Maximum BV size is 63");
     } catch (IllegalArgumentException except) {
       // ok
     }
     try {
-      new BitVector(s, 0,"MyBitvector");
+      new BitVector(s, 0, "MyBitvector");
       fail("Minimum BV size is 0");
     } catch (IllegalArgumentException except) {
       // ok
     }
-
   }
-
 
   @Test
   public void testNamedBVs() {
     monosat.Solver s = new monosat.Solver();
     BitVector bv0 = new BitVector(s, 4);
-    BitVector bv1 = new BitVector(s, 4,"");
-    BitVector bv2 = new BitVector(s, 4,"");
+    BitVector bv1 = new BitVector(s, 4, "");
+    BitVector bv2 = new BitVector(s, 4, "");
 
-    BitVector bv3 = new BitVector(s, 4,"MyBitvector");
+    BitVector bv3 = new BitVector(s, 4, "MyBitvector");
 
     try {
-      new BitVector(s, 4,"MyBitvector");
+      new BitVector(s, 4, "MyBitvector");
       fail("No two bvs can have the same name");
     } catch (IllegalArgumentException except) {
       // ok
     }
 
     try {
-      new BitVector(s, 4,"Name With Spaces");
+      new BitVector(s, 4, "Name With Spaces");
       fail("Expected a bad name exception");
     } catch (IllegalArgumentException except) {
       // ok
     }
-    BitVector bv4 =  new BitVector(s, 4,tricky_name);
-
+    BitVector bv4 = new BitVector(s, 4, tricky_name);
 
     try {
-      new BitVector(s, 4,"Name With \n NewLine");
+      new BitVector(s, 4, "Name With \n NewLine");
       fail("Expected a bad name exception");
     } catch (IllegalArgumentException except) {
       // ok
     }
     try {
-      new BitVector(s, 4,"Name With \t tab");
+      new BitVector(s, 4, "Name With \t tab");
       fail("Expected a bad name exception");
     } catch (IllegalArgumentException except) {
       // ok
@@ -475,7 +473,8 @@ public class BitVectorTest {
     assertEquals(s.getBitvector("MyBitvector"), bv3);
     assertEquals(s.getBitvector(tricky_name), bv4);
   }
-      @Test
+
+  @Test
   public void testLoadingBV() throws IOException {
     File file = File.createTempFile("test", ".gnf");
     String filename = file.getAbsolutePath().toString();
@@ -485,35 +484,34 @@ public class BitVectorTest {
     {
       monosat.Solver s = new monosat.Solver("", filename);
       BitVector bv0 = new BitVector(s, 4);
-      BitVector bv1 = new BitVector(s, 4,"");
-      BitVector bv2 = new BitVector(s, 4,"");
+      BitVector bv1 = new BitVector(s, 4, "");
+      BitVector bv2 = new BitVector(s, 4, "");
 
-      BitVector bv3 = new BitVector(s, 4,"MyBitvector");
+      BitVector bv3 = new BitVector(s, 4, "MyBitvector");
 
       try {
-        new BitVector(s, 4,"MyBitvector");
+        new BitVector(s, 4, "MyBitvector");
         fail("No two bvs can have the same name");
       } catch (IllegalArgumentException except) {
         // ok
       }
 
       try {
-        new BitVector(s, 4,"Name With Spaces");
+        new BitVector(s, 4, "Name With Spaces");
         fail("Expected a bad name exception");
       } catch (IllegalArgumentException except) {
         // ok
       }
-      BitVector bv4 =  new BitVector(s, 4,tricky_name);
-
+      BitVector bv4 = new BitVector(s, 4, tricky_name);
 
       try {
-        new BitVector(s, 4,"Name With \n NewLine");
+        new BitVector(s, 4, "Name With \n NewLine");
         fail("Expected a bad name exception");
       } catch (IllegalArgumentException except) {
         // ok
       }
       try {
-        new BitVector(s, 4,"Name With \t tab");
+        new BitVector(s, 4, "Name With \t tab");
         fail("Expected a bad name exception");
       } catch (IllegalArgumentException except) {
         // ok
@@ -542,12 +540,12 @@ public class BitVectorTest {
     s.loadConstraints(filename);
     assertTrue(s.solve());
     BitVector bv1 = s.getBitvector("MyBitvector");
-    assertEquals(bv1.width(),4);
+    assertEquals(bv1.width(), 4);
     BitVector bv2 = s.getBitvector(tricky_name);
 
     assertEquals(s.getBitvector("MyBitvector"), bv1);
     assertEquals(s.getBitvector(tricky_name), bv2);
 
-    assertTrue(s.solve(bv1.eq( 1)));
+    assertTrue(s.solve(bv1.eq(1)));
   }
 }

@@ -995,6 +995,30 @@ int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, in
 int newVar(Monosat::SimpSolver * S){
 	return externalVar(S, S->newVar());
 }
+//Create a new named variable, only if this name is unique and valid (or if it is empty).
+//If the name is not empty, and is non-unique or invalid, an exception will be thrown and no variable will be created at all.
+int newNamedVar(Monosat::SimpSolver * S,const char  * varname){
+    if(varname != nullptr && strlen(varname)>0) {
+        std::string name(varname);
+        if (S->hasVariable(name)){
+            throw std::invalid_argument("All variable names must be unique.");
+        }else{
+            //check if any chars of name are illegal
+            for(char c:name){
+                if(!isascii(c) || !isprint(c) || isspace(c)){
+                    throw std::invalid_argument(std::string("Variable names must consist only of printable, non-whitespace ASCII. Invalid character in variable name: ") + name);
+                }
+            }
+        }
+        Var v = newVar(S);
+        setVariableName(S,v,varname);
+        return v;
+    }else{
+        return newVar(S);
+    }
+
+}
+
 
 void setVariableName(Monosat::SimpSolver * S, int variable, const char  * varname){
 	if(varname==nullptr){
@@ -1016,6 +1040,22 @@ const char * getVariableName(Monosat::SimpSolver * S, int variable){
 	return S->getVariableName(internalVar(S,variable)).c_str();
 }
 
+Var getNamedVariableN(Monosat::SimpSolver * S,int n){
+    return externalVar(S,S->namedVariables()[n]);
+}
+
+int nNamedVariables(Monosat::SimpSolver * S){
+	return S->namedVariables().size();
+}
+
+
+int getNamedBitvectorN(Monosat::SimpSolver * S,Monosat::BVTheorySolver<int64_t> * bv,int n){
+    return bv->namedBitvectors()[n];
+}
+
+int nNamedBitvectors(Monosat::SimpSolver * S,Monosat::BVTheorySolver<int64_t> * bv){
+	return bv->namedBitvectors().size();
+}
 
 void releaseLiteral(Monosat::SimpSolver * S, int literal){
     assert(literal>=0);

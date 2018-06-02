@@ -97,6 +97,22 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableName
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    nNamedVariables
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedVariables
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getNamedVariableN
+ * Signature: (JI)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedVariableN
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    getVariable
  * Signature: (JLjava/lang/String;)I
  */
@@ -214,6 +230,14 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_backtrack
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newVar
   (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    newNamedVar
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNamedVar
+  (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -478,6 +502,22 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectorBits
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvector
   (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    nNamedBitvectors
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedBitvectors
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getNamedBitvectorN
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedBitvectorN
+  (JNIEnv *, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -802,10 +842,10 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
 /*
  * Class:     monosat_MonosatJNI
  * Method:    newGraph_Named
- * Signature: (JLjava/lang/String;)J
+ * Signature: (JLjava/lang/String;I)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph_1Named
-  (JNIEnv *, jclass, jlong, jstring,jint);
+  (JNIEnv *, jclass, jlong, jstring, jint);
 
 /*
  * Class:     monosat_MonosatJNI

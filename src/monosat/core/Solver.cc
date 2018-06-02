@@ -3311,7 +3311,7 @@ void Solver::setVariableName(Var v, const std::string & name){
 				}
 			}
 		}
-
+        named_variables.push(v);
 		varnames.insert({v,name});
 		assert(!namemap.count(name) || namemap[name]==var_Undef);
 		namemap[name] = v;

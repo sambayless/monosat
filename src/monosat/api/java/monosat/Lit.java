@@ -189,8 +189,6 @@ public final class Lit {
    *     solver.
    */
   public Lit(monosat.Solver solver, String name, boolean decisionLit) {
-    int var = monosat.MonosatJNI.newVar(solver.solverPtr);
-    this.l = var * 2;
     this.solver = solver;
     if (name != null && !name.isEmpty()) {
       if (name == "True") {
@@ -199,11 +197,14 @@ public final class Lit {
         throw new IllegalArgumentException(
             "Only the built-in False literal may be named \"False\"");
       }
+      this._name = MonosatJNI.validID(name);
+      int var = monosat.MonosatJNI.newNamedVar(solver.solverPtr,this._name);
+      this.l = var * 2;
 
-      this._name = name;
-      monosat.MonosatJNI.setVariableName(solver.solverPtr, toVar(), MonosatJNI.validID(name));
     } else {
       this._name = "";
+      int var = monosat.MonosatJNI.newVar(solver.solverPtr);
+      this.l = var * 2;
     }
     solver.registerLit(this);
     solver.setDecisionLiteral(this, decisionLit);

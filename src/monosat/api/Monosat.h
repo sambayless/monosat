@@ -145,6 +145,10 @@ typedef int64_t Weight;
   //To convert a variable into a literal, use varToLit(variable)
   int newVar(SolverPtr S);
 
+  //Create a new named variable, only if this name is unique and valid (or if it is empty).
+  //If the name is not empty, and is non-unique or invalid, an exception will be thrown and no variable will be created at all.
+  int newNamedVar(SolverPtr S,const char  * varname);
+
   //Associate a unique name with this variable.
   //varname must consist of printable ascii characters, and may not contain a newline.
   //If varname is null or length-0, then this will remove any existing name.
@@ -153,6 +157,11 @@ typedef int64_t Weight;
   bool hasVariableName(SolverPtr S, int variable);
   const char * getVariableName(SolverPtr S, int variable);
   int getVariable(SolverPtr S, const char * varname);
+
+  //Get the nth named variable (in the order that the named variables were assigned names)
+  int getNamedVariableN(SolverPtr S, int n);
+  //Get the number of named variables in the solver
+  int nNamedVariables(SolverPtr S);
 
   //Release this literal back to the sat solver, so that its variable can be eventually reused (after the next backtrack to 0).
   //The literal will be assigned to true in this process.
@@ -206,9 +215,16 @@ typedef int64_t Weight;
   const char * getBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID);
   int getBitvector(SolverPtr S, BVTheoryPtr bv, const char * name);
 
+
+  //Get the number of named bitvectors in the solver
+  int nNamedBitvectors(SolverPtr S, BVTheoryPtr bv);
+  //Get the nth named bitvector in the solver (in the order they were named)
+  int getNamedBitvectorN(SolverPtr S, BVTheoryPtr bv,int n);
+
   int bv_width(SolverPtr S, BVTheoryPtr  bv,int bvID);
   int bv_nBits(SolverPtr S, BVTheoryPtr  bv,int bvID);
   int bv_bit(SolverPtr S, BVTheoryPtr  bv,int bvID, int bit);
+
 
 
   int newBVComparison_const_lt(SolverPtr S, BVTheoryPtr bv, int bvID, Weight weight);
@@ -269,6 +285,8 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   GraphTheorySolver_long getGraph(SolverPtr S, const char * name);
 
   const char * getGraphName(SolverPtr S, GraphTheorySolver_long G);
+
+
   int getGraphWidth(SolverPtr S, GraphTheorySolver_long G);
   int newNode(SolverPtr S,GraphTheorySolver_long G);
   int newNode_Named(SolverPtr S,GraphTheorySolver_long G,  const char * name);

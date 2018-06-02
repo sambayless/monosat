@@ -64,6 +64,9 @@ public final class Solver implements Closeable {
 
   /** Largest constant BitVector value to cache. This may change in the future. */
   private static final long MAX_CACHE_CONST = 255;
+  // Map from native pointers to graph objects, to avoid re-instantiating the same graph multiple
+  // times
+  protected final HashMap<Long, Graph> allGraphs = new HashMap<Long, Graph>();
   /** Caches instantiated, small BitVectors. */
   private final ArrayList<ArrayList<BitVector>> cached_bvs = new ArrayList<ArrayList<BitVector>>();
   /**
@@ -75,7 +78,6 @@ public final class Solver implements Closeable {
    * Contains only the positive versions of instantiated literals, in the order they were created.
    */
   private final LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
-
   /** Each unique bitvector, stored by bvID. */
   private final ArrayList<BitVector> bvmap = new ArrayList<>();
   /**
@@ -83,11 +85,6 @@ public final class Solver implements Closeable {
    * bvID.
    */
   private final ArrayList<BitVector> allBVs = new ArrayList<>();
-
-  // Map from native pointers to graph objects, to avoid re-instantiating the same graph multiple
-  // times
-  protected final HashMap<Long, Graph> allGraphs = new HashMap<Long, Graph>();
-
   /**
    * Handle to the underlying monosat solver instance. This is really a pointer, masquerading as a
    * long.
@@ -584,7 +581,9 @@ public final class Solver implements Closeable {
 
   /**
    * Get the number of variables in this solver.
-   *
+   * Note that variable 'True' is always defined in a solver,
+   * so nVars() is always at least 1, even if no Literals have been
+   * explicitly created.
    * @return The number of variables in this solver.
    */
   public int nVars() {
@@ -1022,7 +1021,30 @@ public final class Solver implements Closeable {
       allBVs.add(bv);
     }
   }
+    /**
+     * Internal method to convert C++ bitvector integers into java BitVectors.
+     * Will return the existing BitVector object for this ID if one already exists,
+     * else, will create a new BitVector object for this id.
+     * @param bvID A bitvector id to convert into a BitVector
+     * @return A BitVectors object representing the bv.
+     */
+    protected BitVector toBitVector(int bvID) {
+        assert (bvID >= 0);
 
+        assert (bvID< nBitvectors()); // the bitvector must have already been declared in the sat solver before this
+
+        while (bvID >= bvmap.size()) {
+            bvmap.add(null);
+        }
+
+        if (bvmap.get(bvID) == null) {
+            BitVector bv = new BitVector(this,this,bvID);
+            assert(bvmap.get(bvID)==bv);
+            return bv;
+        } else {
+          return bvmap.get(bvID);
+        }
+    }
   /**
    * Internal method used to cache newly instantiated literals, so that literals returned from C++
    * can reuse the same objects.
@@ -1086,12 +1108,14 @@ public final class Solver implements Closeable {
   protected Lit toLit(int literal) {
     assert (literal >= 0);
     int var = literal / 2;
-    assert (var
-        < nVars()); // the variable must have already been declared in the sat solver before this
+    assert (var< nVars()); // the variable must have already been declared in the sat solver before this
     // call
     while (var * 2 + 1 >= allLits.size()) {
       allLits.add(null);
     }
+   /* if (!MonosatJNI.hasVariable(var)) {
+        throw new RuntimeException("No such variable in solver: " + var);
+    }*/
     if (allLits.get(var * 2) == null) {
       assert (allLits.get(var * 2 + 1) == null);
       Lit l = new Lit(this, var * 2);
@@ -1108,6 +1132,7 @@ public final class Solver implements Closeable {
     assert (allLits.get(literal).l == literal);
     return allLits.get(literal);
   }
+
 
   /**
    * Get a collection of all the literals in this solver.
@@ -1407,8 +1432,119 @@ public final class Solver implements Closeable {
       return cached_bvs.get(width).get(small_const);
     }
     return new BitVector(this, width, constant);
-   }
+  }
 
+    /**
+     * Returns an iterator over the (positive) literals in the solver.
+     * Each literal in the iterator has positive sign.
+     * @return An iterator over the literals in the solver.
+     */
+  public  Iterator<Lit> literals(){
+      return new LitIterator(false);
+  }
+
+    /**
+     * Returns an iterator over the named literals in the solver.
+     * Each literal in the iterator has positive sign.
+     * @return An iterator over the named literals in the solver.
+     */
+    public  Iterator<Lit> namedLiterals(){
+        return new LitIterator(true);
+    }
+
+    /**
+     * An iterator over literals in the solver.
+     */
+    public class LitIterator implements java.util.Iterator<Lit>{
+        private int index = 0;
+
+        final boolean named;
+        protected LitIterator(boolean named){
+            this.named = named;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if(named){
+                return index < MonosatJNI.nNamedVariables(Solver.this.solverPtr);
+            }else{
+                return index < Solver.this.nVars();
+            }
+        }
+
+        @Override
+        public Lit next() {
+            if(!hasNext()){
+                throw new IndexOutOfBoundsException();
+            }
+            if(named){
+                return  toLit(2* MonosatJNI.getNamedVariableN(Solver.this.solverPtr, index++));
+            }else{
+                return toLit((index++)*2);
+            }
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * Returns an iterator over the (positive) literals in the solver.
+     * Each literal in the iterator has positive sign.
+     * @return An iterator over the literals in the solver.
+     */
+    public  Iterator<BitVector> bitvectors(){
+        return new BVIterator(false);
+    }
+
+    /**
+     * Returns an iterator over the named literals in the solver.
+     * Each literal in the iterator has positive sign.
+     * @return An iterator over the named literals in the solver.
+     */
+    public  Iterator<BitVector> namedBitvectors(){
+        return new BVIterator(true);
+    }
+
+    /**
+     * An iterator over bitvectors in the solver.
+     */
+    public class BVIterator implements java.util.Iterator<BitVector>{
+        private int index = 0;
+
+        final boolean named;
+        protected BVIterator(boolean named){
+            this.named = named;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if(named){
+                return index < MonosatJNI.nNamedBitvectors(Solver.this.solverPtr,Solver.this.bvPtr);
+            }else{
+                return index < Solver.this.nBitvectors();
+            }
+        }
+
+        @Override
+        public BitVector next() {
+            if(!hasNext()){
+                throw new IndexOutOfBoundsException();
+            }
+            if(named){
+                return  toBitVector(MonosatJNI.getNamedBitvectorN(Solver.this.solverPtr,Solver.this.bvPtr, index++));
+            }else{
+                return toBitVector(index++);
+            }
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
   /**
    * Retrieve an existing named literal from the solver, by looking up its name.
    *

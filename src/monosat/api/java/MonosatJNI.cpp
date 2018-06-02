@@ -137,6 +137,48 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableName
     return false;
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedVariables
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return jint(nNamedVariables(solver));
+}catch(...) {
+    javaThrow(env);
+    return -1;
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedBitvectors
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return jint(nNamedBitvectors(solver,bv));
+}catch(...) {
+    javaThrow(env);
+    return -1;
+}
+
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedBitvectorN
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr,jint n) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return jint(getNamedBitvectorN(solver,bv,n));
+}catch(...) {
+    javaThrow(env);
+    return -1;
+}
+
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedVariableN
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint n) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    int var = getNamedVariableN(solver,n);
+    return jint(var);
+}catch(...) {
+    javaThrow(env);
+    return -1;
+}
+
+
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getVariable
         (JNIEnv *env, jclass monosat_class, jlong solverPtr,jstring name) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
@@ -278,7 +320,17 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newVar
     javaThrow(env);
     return 0;
 }
-
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNamedVar
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    jint var =  jint(newNamedVar(solver,str));
+    env->ReleaseStringUTFChars(name, str);
+    return var;
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
 
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionVar
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint variable, jboolean is_decision) try {

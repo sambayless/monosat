@@ -216,11 +216,11 @@ public final class Graph {
       Check that the string contains only printable ascii characters
        */
 
-      graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr, MonosatJNI.validID(name),bitwidth);
+      graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr, MonosatJNI.validID(name), bitwidth);
 
     } else {
       this._name = "";
-      graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr, "",bitwidth);
+      graphPtr = MonosatJNI.newGraph_Named(solver.solverPtr, "", bitwidth);
     }
     solver.allGraphs.put(graphPtr, this);
   }
@@ -653,7 +653,6 @@ public final class Graph {
       return l;
     }
   }
-
 
   /**
    * Add a new directed edge to the graph, from node 'from' to node 'to', with a BitVector edge
