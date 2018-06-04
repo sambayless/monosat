@@ -381,6 +381,9 @@ final class MonosatJNI { // package level access specifier
 
   public static native int newNode_Named(long solverPtr, long graphPtr, String name);
 
+  public static native boolean hasNamedNode(long solverPtr, long graphPtr, String name);
+
+
   public static native String getNodeName(long solverPtr, long graphPtr, int node);
 
   public static native int newEdge(

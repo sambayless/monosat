@@ -298,6 +298,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int getGraphWidth(SolverPtr S, GraphTheorySolver_long G);
   int newNode(SolverPtr S,GraphTheorySolver_long G);
   int newNode_Named(SolverPtr S,GraphTheorySolver_long G,  const char * name);
+  bool hasNamedNode(SolverPtr S,GraphTheorySolver_long G,  const char * name);
   const char * getNodeName(SolverPtr S, GraphTheorySolver_long G, int nodeID);
   int newEdge(SolverPtr S, GraphTheorySolver_long G,int from,int  to,  Weight weight);
   int newEdge_double(SolverPtr S, GraphTheorySolver_double G,int from,int  to,  double weight);

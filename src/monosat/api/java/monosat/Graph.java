@@ -263,7 +263,12 @@ public final class Graph {
    */
   public String getName(int node) {
     validateNode(node);
-    return nodeNames.get(node);
+    if(node<nodeNames.size() && nodeNames.get(node).length()>0){
+        return nodeNames.get(node);
+    }else{
+        return Integer.toString(node);
+    }
+
   }
 
   /**
@@ -272,7 +277,7 @@ public final class Graph {
    * @return A new node, represented by an integer.
    */
   public int addNode() {
-    return addNode(Integer.toString(nNodes()));
+    return addNode("");
   }
 
   /**
@@ -285,19 +290,26 @@ public final class Graph {
   }
 
   /**
-   * Create a new node, with the given name.
+   * Create a new node, with the given name. The name may either be empty, or it must be unique (within this graph).
+   *
    *
    * @param nodeID If the node already exists in the solver, specify its ID here. Otherwise, specify
    *     -1.
    * @return A new node, represented by an integer.
    */
   private int addNode(String name, int nodeID) {
-    if (name.length() > 0 && nodeMap.containsKey(name)) {
-      throw new RuntimeException("Node names must be unique");
-    }
 
     if (nodeID < 0) {
-      nodeID = MonosatJNI.newNode_Named(solver.solverPtr, graphPtr, MonosatJNI.validID(name));
+        name = MonosatJNI.validID(name);
+
+        if (name.length() > 0 && MonosatJNI.hasNamedNode(solver.solverPtr, graphPtr,name)) {
+            throw new RuntimeException("Node names must be unique");
+        }
+      if (name.length() > 0) {
+        nodeID = MonosatJNI.newNode_Named(solver.solverPtr, graphPtr,name);
+      }else{
+          nodeID = MonosatJNI.newNode(solver.solverPtr, graphPtr);
+      }
     }
     while (adjacencyList.size() <= nodeID) {
       adjacencyList.add(null);
@@ -1323,10 +1335,10 @@ public final class Graph {
     for (Edge e : getAllEdges()) {
       writer.append(
           "n"
-              + Integer.toString(e.from)
+              + getName(e.from)
               + "->"
               + "n"
-              + Integer.toString(e.to)
+              +  getName(e.to)
               + "[label=\""
               + e.l.toString()
               + "\"");

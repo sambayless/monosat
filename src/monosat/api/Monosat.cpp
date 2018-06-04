@@ -1615,8 +1615,16 @@ int newNode_Named(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G
 	}
 	return n;
 }
+bool hasNamedNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, const char * name){
+	if(name != nullptr && strlen(name)>0) {
+		return G->hasNamedNode(name);
+	}else{
+		return false;
+	}
+}
+
 const char * getNodeName(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int node){
-	return G->getNodeName(node);
+	return G->getNodeName(node).c_str();
 }
 
 int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to,  int64_t weight){

@@ -1200,6 +1200,20 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode_1Named
     return 0;
 }
 
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasNamedNode
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr,jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    jboolean r = jint(hasNamedNode(solver, graph,str));
+    env->ReleaseStringUTFChars(name, str);
+    return r;
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to, jlong weight) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);

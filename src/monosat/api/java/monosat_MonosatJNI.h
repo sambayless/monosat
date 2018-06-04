@@ -921,6 +921,14 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode_1Named
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    hasNamedNode
+ * Signature: (JJLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasNamedNode
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    getNodeName
  * Signature: (JJI)Ljava/lang/String;
  */

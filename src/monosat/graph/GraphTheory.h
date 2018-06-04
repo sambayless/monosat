@@ -77,7 +77,10 @@ public:
 	double rnd_seed;
 
 private:
-    Solver * S;
+	const std::string empty_name = "";
+
+
+	Solver * S;
     const std::string name;
 	int local_q = 0;
 	bool lazy_backtracking_enabled=false;
@@ -197,8 +200,10 @@ public:
 	//if bitvectors weights are supplied, then this manages the resulting weights.
 	BVTheorySolver<Weight> * bvTheory=nullptr;
 
-	vec<const char*> node_symbols;
-	vec<const char*> edge_symbols;
+	std::map<std::string, int> nodemap;
+	std::map<std::string, int> edgemap;
+	std::vector<std::string> node_symbols;
+	std::vector<std::string> edge_symbols;
 
 	struct Trail{
 		//Lit l=lit_Undef;
@@ -1327,41 +1332,68 @@ public:
 	};
 
 	~GraphTheorySolver() override {
-		for(int i = 0;i<node_symbols.size();i++){
-			if(node_symbols[i]){
-				delete(node_symbols[i]);
+
 	}
+	void setNodeName(int node,const std::string & symbol){
+		if(hasNamedNode(symbol)){
+			throw std::invalid_argument("All node names must be unique (within a given graph).");
 		}
-		node_symbols.clear();
-		for(int i = 0;i<edge_symbols.size();i++){
-			if(edge_symbols[i]){
-				delete(edge_symbols[i]);
-			}
+		if(nodeHasName(node)){
+			throw std::invalid_argument("Cannot rename nodes.");
 		}
-		edge_symbols.clear();
+		nodemap.insert({symbol,node});
+
+		while(node_symbols.size()<=node){
+			node_symbols.push_back(std::string());
+		}
+		node_symbols[node]=symbol;
+
 	}
-	void setNodeName(int node,const char * symbol){
-		node_symbols.growTo(node+1,nullptr);
-		node_symbols[node]=strdup(symbol);
+	bool hasNamedNode(const std::string & symbol)const{
+		return nodemap.count(symbol)>0;
 	}
-	const char * getNodeName(int node){
+	bool nodeHasName(int node){
+		return node>=0 && node<node_symbols.size() && node_symbols[node].size()>0;
+	}
+	const std::string & getNodeName(int node){
 		if(node>=node_symbols.size())
-			return nullptr;
+			return empty_name;
 		else
 			return node_symbols[node];
 	}
+
 	void setEdgeName(Var edgeVar,const char * symbol){
 		int edgeID = getEdgeID(edgeVar);
-		edge_symbols.growTo(edgeID+1,nullptr);
-		edge_symbols[edgeID]=strdup(symbol);
+
+		if(hasNamedEdge(symbol)){
+			throw std::invalid_argument("All edge names must be unique (within a given graph).");
+		}
+		if(edgeHasName(edgeID)){
+			throw std::invalid_argument("Cannot rename edges.");
+		}
+		edgemap.insert({symbol,edgeID});
+
+		while(edge_symbols.size()<=edgeID){
+			edge_symbols.push_back(std::string());
+		}
+		edge_symbols[edgeID]=symbol;
 	}
-	const char * getEdgeName(Var edgeVar){
+
+	bool hasNamedEdge(const std::string & symbol)const{
+		return edgemap.count(symbol)>0;
+	}
+	bool edgeHasName(Var edgeVar){
 		int edgeID = getEdgeID(edgeVar);
-		if(edgeID>=edge_symbols.size())
-			return nullptr;
+		return edgeID>=0 && edgeID<edge_symbols.size() && edge_symbols[edgeID].size()>0;
+	}
+	const std::string & getEdgeName(Var edgeVar) {
+		int edgeID = getEdgeID(edgeVar);
+		if (edgeID >= edge_symbols.size())
+			return empty_name;
 		else
 			return edge_symbols[edgeID];
 	}
+
 	int newNode() {
         checkFrozen();
 
@@ -2691,8 +2723,8 @@ public:
 #endif
 		printf("digraph{\n");
 		for (int i = 0; i < nNodes(); i++) {
-			if(getNodeName(i)){
-				printf("n%d[label=\"n%d_%s\"]\n",i,i,getNodeName(i));
+			if(nodeHasName(i)){
+				printf("n%d[label=\"n%d_%s\"]\n",i,i,getNodeName(i).c_str());
 			}else{
 			printf("n%d\n", i);
 		}
@@ -2710,7 +2742,7 @@ public:
 			}else {
 				int a = 1;
 			}
-			if(getEdgeName(e.v)){
+			if(edgeHasName(e.v)){
 				printf("n%d -> n%d [label=\"v%d_%s\",color=\"%s\"]\n", e.from, e.to, e.v,getEdgeName(e.v), s);
 			}else{
 			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
