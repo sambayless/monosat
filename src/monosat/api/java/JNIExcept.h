@@ -26,6 +26,8 @@
 #define MONOSAT_JNIEXCEPT_H
 #include <jni.h>
 #include <monosat/mtl/XAlloc.h>
+#include <monosat/utils/ParseUtils.h> //for parse_error
+
 struct ThrownJavaException : std::runtime_error {
     ThrownJavaException() :std::runtime_error("") {}
     ThrownJavaException(const std::string& msg ) :std::runtime_error(msg) {}
@@ -69,6 +71,12 @@ void javaThrow(JNIEnv * env) {
         NewJavaException(env, "java/io/IOException", rhs.what());
     }catch(const std::invalid_argument& e) {
         NewJavaException(env, "java/lang/IllegalArgumentException", e.what());
+    }catch (const Monosat::parse_error& e) {
+        // the natural thing to do would be to translate this into a java parse exception,
+        // but that is a checked exception, which would need better handling in the JNI to properly support.
+        //NewJavaException(env, "java/text/ParseException", e.what());
+        // so instead, we will throw an illegal state exception
+        NewJavaException(env, "java/lang/IllegalStateException", e.what());
     }catch(const std::runtime_error& e) {
         //translate C++ runtime exception to a Java runtime exception
         NewJavaException(env, "java/lang/RuntimeException", e.what());

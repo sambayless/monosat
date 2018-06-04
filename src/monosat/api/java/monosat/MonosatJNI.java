@@ -49,6 +49,8 @@ final class MonosatJNI { // package level access specifier
 
   public static native void deleteSolver(long solverPtr);
 
+  public static native boolean ok(long solverPtr);
+
   // If set, dump constraints to this file (as they are asserted in the solver)
   public static native void setOutputFile(long solverPtr, String filename);
 

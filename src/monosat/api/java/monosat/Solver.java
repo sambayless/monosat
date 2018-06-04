@@ -239,11 +239,14 @@ public final class Solver implements Closeable {
     if (!enablePreprocessing) {
       disablePreprocessing();
     }
+    int true_lit = MonosatJNI.true_lit(solverPtr);
+    assert(true_lit==0);
     registerLit(Lit.True, Lit.False);
     this.addClause(Lit.True);
     // Ensure that the True lit returned by circuit operations (eg, and())
     // is the same as this True Lit.
-    assert (Lit.True == toLit(MonosatJNI.true_lit(solverPtr)));
+
+    assert (Lit.True == toLit(true_lit));
 
     initBV();
     initBuffers();
@@ -1056,8 +1059,10 @@ public final class Solver implements Closeable {
     int literal = l.toInt();
     assert (literal >= 0);
     int var = literal / 2;
-    assert (var
-        < nVars()); // the variable must have already been declared in the sat solver before this
+    if (notL == null) {
+      assert (var
+          < nVars()); // the variable must have already been declared in the sat solver before this
+    }
     // call
     while (var * 2 + 1 >= allLits.size()) {
       allLits.add(null);
@@ -1652,6 +1657,15 @@ public final class Solver implements Closeable {
    */
   public boolean hasModel() {
     return MonosatJNI.hasModel(solverPtr);
+  }
+
+/**
+ * Return true if the solver has not yet proven its constraints to be UNSAT.
+ * If this returns false, then all future calls to 'solve' will return false.
+ * @return true if the solver has not yet proven its constraints to be UNSAT.
+ */
+  public boolean ok(){
+      return MonosatJNI.ok(solverPtr);
   }
 
   /**

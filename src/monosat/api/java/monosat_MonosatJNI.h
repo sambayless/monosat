@@ -57,6 +57,14 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_deleteSolver
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    ok
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_ok
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    setOutputFile
  * Signature: (JLjava/lang/String;)V
  */

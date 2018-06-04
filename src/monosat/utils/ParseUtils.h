@@ -33,11 +33,11 @@ namespace Monosat {
 
 //-------------------------------------------------------------------------------------------------
 // A simple buffered character stream class:
-
 class parse_error: public std::runtime_error {
 public:
-	 explicit parse_error(const std::string& arg): std::runtime_error(arg ) {}
+	explicit parse_error(const std::string& arg): std::runtime_error(arg ) {}
 };
+
 
 //Supporting function for throwing parse errors
 inline void parse_errorf(const char *fmt, ...) {

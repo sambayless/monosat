@@ -530,7 +530,9 @@ public:
 	virtual bool propagateAssignment(const vec<Lit>& assumps); //apply unit propagation to the supplied assumptions, and quit without solving
 	virtual lbool solveUntilRestart(const vec<Lit>& assumps);//attempt to solve the instance, but quit as soon as the solver restarts
 	bool okay() const;                  // FALSE means solver is in a conflicting state
-
+	void contradiction(){ //put the solver into a contradictory state
+		ok=false;
+	}
 	Lit True() override {
 
 		if(const_true==lit_Undef){

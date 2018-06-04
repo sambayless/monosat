@@ -36,10 +36,9 @@
 #include <iostream>
 #include <sstream>
 #include <cstdarg>
+#include <set>
 #include "monosat/core/Remap.h"
 namespace Monosat {
-
-
 
 template<class B, class Solver>
 class Parser {
@@ -118,8 +117,9 @@ public:
 template<class B, class Solver>
 class SymbolParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
-	//std::vector<std::pair<int, std::string> >  symbols;
+	std::set<std::string> used_symbols; //symbols previously read out of this particular GNF file
 	std::stringstream ss;
+
 public:
 	SymbolParser():Parser<B, Solver>("Symbol"){
 
@@ -133,14 +133,14 @@ public:
 
 				//this is a variable symbol map
 				skipWhitespace(in);
-				int v = parseInt(in);
-				if (v <= 0) {
+				int externalVar = parseInt(in);
+				if (externalVar <= 0) {
 					//parse_errorf("Variables must be positive: %c\n", *in);
-					v = -v;
+					externalVar = -externalVar;
 				}
 
-				v--; //subtract one to get the variable id
-				v = mapVar(S,v);
+				externalVar--; //subtract one to get the variable id
+
 				ss.str(std::string());
 				skipWhitespace(in);
 			/*	while (*in != '\n' && !isWhitespace(*in)) {
@@ -152,17 +152,25 @@ public:
 					++in;
 				}
 
-				if (ss.str().size() == 0) {
+				std::string name_str = ss.str();
+
+				if (name_str.size() == 0) {
 					parse_errorf("Empty symbol: %c\n", *in);
 				}
-				/*   		if(symbols && used_symbols.count(symbol)){
-				 parse_errorf("Duplicated symbol: %c\n", *symbol.c_str());
-				 }
-				 used_symbols.insert(symbol);*/
 
-				//symbols.push_back({v,ss.str()});
+				//It is ok for multiple variables in _different_ GNF files to share a symbol.
+				//it is only a problem for a single GNF file to declare multiple variables with the same name.
+				if(used_symbols.count(name_str)!=0){
+					parse_errorf("Multiple variables declared with same symbol: %s\n", name_str.c_str());
+				}
+				used_symbols.insert(name_str);
+				Var internalVar = mapVar(S,externalVar);
 
-				S.setVariableName(v,ss.str());
+				if(S.hasVariable(name_str) && S.getVariable(name_str)!=internalVar){
+					//The solver is in a bad state
+					parse_errorf("Variable renamed while reading GNF file %s\n", name_str.c_str());
+				}
+				S.setVariableName(internalVar,name_str);
 
 				return true;
 			} else {

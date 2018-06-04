@@ -438,13 +438,14 @@ public class LitTest {
         assertEquals(1,s2.nVars());
         Lit n2 = new Lit(s2, "MyLiteral2");
         assertEquals(2,s2.nVars());
-        s2.loadConstraints(filename);
-        assertEquals(7,s2.nVars());
+        s2.loadConstraints(filename); //Note that literal n2, the first declared variable (after 'True'), will
+        //be mapped to the same literal as literal 'a' in the GNF formula.
+        assertEquals(6,s2.nVars());
         assertTrue(s2.solve());
         Lit c2 = s2.getLiteral("MyLiteral");
         Lit e2 = s2.getLiteral(tricky_name);
         Lit m2 = new Lit(s2, "MyLiteral3");
-        assertEquals(8,s2.nVars());
+        assertEquals(7,s2.nVars());
         assertEquals(s2.getLiteral("True"), Lit.True); // "True" is always named in the solver
         assertEquals(s2.getLiteral("False"), Lit.False); // "False" is always named in the solver
         assertEquals(s2.getLiteral("MyLiteral"), c2);
@@ -456,31 +457,31 @@ public class LitTest {
 
         // The solver should (now) maintain integer mappings of literals after loading from disk
 
-
-
         {
             Iterator<Lit> it = s2.literals();
             assertEquals(it.next(), Lit.True);
             assertEquals(it.next(), n2);
             it.next();
             it.next();
-            it.next();
             assertEquals(it.next(), c2);
             assertEquals(it.next(), e2);
             assertEquals(it.next(), m2);
-            assertFalse(it.hasNext());
+
             try {
                 it.next();
                 fail("Expected out of bounds exception");
             } catch (IndexOutOfBoundsException except) {
                 // ok
             }
+            assertFalse(it.hasNext());
         }
         {
             Iterator<Lit> it2 = s2.namedLiterals();
             assertEquals(it2.next(), Lit.True);
+            assertEquals(it2.next(), n2);
             assertEquals(it2.next(), c2);
             assertEquals(it2.next(), e2);
+            assertEquals(it2.next(), m2);
             assertFalse(it2.hasNext());
             try {
                 it2.next();
@@ -492,4 +493,31 @@ public class LitTest {
     }
 
 
+    @Test
+    public void testLoadingLitsNameClash() throws IOException {
+        File file = File.createTempFile("test", ".gnf");
+        String filename = file.getAbsolutePath().toString();
+        file.delete();
+        {
+            monosat.Solver s = new monosat.Solver("", filename);
+            monosat.Lit a = new monosat.Lit(s,"MyLiteral1");
+            s.close();
+        }
+
+        monosat.Solver s2 = new monosat.Solver();
+        assertTrue(s2.solve());
+        assertEquals(1,s2.nVars());
+        Lit a2 = new Lit(s2, "MyLiteral2");
+        try{
+            //If you load constraints, and those constraints rename an existing, already
+            //named variable, then that is an exception (and leaves the solver in a bad state)
+            s2.loadConstraints(filename);
+            fail("Expected IllegalStateException, because the same literal should not be given two separate names");
+        }catch (IllegalStateException e){
+
+        }
+
+
+
+    }
 }

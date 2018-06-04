@@ -446,6 +446,7 @@ Monosat::SimpSolver * newSolver(){
 	return newSolver_arg(nullptr);
 }
 
+
 //adapted from stack overflow, http://stackoverflow.com/a/236803
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
 	std::stringstream ss(s);
@@ -545,6 +546,7 @@ Monosat::SimpSolver * newSolver_args(int argc,  char**argv){
 		parser->addParser(amo);
 
 		((MonosatData*)S->_external_data)->parser = parser;
+		S->setVarMap(parser);
 	}
 	return S ;
 }
@@ -563,6 +565,11 @@ void deleteSolver (Monosat::SimpSolver * S)
 		S->_external_data=nullptr;
 	}
 	delete (S);
+}
+
+
+bool ok(Monosat::SimpSolver * S){
+	return S->okay();
 }
 
 void clearOptimizationObjectives(Monosat::SimpSolver * S){

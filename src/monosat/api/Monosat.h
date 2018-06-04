@@ -78,6 +78,8 @@ typedef int64_t Weight;
 #endif
 
   void deleteSolver (SolverPtr S);
+  //Return true if the solver has not yet proven a the formula UNSAT
+  bool ok(SolverPtr S);
   //If set, dump constraints to this file (as they are asserted in the solver)
   void setOutputFile(SolverPtr S,const char * output);
   void readGNF(SolverPtr S, const char  * filename);

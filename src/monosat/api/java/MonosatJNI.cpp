@@ -88,6 +88,13 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_deleteSolver
     javaThrow(env);
 }
 
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_ok
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
+    return jboolean(ok(reinterpret_cast<SolverPtr>(solverPtr)));
+}catch(...) {
+    javaThrow(env);
+    return false;
+}
 
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setOutputFile
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jstring filename) try {
