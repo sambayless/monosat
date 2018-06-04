@@ -209,6 +209,17 @@ public final class BitVector {
       throw new IllegalArgumentException("BitVector must have a bit-width <= 63");
     }
     this.width = width;
+    if (name.length() > 0) {
+      this._name = MonosatJNI.validID(name);
+
+      if (MonosatJNI.hasBitvectorWithName(solver.solverPtr, solver.bvPtr, name)) {
+        // this name is already used
+        throw new IllegalArgumentException("No two bitvectors may have the same (non-empty) name");
+      }
+
+    } else {
+      this._name = "";
+    }
     if (!introduceLiterals) {
       id = MonosatJNI.newBitvector_anon(solver.solverPtr, solver.bvPtr, width);
     } else {
@@ -220,9 +231,9 @@ public final class BitVector {
               solver.solverPtr, solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size());
     }
     assert (id >= 0);
-    this._name = name;
-    if (name.length() > 0) {
-      MonosatJNI.setBitvectorName(solver.solverPtr, solver.bvPtr, id, MonosatJNI.validID(name));
+
+    if (this._name.length() > 0) {
+      MonosatJNI.setBitvectorName(solver.solverPtr, solver.bvPtr, id, this._name);
     }
     solver.registerBitVector(this);
   }
@@ -805,5 +816,14 @@ public final class BitVector {
     } else {
       return "BV " + id + ", width" + width();
     }
+  }
+
+  /**
+   * Get the integer ID of this bitvector
+   *
+   * @return the integer ID of this bitvector
+   */
+  protected int getID() {
+    return this.id;
   }
 }

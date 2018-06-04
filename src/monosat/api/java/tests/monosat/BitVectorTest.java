@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -478,7 +479,81 @@ public class BitVectorTest {
   public void testLoadingBV() throws IOException {
     File file = File.createTempFile("test", ".gnf");
     String filename = file.getAbsolutePath().toString();
-    System.out.println(filename);
+    file.delete();
+
+    monosat.Solver s = new monosat.Solver("", filename);
+    BitVector bv0 = new BitVector(s, 4);
+    BitVector bv1 = new BitVector(s, 4, "");
+    BitVector bv2 = new BitVector(s, 4, "");
+
+    BitVector bv3 = new BitVector(s, 4, "MyBitvector");
+
+    try {
+      new BitVector(s, 4, "MyBitvector");
+      fail("No two bvs can have the same name");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+
+    try {
+      new BitVector(s, 4, "Name With Spaces");
+      fail("Expected a bad name exception");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+    BitVector bv4 = new BitVector(s, 4, tricky_name);
+
+    try {
+      new BitVector(s, 4, "Name With \n NewLine");
+      fail("Expected a bad name exception");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+    try {
+      new BitVector(s, 4, "Name With \t tab");
+      fail("Expected a bad name exception");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+
+    assertEquals(bv0.name(), "");
+    assertEquals(bv1.name(), "");
+    assertEquals(bv2.name(), "");
+    assertEquals(bv3.name(), "MyBitvector");
+    assertEquals(bv4.name(), tricky_name);
+    try {
+      s.getBitvector("");
+      fail("Expected a bad name exception");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+
+    assertEquals(s.getBitvector("MyBitvector"), bv3);
+    assertEquals(s.getBitvector(tricky_name), bv4);
+
+    s.close();
+
+    monosat.Solver s2 = new monosat.Solver();
+    assertTrue(s2.solve());
+    s2.loadConstraints(filename);
+    assertTrue(s2.solve());
+    BitVector bv1_b = s2.getBitvector("MyBitvector");
+    assertEquals(bv1_b.width(), 4);
+    BitVector bv2_b = s2.getBitvector(tricky_name);
+
+    assertEquals(s2.getBitvector("MyBitvector"), bv1_b);
+    assertEquals(s2.getBitvector(tricky_name), bv2_b);
+
+    assertTrue(s2.solve(bv1_b.eq(1)));
+
+    assertEquals(bv3.getID(), bv1_b.getID());
+    assertEquals(bv4.getID(), bv2_b.getID());
+  }
+
+  @Test
+  public void testLoadingBVIterators() throws IOException {
+    File file = File.createTempFile("test", ".gnf");
+    String filename = file.getAbsolutePath().toString();
     file.delete();
 
     {
@@ -488,14 +563,14 @@ public class BitVectorTest {
       BitVector bv2 = new BitVector(s, 4, "");
 
       BitVector bv3 = new BitVector(s, 4, "MyBitvector");
-
+      assertEquals(s.nBitvectors(), 4);
       try {
         new BitVector(s, 4, "MyBitvector");
         fail("No two bvs can have the same name");
       } catch (IllegalArgumentException except) {
         // ok
       }
-
+      assertEquals(s.nBitvectors(), 4);
       try {
         new BitVector(s, 4, "Name With Spaces");
         fail("Expected a bad name exception");
@@ -503,7 +578,7 @@ public class BitVectorTest {
         // ok
       }
       BitVector bv4 = new BitVector(s, 4, tricky_name);
-
+      assertEquals(s.nBitvectors(), 5);
       try {
         new BitVector(s, 4, "Name With \n NewLine");
         fail("Expected a bad name exception");
@@ -531,21 +606,84 @@ public class BitVectorTest {
 
       assertEquals(s.getBitvector("MyBitvector"), bv3);
       assertEquals(s.getBitvector(tricky_name), bv4);
-
+      assertEquals(s.nBitvectors(), 5);
       s.close();
     }
 
-    monosat.Solver s = new monosat.Solver();
-    assertTrue(s.solve());
-    s.loadConstraints(filename);
-    assertTrue(s.solve());
-    BitVector bv1 = s.getBitvector("MyBitvector");
+    monosat.Solver s2 = new monosat.Solver();
+
+    assertTrue(s2.solve());
+    assertEquals(s2.nBitvectors(), 0);
+    s2.loadConstraints(filename);
+    assertEquals(s2.nBitvectors(), 5);
+    BitVector bv3 = new BitVector(s2, 4, "MyBitvector3");
+    assertEquals(s2.nBitvectors(), 6);
+    assertTrue(s2.solve());
+    BitVector bv1 = s2.getBitvector("MyBitvector");
     assertEquals(bv1.width(), 4);
-    BitVector bv2 = s.getBitvector(tricky_name);
+    BitVector bv2 = s2.getBitvector(tricky_name);
 
-    assertEquals(s.getBitvector("MyBitvector"), bv1);
-    assertEquals(s.getBitvector(tricky_name), bv2);
+    assertEquals(s2.getBitvector("MyBitvector"), bv1);
+    assertEquals(s2.getBitvector(tricky_name), bv2);
 
-    assertTrue(s.solve(bv1.eq(1)));
+    assertTrue(s2.solve(bv1.eq(1)));
+    assertEquals(s2.nBitvectors(), 6);
+    // The solver should (now) maintain integer mappings of literals after loading from disk
+
+    {
+      Iterator<BitVector> it = s2.bitvectors();
+      it.next();
+      it.next();
+      it.next();
+      assertEquals(it.next(), bv1);
+      assertEquals(it.next(), bv2);
+      assertEquals(it.next(), bv3);
+      assertFalse(it.hasNext());
+      try {
+        it.next();
+        fail("Expected out of bounds exception");
+      } catch (IndexOutOfBoundsException except) {
+        // ok
+      }
+    }
+    {
+      Iterator<BitVector> it = s2.namedBitvectors();
+      assertEquals(it.next(), bv1);
+      assertEquals(it.next(), bv2);
+      assertEquals(it.next(), bv3);
+      assertFalse(it.hasNext());
+      try {
+        it.next();
+        fail("Expected out of bounds exception");
+      } catch (IndexOutOfBoundsException except) {
+        // ok
+      }
+    }
+  }
+
+  @Test
+  public void testLoadingBVNameClash() throws IOException {
+    File file = File.createTempFile("test", ".gnf");
+    String filename = file.getAbsolutePath().toString();
+    file.delete();
+    {
+      monosat.Solver s = new monosat.Solver("", filename);
+      BitVector bv0 = new BitVector(s, 4, "Bitvector1");
+      s.close();
+    }
+
+    monosat.Solver s2 = new monosat.Solver();
+    assertTrue(s2.solve());
+    assertEquals(1, s2.nVars());
+    BitVector bv0 = new BitVector(s2, 4, "Bitvector2");
+    try {
+      // If you load constraints, and those constraints rename an existing, already
+      // named variable, then that is an exception (and leaves the solver in a bad state)
+      s2.loadConstraints(filename);
+      fail(
+          "Expected IllegalStateException, because the same bv should not be given two separate names");
+    } catch (IllegalStateException e) {
+
+    }
   }
 }

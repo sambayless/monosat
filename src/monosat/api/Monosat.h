@@ -156,7 +156,8 @@ typedef int64_t Weight;
   //If varname is null or length-0, then this will remove any existing name.
   //If varname is non-unique, or if this variable already has a name, throw an excpetion
   void setVariableName(SolverPtr S, int variable, const char  * varname);
-  bool hasVariableName(SolverPtr S, int variable);
+  bool variableHasName(SolverPtr S, int variable);
+  bool hasVariableWithName(SolverPtr S, const char * name);
   const char * getVariableName(SolverPtr S, int variable);
   int getVariable(SolverPtr S, const char * varname);
 
@@ -216,6 +217,11 @@ typedef int64_t Weight;
   void setBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID, const char * name);
   const char * getBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID);
   int getBitvector(SolverPtr S, BVTheoryPtr bv, const char * name);
+
+  //True if this bit vector has a non-empty name.
+  bool bitvectorHasName(SolverPtr S, BVTheoryPtr bv, int bvID);
+  //True if there exists a bitvector with the given name.
+  bool hasBitvectorWithName(SolverPtr S, BVTheoryPtr bv, const char * name);
 
 
   //Get the number of named bitvectors in the solver

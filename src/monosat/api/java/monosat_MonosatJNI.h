@@ -97,11 +97,19 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
 
 /*
  * Class:     monosat_MonosatJNI
- * Method:    hasVariableName
+ * Method:    variableHasName
  * Signature: (JI)Z
  */
-JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableName
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_variableHasName
   (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    hasVariableWithName
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableWithName
+  (JNIEnv *, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -478,6 +486,22 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setBitvectorName
   (JNIEnv *, jclass, jlong, jlong, jint, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    bitvectorHasName
+ * Signature: (JJI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_bitvectorHasName
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    hasBitvectorWithName
+ * Signature: (JJLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasBitvectorWithName
+  (JNIEnv *, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI

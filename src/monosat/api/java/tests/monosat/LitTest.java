@@ -466,14 +466,14 @@ public class LitTest {
             assertEquals(it.next(), c2);
             assertEquals(it.next(), e2);
             assertEquals(it.next(), m2);
-
+            assertFalse(it.hasNext());
             try {
                 it.next();
                 fail("Expected out of bounds exception");
             } catch (IndexOutOfBoundsException except) {
                 // ok
             }
-            assertFalse(it.hasNext());
+
         }
         {
             Iterator<Lit> it2 = s2.namedLiterals();

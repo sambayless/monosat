@@ -421,6 +421,18 @@ inline int dimacs(Monosat::SimpSolver * S, Lit internalLit) {
 	return sign(l) ? -(var(l) + 1) : (var(l) + 1);
 }
 
+Var internalBV(Monosat::SimpSolver * S, int bvID){
+	Monosat::BVTheorySolver<int64_t> *  bv = (Monosat::BVTheorySolver<int64_t> *) S->getBVTheory();
+	return bv->mapBV(bvID);
+}
+Var internalBV(Monosat::BVTheorySolver<int64_t> *  bv, int bvID){
+	return bv->mapBV(bvID);
+}
+//Convert an internal solver lit into an external integer representation
+Var externalBV(Monosat::BVTheorySolver<int64_t> *  bv, int bvID){
+	return bv->unmapBV(bvID);
+}
+
 void setOutputFile(Monosat::SimpSolver * S,const  char * output){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	assert(d);
@@ -1036,8 +1048,12 @@ void setVariableName(Monosat::SimpSolver * S, int variable, const char  * varnam
 		write_out(S, "symbol %d %s\n", variable + 1, varname);
 	}
 }
-bool hasVariableName(Monosat::SimpSolver * S, int variable){
+
+bool variableHasName(Monosat::SimpSolver * S, int variable){
 	return S->hasName(internalVar(S,variable));
+}
+bool hasVariableWithName(Monosat::SimpSolver * S, const char * name){
+	return S->hasVariable(name);
 }
 Var getVariable(Monosat::SimpSolver * S, const char * varname){
 	return externalVar(S,S->getVariable(varname));
@@ -1171,13 +1187,14 @@ bool addTertiaryClause(Monosat::SimpSolver * S,int lit1, int lit2, int lit3){
 
 //theory interface for bitvectors
 int newBitvector_anon(Monosat::SimpSolver * S,Monosat::BVTheorySolver<int64_t> * bv, int bvWidth){
-
-	int bvID = bv->newBitvector_Anon(-1,bvWidth).getID();
+	int bvID =bv->newBitvector_Anon(-1,bvWidth).getID();
+    bvID = externalBV(bv,bvID);
 	write_out(S,"bv anon %d %d\n",bvID, bvWidth);
 	return bvID;
 }
 int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvWidth, int64_t constval){
 	int bvID = bv->newBitvector(-1,bvWidth,constval).getID();
+    bvID = externalBV(bv,bvID);
 	write_out(S,"bv const %d %d %" PRId64 "\n",bvID, bvWidth, constval);
 	return bvID;
 }
@@ -1191,6 +1208,7 @@ int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 	}
 	int bvID = bv->nBitvectors();
 	bv->newBitvector(bvID,lits);
+	bvID = externalBV(bv,bvID);
 	write_out(S,"bv %d %d",bvID, n_bits);
 	for (int i = 0;i<n_bits;i++){
 		write_out(S," %d",dimacs(S,mkLit(lits[i])));
@@ -1201,27 +1219,35 @@ int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 
 void setBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, const char * name){
 	if(name != nullptr && strlen(name)>0) {
-		bv->setSymbol(bvID, name);
+		bv->setSymbol(internalBV(bv,bvID), name);
 		write_out(S, "bv symbol %d %s\n", bvID, name);
 	}
 }
 
+bool bitvectorHasName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
+    return bv->bitvectorHasName(internalBV(bv,bvID));
+}
+
+bool hasBitvectorWithName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, const char * name){
+	return bv->hasBitVector(name);
+}
+
 const char * getBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
-	return bv->getSymbol(bvID).c_str();
+	return bv->getSymbol(internalBV(bv,bvID)).c_str();
 }
 
 /*
  * The width of the bitvector.
  */
 int bv_width(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int bvID){
-	return bv->getWidth(bvID);
+	return bv->getWidth(internalBV(bv,bvID));
 }
 /*
  * The number of defined literals making up the bits of this bitvector.
  * May be equal to the width of the bitvector, or exactly 0.
  */
 int bv_nBits(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int bvID){
-	return bv->getBits(bvID).size();
+	return bv->getBits(internalBV(bv,bvID)).size();
 }
 
 /*
@@ -1230,20 +1256,20 @@ int bv_nBits(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int 
  * Some bitvectors have 0 defined bits, even if they have non-zero width.
  */
 int bv_bit(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int bvID, int bit){
-	if(bit<0|| bit>=bv_nBits(S,bv,bvID)){
+	if(bit<0|| bit>=bv_nBits(S,bv,internalBV(bv,bvID))){
 		throw std::runtime_error("BV bit out of range");
 	}
-	return externalLit(S,bv->toSolver(bv->getBits(bvID)[bit]));
+	return externalLit(S,bv->toSolver(bv->getBits(internalBV(bv,bvID))[bit]));
 }
 
 int getBitvector(SolverPtr S, BVTheoryPtr bv, const char * name){
-    return bv->getBitvector(name);
+    return externalBV(bv, bv->getBitvector(name));
 }
 
 int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
-	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::lt,bvID,weight));
+	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::lt,internalBV(bv,bvID),weight));
 	write_out(S,"bv const < %d %d %" PRId64 "\n",dimacs(S,l),bvID, weight);
 
 	return externalLit(S,l);
@@ -1251,7 +1277,7 @@ int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<in
 int newBVComparison_bv_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
-	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::lt,bvID,compareID));
+	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::lt,internalBV(bv,bvID),compareID));
 	write_out(S,"bv < %d %d %d\n",dimacs(S,l),bvID, compareID);
 
 	return externalLit(S,l);
@@ -1260,7 +1286,7 @@ int newBVComparison_const_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<i
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
 
-	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::leq,bvID,weight));
+	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::leq,internalBV(bv,bvID),weight));
 	//printf("Const bv leq bv %d to %" PRId64 " = var %d\n",bvID, weight, dimacs(S,l));
 	write_out(S,"bv const <= %d %d %" PRId64 "\n",dimacs(S,l),bvID, weight);
 	return externalLit(S,l);
@@ -1268,7 +1294,7 @@ int newBVComparison_const_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<i
 int newBVComparison_bv_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
 	//Var v = newVar(S);
 	// Lit l =mkLit(v);
-	Lit l =bv->toSolver(bv->newComparisonBV(Monosat::Comparison::leq,bvID,compareID));
+	Lit l =bv->toSolver(bv->newComparisonBV(Monosat::Comparison::leq,internalBV(bv,bvID),compareID));
 	write_out(S,"bv <= %d %d %d\n",dimacs(S,l),bvID, compareID);
 	return externalLit(S,l);
 }
@@ -1276,21 +1302,21 @@ int newBVComparison_bv_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 int newBVComparison_const_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	// Var v = newVar(S);
 	// Lit l =mkLit(v);
-	Lit l =bv->toSolver( bv->newComparison(Monosat::Comparison::gt,bvID,weight));
+	Lit l =bv->toSolver( bv->newComparison(Monosat::Comparison::gt,internalBV(bv,bvID),weight));
 	write_out(S,"bv const > %d %d %" PRId64 "\n",dimacs(S,l),bvID, weight);
 	return externalLit(S,l);
 }
 int newBVComparison_bv_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
-	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::gt,bvID,compareID));
+	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::gt,internalBV(bv,bvID),compareID));
 	write_out(S,"bv > %d %d %d\n",dimacs(S,l),bvID, compareID);
 	return externalLit(S,l);
 }
 int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
-	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::geq,bvID,weight));
+	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::geq,internalBV(bv,bvID),weight));
 	//printf("Const bv geq bv %d to %" PRId64 " = var %d\n",bvID, weight, dimacs(S,l));
 	write_out(S,"bv const >= %d %d %" PRId64 "\n",dimacs(S,l),bvID, weight);
 	return externalLit(S,l);
@@ -1298,7 +1324,7 @@ int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<i
 int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
 	//Var v = newVar(S);
 	//Lit l =mkLit(v);
-	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::geq,bvID,compareID));
+	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::geq,internalBV(bv,bvID),compareID));
 	write_out(S,"bv >= %d %d %d\n",dimacs(S,l),bvID, compareID);
 	return externalLit(S,l);
 }
@@ -1321,8 +1347,8 @@ int newBVComparison_bv_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int6
     S->addClause(~b, ~c);
     S->addClause(c, ~a, b);
     //add redundant (but likely helpful) bit level implications
-    vec<Lit> & bits1 = bv->getBits(bvID);
-    vec<Lit> & bits2 = bv->getBits(compareID);
+    vec<Lit> & bits1 = bv->getBits(internalBV(bv,bvID));
+    vec<Lit> & bits2 = bv->getBits(internalBV(bv,compareID));
     if(bits1.size()==bits2.size()) {
         //watch out for anonymous bitvectors
         for (int i = 0; i < bits1.size(); i++) {
@@ -1351,7 +1377,7 @@ void bv_min(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int*
 		write_out(S," %d",args[i]);
 	}
 	write_out(S,"\n");
-	bv->newMinBV(resultID, m_args);
+	bv->newMinBV(internalBV(bv,resultID), m_args);
 }
 void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
 	vec<int> m_args;
@@ -1362,7 +1388,7 @@ void bv_max(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int
 		write_out(S," %d",args[i]);
 	}
 	write_out(S,"\n");
-	bv->newMaxBV(resultID, m_args);
+	bv->newMaxBV(internalBV(bv,resultID), m_args);
 }
 void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
 	vec<int> m_args;
@@ -1378,7 +1404,7 @@ void bv_popcount(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 		write_out(S," %d",dimacs(S,mkLit(m_args[i])));
 	}
 	write_out(S,"\n");
-	bv->newPopCountBV(resultID, m_args);
+	bv->newPopCountBV(internalBV(bv,resultID), m_args);
 }
 
 void bv_unary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  int* args,int n_args, int resultID){
@@ -1402,87 +1428,87 @@ void bv_unary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,  i
     write_out(S,"\n");
     //bv->newPopCountBV(resultID, m_args);
 
-    bv->getUnary(resultID, m_args);
+    bv->getUnary(internalBV(bv,resultID), m_args);
 
 
 }
 void bv_addition( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
 	write_out(S,"bv + %d %d %d\n",resultID,bvID1, bvID2);
-	bv->newAdditionBV(resultID,bvID1,bvID2);
+	bv->newAdditionBV(internalBV(bv,resultID),internalBV(bv,bvID1),internalBV(bv,bvID2));
 
 }
 void bv_subtraction( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
 	write_out(S,"bv - %d %d %d\n",resultID,bvID1, bvID2);
-	bv->newSubtractionBV(resultID,bvID1,bvID2);
+	bv->newSubtractionBV(internalBV(bv,resultID),internalBV(bv,bvID1),internalBV(bv,bvID2));
 }
 void bv_multiply( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1, int bvID2, int resultID){
 	write_out(S,"bv * %d %d %d\n",resultID,bvID1, bvID2);
-	bv->newMultiplicationBV(resultID,bvID1,bvID2);
+	bv->newMultiplicationBV(internalBV(bv,resultID),internalBV(bv,bvID1),internalBV(bv,bvID2));
 }
 void bv_divide( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID1,  int bvID2, int resultID){
 	write_out(S,"bv / %d %d %d\n",resultID,bvID1, bvID2);
-	bv->newDivisionBV(resultID,bvID1,bvID2);
+	bv->newDivisionBV(internalBV(bv,resultID),internalBV(bv,bvID1),internalBV(bv,bvID2));
 }
 
 void bv_ite( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int condition_lit,int bvThenID, int bvElseID, int bvResultID){
 	Lit l = internalLit(S,condition_lit);
 
 	write_out(S,"bv_ite %d %d %d %d\n",dimacs(S,mkLit(condition_lit)),bvThenID,bvElseID,bvResultID);
-	bv->newConditionalBV(l,bvThenID,bvElseID,bvResultID);
+	bv->newConditionalBV(l,internalBV(bv,bvThenID),internalBV(bv,bvElseID),internalBV(bv,bvResultID));
 }
 
 void bv_not(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a,  int out){
 	//return bv->bitwiseAnd(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv not %d %d\n",a, out);
-	bv->bitwiseNot(bv->getBV(a),bv->getBV(out));
+	bv->bitwiseNot(bv->getBV(internalBV(bv,a)),bv->getBV(internalBV(bv,out)));
 }
 
 void bv_and(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseAnd(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv and %d %d %d \n",a,b, out);
-	bv->bitwiseAnd(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+	bv->bitwiseAnd(bv->getBV(internalBV(bv,a)),bv->getBV(internalBV(bv,b)),bv->getBV(internalBV(bv,out)));
 }
 void bv_nand( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseNand(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv nand %d %d %d \n",a,b, out);
-	bv->bitwiseNand(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+	bv->bitwiseNand(bv->getBV(internalBV(bv,a)),bv->getBV(internalBV(bv,b)),bv->getBV(internalBV(bv,out)));
 }
 void bv_or( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseOr(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv or %d %d %d \n",a,b, out);
-	bv->bitwiseOr(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+	bv->bitwiseOr(bv->getBV(internalBV(bv,a)),bv->getBV(internalBV(bv,b)),bv->getBV(internalBV(bv,out)));
 }
 void bv_nor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseNor(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv nor %d %d %d \n",a,b, out);
-	bv->bitwiseNor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+	bv->bitwiseNor(bv->getBV(internalBV(bv,a)),bv->getBV(internalBV(bv,b)),bv->getBV(internalBV(bv,out)));
 }
 void bv_xor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseXor(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv xor %d %d %d \n",a,b, out);
-	bv->bitwiseXor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+	bv->bitwiseXor(bv->getBV(internalBV(bv,a)),bv->getBV(internalBV(bv,b)),bv->getBV(internalBV(bv,out)));
 }
 void bv_xnor( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int a, int b, int out){
 	//return bv->bitwiseXnor(bv->getBV(a),bv->getBV(b)).getID();
 	write_out(S,"bv xnor %d %d %d \n",a,b, out);
-	bv->bitwiseXnor(bv->getBV(a),bv->getBV(b),bv->getBV(out));
+	bv->bitwiseXnor(bv->getBV(internalBV(bv,a)),bv->getBV(internalBV(bv,b)),bv->getBV(internalBV(bv,out)));
 }
 
 void bv_concat( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int aID, int bID, int resultID){
 	write_out(S,"bv concat %d %d %d \n",aID,bID, resultID);
-	bv->concat(bv->getBV(aID), bv->getBV(bID),bv->getBV(resultID));
+	bv->concat(bv->getBV(internalBV(bv,aID)), bv->getBV(internalBV(bv,bID)),bv->getBV(internalBV(bv,resultID)));
 }
 
 void bv_slice( Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,int aID, int lower, int upper, int resultID){
 	write_out(S,"bv slice %d %d %d %d\n",aID,lower,upper, resultID);
-	bv->slice(bv->getBV(aID),lower,upper,bv->getBV(resultID));
+	bv->slice(bv->getBV(internalBV(bv,aID)),lower,upper,bv->getBV(internalBV(bv,resultID)));
 }
 
 //Convert the specified bitvector, as well as any other bitvectors in its cone of influence, into pure CNF
 void bv_bitblast(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
 	S->cancelUntil(0);
 	write_out(S,"bv bitblast %d\n",bvID);
-	bv->bitblast(bvID);
+	bv->bitblast(internalBV(bv,bvID));
 }
 
 //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
@@ -1620,7 +1646,7 @@ int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,i
 	Var v = newVar(S);
 	Lit l =mkLit(v);
 	write_out(S,"edge_bv %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(S,l),bvID);
-	G->newEdgeBV( from,  to, v,  bvID );
+	G->newEdgeBV( from,  to, v,  internalBV(S,bvID) );
 	return externalLit(S,l);
 }
 
@@ -1644,11 +1670,10 @@ int shortestPathUnweighted_lt_const(Monosat::SimpSolver * S,Monosat::GraphTheory
 	write_out(S,"distance_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(S,l),steps);
 	return externalLit(S,l);
 }
-int shortestPathUnweighted_lt_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
-int shortestPathUnweighted_leq_bv(SolverPtr S,GraphTheorySolver_long G,int from, int to, int bvID);
+
 
 int shortestPathUnweighted_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
-    Lit l = G->distanceBV(from,to, bvID,false);
+    Lit l = G->distanceBV(from,to,  internalBV(S,bvID),false);
 	write_out(S,"distance_bv_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(S,l),bvID);
     return externalLit(S,l);
 }
@@ -1669,12 +1694,12 @@ int shortestPath_leq_const(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<in
 }
 
 int shortestPath_lt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
-	Lit l = G->distanceBV(from,to, bvID,false);
+	Lit l = G->distanceBV(from,to,  internalBV(S,bvID),false);
 	write_out(S,"weighted_distance_bv_lt %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(S,l),bvID);
 	return externalLit(S,l);
 }
 int shortestPath_leq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int from, int to, int bvID){
-	Lit l = G->distanceBV(from,to, bvID,true);
+	Lit l = G->distanceBV(from,to,  internalBV(S,bvID),true);
 	write_out(S,"weighted_distance_bv_leq %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(S,l),bvID);
 	return externalLit(S,l);
 }
@@ -1689,13 +1714,13 @@ int maximumFlow_gt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *
 	return externalLit(S,l);
 }
 int maximumFlow_geq_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
-	Lit l = G->maxflowBV(source, sink, bvID,true);
+	Lit l = G->maxflowBV(source, sink,  internalBV(S,bvID),true);
 	write_out(S,"maximum_flow_bv_geq %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(S,l),bvID);
 	return externalLit(S,l);
 }
 int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int source, int sink, int bvID){
 
-	Lit l = G->maxflowBV(source, sink, bvID,false);
+	Lit l = G->maxflowBV(source, sink,  internalBV(S,bvID),false);
 	write_out(S,"maximum_flow_bv_gt %d %d %d %d %d\n",G->getGraphID(),source,sink, dimacs(S,l),bvID);
 	return externalLit(S,l);
 }
@@ -1926,9 +1951,9 @@ int getConstantModel_Literal(Monosat::SimpSolver * S,int lit){
 
 int64_t getModel_BV(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, bool getMaximumValue){
 	if(getMaximumValue){
-		return bv->getOverApprox(bvID);
+		return bv->getOverApprox( internalBV(S,bvID));
 	}else{
-		return bv->getUnderApprox(bvID);
+		return bv->getUnderApprox( internalBV(S,bvID));
 	}
 
 }

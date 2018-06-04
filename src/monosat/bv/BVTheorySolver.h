@@ -7517,6 +7517,13 @@ public:
         }
 	}
 
+    bool hasBitVector(std::string name){
+	    return symbol_map.count(name)>0;
+	}
+	bool bitvectorHasName(int bvID){
+	    return bvID>=0 && bvID<symbols.size() && symbols[bvID].size()>0;
+	}
+
 	int nBitvectors()const{
 		return bitvectors.size();
 	}
@@ -8892,6 +8899,14 @@ public:
 	int unmapBV(int bvID){
 		if(bvRemap){
 			return bvRemap->unmapBV(bvID);
+		}else{
+			return bvID;
+		}
+	}
+
+	int mapBV(int bvID)  {
+		if(bvRemap){
+			return bvRemap->mapBV(*S,bvID);
 		}else{
 			return bvID;
 		}

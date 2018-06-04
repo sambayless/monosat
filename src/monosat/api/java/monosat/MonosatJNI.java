@@ -65,7 +65,9 @@ final class MonosatJNI { // package level access specifier
 
   public static native String getVariableName(long solverPtr, int variable);
 
-  public static native boolean hasVariableName(long solverPtr, int variable);
+  public static native boolean variableHasName(long solverPtr, int variable);
+
+  public static native boolean hasVariableWithName(long solverPtr, String name);
 
   //get the number of named variables in the solver
   public static native int nNamedVariables(long solverPtr);
@@ -223,6 +225,9 @@ final class MonosatJNI { // package level access specifier
   public static native int newBitvector(long solverPtr, long bvPtr, IntBuffer bits, int n_bits);
 
   public static native void setBitvectorName(long solverPtr, long bvPtr, int bvID, String name);
+
+  public static native boolean bitvectorHasName(long solverPtr, long bvPtr, int bvID);
+  public static native boolean hasBitvectorWithName(long solverPtr, long bvPtr, String name);
 
   public static native String getBitvectorName(long solverPtr, long bvPtr, int bvID);
 
