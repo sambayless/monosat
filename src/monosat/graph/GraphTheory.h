@@ -1362,7 +1362,7 @@ public:
 			return node_symbols[node];
 	}
 
-	void setEdgeName(Var edgeVar,const char * symbol){
+	void setEdgeName(Var edgeVar,const std::string & symbol){
 		int edgeID = getEdgeID(edgeVar);
 
 		if(hasNamedEdge(symbol)){
@@ -2743,7 +2743,7 @@ public:
 				int a = 1;
 			}
 			if(edgeHasName(e.v)){
-				printf("n%d -> n%d [label=\"v%d_%s\",color=\"%s\"]\n", e.from, e.to, e.v,getEdgeName(e.v), s);
+				printf("n%d -> n%d [label=\"v%d_%s\",color=\"%s\"]\n", e.from, e.to, e.v,getEdgeName(e.v).c_str(), s);
 			}else{
 			printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", e.from, e.to, e.v, s);
 		}
