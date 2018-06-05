@@ -74,7 +74,7 @@ public final class Lit {
   /** The solver instance this literal belongs to. */
   protected final monosat.Solver solver;
 
-  private final String _name;
+  private String _name;
   /**
    * The integer value of this literal. Note that this is not marked final, as released literals may
    * be renumbered.
@@ -281,6 +281,28 @@ public final class Lit {
 
   public String name() {
     return _name;
+  }
+
+  /**
+   * Assign a name to this (previously unnamed) literal.
+   * <p>
+   * @param name The name to assign to this literal.
+   * If the string is empty, then no name will be
+   * associated with * the literal. Otherwise, the name must be unique,
+   * and is restricted to printable ASCII characters.
+   * @throws IllegalArgumentException If the variable was previously named,
+   * or if the new name is not a valid ID.
+   */
+  public void setName(String name) {
+    if(this._name.length()>0){
+      throw new IllegalArgumentException("Previously named literals cannot be renamed (this literal is already named " +
+              name() + ")");
+    }else{
+      String proposedName = MonosatJNI.validID(name);
+      MonosatJNI.setVariableName(solver.solverPtr, toVar(), proposedName);
+      _name = proposedName;
+      not()._name = proposedName;
+    }
   }
 
   @Override

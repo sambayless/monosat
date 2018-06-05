@@ -170,6 +170,11 @@ public class LitTest {
     assertEquals(c.name(), "MyLiteral");
     assertEquals(e.name(), tricky_name);
 
+      assertEquals(a.name(), a.not().name());
+      assertEquals(b.name(), b.not().name());
+      assertEquals(c.name(),c.not().name());
+      assertEquals(e.name(), e.not().name());
+
     try {
       s.getLiteral("");
       fail("Expected a bad name exception");
@@ -183,6 +188,85 @@ public class LitTest {
     assertEquals(s.getLiteral(tricky_name), e);
   }
 
+    @Test
+    public void testRenamingLits() {
+        monosat.Solver s = new monosat.Solver();
+        monosat.Lit a = new monosat.Lit(s);
+        monosat.Lit b = new monosat.Lit(s, "");
+
+        monosat.Lit c = new monosat.Lit(s, "MyLiteral");
+
+        try {
+            c.setName("MyLiteral2");
+            fail("Cannot rename previously named literals");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        try {
+            c.setName("");
+            fail("Cannot remove name from previously named literals");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+        assertEquals(a.name(),"");
+        a.setName("MyLiteral2");
+        assertEquals(a.name(),"MyLiteral2");
+
+        try {
+            a.setName("MyLiteral3");
+            fail("Cannot rename previously named literals");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        try {
+            a.setName("");
+            fail("Cannot remove name from previously named literals");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        try {
+            b.setName("MyLiteral");
+            fail("No two variables can have the same name");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        assertEquals(b.name(),"");
+
+
+        try {
+            b.setName("MyLiteral2");
+            fail("No two variables can have the same name");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+
+        assertEquals(a.name(), "MyLiteral2");
+        assertEquals(b.name(), "");
+        assertEquals(c.name(), "MyLiteral");
+
+
+        assertEquals(a.name(), a.not().name());
+        assertEquals(b.name(), b.not().name());
+        assertEquals(c.name(),c.not().name());
+
+
+        try {
+            s.getLiteral("");
+            fail("Expected a bad name exception");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        assertEquals(s.getLiteral("True"), Lit.True); // "True" is always named in the solver
+        assertEquals(s.getLiteral("False"), Lit.False); // "False" is always named in the solver
+        assertEquals(s.getLiteral("MyLiteral"), c);
+        assertEquals(s.getLiteral("MyLiteral2"), a);
+    }
   @Test
   public void testLoadingLits() throws IOException {
     File file = File.createTempFile("test", ".gnf");
