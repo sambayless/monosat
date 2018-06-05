@@ -244,9 +244,11 @@ public class LitTest {
             // ok
         }
 
+        b.not().setName("MyLiteral3");
+
 
         assertEquals(a.name(), "MyLiteral2");
-        assertEquals(b.name(), "");
+        assertEquals(b.name(), "MyLiteral3");
         assertEquals(c.name(), "MyLiteral");
 
 
@@ -266,6 +268,7 @@ public class LitTest {
         assertEquals(s.getLiteral("False"), Lit.False); // "False" is always named in the solver
         assertEquals(s.getLiteral("MyLiteral"), c);
         assertEquals(s.getLiteral("MyLiteral2"), a);
+        assertEquals(s.getLiteral("MyLiteral3"), b);
     }
   @Test
   public void testLoadingLits() throws IOException {

@@ -1552,7 +1552,7 @@ public final class Solver implements Closeable {
     }
   /**
    * Retrieve an existing named literal from the solver, by looking up its name.
-   *
+   * Note that the returned literal will never be negated.
    * @param name The name of the literal to check for.
    * @return The matching literal, if it exists.
    * @throws IllegalArgumentException If there is no literal in the solver with this name (or if
