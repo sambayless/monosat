@@ -153,7 +153,7 @@ class GraphParser: public Parser<B, Solver> {
 	};
 	vec<ParseEdgeSet> edge_sets;
 
-
+	std::stringstream name_ss;
 
 public:
 	GraphTheorySolver<int64_t>* getGraphTheory(int graphID){
@@ -309,6 +309,62 @@ private:
 		}
 
 	}
+	void readNode(B& in, Solver& S) {
+		if (opt_ignore_theories) {
+			skipLine(in);
+			return;
+		}
+
+		++in;
+
+		int graphID = parseInt(in);
+		int nodeID = parseInt(in);
+		skipWhitespace(in);
+		name_ss.str(std::string());
+		bool has_name=false;
+		while (!isEof(in) && *in != '\n' && !isWhitespace(*in)) {
+			name_ss <<((char)*in);
+			++in;
+			has_name=true;
+		}
+
+		if (graphID < 0 || graphID >= graphs.size()) {
+			parse_errorf("PARSE ERROR! Undeclared graph identifier %d for node %d\n", graphID, nodeID);
+		}
+		if (nodeID < 0) {
+			parse_errorf("PARSE ERROR! Node ids must be >=0, was %d\n", nodeID);
+		}
+
+		skipWhitespace(in);
+		if(*in=='\n' || *in==0){
+			//this is an unweighted edge
+			if (graphs[graphID]) {
+				while(graphs[graphID]->nNodes()<=nodeID) {
+					graphs[graphID]->newNode();
+				}
+				if(has_name){
+					graphs[graphID]->setNodeName(nodeID,name_ss.str());
+				}
+			} else if (graphs_float[graphID]) {
+				while(graphs_float[graphID]->nNodes()<=nodeID) {
+					graphs_float[graphID]->newNode();
+				}
+				if(has_name){
+					graphs_float[graphID]->setNodeName(nodeID,name_ss.str());
+				}
+			} else if (graphs_rational[graphID]) {
+				while(graphs_float[graphID]->nNodes()<=nodeID) {
+					graphs_rational[graphID]->newNode();
+				}
+				if(has_name){
+					graphs_rational[graphID]->setNodeName(nodeID,name_ss.str());
+				}
+			} else {
+				parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, nodeID);
+			}
+		}
+	}
+
 	void readEdge(B& in, Solver& S) {
 		if (opt_ignore_theories) {
 			skipLine(in);
@@ -1183,6 +1239,10 @@ public:
 		} else if (match(in, "edge")) {
 			count++;
 			readEdge(in, S);
+			return true;
+		} else if (match(in, "node")) {
+			count++;
+			readNode(in, S);
 			return true;
 		} else if (match(in, "weighted_edge")) {
 			count++;

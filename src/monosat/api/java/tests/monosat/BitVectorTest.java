@@ -465,14 +465,14 @@ public class BitVectorTest {
     assertEquals(bv3.name(), "MyBitvector");
     assertEquals(bv4.name(), tricky_name);
     try {
-      s.getBitvector("");
+      s.getBitVector("");
       fail("Expected a bad name exception");
     } catch (IllegalArgumentException except) {
       // ok
     }
 
-    assertEquals(s.getBitvector("MyBitvector"), bv3);
-    assertEquals(s.getBitvector(tricky_name), bv4);
+    assertEquals(s.getBitVector("MyBitvector"), bv3);
+    assertEquals(s.getBitVector(tricky_name), bv4);
   }
 
   @Test
@@ -522,14 +522,14 @@ public class BitVectorTest {
     assertEquals(bv3.name(), "MyBitvector");
     assertEquals(bv4.name(), tricky_name);
     try {
-      s.getBitvector("");
+      s.getBitVector("");
       fail("Expected a bad name exception");
     } catch (IllegalArgumentException except) {
       // ok
     }
 
-    assertEquals(s.getBitvector("MyBitvector"), bv3);
-    assertEquals(s.getBitvector(tricky_name), bv4);
+    assertEquals(s.getBitVector("MyBitvector"), bv3);
+    assertEquals(s.getBitVector(tricky_name), bv4);
 
     s.close();
 
@@ -537,12 +537,12 @@ public class BitVectorTest {
     assertTrue(s2.solve());
     s2.loadConstraints(filename);
     assertTrue(s2.solve());
-    BitVector bv1_b = s2.getBitvector("MyBitvector");
+    BitVector bv1_b = s2.getBitVector("MyBitvector");
     assertEquals(bv1_b.width(), 4);
-    BitVector bv2_b = s2.getBitvector(tricky_name);
+    BitVector bv2_b = s2.getBitVector(tricky_name);
 
-    assertEquals(s2.getBitvector("MyBitvector"), bv1_b);
-    assertEquals(s2.getBitvector(tricky_name), bv2_b);
+    assertEquals(s2.getBitVector("MyBitvector"), bv1_b);
+    assertEquals(s2.getBitVector(tricky_name), bv2_b);
 
     assertTrue(s2.solve(bv1_b.eq(1)));
 
@@ -563,14 +563,14 @@ public class BitVectorTest {
       BitVector bv2 = new BitVector(s, 4, "");
 
       BitVector bv3 = new BitVector(s, 4, "MyBitvector");
-      assertEquals(s.nBitvectors(), 4);
+      assertEquals(s.nBitVectors(), 4);
       try {
         new BitVector(s, 4, "MyBitvector");
         fail("No two bvs can have the same name");
       } catch (IllegalArgumentException except) {
         // ok
       }
-      assertEquals(s.nBitvectors(), 4);
+      assertEquals(s.nBitVectors(), 4);
       try {
         new BitVector(s, 4, "Name With Spaces");
         fail("Expected a bad name exception");
@@ -578,7 +578,7 @@ public class BitVectorTest {
         // ok
       }
       BitVector bv4 = new BitVector(s, 4, tricky_name);
-      assertEquals(s.nBitvectors(), 5);
+      assertEquals(s.nBitVectors(), 5);
       try {
         new BitVector(s, 4, "Name With \n NewLine");
         fail("Expected a bad name exception");
@@ -598,36 +598,36 @@ public class BitVectorTest {
       assertEquals(bv3.name(), "MyBitvector");
       assertEquals(bv4.name(), tricky_name);
       try {
-        s.getBitvector("");
+        s.getBitVector("");
         fail("Expected a bad name exception");
       } catch (IllegalArgumentException except) {
         // ok
       }
 
-      assertEquals(s.getBitvector("MyBitvector"), bv3);
-      assertEquals(s.getBitvector(tricky_name), bv4);
-      assertEquals(s.nBitvectors(), 5);
+      assertEquals(s.getBitVector("MyBitvector"), bv3);
+      assertEquals(s.getBitVector(tricky_name), bv4);
+      assertEquals(s.nBitVectors(), 5);
       s.close();
     }
 
     monosat.Solver s2 = new monosat.Solver();
 
     assertTrue(s2.solve());
-    assertEquals(s2.nBitvectors(), 0);
+    assertEquals(s2.nBitVectors(), 0);
     s2.loadConstraints(filename);
-    assertEquals(s2.nBitvectors(), 5);
+    assertEquals(s2.nBitVectors(), 5);
     BitVector bv3 = new BitVector(s2, 4, "MyBitvector3");
-    assertEquals(s2.nBitvectors(), 6);
+    assertEquals(s2.nBitVectors(), 6);
     assertTrue(s2.solve());
-    BitVector bv1 = s2.getBitvector("MyBitvector");
+    BitVector bv1 = s2.getBitVector("MyBitvector");
     assertEquals(bv1.width(), 4);
-    BitVector bv2 = s2.getBitvector(tricky_name);
+    BitVector bv2 = s2.getBitVector(tricky_name);
 
-    assertEquals(s2.getBitvector("MyBitvector"), bv1);
-    assertEquals(s2.getBitvector(tricky_name), bv2);
+    assertEquals(s2.getBitVector("MyBitvector"), bv1);
+    assertEquals(s2.getBitVector(tricky_name), bv2);
 
     assertTrue(s2.solve(bv1.eq(1)));
-    assertEquals(s2.nBitvectors(), 6);
+    assertEquals(s2.nBitVectors(), 6);
     // The solver should (now) maintain integer mappings of literals after loading from disk
 
     {
@@ -647,7 +647,7 @@ public class BitVectorTest {
       }
     }
     {
-      Iterator<BitVector> it = s2.namedBitvectors();
+      Iterator<BitVector> it = s2.namedBitVectors();
       assertEquals(it.next(), bv1);
       assertEquals(it.next(), bv2);
       assertEquals(it.next(), bv3);

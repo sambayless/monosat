@@ -782,43 +782,45 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 	gzFile in = gzopen(filename, "rb");
 	if (in == nullptr)
 		throw std::runtime_error("ERROR! Could not open file");
-	MonosatData * d = (MonosatData*) S->_external_data;
-	auto & parser = *d->parser;
+	try {
+		MonosatData *d = (MonosatData *) S->_external_data;
+		auto &parser = *d->parser;
+		StreamBuffer strm(in);
+		vec<int> assumps;
+		bool ran_last_solve = false;
+		d->optimization_objectives.clear();
+		while (parser.parse(strm, *S)) {
+			assumps.clear();
+			for (Lit l:parser.assumptions) {
+				assumps.push(externalLit(S, l));
+			}
+			d->optimization_objectives.clear();
+			for (Objective &o:parser.objectives) {
+				d->optimization_objectives.push(o);
+			}
 
-	StreamBuffer strm(in);
-	vec<int> assumps;
-	bool ran_last_solve=false;
-	d->optimization_objectives.clear();
-	while(parser.parse(strm, *S)){
-		assumps.clear();
-		for(Lit l:parser.assumptions){
-			assumps.push(externalLit(S,l));
+			solveAssumptions(S, &assumps[0], assumps.size());
+			if (*strm == EOF) {
+				ran_last_solve = true;
+			}
+		}
+		assert(*strm == EOF);
+		if (!ran_last_solve) {
+			for (Lit l:parser.assumptions) {
+				assumps.push(externalLit(S, l));
+			}
+			d->optimization_objectives.clear();
+			for (Objective &o:parser.objectives) {
+				d->optimization_objectives.push(o);
+			}
+			solveAssumptions(S, &assumps[0], assumps.size());
 		}
 		d->optimization_objectives.clear();
-		for(Objective & o:parser.objectives){
-			d->optimization_objectives.push(o);
-		}
-
-		solveAssumptions(S,&assumps[0],assumps.size());
-		if(*strm==EOF){
-			ran_last_solve=true;
-		}
+	}catch(...)
+	{
+		gzclose(in);
+		throw;
 	}
-	assert(*strm==EOF);
-	if(!ran_last_solve){
-		for(Lit l:parser.assumptions){
-			assumps.push(externalLit(S,l));
-		}
-		d->optimization_objectives.clear();
-		for(Objective & o:parser.objectives){
-			d->optimization_objectives.push(o);
-		}
-		solveAssumptions(S,&assumps[0],assumps.size());
-	}
-	d->optimization_objectives.clear();
-
-	gzclose(in);
-
 }
 
 Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
@@ -1609,10 +1611,16 @@ int newNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G){
 	return newNode_Named(S,G,"");
 }
 int newNode_Named(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, const char * name){
+	if(name != nullptr && strlen(name)>0 && G->hasNamedNode(name)) {
+		throw std::invalid_argument("All nodes in a given graph must have unique names (or empty names).");
+	}
 	int n = G->newNode();
+	write_out(S,"node %d %d", G->getGraphID(),n);
 	if(name != nullptr && strlen(name)>0) {
 		G->setNodeName(n, name);
+		write_out(S," %s", name);
 	}
+	write_out(S,"\n");
 	return n;
 }
 bool hasNamedNode(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, const char * name){

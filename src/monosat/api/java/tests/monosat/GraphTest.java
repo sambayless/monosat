@@ -1331,7 +1331,6 @@ public class GraphTest {
   public void testLoadingGraphs() throws IOException {
     File file = File.createTempFile("test", ".gnf");
     String filename = file.getAbsolutePath().toString();
-    System.out.println(filename);
     file.delete();
 
     {
@@ -1417,6 +1416,65 @@ public class GraphTest {
     assertEquals(s.getGraph("MyGraph2"), g2);
     assertEquals(s.getGraph(tricky_name), g3);
 
+    try{
+        s.getGraph("nosuchgraph");
+        fail("Graph does not exist");
+    }catch(IllegalArgumentException e){
+        //ok
+    }
+
     assertTrue(s.solve());
   }
+
+
+    @Test
+    public void testNamedNodes() {
+        monosat.Solver s = new monosat.Solver();
+        Graph g = new Graph(s, 4);
+        int n0 = g.addNode("n0");
+        int n1 = g.addNode("n1");
+        int n2 = g.addNode(tricky_name);
+
+        assertEquals(g.getNode("n0"),n0);
+        assertEquals(g.getNode("n1"),n1);
+        assertEquals(g.getNode(tricky_name), n2);
+
+        try{
+            g.getNode("nosuchnode");
+            fail("Node does not exist");
+        }catch(IllegalArgumentException e){
+            //ok
+        }
+
+    }
+
+    @Test
+    public void testLoadingNamedNodes() throws IOException {
+        File file = File.createTempFile("test", ".gnf");
+        String filename = file.getAbsolutePath().toString();
+        file.delete();
+
+
+      monosat.Solver s = new monosat.Solver("", filename);
+      Graph g = new Graph(s, 4,"g1");
+      int n0 = g.addNode("n0");
+      int n1 = g.addNode("n1");
+      int n2 = g.addNode(tricky_name);
+      assertEquals(g.nNodes(),3);
+        s.close();
+
+
+        monosat.Solver s2 = new monosat.Solver();
+        assertTrue(s2.solve());
+        s2.loadConstraints(filename);
+        assertTrue(s2.solve());
+
+        Graph g2 = s2.getGraph("g1");
+        assertEquals(g2.nNodes(),3);
+
+        assertEquals(g2.getNode("n0"),n0);
+        assertEquals(g2.getNode("n1"),n1);
+        assertEquals(g2.getNode(tricky_name), n2);
+
+    }
 }

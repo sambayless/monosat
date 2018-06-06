@@ -436,8 +436,8 @@ public final class Solver implements Closeable {
    *
    * @param args An array of BitVectors to check.
    * @throws NullPointerException If any BitVector in args is null.
-   * @throws IllegalArgumentException If any Bitvector in args does not belong to this solver or is
-   *     not a valid Bitvector.
+   * @throws IllegalArgumentException If any BitVector in args does not belong to this solver or is
+   *     not a valid BitVector.
    */
   protected void validate(BitVector... args) {
     for (BitVector bv : args) {
@@ -445,12 +445,12 @@ public final class Solver implements Closeable {
         throw new NullPointerException("BitVector is null");
       } else if (bv.getSolver() != this) {
         throw new IllegalArgumentException(
-            "Cannot pass Bitvector belonging to solver "
+            "Cannot pass BitVector belonging to solver "
                 + (bv.getSolver() == null ? "null" : bv.getSolver().toString())
                 + " to solver "
                 + toString());
       } else if (bv.id < 0) {
-        throw new IllegalArgumentException("Bitvector is undefined " + bv.toString());
+        throw new IllegalArgumentException("BitVector is undefined " + bv.toString());
       }
     }
   }
@@ -460,8 +460,8 @@ public final class Solver implements Closeable {
    *
    * @param args A collection of BitVectors to check.
    * @throws NullPointerException If any BitVector in args is null.
-   * @throws IllegalArgumentException If any Bitvector in args does not belong to this solver or is
-   *     not a valid Bitvector.
+   * @throws IllegalArgumentException If any BitVector in args does not belong to this solver or is
+   *     not a valid BitVector.
    */
   protected void validateBV(Collection<BitVector> args) {
     for (BitVector bv : args) {
@@ -474,7 +474,7 @@ public final class Solver implements Closeable {
                 + " to solver "
                 + toString());
       } else if (bv.id < 0) {
-        throw new IllegalArgumentException("Bitvector is undefined " + bv.toString());
+        throw new IllegalArgumentException("BitVector is undefined " + bv.toString());
       }
     }
   }
@@ -607,7 +607,7 @@ public final class Solver implements Closeable {
    *
    * @return The number of bitvectors in this solver.
    */
-  public int nBitvectors() {
+  public int nBitVectors() {
     return MonosatJNI.nBitvectors(solverPtr, bvPtr);
   }
 
@@ -1034,7 +1034,7 @@ public final class Solver implements Closeable {
     protected BitVector toBitVector(int bvID) {
         assert (bvID >= 0);
 
-        assert (bvID< nBitvectors()); // the bitvector must have already been declared in the sat solver before this
+        assert (bvID< nBitVectors()); // the bitvector must have already been declared in the sat solver before this
 
         while (bvID >= bvmap.size()) {
             bvmap.add(null);
@@ -1416,7 +1416,7 @@ public final class Solver implements Closeable {
    * Create a constant-valued BitVector of the given width. Caches constant bitvectors of value <=
    * MAX_CACHE_CONST
    *
-   * @param width The width of the Bitvector to create.
+   * @param width The width of the BitVector to create.
    * @param constant The constant value of the BitVector.
    * @return A new BitVector of the corresponding size.
    */
@@ -1509,7 +1509,7 @@ public final class Solver implements Closeable {
      * Each literal in the iterator has positive sign.
      * @return An iterator over the named literals in the solver.
      */
-    public  Iterator<BitVector> namedBitvectors(){
+    public  Iterator<BitVector> namedBitVectors(){
         return new BVIterator(true);
     }
 
@@ -1529,7 +1529,7 @@ public final class Solver implements Closeable {
             if(named){
                 return index < MonosatJNI.nNamedBitvectors(Solver.this.solverPtr,Solver.this.bvPtr);
             }else{
-                return index < Solver.this.nBitvectors();
+                return index < Solver.this.nBitVectors();
             }
         }
 
@@ -1588,7 +1588,7 @@ public final class Solver implements Closeable {
    * @throws IllegalArgumentException If there is no bitvector in the solver with this name (or if
    *     name is empty).
    */
-  public BitVector getBitvector(String name) {
+  public BitVector getBitVector(String name) {
     if (name == null || name.length() == 0) {
       throw new IllegalArgumentException("Name must not be empty");
     }
@@ -1617,6 +1617,9 @@ public final class Solver implements Closeable {
       throw new IllegalArgumentException("Graph string name must have length > 0");
     }
     long graphPtr = MonosatJNI.getGraph(solverPtr, MonosatJNI.validID(name));
+    if(graphPtr==0){
+        throw new IllegalArgumentException("No graph with name " + name);
+    }
     if (allGraphs.containsKey(graphPtr)) {
       return allGraphs.get(graphPtr);
     } else {
@@ -2153,7 +2156,7 @@ public final class Solver implements Closeable {
     return result;
   }
 
-  // Bitvector constructs
+  // BitVector constructs
 
   /**
    * Return a new BitVector, equal to the bit-wise AND of 'a' and 'b'.
@@ -2259,12 +2262,12 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Returns a Bitvector that represents the non-wrapping two's complement addition of a and b. To
+   * Returns a BitVector that represents the non-wrapping two's complement addition of a and b. To
    * prevent wrapping, the solver will enforce that a+b<2^width.
    *
    * @param a The first argument. Must have the same bitwidth as 'b'.
    * @param b The second argument. Must have the same bitwidth as 'a'.
-   * @return A new Bitvector with the same width as a, equal to a + b.
+   * @return A new BitVector with the same width as a, equal to a + b.
    */
   public BitVector add(BitVector a, BitVector b) {
     validate(a, b);
@@ -2275,12 +2278,12 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Returns a Bitvector that represents the non-wrapping two's complement subtraction of this and
+   * Returns a BitVector that represents the non-wrapping two's complement subtraction of this and
    * other. To prevent wrapping, the solver will enforce that a-b>=0.
    *
    * @param a The first argument. Must have the same bitwidth as 'b'.
    * @param b The second argument. Must have the same bitwidth as 'a'.
-   * @return A new Bitvector with the same width as a, equal to a - b.
+   * @return A new BitVector with the same width as a, equal to a - b.
    */
   public BitVector subtract(BitVector a, BitVector b) {
     validate(a, b);

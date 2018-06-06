@@ -52,20 +52,23 @@ static const int buffer_size = 1048576;
 
 class StreamBuffer {
 	gzFile in;
-	unsigned char buf[buffer_size];
+	//unsigned char buf[buffer_size];
+	vec<unsigned char> buf;//storing the buffer in a vector, to ensure it is heap allocated instead of stack allocated,
+	//to avoid overflowing the default JVM stack size (which is very small on some platforms).
 	int pos;
 	int size;
 
 	void assureLookahead() {
 		if (pos >= size) {
 			pos = 0;
-			size = gzread(in, buf, sizeof(buf));
+			size = gzread(in, &buf[0], buf.size());
 		}
 	}
 	
 public:
 	explicit StreamBuffer(gzFile i) :
 			in(i), pos(0), size(0) {
+		buf.growTo(buffer_size);
 		assureLookahead();
 	}
 	

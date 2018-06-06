@@ -378,9 +378,14 @@ public final class Graph {
    *
    * @param name The string to check for.
    * @return The integer representing this node, if this node exists in the graph.
+   * throws IllegalArgumentException if the node does not exist in the graph
    */
   public int getNode(String name) {
-    return nodeMap.get(name);
+    if (nodeMap.containsKey(name)) {
+      return nodeMap.get(name);
+    }else{
+        throw new IllegalArgumentException("No node " + name + " in graph " + toString());
+    }
   }
 
   /**
