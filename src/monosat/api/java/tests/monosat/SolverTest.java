@@ -77,6 +77,8 @@ public class SolverTest {
     assertTrue(s.solve());
     assertFalse(s.solve(a));
     assertTrue(s.solve(a.not()));
+    s.flushConstraintFile();//these are both optional
+    s.closeConstraintFile();//these are both optional
     s.close();
 
     monosat.Solver s2 = new monosat.Solver();
@@ -166,6 +168,34 @@ public class SolverTest {
       boolean val = l.value();
     }
   }
+
+  @Test
+  public void testOk() {
+    monosat.Solver s = new monosat.Solver();
+    assertTrue(s.ok());
+    assertTrue(s.solve());
+    assertTrue(s.ok());
+    assertTrue(s.solve(monosat.Lit.True));
+    assertTrue(s.ok());
+    assertFalse(s.solve(monosat.Lit.False));
+    assertTrue(s.ok());
+    s.addClause(monosat.Lit.False);
+    assertFalse(s.ok());
+    assertFalse(s.solve());
+    assertFalse(s.ok());
+    s.close();
+    try{
+      s.ok();
+      fail("Accessing native solver methods after closing the solver should throw an NPE");
+    }catch(NullPointerException e){
+      //ok
+    }
+    //but creating a new solver should be ok
+    monosat.Solver s2 = new monosat.Solver();
+    assertTrue(s2.ok());
+    assertTrue(s2.solve());
+    assertTrue(s2.ok());
+ }
 
   @Test
   public void version() {

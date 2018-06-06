@@ -97,12 +97,12 @@ public final class BitVector {
     }
     id =
         MonosatJNI.newBitvector(
-            solver.solverPtr, solver.bvPtr, solver.getLitBuffer(literals), literals.size());
+            solver.getSolverPtr(), solver.bvPtr, solver.getLitBuffer(literals), literals.size());
     bits.addAll(literals);
     solver.registerBitVector(this);
     this._name = name;
     if (name.length() > 0) {
-      MonosatJNI.setBitvectorName(solver.solverPtr, solver.bvPtr, id, MonosatJNI.validID(name));
+      MonosatJNI.setBitvectorName(solver.getSolverPtr(), solver.bvPtr, id, MonosatJNI.validID(name));
     }
   }
 
@@ -130,10 +130,10 @@ public final class BitVector {
     if (constant >= (1L << width)) {
       throw new IllegalArgumentException("BitVectors can only represent values <= (2^width-1)");
     }
-    id = MonosatJNI.newBitvector_const(solver.solverPtr, solver.bvPtr, width, constant);
+    id = MonosatJNI.newBitvector_const(solver.getSolverPtr(), solver.bvPtr, width, constant);
     this.width = width;
-    for (int i = 0; i < MonosatJNI.nBitvectorBits(solver.solverPtr, solver.bvPtr, id); i++) {
-      int l = MonosatJNI.getBitvectorBit(solver.solverPtr, solver.bvPtr, id, i);
+    for (int i = 0; i < MonosatJNI.nBitvectorBits(solver.getSolverPtr(), solver.bvPtr, id); i++) {
+      int l = MonosatJNI.getBitvectorBit(solver.getSolverPtr(), solver.bvPtr, id, i);
       bits.add(solver.getLiteral(l));
     }
     /*   for (int i = 0; i < width; i++) {
@@ -212,7 +212,7 @@ public final class BitVector {
     if (name.length() > 0) {
       this._name = MonosatJNI.validID(name);
 
-      if (MonosatJNI.hasBitvectorWithName(solver.solverPtr, solver.bvPtr, name)) {
+      if (MonosatJNI.hasBitvectorWithName(solver.getSolverPtr(), solver.bvPtr, name)) {
         // this name is already used
         throw new IllegalArgumentException("No two bitvectors may have the same (non-empty) name");
       }
@@ -221,19 +221,19 @@ public final class BitVector {
       this._name = "";
     }
     if (!introduceLiterals) {
-      id = MonosatJNI.newBitvector_anon(solver.solverPtr, solver.bvPtr, width);
+      id = MonosatJNI.newBitvector_anon(solver.getSolverPtr(), solver.bvPtr, width);
     } else {
       for (int i = 0; i < width; i++) {
         bits.add(new Lit(solver));
       }
       id =
           MonosatJNI.newBitvector(
-              solver.solverPtr, solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size());
+              solver.getSolverPtr(), solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size());
     }
     assert (id >= 0);
 
     if (this._name.length() > 0) {
-      MonosatJNI.setBitvectorName(solver.solverPtr, solver.bvPtr, id, this._name);
+      MonosatJNI.setBitvectorName(solver.getSolverPtr(), solver.bvPtr, id, this._name);
     }
     solver.registerBitVector(this);
   }
@@ -251,12 +251,12 @@ public final class BitVector {
   protected BitVector(Solver solver, Solver ignore, int bvID) {
     this.solver = solver;
     this.id = bvID;
-    this.width = MonosatJNI.getBitvectorWidth(solver.solverPtr, solver.bvPtr, bvID);
-    for (int i = 0; i < MonosatJNI.nBitvectorBits(solver.solverPtr, solver.bvPtr, bvID); i++) {
-      int l = MonosatJNI.getBitvectorBit(solver.solverPtr, solver.bvPtr, bvID, i);
+    this.width = MonosatJNI.getBitvectorWidth(solver.getSolverPtr(), solver.bvPtr, bvID);
+    for (int i = 0; i < MonosatJNI.nBitvectorBits(solver.getSolverPtr(), solver.bvPtr, bvID); i++) {
+      int l = MonosatJNI.getBitvectorBit(solver.getSolverPtr(), solver.bvPtr, bvID, i);
       bits.add(solver.getLiteral(l));
     }
-    _name = MonosatJNI.getBitvectorName(solver.solverPtr, solver.bvPtr, id);
+    _name = MonosatJNI.getBitvectorName(solver.getSolverPtr(), solver.bvPtr, id);
     solver.registerBitVector(this);
   }
 
@@ -612,27 +612,27 @@ public final class BitVector {
       case GT:
         return solver.toLit(
             MonosatJNI.newBVComparison_bv_gt(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo.id));
       case GEQ:
         return solver.toLit(
             MonosatJNI.newBVComparison_bv_geq(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo.id));
       case LT:
         return solver.toLit(
             MonosatJNI.newBVComparison_bv_lt(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo.id));
       case LEQ:
         return solver.toLit(
             MonosatJNI.newBVComparison_bv_leq(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo.id));
       case EQ:
         return solver.toLit(
             MonosatJNI.newBVComparison_bv_eq(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo.id));
       case NEQ:
         return solver.toLit(
             MonosatJNI.newBVComparison_bv_neq(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo.id));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo.id));
     }
     // Comparison c should never be null
     throw new NullPointerException();
@@ -664,27 +664,27 @@ public final class BitVector {
       case GT:
         return solver.toLit(
             MonosatJNI.newBVComparison_const_gt(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo));
       case GEQ:
         return solver.toLit(
             MonosatJNI.newBVComparison_const_geq(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo));
       case LT:
         return solver.toLit(
             MonosatJNI.newBVComparison_const_lt(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo));
       case LEQ:
         return solver.toLit(
             MonosatJNI.newBVComparison_const_leq(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo));
       case EQ:
         return solver.toLit(
             MonosatJNI.newBVComparison_const_eq(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo));
       case NEQ:
         return solver.toLit(
             MonosatJNI.newBVComparison_const_neq(
-                solver.solverPtr, solver.bvPtr, this.id, compareTo));
+                solver.getSolverPtr(), solver.bvPtr, this.id, compareTo));
     }
     // Comparison c should never be null
     throw new NullPointerException();
@@ -701,7 +701,7 @@ public final class BitVector {
   public BitVector concatenate(BitVector append) {
     int w = width() + append.width();
     BitVector result = new BitVector(solver, w);
-    MonosatJNI.bv_concat(solver.solverPtr, solver.bvPtr, this.id, append.id, result.id);
+    MonosatJNI.bv_concat(solver.getSolverPtr(), solver.bvPtr, this.id, append.id, result.id);
     return result;
   }
 
@@ -729,7 +729,7 @@ public final class BitVector {
     int w = upper - lower;
     assert (w >= 0);
     BitVector result = new BitVector(solver, w);
-    MonosatJNI.bv_slice(solver.solverPtr, solver.bvPtr, this.id, lower, upper - 1, result.id);
+    MonosatJNI.bv_slice(solver.getSolverPtr(), solver.bvPtr, this.id, lower, upper - 1, result.id);
     return result;
   }
 
@@ -788,11 +788,11 @@ public final class BitVector {
    * @return A satisfying value for this bitvector, in the range 0<=value<(1<<width)
    */
   public long value(boolean getMaximumValue) {
-    if (!MonosatJNI.hasModel(solver.solverPtr)) {
+    if (!MonosatJNI.hasModel(solver.getSolverPtr())) {
       throw new NoModelException(
           "Solver has no model (this may indicate either that the solve() has not yet been called, or that the most recent call to solve() returned a value other than true, or that a constraint was added into the solver after the last call to solve()).");
     }
-    return MonosatJNI.getModel_BV(solver.solverPtr, solver.bvPtr, id, getMaximumValue);
+    return MonosatJNI.getModel_BV(solver.getSolverPtr(), solver.bvPtr, id, getMaximumValue);
   }
 
   /**

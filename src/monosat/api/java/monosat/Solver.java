@@ -253,6 +253,19 @@ public final class Solver implements Closeable {
     assert (positiveLiterals.contains(Lit.True));
   }
 
+    /**
+     * Get the native pointer to this solver, or throw an NPE
+     * @return The native pointer for this solver object, if it exists.
+     * @throws NullPointerException If the solver has been deleted.
+     */
+  protected long getSolverPtr(){
+      if(solverPtr==0){
+          throw new NullPointerException("Native solver object has been deleted.");
+      }else{
+          return solverPtr;
+      }
+  }
+
   /** @return The version string of the MonoSAT native library. */
   public static String getVersion() {
     return MonosatJNI.getVersion();
@@ -284,17 +297,17 @@ public final class Solver implements Closeable {
    * @throws IOException If the file could not be read.
    */
   public void loadConstraints(String filename) throws IOException {
-    MonosatJNI.readGNF(solverPtr, filename);
+    MonosatJNI.readGNF(getSolverPtr(), filename);
   }
 
   /** If the solver is writing constraints to a file, close that file. */
   public void closeConstraintFile() {
-    MonosatJNI.closeFile(solverPtr);
+    MonosatJNI.closeFile(getSolverPtr());
   }
 
   /** If the solver is writing constraints to a file, flush that file. */
   public void flushConstraintFile() {
-    MonosatJNI.flushFile(solverPtr);
+    MonosatJNI.flushFile(getSolverPtr());
   }
 
   /**
@@ -305,9 +318,10 @@ public final class Solver implements Closeable {
   @Override
   public synchronized void close() {
     // Does this method actually need to be synchronized?
+    //It is always safe to call this method multiple times
     if (solverPtr != 0) {
       solvers.remove(this);
-      MonosatJNI.deleteSolver(solverPtr);
+      MonosatJNI.deleteSolver(getSolverPtr());
       solverPtr = 0;
     }
   }
@@ -385,7 +399,7 @@ public final class Solver implements Closeable {
   /** Instantiate the bitvector theory in this solver. */
   private void initBV() {
     assert (bvPtr == 0);
-    bvPtr = MonosatJNI.initBVTheory(solverPtr);
+    bvPtr = MonosatJNI.initBVTheory(getSolverPtr());
     assert (bvPtr != 0);
   }
 
@@ -499,7 +513,7 @@ public final class Solver implements Closeable {
     validate(l);
     int x = l.l;
     assert (x >= 0);
-    MonosatJNI.releaseLiteral(solverPtr, x);
+    MonosatJNI.releaseLiteral(getSolverPtr(), x);
   }
 
   /**
@@ -512,7 +526,7 @@ public final class Solver implements Closeable {
    */
   public void setDecisionLiteral(Lit l, boolean decidable) {
     validate(l);
-    MonosatJNI.setDecisionVar(solverPtr, l.toVar(), decidable);
+    MonosatJNI.setDecisionVar(getSolverPtr(), l.toVar(), decidable);
   }
 
   /**
@@ -523,7 +537,7 @@ public final class Solver implements Closeable {
    */
   public boolean isDecisionLiteral(Lit l) {
     validate(l);
-    return MonosatJNI.isDecisionVar(solverPtr, l.toVar());
+    return MonosatJNI.isDecisionVar(getSolverPtr(), l.toVar());
   }
 
   /**
@@ -534,7 +548,7 @@ public final class Solver implements Closeable {
    */
   public void setDecisionPriority(Lit l, int priority) {
     validate(l);
-    MonosatJNI.setDecisionPriority(solverPtr, l.toVar(), priority);
+    MonosatJNI.setDecisionPriority(getSolverPtr(), l.toVar(), priority);
   }
 
   /**
@@ -545,7 +559,7 @@ public final class Solver implements Closeable {
    */
   public int getDecisionPriority(Lit l) {
     validate(l);
-    return MonosatJNI.getDecisionPriority(solverPtr, l.toVar());
+    return MonosatJNI.getDecisionPriority(getSolverPtr(), l.toVar());
   }
 
   /**
@@ -556,7 +570,7 @@ public final class Solver implements Closeable {
    */
   public void setDecisionPolarity(Lit l, boolean polarity) {
     validate(l);
-    MonosatJNI.setDecisionPolarity(solverPtr, l.toVar(), polarity);
+    MonosatJNI.setDecisionPolarity(getSolverPtr(), l.toVar(), polarity);
   }
 
   /**
@@ -567,7 +581,7 @@ public final class Solver implements Closeable {
    */
   public boolean getDecisionPolarity(Lit l) {
     validate(l);
-    return MonosatJNI.getDecisionPolarity(solverPtr, l.toVar());
+    return MonosatJNI.getDecisionPolarity(getSolverPtr(), l.toVar());
   }
 
   /**
@@ -579,7 +593,7 @@ public final class Solver implements Closeable {
    */
   public void disallowSimplification(Lit l) {
     validate(l);
-    if (!MonosatJNI.disallowLiteralSimplification(solverPtr, l.toVar())) {
+    if (!MonosatJNI.disallowLiteralSimplification(getSolverPtr(), l.toVar())) {
       throw new RuntimeException("Literal has already been eliminated.");
     }
   }
@@ -589,7 +603,7 @@ public final class Solver implements Closeable {
    * preprocessing requires some care, and so by default preprocessing is disabled.
    */
   public void disablePreprocessing() {
-    MonosatJNI.disablePreprocessing(solverPtr);
+    MonosatJNI.disablePreprocessing(getSolverPtr());
   }
 
   /**
@@ -599,7 +613,7 @@ public final class Solver implements Closeable {
    * @return The number of variables in this solver.
    */
   public int nVars() {
-    return MonosatJNI.nVars(solverPtr);
+    return MonosatJNI.nVars(getSolverPtr());
   }
 
   /**
@@ -608,7 +622,7 @@ public final class Solver implements Closeable {
    * @return The number of clauses in this solver.
    */
   public int nClauses() {
-    return MonosatJNI.nClauses(solverPtr);
+    return MonosatJNI.nClauses(getSolverPtr());
   }
 
   /**
@@ -617,7 +631,7 @@ public final class Solver implements Closeable {
    * @return The number of bitvectors in this solver.
    */
   public int nBitVectors() {
-    return MonosatJNI.nBitvectors(solverPtr, bvPtr);
+    return MonosatJNI.nBitvectors(getSolverPtr(), bvPtr);
   }
 
   /**
@@ -741,7 +755,7 @@ public final class Solver implements Closeable {
    */
   public boolean addClause(Lit a) {
     validate(a);
-    return MonosatJNI.addUnitClause(solverPtr, a.l);
+    return MonosatJNI.addUnitClause(getSolverPtr(), a.l);
   }
 
   // Solver API
@@ -757,7 +771,7 @@ public final class Solver implements Closeable {
   public boolean addClause(Lit a, Lit b) {
     validate(a);
     validate(b);
-    return MonosatJNI.addBinaryClause(solverPtr, a.l, b.l);
+    return MonosatJNI.addBinaryClause(getSolverPtr(), a.l, b.l);
   }
 
   /**
@@ -773,7 +787,7 @@ public final class Solver implements Closeable {
     validate(a);
     validate(b);
     validate(c);
-    return MonosatJNI.addTertiaryClause(solverPtr, a.l, b.l, c.l);
+    return MonosatJNI.addTertiaryClause(getSolverPtr(), a.l, b.l, c.l);
   }
 
   /**
@@ -788,7 +802,7 @@ public final class Solver implements Closeable {
    */
   public boolean addClause(Lit... args) {
     validate(args);
-    return MonosatJNI.addClause(solverPtr, getLitBuffer(args, 1), args.length);
+    return MonosatJNI.addClause(getSolverPtr(), getLitBuffer(args, 1), args.length);
   }
 
   /**
@@ -802,7 +816,7 @@ public final class Solver implements Closeable {
    */
   public boolean addClause(Collection<Lit> args) {
     validate(args);
-    return MonosatJNI.addClause(solverPtr, getLitBuffer(args, 1), args.size());
+    return MonosatJNI.addClause(getSolverPtr(), getLitBuffer(args, 1), args.size());
   }
 
   /**
@@ -812,7 +826,7 @@ public final class Solver implements Closeable {
    * @return True if a satisfying solution was found, false otherwise.
    */
   public boolean solve() {
-    return MonosatJNI.solve(solverPtr);
+    return MonosatJNI.solve(getSolverPtr());
   }
 
   // basic this functions
@@ -825,7 +839,7 @@ public final class Solver implements Closeable {
    */
   public boolean solve(Lit... assumptions) {
     validate(assumptions);
-    return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions, 0), assumptions.length);
+    return MonosatJNI.solveAssumptions(getSolverPtr(), getLitBuffer(assumptions, 0), assumptions.length);
   }
 
   /**
@@ -836,7 +850,7 @@ public final class Solver implements Closeable {
    */
   public boolean solve(Collection<Lit> assumptions) {
     validate(assumptions);
-    return MonosatJNI.solveAssumptions(solverPtr, getLitBuffer(assumptions), assumptions.size());
+    return MonosatJNI.solveAssumptions(getSolverPtr(), getLitBuffer(assumptions), assumptions.size());
   }
 
   /**
@@ -848,7 +862,7 @@ public final class Solver implements Closeable {
    *     solveLimited().
    */
   public void setTimeLimit(int seconds) {
-    MonosatJNI.setTimeLimit(solverPtr, seconds);
+    MonosatJNI.setTimeLimit(getSolverPtr(), seconds);
   }
 
   /**
@@ -860,7 +874,7 @@ public final class Solver implements Closeable {
    *     the next call to solveLimited().
    */
   public void setMemoryLimit(int mb) {
-    MonosatJNI.setMemoryLimit(solverPtr, mb);
+    MonosatJNI.setMemoryLimit(getSolverPtr(), mb);
   }
 
   /**
@@ -871,7 +885,7 @@ public final class Solver implements Closeable {
    *     solveLimited().
    */
   public void setConflictLimit(int conflicts) {
-    MonosatJNI.setConflictLimit(solverPtr, conflicts);
+    MonosatJNI.setConflictLimit(getSolverPtr(), conflicts);
   }
 
   /**
@@ -883,7 +897,7 @@ public final class Solver implements Closeable {
    *     solveLimited().
    */
   public void setPropagationLimit(int propagations) {
-    MonosatJNI.setPropagationLimit(solverPtr, propagations);
+    MonosatJNI.setPropagationLimit(getSolverPtr(), propagations);
   }
 
   /**
@@ -899,7 +913,7 @@ public final class Solver implements Closeable {
    *     solution nor prove the constraints UNSAT within the resource limits.
    */
   public Optional<Boolean> solveLimited() {
-    int result = MonosatJNI.solveLimited(solverPtr);
+    int result = MonosatJNI.solveLimited(getSolverPtr());
     assert (result >= 0);
     assert (result <= 2);
     return LBool.toLbool(result).toOpt();
@@ -922,7 +936,7 @@ public final class Solver implements Closeable {
     validate(assumptions);
     int result =
         MonosatJNI.solveAssumptionsLimited(
-            solverPtr, getLitBuffer(assumptions), assumptions.size());
+            getSolverPtr(), getLitBuffer(assumptions), assumptions.size());
     assert (result >= 0);
     assert (result <= 2);
     return LBool.toLbool(result).toOpt();
@@ -945,7 +959,7 @@ public final class Solver implements Closeable {
     validate(assumptions);
     int result =
         MonosatJNI.solveAssumptionsLimited(
-            solverPtr, getLitBuffer(assumptions, 0), assumptions.length);
+            getSolverPtr(), getLitBuffer(assumptions, 0), assumptions.length);
     assert (result >= 0);
     assert (result <= 2);
     return LBool.toLbool(result).toOpt();
@@ -958,7 +972,7 @@ public final class Solver implements Closeable {
    * @return True if the most recent solve() or solveLimited() call found an optimal solution.
    */
   public boolean lastSolutionWasOptimal() {
-    return MonosatJNI.lastSolutionWasOptimal(solverPtr);
+    return MonosatJNI.lastSolutionWasOptimal(getSolverPtr());
   }
 
   /**
@@ -995,9 +1009,9 @@ public final class Solver implements Closeable {
     // max_store_size to 0 to find the size of the conflict clause
     // Returns -1 if the solver has no conflict clause from the most recent solve() call (because
     // that call was not UNSAT)
-    int conflict_size = MonosatJNI.getConflictClause(solverPtr, null, 0);
+    int conflict_size = MonosatJNI.getConflictClause(getSolverPtr(), null, 0);
     IntBuffer buf = getBuffer(0, conflict_size);
-    int sz = MonosatJNI.getConflictClause(solverPtr, buf, conflict_size);
+    int sz = MonosatJNI.getConflictClause(getSolverPtr(), buf, conflict_size);
     assert (sz == conflict_size);
     for (int i = 0; i < conflict_size; i++) {
       int l = buf.get(i);
@@ -1194,7 +1208,7 @@ public final class Solver implements Closeable {
     validate(literals);
     ArrayList<Lit> store = new ArrayList<Lit>();
     IntBuffer buf = getLitBuffer(literals);
-    int core_size = MonosatJNI.minimizeUnsatCore(solverPtr, buf, literals.size());
+    int core_size = MonosatJNI.minimizeUnsatCore(getSolverPtr(), buf, literals.size());
     assert (core_size >= 0);
     assert (core_size <= literals.size());
     for (int i = 0; i < core_size; i++) {
@@ -1219,12 +1233,12 @@ public final class Solver implements Closeable {
    * are applied to the solver, this may not produce a locally minimal conflict clause.
    */
   private void minimizeConflictClause() {
-    MonosatJNI.minimizeConflictClause(solverPtr);
+    MonosatJNI.minimizeConflictClause(getSolverPtr());
   }
 
   /** Clear any optimization objectives in the solver. */
   public void clearOptimizationObjectives() {
-    MonosatJNI.clearOptimizationObjectives(solverPtr);
+    MonosatJNI.clearOptimizationObjectives(getSolverPtr());
   }
 
   /**
@@ -1234,7 +1248,7 @@ public final class Solver implements Closeable {
    */
   public void maximizeBV(BitVector bv) {
     validate(bv);
-    MonosatJNI.maximizeBV(solverPtr, bvPtr, bv.id);
+    MonosatJNI.maximizeBV(getSolverPtr(), bvPtr, bv.id);
   }
 
   /**
@@ -1244,7 +1258,7 @@ public final class Solver implements Closeable {
    */
   public void minimizeBV(BitVector bv) {
     validate(bv);
-    MonosatJNI.minimizeBV(solverPtr, bvPtr, bv.id);
+    MonosatJNI.minimizeBV(getSolverPtr(), bvPtr, bv.id);
   }
 
   /**
@@ -1256,7 +1270,7 @@ public final class Solver implements Closeable {
    */
   public void maximizeLits(Collection<Lit> literals) {
     validate(literals);
-    MonosatJNI.maximizeLits(solverPtr, getLitBuffer(literals), literals.size());
+    MonosatJNI.maximizeLits(getSolverPtr(), getLitBuffer(literals), literals.size());
   }
 
   /**
@@ -1268,7 +1282,7 @@ public final class Solver implements Closeable {
    */
   public void minimizeLits(Collection<Lit> literals) {
     validate(literals);
-    MonosatJNI.minimizeLits(solverPtr, getLitBuffer(literals), literals.size());
+    MonosatJNI.minimizeLits(getSolverPtr(), getLitBuffer(literals), literals.size());
   }
 
   /**
@@ -1286,7 +1300,7 @@ public final class Solver implements Closeable {
       throw new IllegalArgumentException("literals and weights must be the same length");
     }
     MonosatJNI.maximizeWeightedLits(
-        solverPtr, getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
+        getSolverPtr(), getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
   }
 
   /**
@@ -1304,7 +1318,7 @@ public final class Solver implements Closeable {
       throw new IllegalArgumentException("literals and weights must be the same length");
     }
     MonosatJNI.minimizeWeightedLits(
-        solverPtr, getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
+        getSolverPtr(), getLitBuffer(literals), getIntBuffer(weights, 1), literals.size());
   }
 
   /**
@@ -1336,7 +1350,7 @@ public final class Solver implements Closeable {
       // for small enough sets of literals, directly instantiate the binary clauses constraining
       // them
       // rather than introduce an amo theory
-      MonosatJNI.AssertAMO(solverPtr, getLitBuffer(args), args.size());
+      MonosatJNI.AssertAMO(getSolverPtr(), getLitBuffer(args), args.size());
     } else {
       // workaround for internal limitations in monosat which require the
       // amo constraints to operate only on variables (not literals), which must also not have been
@@ -1347,7 +1361,7 @@ public final class Solver implements Closeable {
         assertEqual(l, l2);
         vars.add(l2.toVar());
       }
-      MonosatJNI.at_most_one(solverPtr, getIntBuffer(vars, 0), args.size());
+      MonosatJNI.at_most_one(getSolverPtr(), getIntBuffer(vars, 0), args.size());
     }
   }
 
@@ -1401,15 +1415,15 @@ public final class Solver implements Closeable {
     }
     switch (c) {
       case LT:
-        MonosatJNI.assertPB_lt(solverPtr, compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        MonosatJNI.assertPB_lt(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
       case LEQ:
-        MonosatJNI.assertPB_leq(solverPtr, compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        MonosatJNI.assertPB_leq(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
       case EQ:
-        MonosatJNI.assertPB_eq(solverPtr, compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        MonosatJNI.assertPB_eq(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
       case GEQ:
-        MonosatJNI.assertPB_geq(solverPtr, compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        MonosatJNI.assertPB_geq(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
       case GT:
-        MonosatJNI.assertPB_gt(solverPtr, compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        MonosatJNI.assertPB_gt(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
       case NEQ:
       default:
         throw new IllegalArgumentException("Unsupported comparison");
@@ -1421,7 +1435,7 @@ public final class Solver implements Closeable {
    * does not need to be manually called, as it will be called automatically before 'solve' calls.
    */
   protected void flushPB() {
-    MonosatJNI.flushPB(solverPtr);
+    MonosatJNI.flushPB(getSolverPtr());
   }
 
   /**
@@ -1484,7 +1498,7 @@ public final class Solver implements Closeable {
     @Override
     public boolean hasNext() {
       if (named) {
-        return index < MonosatJNI.nNamedVariables(Solver.this.solverPtr);
+        return index < MonosatJNI.nNamedVariables(Solver.this.getSolverPtr());
       } else {
         return index < Solver.this.nVars();
       }
@@ -1496,7 +1510,7 @@ public final class Solver implements Closeable {
         throw new IndexOutOfBoundsException();
       }
       if (named) {
-        return toLit(2 * MonosatJNI.getNamedVariableN(Solver.this.solverPtr, index++));
+        return toLit(2 * MonosatJNI.getNamedVariableN(Solver.this.getSolverPtr(), index++));
       } else {
         return toLit((index++) * 2);
       }
@@ -1541,7 +1555,7 @@ public final class Solver implements Closeable {
     @Override
     public boolean hasNext() {
       if (named) {
-        return index < MonosatJNI.nNamedBitvectors(Solver.this.solverPtr, Solver.this.bvPtr);
+        return index < MonosatJNI.nNamedBitvectors(Solver.this.getSolverPtr(), Solver.this.bvPtr);
       } else {
         return index < Solver.this.nBitVectors();
       }
@@ -1554,7 +1568,7 @@ public final class Solver implements Closeable {
       }
       if (named) {
         return toBitVector(
-            MonosatJNI.getNamedBitvectorN(Solver.this.solverPtr, Solver.this.bvPtr, index++));
+            MonosatJNI.getNamedBitvectorN(Solver.this.getSolverPtr(), Solver.this.bvPtr, index++));
       } else {
         return toBitVector(index++);
       }
@@ -1578,7 +1592,7 @@ public final class Solver implements Closeable {
     if (name == null || name.length() == 0) {
       throw new IllegalArgumentException("Name must not be empty");
     }
-    int variable = MonosatJNI.getVariable(solverPtr, MonosatJNI.validID(name));
+    int variable = MonosatJNI.getVariable(getSolverPtr(), MonosatJNI.validID(name));
     if (name == "True") {
       return Lit.True;
     } else if (name == "False") {
@@ -1608,7 +1622,7 @@ public final class Solver implements Closeable {
     if (name == null || name.length() == 0) {
       throw new IllegalArgumentException("Name must not be empty");
     }
-    int bvID = MonosatJNI.getBitvector(solverPtr, bvPtr, MonosatJNI.validID(name));
+    int bvID = MonosatJNI.getBitvector(getSolverPtr(), bvPtr, MonosatJNI.validID(name));
 
     if (bvID >= 0) {
       return new BitVector(this, this, bvID);
@@ -1632,7 +1646,7 @@ public final class Solver implements Closeable {
     if (name.length() == 0) {
       throw new IllegalArgumentException("Graph string name must have length > 0");
     }
-    long graphPtr = MonosatJNI.getGraph(solverPtr, MonosatJNI.validID(name));
+    long graphPtr = MonosatJNI.getGraph(getSolverPtr(), MonosatJNI.validID(name));
     if (graphPtr == 0) {
       throw new IllegalArgumentException("No graph with name " + name);
     }
@@ -1666,7 +1680,7 @@ public final class Solver implements Closeable {
    * no need to manually call restart(), as this is called automatically before calling solve().
    */
   public void restart() {
-    MonosatJNI.backtrack(solverPtr);
+    MonosatJNI.backtrack(getSolverPtr());
   }
 
   /**
@@ -1675,7 +1689,7 @@ public final class Solver implements Closeable {
    * @return True if the solver has a satisfying model to its constraints.
    */
   public boolean hasModel() {
-    return MonosatJNI.hasModel(solverPtr);
+    return MonosatJNI.hasModel(getSolverPtr());
   }
 
   /**
@@ -1685,7 +1699,7 @@ public final class Solver implements Closeable {
    * @return true if the solver has not yet proven its constraints to be UNSAT.
    */
   public boolean ok() {
-    return MonosatJNI.ok(solverPtr);
+    return MonosatJNI.ok(getSolverPtr());
   }
 
   /**
@@ -1743,7 +1757,7 @@ public final class Solver implements Closeable {
    */
   public Lit ite(Lit condition, Lit then, Lit els) {
     validate(condition, then, els);
-    return this.toLit(MonosatJNI.Ite(this.solverPtr, condition.l, then.l, els.l));
+    return this.toLit(MonosatJNI.Ite(this.getSolverPtr(), condition.l, then.l, els.l));
   }
 
   /**
@@ -1761,7 +1775,7 @@ public final class Solver implements Closeable {
       return args[0];
     } else if (args.length == 2) {
 
-      return this.toLit(MonosatJNI.And(this.solverPtr, args[0].l, args[1].l));
+      return this.toLit(MonosatJNI.And(this.getSolverPtr(), args[0].l, args[1].l));
     }
     return and(Arrays.asList(args));
   }
@@ -1778,7 +1792,7 @@ public final class Solver implements Closeable {
    */
   public Lit and(Collection<Lit> args) {
     validate(args);
-    return this.toLit(MonosatJNI.Ands(this.solverPtr, this.getLitBuffer(args), args.size()));
+    return this.toLit(MonosatJNI.Ands(this.getSolverPtr(), this.getLitBuffer(args), args.size()));
   }
 
   /**
@@ -1795,7 +1809,7 @@ public final class Solver implements Closeable {
     } else if (args.length == 1) {
       return args[0];
     } else if (args.length == 2) {
-      return this.toLit(MonosatJNI.Or(this.solverPtr, args[0].l, args[1].l));
+      return this.toLit(MonosatJNI.Or(this.getSolverPtr(), args[0].l, args[1].l));
     }
     return or(Arrays.asList(args));
   }
@@ -1809,7 +1823,7 @@ public final class Solver implements Closeable {
    */
   public Lit or(Collection<Lit> args) {
     validate(args);
-    return this.toLit(MonosatJNI.Ors(this.solverPtr, this.getLitBuffer(args), args.size()));
+    return this.toLit(MonosatJNI.Ors(this.getSolverPtr(), this.getLitBuffer(args), args.size()));
   }
 
   /**
@@ -1822,12 +1836,12 @@ public final class Solver implements Closeable {
   public Lit nand(Lit... args) {
     validate(args);
     if (args.length == 0) {
-      return this.toLit(MonosatJNI.Nands(this.solverPtr, getBuffer(0, 0), 0));
+      return this.toLit(MonosatJNI.Nands(this.getSolverPtr(), getBuffer(0, 0), 0));
     } else if (args.length == 1) {
       return args[0].not();
     } else if (args.length == 2) {
 
-      return this.toLit(MonosatJNI.Nand(this.solverPtr, args[0].l, args[1].l));
+      return this.toLit(MonosatJNI.Nand(this.getSolverPtr(), args[0].l, args[1].l));
     }
     return nand(Arrays.asList(args));
   }
@@ -1841,7 +1855,7 @@ public final class Solver implements Closeable {
    */
   public Lit nand(Collection<Lit> args) {
     validate(args);
-    return this.toLit(MonosatJNI.Nands(this.solverPtr, this.getLitBuffer(args), args.size()));
+    return this.toLit(MonosatJNI.Nands(this.getSolverPtr(), this.getLitBuffer(args), args.size()));
   }
 
   /**
@@ -1854,11 +1868,11 @@ public final class Solver implements Closeable {
   public Lit nor(Lit... args) {
     validate(args);
     if (args.length == 0) {
-      return this.toLit(MonosatJNI.Nors(this.solverPtr, getBuffer(0, 0), 0));
+      return this.toLit(MonosatJNI.Nors(this.getSolverPtr(), getBuffer(0, 0), 0));
     } else if (args.length == 1) {
       return args[0];
     } else if (args.length == 2) {
-      return this.toLit(MonosatJNI.Nor(this.solverPtr, args[0].l, args[1].l));
+      return this.toLit(MonosatJNI.Nor(this.getSolverPtr(), args[0].l, args[1].l));
     }
     return nor(Arrays.asList(args));
   }
@@ -1872,7 +1886,7 @@ public final class Solver implements Closeable {
    */
   public Lit nor(Collection<Lit> args) {
     validate(args);
-    return this.toLit(MonosatJNI.Nors(this.solverPtr, this.getLitBuffer(args), args.size()));
+    return this.toLit(MonosatJNI.Nors(this.getSolverPtr(), this.getLitBuffer(args), args.size()));
   }
 
   /**
@@ -1885,12 +1899,12 @@ public final class Solver implements Closeable {
   public Lit xor(Lit... args) {
     validate(args);
     if (args.length == 0) {
-      return this.toLit(MonosatJNI.Xors(this.solverPtr, getBuffer(0, 0), 0));
+      return this.toLit(MonosatJNI.Xors(this.getSolverPtr(), getBuffer(0, 0), 0));
     } else if (args.length == 1) {
       return args[0].not();
     } else if (args.length == 2) {
 
-      return this.toLit(MonosatJNI.Xor(this.solverPtr, args[0].l, args[1].l));
+      return this.toLit(MonosatJNI.Xor(this.getSolverPtr(), args[0].l, args[1].l));
     }
     return xor(Arrays.asList(args));
   }
@@ -1904,7 +1918,7 @@ public final class Solver implements Closeable {
    */
   public Lit xor(Collection<Lit> args) {
     validate(args);
-    return this.toLit(MonosatJNI.Xors(this.solverPtr, this.getLitBuffer(args), args.size()));
+    return this.toLit(MonosatJNI.Xors(this.getSolverPtr(), this.getLitBuffer(args), args.size()));
   }
 
   /**
@@ -1917,12 +1931,12 @@ public final class Solver implements Closeable {
   public Lit xnor(Lit... args) {
     validate(args);
     if (args.length == 0) {
-      return this.toLit(MonosatJNI.Xnors(this.solverPtr, getBuffer(0, 0), 0));
+      return this.toLit(MonosatJNI.Xnors(this.getSolverPtr(), getBuffer(0, 0), 0));
     } else if (args.length == 1) {
       return args[0];
     } else if (args.length == 2) {
 
-      return this.toLit(MonosatJNI.Xnor(this.solverPtr, args[0].l, args[1].l));
+      return this.toLit(MonosatJNI.Xnor(this.getSolverPtr(), args[0].l, args[1].l));
     }
     return xnor(Arrays.asList(args));
   }
@@ -1936,7 +1950,7 @@ public final class Solver implements Closeable {
    */
   public Lit xnor(Collection<Lit> args) {
     validate(args);
-    return this.toLit(MonosatJNI.Xnors(this.solverPtr, this.getLitBuffer(args), args.size()));
+    return this.toLit(MonosatJNI.Xnors(this.getSolverPtr(), this.getLitBuffer(args), args.size()));
   }
 
   /**
@@ -1946,7 +1960,7 @@ public final class Solver implements Closeable {
    */
   public void assertTrue(Lit a) {
     validate(a);
-    MonosatJNI.Assert(this.solverPtr, a.l);
+    MonosatJNI.Assert(this.getSolverPtr(), a.l);
   }
 
   // Assertion forms.
@@ -1958,7 +1972,7 @@ public final class Solver implements Closeable {
    */
   public void assertFalse(Lit a) {
     validate(a);
-    MonosatJNI.Assert(this.solverPtr, a.not().l);
+    MonosatJNI.Assert(this.getSolverPtr(), a.not().l);
   }
 
   /**
@@ -1973,7 +1987,7 @@ public final class Solver implements Closeable {
     } else if (args.length == 1) {
       assertTrue(args[0]);
     } else if (args.length == 2) {
-      MonosatJNI.AssertAnd(this.solverPtr, args[0].l, args[1].l);
+      MonosatJNI.AssertAnd(this.getSolverPtr(), args[0].l, args[1].l);
     }
     assertAnd(Arrays.asList(args));
   }
@@ -1985,7 +1999,7 @@ public final class Solver implements Closeable {
    */
   public void assertAnd(Collection<Lit> args) {
     validate(args);
-    MonosatJNI.AssertAnds(this.solverPtr, this.getLitBuffer(args), args.size());
+    MonosatJNI.AssertAnds(this.getSolverPtr(), this.getLitBuffer(args), args.size());
   }
 
   /**
@@ -2000,11 +2014,11 @@ public final class Solver implements Closeable {
     validate(args);
     if (args.length == 0) {
       // this is a contradiction
-      MonosatJNI.AssertOrs(this.solverPtr, getBuffer(0, 0), 0);
+      MonosatJNI.AssertOrs(this.getSolverPtr(), getBuffer(0, 0), 0);
     } else if (args.length == 1) {
       assertTrue(args[0]);
     } else if (args.length == 2) {
-      MonosatJNI.AssertOr(this.solverPtr, args[0].l, args[1].l);
+      MonosatJNI.AssertOr(this.getSolverPtr(), args[0].l, args[1].l);
     }
     assertOr(Arrays.asList(args));
   }
@@ -2019,7 +2033,7 @@ public final class Solver implements Closeable {
    */
   public void assertOr(Collection<Lit> args) {
     validate(args);
-    MonosatJNI.AssertOrs(this.solverPtr, this.getLitBuffer(args), args.size());
+    MonosatJNI.AssertOrs(this.getSolverPtr(), this.getLitBuffer(args), args.size());
   }
 
   /**
@@ -2031,11 +2045,11 @@ public final class Solver implements Closeable {
   public void assertNand(Lit... args) {
     validate(args);
     if (args.length == 0) {
-      MonosatJNI.AssertNands(this.solverPtr, getBuffer(0, 0), 0);
+      MonosatJNI.AssertNands(this.getSolverPtr(), getBuffer(0, 0), 0);
     } else if (args.length == 1) {
       assertTrue(args[0].not());
     } else if (args.length == 2) {
-      MonosatJNI.AssertNand(this.solverPtr, args[0].l, args[1].l);
+      MonosatJNI.AssertNand(this.getSolverPtr(), args[0].l, args[1].l);
     }
     assertNand(Arrays.asList(args));
   }
@@ -2048,7 +2062,7 @@ public final class Solver implements Closeable {
    */
   public void assertNand(Collection<Lit> args) {
     validate(args);
-    MonosatJNI.AssertNands(this.solverPtr, this.getLitBuffer(args), args.size());
+    MonosatJNI.AssertNands(this.getSolverPtr(), this.getLitBuffer(args), args.size());
   }
 
   /**
@@ -2059,11 +2073,11 @@ public final class Solver implements Closeable {
   public void assertNor(Lit... args) {
     validate(args);
     if (args.length == 0) {
-      MonosatJNI.AssertNors(this.solverPtr, getBuffer(0, 0), 0);
+      MonosatJNI.AssertNors(this.getSolverPtr(), getBuffer(0, 0), 0);
     } else if (args.length == 1) {
       assertTrue(args[0].not());
     } else if (args.length == 2) {
-      MonosatJNI.AssertNor(this.solverPtr, args[0].l, args[1].l);
+      MonosatJNI.AssertNor(this.getSolverPtr(), args[0].l, args[1].l);
     }
     assertNor(Arrays.asList(args));
   }
@@ -2075,7 +2089,7 @@ public final class Solver implements Closeable {
    */
   public void assertNor(Collection<Lit> args) {
     validate(args);
-    MonosatJNI.AssertNors(this.solverPtr, this.getLitBuffer(args), args.size());
+    MonosatJNI.AssertNors(this.getSolverPtr(), this.getLitBuffer(args), args.size());
   }
 
   /**
@@ -2086,11 +2100,11 @@ public final class Solver implements Closeable {
   public void assertXor(Lit... args) {
     validate(args);
     if (args.length == 0) {
-      MonosatJNI.AssertXors(this.solverPtr, getBuffer(0, 0), 0);
+      MonosatJNI.AssertXors(this.getSolverPtr(), getBuffer(0, 0), 0);
     } else if (args.length == 1) {
       assertTrue(args[0]); // If this the correct behaviour here?
     } else if (args.length == 2) {
-      MonosatJNI.AssertXor(this.solverPtr, args[0].l, args[1].l);
+      MonosatJNI.AssertXor(this.getSolverPtr(), args[0].l, args[1].l);
     }
     assertXor(Arrays.asList(args));
   }
@@ -2102,7 +2116,7 @@ public final class Solver implements Closeable {
    */
   public void assertXor(Collection<Lit> args) {
     validate(args);
-    MonosatJNI.AssertXors(this.solverPtr, this.getLitBuffer(args), args.size());
+    MonosatJNI.AssertXors(this.getSolverPtr(), this.getLitBuffer(args), args.size());
   }
 
   /**
@@ -2113,11 +2127,11 @@ public final class Solver implements Closeable {
   public void assertXnor(Lit... args) {
     validate(args);
     if (args.length == 0) {
-      MonosatJNI.AssertXnors(this.solverPtr, getBuffer(0, 0), 0);
+      MonosatJNI.AssertXnors(this.getSolverPtr(), getBuffer(0, 0), 0);
     } else if (args.length == 1) {
       assertTrue(args[0]); // If this the correct behaviour here?
     } else if (args.length == 2) {
-      MonosatJNI.AssertXnor(this.solverPtr, args[0].l, args[1].l);
+      MonosatJNI.AssertXnor(this.getSolverPtr(), args[0].l, args[1].l);
     }
     assertXnor(Arrays.asList(args));
   }
@@ -2129,7 +2143,7 @@ public final class Solver implements Closeable {
    */
   public void assertXnor(Collection<Lit> args) {
     validate(args);
-    MonosatJNI.AssertXnors(this.solverPtr, this.getLitBuffer(args), args.size());
+    MonosatJNI.AssertXnors(this.getSolverPtr(), this.getLitBuffer(args), args.size());
   }
 
   /**
@@ -2169,7 +2183,7 @@ public final class Solver implements Closeable {
     validate(then, els);
     assert (then.width() == els.width());
     BitVector result = new BitVector(this, then.width());
-    MonosatJNI.bv_ite(this.solverPtr, this.bvPtr, condition.l, then.id, els.id, result.id);
+    MonosatJNI.bv_ite(this.getSolverPtr(), this.bvPtr, condition.l, then.id, els.id, result.id);
     return result;
   }
 
@@ -2186,7 +2200,7 @@ public final class Solver implements Closeable {
     validate(a, b);
     assert (a.width() == b.width());
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_and(solverPtr, bvPtr, a.id, b.id, result.id);
+    MonosatJNI.bv_and(getSolverPtr(), bvPtr, a.id, b.id, result.id);
     return result;
   }
 
@@ -2201,7 +2215,7 @@ public final class Solver implements Closeable {
     validate(a, b);
     assert (a.width() == b.width());
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_or(solverPtr, bvPtr, a.id, b.id, result.id);
+    MonosatJNI.bv_or(getSolverPtr(), bvPtr, a.id, b.id, result.id);
     return result;
   }
 
@@ -2214,7 +2228,7 @@ public final class Solver implements Closeable {
   public BitVector not(BitVector a) {
     validate(a);
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_not(solverPtr, bvPtr, a.id, result.id);
+    MonosatJNI.bv_not(getSolverPtr(), bvPtr, a.id, result.id);
     return result;
   }
 
@@ -2229,7 +2243,7 @@ public final class Solver implements Closeable {
     validate(a, b);
     assert (a.width() == b.width());
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_nand(solverPtr, bvPtr, a.id, b.id, result.id);
+    MonosatJNI.bv_nand(getSolverPtr(), bvPtr, a.id, b.id, result.id);
     return result;
   }
 
@@ -2244,7 +2258,7 @@ public final class Solver implements Closeable {
     validate(a, b);
     assert (a.width() == b.width());
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_nor(solverPtr, bvPtr, a.id, b.id, result.id);
+    MonosatJNI.bv_nor(getSolverPtr(), bvPtr, a.id, b.id, result.id);
     return result;
   }
 
@@ -2259,7 +2273,7 @@ public final class Solver implements Closeable {
     validate(a, b);
     assert (a.width() == b.width());
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_xor(solverPtr, bvPtr, a.id, b.id, result.id);
+    MonosatJNI.bv_xor(getSolverPtr(), bvPtr, a.id, b.id, result.id);
     return result;
   }
 
@@ -2274,7 +2288,7 @@ public final class Solver implements Closeable {
     validate(a, b);
     assert (a.width() == b.width());
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_xnor(solverPtr, bvPtr, a.id, b.id, result.id);
+    MonosatJNI.bv_xnor(getSolverPtr(), bvPtr, a.id, b.id, result.id);
     return result;
   }
 
@@ -2290,7 +2304,7 @@ public final class Solver implements Closeable {
     validate(a, b);
     assert (a.width() == b.width());
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_addition(solverPtr, bvPtr, a.id, b.id, result.id);
+    MonosatJNI.bv_addition(getSolverPtr(), bvPtr, a.id, b.id, result.id);
     return result;
   }
 
@@ -2306,7 +2320,7 @@ public final class Solver implements Closeable {
     validate(a, b);
     assert (a.width() == b.width());
     BitVector result = new BitVector(this, a.width());
-    MonosatJNI.bv_subtraction(solverPtr, bvPtr, a.id, b.id, result.id);
+    MonosatJNI.bv_subtraction(getSolverPtr(), bvPtr, a.id, b.id, result.id);
     return result;
   }
 
@@ -2364,7 +2378,7 @@ public final class Solver implements Closeable {
     int w = args.iterator().next().width();
     BitVector result = new BitVector(this, w);
     MonosatJNI.bv_min(
-        this.solverPtr, this.bvPtr, this.getBVBuffer(args, 0), args.size(), result.id);
+        this.getSolverPtr(), this.bvPtr, this.getBVBuffer(args, 0), args.size(), result.id);
     return result;
   }
 
@@ -2396,7 +2410,7 @@ public final class Solver implements Closeable {
     int w = args.iterator().next().width();
     BitVector result = new BitVector(this, w);
     MonosatJNI.bv_min(
-        this.solverPtr, this.bvPtr, this.getBVBuffer(args, 0), args.size(), result.id);
+        this.getSolverPtr(), this.bvPtr, this.getBVBuffer(args, 0), args.size(), result.id);
     return result;
   }
 

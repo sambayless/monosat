@@ -104,7 +104,7 @@ public final class Lit {
     assert (literal >= 0);
     this.l = literal;
     this.solver = solver;
-    this._name = MonosatJNI.getVariableName(solver.solverPtr, toVar());
+    this._name = MonosatJNI.getVariableName(solver.getSolverPtr(), toVar());
   }
 
   /**
@@ -198,12 +198,12 @@ public final class Lit {
             "Only the built-in False literal may be named \"False\"");
       }
       this._name = MonosatJNI.validID(name);
-      int var = monosat.MonosatJNI.newNamedVar(solver.solverPtr,this._name);
+      int var = monosat.MonosatJNI.newNamedVar(solver.getSolverPtr(),this._name);
       this.l = var * 2;
 
     } else {
       this._name = "";
-      int var = monosat.MonosatJNI.newVar(solver.solverPtr);
+      int var = monosat.MonosatJNI.newVar(solver.getSolverPtr());
       this.l = var * 2;
     }
     solver.registerLit(this);
@@ -299,7 +299,7 @@ public final class Lit {
               name() + ")");
     }else{
       String proposedName = MonosatJNI.validID(name);
-      MonosatJNI.setVariableName(solver.solverPtr, toVar(), proposedName);
+      MonosatJNI.setVariableName(solver.getSolverPtr(), toVar(), proposedName);
       _name = proposedName;
       not()._name = proposedName;
     }
@@ -396,7 +396,7 @@ public final class Lit {
     }
 
     monosat.Solver.LBool val =
-        monosat.Solver.LBool.toLbool(monosat.MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
+        monosat.Solver.LBool.toLbool(monosat.MonosatJNI.getModel_Literal(getSolver().getSolverPtr(), l));
     if (val == monosat.Solver.LBool.Undef) {
       return defaultValue.toOpt();
     } else {
@@ -425,7 +425,7 @@ public final class Lit {
     }
 
     monosat.Solver.LBool val =
-        monosat.Solver.LBool.toLbool(monosat.MonosatJNI.getModel_Literal(getSolver().solverPtr, l));
+        monosat.Solver.LBool.toLbool(monosat.MonosatJNI.getModel_Literal(getSolver().getSolverPtr(), l));
     if (val == monosat.Solver.LBool.Undef) {
       if (defaultVal == monosat.Solver.LBool.Undef) {
         throw new monosat.NoModelException(
@@ -463,7 +463,7 @@ public final class Lit {
     }
     monosat.Solver.LBool val =
         monosat.Solver.LBool.toLbool(
-            monosat.MonosatJNI.getConstantModel_Literal(solver.solverPtr, l));
+            monosat.MonosatJNI.getConstantModel_Literal(solver.getSolverPtr(), l));
     return val.toOpt();
   }
 
