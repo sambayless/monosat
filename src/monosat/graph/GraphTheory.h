@@ -140,6 +140,8 @@ public:
     Map<std::tuple<int,int,int,bool>,Lit> existing_maxflow_bv_constraints;
 	vec<MaxflowConstraintBV> unimplemented_maxflow_constraints_bv;
 
+    Map<std::tuple<int,int,Weight,bool>,Lit> existing_maxflow_constraints;
+
 	CRef graph_decision_reason = CRef_Undef;
 private:
 	DynamicGraph<Weight> g_under;
@@ -947,7 +949,7 @@ public:
 
     LMap<Lit> litLinkMap;
 	bool hasCanonicalSolverLit(Lit solverLit){
-	    return litLinkMap.has(solverLit) && (litLinkMap[solverLit]!=lit_Undef);
+	    return litLinkMap.has(solverLit) && (litLinkMap[solverLit]!=lit_Undef)  ;
 	}
 	//If the same graph property is instantiated multiple times with different lits (eg,r1= g.reaches(1,3), r2 = g.reaches(1,3))
     //then in most cases the graph theory will de-duplicate them underlying property detectors, and just assert those literals equal in the solver
@@ -969,6 +971,9 @@ public:
 	}
 
 	void makeEqualInSolver(Lit o1, Lit o2, bool linkSolverLit = false) {
+		if(o1==o2){
+			return;//do nothing
+		}
 		tmp_clause.clear();
 		tmp_clause.push(~o1);
 		tmp_clause.push(o2);
@@ -980,6 +985,7 @@ public:
 		if(linkSolverLit){
 		    assert(!hasCanonicalSolverLit(o1));
 		    S->disableElimination(var(o1));
+			assert(var(o1)!=var(o2));
 		    litLinkMap.insert(o1,o2,lit_Undef);
             assert(hasCanonicalSolverLit(o1));
 		}
@@ -3695,7 +3701,13 @@ public:
 		}
 
 	}
-
+	bool hasReach(int from, int to, int within_steps = -1) {
+		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,within_steps,false);
+		if(existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
+			return true;
+		}
+		return false;
+	}
 	Lit reaches(int from, int to, Var reach_var=var_Undef, int within_steps = -1) {
 		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,within_steps,false);
 		if(reach_var==var_Undef && existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
@@ -3709,10 +3721,17 @@ public:
 		existing_reach_constraints.insert(constraint_set,mkLit(reach_var));
 		return mkLit(reach_var);
 	}
-
+	bool hasReachBackward(int from, int to, int within_steps = -1) {
+		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,within_steps,true);
+		if(existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
+			return true;
+		}
+		return false;
+	}
 	Lit reachesBackward(int from, int to, Var reach_var=var_Undef, int within_steps = -1) {
 		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,within_steps,true);
 		if(reach_var==var_Undef && existing_reach_constraints.has(constraint_set) && existing_reach_constraints[constraint_set] !=lit_Undef ){
+			assert(hasReachBackward(from,to,within_steps));
 			return existing_reach_constraints[constraint_set];
 		}
 		if (reach_var==var_Undef){
@@ -3724,10 +3743,15 @@ public:
 		return mkLit(reach_var);
 
     }
-
+	bool hasOnPath(int nodeOnPath,int from, int to) {
+		std::tuple<int,int,int> constraint_set = std::make_tuple(from,to,nodeOnPath);
+		if(existing_on_path_constraints.has(constraint_set) && existing_on_path_constraints[constraint_set] !=lit_Undef ){
+			return true;
+		}
+		return false;
+	}
     //True iff there exists a path from 'from' to 'to' that crosses the node 'nodeOnPath'
 	Lit onPath(int nodeOnPath,int from, int to, Var on_path_var=var_Undef) {
-		;
 
 		std::tuple<int,int,int> constraint_set = std::make_tuple(from,to,nodeOnPath);
 		if(on_path_var==var_Undef && existing_on_path_constraints.has(constraint_set) && existing_on_path_constraints[constraint_set] !=lit_Undef ){
@@ -3759,6 +3783,13 @@ public:
 		existing_on_path_constraints.insert(constraint_set,mkLit(on_path_var));
 		return mkLit(on_path_var);
     }
+	bool hasDistance(int from, int to, Weight distance_lt,bool inclusive) {
+		std::tuple<int,int,Weight,bool> constraint_set = std::make_tuple(from,to,distance_lt,inclusive);
+		if(existing_distance_constraints.has(constraint_set) && existing_distance_constraints[constraint_set] !=lit_Undef ){
+			return true;
+		}
+		return false;
+	}
 	Lit distance(int from, int to, Weight distance_lt,bool inclusive,Var reach_var = var_Undef) {
 		std::tuple<int,int,Weight,bool> constraint_set = std::make_tuple(from,to,distance_lt,inclusive);
 		if(reach_var==var_Undef && existing_distance_constraints.has(constraint_set) && existing_distance_constraints[constraint_set] !=lit_Undef ){
@@ -3772,7 +3803,13 @@ public:
 		existing_distance_constraints.insert(constraint_set,mkLit(reach_var));
 		return mkLit(reach_var);
 	}
-
+	bool hasDistanceBV(int from, int to, int bvID,bool inclusive) {
+		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,bvID,inclusive);
+		if(existing_distance_bv_constraints.has(constraint_set) && existing_distance_bv_constraints[constraint_set] !=lit_Undef ){
+			return true;
+		}
+		return false;
+	}
 	Lit distanceBV(int from, int to, int bvID, bool inclusive, Var reach_var=var_Undef) {
         std::tuple<int,int,int,bool> constraint_set = std::make_tuple(from,to,bvID,inclusive);
         if(reach_var==var_Undef && existing_distance_bv_constraints.has(constraint_set) && existing_distance_bv_constraints[constraint_set] !=lit_Undef ){
@@ -3786,6 +3823,13 @@ public:
 		unimplemented_distance_constraints_bv.push( { from, to, bvID, reach_var, !inclusive});
         existing_distance_bv_constraints.insert(constraint_set,mkLit(reach_var));
 		return mkLit(reach_var);
+	}
+	bool hasMaxflowBV(int s, int t, int bvID, bool inclusive) {
+		std::tuple<int,int,int,bool> constraint_set = std::make_tuple(s,t,bvID,inclusive);
+		if(existing_maxflow_bv_constraints.has(constraint_set) && existing_maxflow_bv_constraints[constraint_set] !=lit_Undef ){
+			return true;
+		}
+		return false;
 	}
 	Lit maxflowBV(int s, int t, int bvID, bool inclusive, Var reach_var=var_Undef) {
         std::tuple<int,int,int,bool> constraint_set = std::make_tuple(s,t,bvID,inclusive);
@@ -3829,7 +3873,16 @@ public:
 		}
 		mstDetector->addTreeEdgeLit(edgeid, var);
 	}
+	bool hasMaxflow(int from, int to, Weight  max_flow,  bool inclusive=true){
+        std::tuple<int,int,Weight,bool> constraint_set = std::make_tuple(from,to,max_flow,inclusive);
+	    return existing_maxflow_constraints.has(constraint_set) && existing_maxflow_constraints[constraint_set] !=lit_Undef;
+    }
 	Lit maxflow(int from, int to, Weight  max_flow,  bool inclusive=true,Var v=var_Undef) {
+		std::tuple<int,int,Weight,bool> constraint_set = std::make_tuple(from,to,max_flow,inclusive);
+		if(v==var_Undef && existing_maxflow_constraints.has(constraint_set) && existing_maxflow_constraints[constraint_set] !=lit_Undef ){
+			return existing_maxflow_constraints[constraint_set];
+		}
+
 		while(from >= g_under.nodes() || to >= g_under.nodes()){
 			newNode();
 		}
@@ -3842,10 +3895,13 @@ public:
 
 		if(from==to){
 			//The maxflow from a node to itself is always infinite, and so that flow is never less than any specific weight
+
 			if(v!=var_Undef) {
 				S->addClause(~mkLit(v));
+				existing_maxflow_constraints.insert(constraint_set,mkLit(v));
 				return mkLit(v);
 			}else{
+				existing_maxflow_constraints.insert(constraint_set,S->True());
 				return S->True();
 			}
 		}
@@ -3860,7 +3916,9 @@ public:
 		flow_detectors.push(f);
 		addDetector(f);
 
-		return toSolver(f->addFlowLit(max_flow, v,inclusive));
+		Lit l =  toSolver(f->addFlowLit(max_flow, v,inclusive));
+        existing_maxflow_constraints.insert(constraint_set,l);
+        return l;
 	}
 
 	void minConnectedComponents(int min_components, Var v) {
@@ -3876,6 +3934,10 @@ public:
 		detectors.push(detector);
 		satisfied_detectors.push(false);
 	}
+	bool hasAcyclic(bool directed=false){
+		return cycle_detector && cycle_detector->hasAcyclicLit(directed);
+	}
+
 	Lit acyclic(Var v=var_Undef,bool directed=false) {
 		if (!cycle_detector) {
 			cycle_detector = new CycleDetector<Weight>(detectors.size(), this, g_under, g_over, true, drand(rnd_seed));

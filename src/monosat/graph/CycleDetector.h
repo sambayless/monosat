@@ -78,7 +78,14 @@ public:
 	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
 	bool checkSatisfied() override;
 	Lit decide(CRef &decision_reason) override;
-	Lit addAcyclicLit(bool undirected, Var v=var_Undef);
+	Lit addAcyclicLit(bool directed, Var v=var_Undef);
+	bool hasAcyclicLit(bool directed){
+		if(directed){
+			return directed_acyclic_lit != lit_Undef;
+		}else{
+			return undirected_acyclic_lit != lit_Undef;
+		}
+	}
 
 	CycleDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &_g, Graph  &_antig,
 			bool detect_directed_cycles = true, double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
