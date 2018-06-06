@@ -84,6 +84,12 @@ typedef int64_t Weight;
   void setOutputFile(SolverPtr S,const char * output);
   void readGNF(SolverPtr S, const char  * filename);
 
+  //flush constraints to file
+  void flushFile (SolverPtr S);
+  //stop writing constraints to file, and close the file (if any)
+  //this will be called automatically if the solver is deleted
+  void closeFile (SolverPtr S);
+
   bool solve(SolverPtr S);
   bool solveAssumptions(SolverPtr S,int * assumptions, int n_assumptions);
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)

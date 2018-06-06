@@ -81,6 +81,22 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    flushFile
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushFile
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    closeFile
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_closeFile
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    setVariableName
  * Signature: (JILjava/lang/String;)V
  */

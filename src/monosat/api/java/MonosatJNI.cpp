@@ -115,6 +115,20 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
     javaThrow(env);
 }
 
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushFile
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
+    flushFile(reinterpret_cast<SolverPtr>(solverPtr));
+}catch(...) {
+    javaThrow(env);
+}
+
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_closeFile
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
+    closeFile(reinterpret_cast<SolverPtr>(solverPtr));
+}catch(...) {
+    javaThrow(env);
+}
+
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setVariableName
         (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable, jstring name) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);

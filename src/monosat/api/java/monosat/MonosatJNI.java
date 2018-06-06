@@ -57,6 +57,13 @@ final class MonosatJNI { // package level access specifier
   // load constraints from a file
   public static native void readGNF(long solverPtr, String filename);
 
+
+  //flush constraints to file (if an output file is open)
+  public static native void flushFile (long solverPtr);
+  //stop writing constraints to file, and close the file (if any)
+  //this will be called automatically if the solver is deleted
+  public static native void closeFile (long solverPtr);
+
   // Set a variable name. Name must consist of printable ascii characeters,
   // and must be unique (or it may be empty). If variable previously had a name
   // that name will be replaced by this one. If name is empty, then

@@ -562,6 +562,28 @@ Monosat::SimpSolver * newSolver_args(int argc,  char**argv){
 	}
 	return S ;
 }
+
+//flush constraints to file
+void flushFile (Monosat::SimpSolver * S){
+    if(S->_external_data){
+        MonosatData* data = (MonosatData*) S->_external_data;
+        if(data->outfile){
+			fflush(data->outfile);
+            data->outfile = nullptr;
+        }
+    }
+}
+
+void closeFile (Monosat::SimpSolver * S){
+    if(S->_external_data){
+        MonosatData* data = (MonosatData*) S->_external_data;
+        if(data->outfile){
+			fclose(data->outfile);
+            data->outfile = nullptr;
+        }
+    }
+}
+
 void deleteSolver (Monosat::SimpSolver * S)
 {
 	using namespace APISignal;
