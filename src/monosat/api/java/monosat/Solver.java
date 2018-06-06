@@ -314,6 +314,11 @@ public final class Solver implements Closeable {
    * Release all native resources associated with this solver. This does not normally need to be
    * called manually (though it is safe to do so), as it will be called automatically during garbage
    * collection.
+   *
+   * It is safe to close a solver multiple times.
+   *
+   * Note that many methods of the solver (and of objects belonging to the solver, such as literals or bitvectors or
+   * graphs) may throw NullPointerExceptions if accessed after closing the solver.
    */
   @Override
   public synchronized void close() {
@@ -328,9 +333,14 @@ public final class Solver implements Closeable {
 
   @Override
   protected void finalize() {
+    // Finalize is problematic, but we follow the Java standard library's
+    // FileInputStream's here to release native resources on finalize().
+
     // Consider replacing with Java 9's java.lang.ref.Cleaner in the future.
     // But for now, sticking with finalize (to support Java 8)
-    close();
+    if (solverPtr != 0) {
+      close();
+    }
   }
 
   /** Internal method to initialize buffers for passing arguments to and from the native library. */
