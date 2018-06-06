@@ -240,7 +240,7 @@ public final class Solver implements Closeable {
       disablePreprocessing();
     }
     int true_lit = MonosatJNI.true_lit(solverPtr);
-    assert(true_lit==0);
+    assert (true_lit == 0);
     registerLit(Lit.True, Lit.False);
     this.addClause(Lit.True);
     // Ensure that the True lit returned by circuit operations (eg, and())
@@ -285,6 +285,16 @@ public final class Solver implements Closeable {
    */
   public void loadConstraints(String filename) throws IOException {
     MonosatJNI.readGNF(solverPtr, filename);
+  }
+
+  /** If the solver is writing constraints to a file, close that file. */
+  public void closeConstraintFile() {
+    MonosatJNI.closeFile(solverPtr);
+  }
+
+  /** If the solver is writing constraints to a file, flush that file. */
+  public void flushConstraintFile() {
+    MonosatJNI.flushFile(solverPtr);
   }
 
   /**
@@ -583,10 +593,9 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Get the number of variables in this solver.
-   * Note that variable 'True' is always defined in a solver,
-   * so nVars() is always at least 1, even if no Literals have been
-   * explicitly created.
+   * Get the number of variables in this solver. Note that variable 'True' is always defined in a
+   * solver, so nVars() is always at least 1, even if no Literals have been explicitly created.
+   *
    * @return The number of variables in this solver.
    */
   public int nVars() {
@@ -1024,30 +1033,33 @@ public final class Solver implements Closeable {
       allBVs.add(bv);
     }
   }
-    /**
-     * Internal method to convert C++ bitvector integers into java BitVectors.
-     * Will return the existing BitVector object for this ID if one already exists,
-     * else, will create a new BitVector object for this id.
-     * @param bvID A bitvector id to convert into a BitVector
-     * @return A BitVectors object representing the bv.
-     */
-    protected BitVector toBitVector(int bvID) {
-        assert (bvID >= 0);
+  /**
+   * Internal method to convert C++ bitvector integers into java BitVectors. Will return the
+   * existing BitVector object for this ID if one already exists, else, will create a new BitVector
+   * object for this id.
+   *
+   * @param bvID A bitvector id to convert into a BitVector
+   * @return A BitVectors object representing the bv.
+   */
+  protected BitVector toBitVector(int bvID) {
+    assert (bvID >= 0);
 
-        assert (bvID< nBitVectors()); // the bitvector must have already been declared in the sat solver before this
+    assert (bvID
+        < nBitVectors()); // the bitvector must have already been declared in the sat solver before
+    // this
 
-        while (bvID >= bvmap.size()) {
-            bvmap.add(null);
-        }
-
-        if (bvmap.get(bvID) == null) {
-            BitVector bv = new BitVector(this,this,bvID);
-            assert(bvmap.get(bvID)==bv);
-            return bv;
-        } else {
-          return bvmap.get(bvID);
-        }
+    while (bvID >= bvmap.size()) {
+      bvmap.add(null);
     }
+
+    if (bvmap.get(bvID) == null) {
+      BitVector bv = new BitVector(this, this, bvID);
+      assert (bvmap.get(bvID) == bv);
+      return bv;
+    } else {
+      return bvmap.get(bvID);
+    }
+  }
   /**
    * Internal method used to cache newly instantiated literals, so that literals returned from C++
    * can reuse the same objects.
@@ -1113,12 +1125,13 @@ public final class Solver implements Closeable {
   protected Lit toLit(int literal) {
     assert (literal >= 0);
     int var = literal / 2;
-    assert (var< nVars()); // the variable must have already been declared in the sat solver before this
+    assert (var
+        < nVars()); // the variable must have already been declared in the sat solver before this
     // call
     while (var * 2 + 1 >= allLits.size()) {
       allLits.add(null);
     }
-   /* if (!MonosatJNI.hasVariable(var)) {
+    /* if (!MonosatJNI.hasVariable(var)) {
         throw new RuntimeException("No such variable in solver: " + var);
     }*/
     if (allLits.get(var * 2) == null) {
@@ -1137,7 +1150,6 @@ public final class Solver implements Closeable {
     assert (allLits.get(literal).l == literal);
     return allLits.get(literal);
   }
-
 
   /**
    * Get a collection of all the literals in this solver.
@@ -1439,120 +1451,124 @@ public final class Solver implements Closeable {
     return new BitVector(this, width, constant);
   }
 
-    /**
-     * Returns an iterator over the (positive) literals in the solver.
-     * Each literal in the iterator has positive sign.
-     * @return An iterator over the literals in the solver.
-     */
-  public  Iterator<Lit> literals(){
-      return new LitIterator(false);
+  /**
+   * Returns an iterator over the (positive) literals in the solver. Each literal in the iterator
+   * has positive sign.
+   *
+   * @return An iterator over the literals in the solver.
+   */
+  public Iterator<Lit> literals() {
+    return new LitIterator(false);
   }
 
-    /**
-     * Returns an iterator over the named literals in the solver.
-     * Each literal in the iterator has positive sign.
-     * @return An iterator over the named literals in the solver.
-     */
-    public  Iterator<Lit> namedLiterals(){
-        return new LitIterator(true);
-    }
-
-    /**
-     * An iterator over literals in the solver.
-     */
-    public class LitIterator implements java.util.Iterator<Lit>{
-        private int index = 0;
-
-        final boolean named;
-        protected LitIterator(boolean named){
-            this.named = named;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if(named){
-                return index < MonosatJNI.nNamedVariables(Solver.this.solverPtr);
-            }else{
-                return index < Solver.this.nVars();
-            }
-        }
-
-        @Override
-        public Lit next() {
-            if(!hasNext()){
-                throw new IndexOutOfBoundsException();
-            }
-            if(named){
-                return  toLit(2* MonosatJNI.getNamedVariableN(Solver.this.solverPtr, index++));
-            }else{
-                return toLit((index++)*2);
-            }
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    /**
-     * Returns an iterator over the (positive) literals in the solver.
-     * Each literal in the iterator has positive sign.
-     * @return An iterator over the literals in the solver.
-     */
-    public  Iterator<BitVector> bitvectors(){
-        return new BVIterator(false);
-    }
-
-    /**
-     * Returns an iterator over the named literals in the solver.
-     * Each literal in the iterator has positive sign.
-     * @return An iterator over the named literals in the solver.
-     */
-    public  Iterator<BitVector> namedBitVectors(){
-        return new BVIterator(true);
-    }
-
-    /**
-     * An iterator over bitvectors in the solver.
-     */
-    public class BVIterator implements java.util.Iterator<BitVector>{
-        private int index = 0;
-
-        final boolean named;
-        protected BVIterator(boolean named){
-            this.named = named;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if(named){
-                return index < MonosatJNI.nNamedBitvectors(Solver.this.solverPtr,Solver.this.bvPtr);
-            }else{
-                return index < Solver.this.nBitVectors();
-            }
-        }
-
-        @Override
-        public BitVector next() {
-            if(!hasNext()){
-                throw new IndexOutOfBoundsException();
-            }
-            if(named){
-                return  toBitVector(MonosatJNI.getNamedBitvectorN(Solver.this.solverPtr,Solver.this.bvPtr, index++));
-            }else{
-                return toBitVector(index++);
-            }
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-    }
   /**
-   * Retrieve an existing named literal from the solver, by looking up its name.
-   * Note that the returned literal will never be negated.
+   * Returns an iterator over the named literals in the solver. Each literal in the iterator has
+   * positive sign.
+   *
+   * @return An iterator over the named literals in the solver.
+   */
+  public Iterator<Lit> namedLiterals() {
+    return new LitIterator(true);
+  }
+
+  /** An iterator over literals in the solver. */
+  public class LitIterator implements java.util.Iterator<Lit> {
+    private int index = 0;
+
+    final boolean named;
+
+    protected LitIterator(boolean named) {
+      this.named = named;
+    }
+
+    @Override
+    public boolean hasNext() {
+      if (named) {
+        return index < MonosatJNI.nNamedVariables(Solver.this.solverPtr);
+      } else {
+        return index < Solver.this.nVars();
+      }
+    }
+
+    @Override
+    public Lit next() {
+      if (!hasNext()) {
+        throw new IndexOutOfBoundsException();
+      }
+      if (named) {
+        return toLit(2 * MonosatJNI.getNamedVariableN(Solver.this.solverPtr, index++));
+      } else {
+        return toLit((index++) * 2);
+      }
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  /**
+   * Returns an iterator over the (positive) literals in the solver. Each literal in the iterator
+   * has positive sign.
+   *
+   * @return An iterator over the literals in the solver.
+   */
+  public Iterator<BitVector> bitvectors() {
+    return new BVIterator(false);
+  }
+
+  /**
+   * Returns an iterator over the named literals in the solver. Each literal in the iterator has
+   * positive sign.
+   *
+   * @return An iterator over the named literals in the solver.
+   */
+  public Iterator<BitVector> namedBitVectors() {
+    return new BVIterator(true);
+  }
+
+  /** An iterator over bitvectors in the solver. */
+  public class BVIterator implements java.util.Iterator<BitVector> {
+    private int index = 0;
+
+    final boolean named;
+
+    protected BVIterator(boolean named) {
+      this.named = named;
+    }
+
+    @Override
+    public boolean hasNext() {
+      if (named) {
+        return index < MonosatJNI.nNamedBitvectors(Solver.this.solverPtr, Solver.this.bvPtr);
+      } else {
+        return index < Solver.this.nBitVectors();
+      }
+    }
+
+    @Override
+    public BitVector next() {
+      if (!hasNext()) {
+        throw new IndexOutOfBoundsException();
+      }
+      if (named) {
+        return toBitVector(
+            MonosatJNI.getNamedBitvectorN(Solver.this.solverPtr, Solver.this.bvPtr, index++));
+      } else {
+        return toBitVector(index++);
+      }
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+  /**
+   * Retrieve an existing named literal from the solver, by looking up its name. Note that the
+   * returned literal will never be negated.
+   *
    * @param name The name of the literal to check for.
    * @return The matching literal, if it exists.
    * @throws IllegalArgumentException If there is no literal in the solver with this name (or if
@@ -1617,8 +1633,8 @@ public final class Solver implements Closeable {
       throw new IllegalArgumentException("Graph string name must have length > 0");
     }
     long graphPtr = MonosatJNI.getGraph(solverPtr, MonosatJNI.validID(name));
-    if(graphPtr==0){
-        throw new IllegalArgumentException("No graph with name " + name);
+    if (graphPtr == 0) {
+      throw new IllegalArgumentException("No graph with name " + name);
     }
     if (allGraphs.containsKey(graphPtr)) {
       return allGraphs.get(graphPtr);
@@ -1662,13 +1678,14 @@ public final class Solver implements Closeable {
     return MonosatJNI.hasModel(solverPtr);
   }
 
-/**
- * Return true if the solver has not yet proven its constraints to be UNSAT.
- * If this returns false, then all future calls to 'solve' will return false.
- * @return true if the solver has not yet proven its constraints to be UNSAT.
- */
-  public boolean ok(){
-      return MonosatJNI.ok(solverPtr);
+  /**
+   * Return true if the solver has not yet proven its constraints to be UNSAT. If this returns
+   * false, then all future calls to 'solve' will return false.
+   *
+   * @return true if the solver has not yet proven its constraints to be UNSAT.
+   */
+  public boolean ok() {
+    return MonosatJNI.ok(solverPtr);
   }
 
   /**

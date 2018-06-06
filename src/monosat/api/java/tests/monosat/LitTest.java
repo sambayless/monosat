@@ -300,7 +300,7 @@ public class LitTest {
         // ok
       }
 
-      s.close();
+      s.closeConstraintFile();
     }
 
     monosat.Solver s = new monosat.Solver();
@@ -588,7 +588,7 @@ public class LitTest {
         {
             monosat.Solver s = new monosat.Solver("", filename);
             monosat.Lit a = new monosat.Lit(s,"MyLiteral1");
-            s.close();
+            s.flushConstraintFile();
         }
 
         monosat.Solver s2 = new monosat.Solver();
