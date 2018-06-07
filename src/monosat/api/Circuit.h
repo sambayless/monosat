@@ -52,23 +52,27 @@ class Circuit{
 	vec<Lit> store;
 	FILE * outfile=nullptr;
 
+	inline int dimacs(Solver & S, Lit internalLit) {
+		Lit l = S.unmap(internalLit);
+		return sign(l) ? -(var(l) + 1) : (var(l) + 1);
+	}
 	bool _addClause(Lit a){
 		if(outfile) {
-			fprintf(outfile, "%d 0\n ", dimacs(a));
+			fprintf(outfile, "%d 0\n ", dimacs(S,a));
 			fflush(outfile);
 		}
 		return S.addClause(a);
 	}
 	bool _addClause(Lit a, Lit b){
 		if(outfile) {
-			fprintf(outfile, "%d %d 0\n ", dimacs(a), dimacs(b));
+			fprintf(outfile, "%d %d 0\n ", dimacs(S,a), dimacs(S,b));
 			fflush(outfile);
 		}
 		return S.addClause(a,b);
 	}
 	bool _addClause(Lit a, Lit b, Lit c){
 		if(outfile) {
-			fprintf(outfile, "%d %d %d 0\n ", dimacs(a), dimacs(b), dimacs(c));
+			fprintf(outfile, "%d %d %d 0\n ", dimacs(S,a), dimacs(S,b), dimacs(S,c));
 			fflush(outfile);
 		}
 		return S.addClause(a,b,c);
@@ -76,7 +80,7 @@ class Circuit{
 	bool _addClause(vec<Lit> & clause){
 		if(outfile) {
 			for (Lit l:clause) {
-				fprintf(outfile, "%d ", dimacs(l));
+				fprintf(outfile, "%d ", dimacs(S,l));
 			}
 			fprintf(outfile, "0\n");
 			fflush(outfile);

@@ -297,7 +297,8 @@ public final class Solver implements Closeable {
    * @throws IOException If the file could not be read.
    */
   public void loadConstraints(String filename) throws IOException {
-    MonosatJNI.readGNF(getSolverPtr(), filename);
+      //note that any embedded solve calls in the GNF file will be ignored
+    MonosatJNI.loadGNF(getSolverPtr(), filename);
   }
 
   /** If the solver is writing constraints to a file, close that file. */

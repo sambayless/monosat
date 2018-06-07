@@ -82,8 +82,10 @@ typedef int64_t Weight;
   bool ok(SolverPtr S);
   //If set, dump constraints to this file (as they are asserted in the solver)
   void setOutputFile(SolverPtr S,const char * output);
+  //Load a GNF, and run any embedded solve/optimize calls
   void readGNF(SolverPtr S, const char  * filename);
-
+  //Load a GNF, but ignore any embedded solve/optimize calls
+  void loadGNF(SolverPtr S, const char  * filename);
   //flush constraints to file
   void flushFile (SolverPtr S);
   //stop writing constraints to file, and close the file (if any)

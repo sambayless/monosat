@@ -115,6 +115,16 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
     javaThrow(env);
 }
 
+
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_loadGNF
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jstring filename) try {
+    const char *str = env->GetStringUTFChars(filename, 0);
+    loadGNF(reinterpret_cast<SolverPtr>(solverPtr), str);
+    env->ReleaseStringUTFChars(filename, str);
+}catch(...) {
+    javaThrow(env);
+}
+
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushFile
         (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
     flushFile(reinterpret_cast<SolverPtr>(solverPtr));

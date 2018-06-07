@@ -797,8 +797,31 @@ void minimizeConflictClause(Monosat::SimpSolver * S){
 		assert(S->conflict.size()==size);
 	}
 }
+//Load a gnf, but ignore any solve/optimize calls
+void loadGNF(Monosat::SimpSolver * S, const char  * filename){
+	gzFile in = gzopen(filename, "rb");
+	if (in == nullptr)
+		throw std::runtime_error("ERROR! Could not open file");
+	try {
+		MonosatData *d = (MonosatData *) S->_external_data;
+		auto &parser = *d->parser;
+		StreamBuffer strm(in);
 
+		d->optimization_objectives.clear();
+		while (parser.parse(strm, *S)) {
+			//ignore solve calls
+		}
+		parser.assumptions.clear();
+		parser.objectives.clear();
 
+		assert(*strm == EOF);
+	}catch(...)
+	{
+		gzclose(in);
+		throw;
+	}
+}
+//Load a gnf, and run any embedded solve/optimize calls
 void readGNF(Monosat::SimpSolver * S, const char  * filename){
 
 	gzFile in = gzopen(filename, "rb");

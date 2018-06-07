@@ -1897,7 +1897,7 @@ public:
 							stats_decision_time += rtime(1) - start;
                             if(S->value(bv_decision)!=l_Undef){
 
-                                printf("%d %d\n",var(l), dimacs(bv_decision));
+
                                 throw std::runtime_error("error in decision heuristic");
                             }
 							return bv_decision;

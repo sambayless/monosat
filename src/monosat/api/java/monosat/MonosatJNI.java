@@ -54,9 +54,11 @@ final class MonosatJNI { // package level access specifier
   // If set, dump constraints to this file (as they are asserted in the solver)
   public static native void setOutputFile(long solverPtr, String filename);
 
-  // load constraints from a file
+  // load constraints from a file, and execute any embedded solve/optimize calls
   public static native void readGNF(long solverPtr, String filename);
 
+  // load constraints from a file, but ignore any embedded solve/optimize calls
+  public static native void loadGNF(long solverPtr, String filename);
 
   //flush constraints to file (if an output file is open)
   public static native void flushFile (long solverPtr);
