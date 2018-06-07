@@ -23,6 +23,8 @@ package monosat;
 
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -581,4 +583,42 @@ public class LogicTest {
     assertTrue(solver.solve(a));
     assertTrue(solver.solve(a.not(), b.not()));
   }
+
+    @Test
+    public void testLoading() throws IOException {
+        File f = File.createTempFile("test", ".gnf");
+        String filename = f.getAbsolutePath().toString();
+        f.delete();
+
+        {
+          Solver solver = new monosat.Solver("", filename);
+
+          Lit a = new Lit(solver,"a");
+          Lit b = new Lit(solver,"b");
+          Lit c = new Lit(solver,"c");
+          Logic.assertXnor(a, b);
+          assertTrue(solver.solve(a, b, c));
+          assertFalse(solver.solve(Logic.not(a), b, c));
+          assertTrue(solver.solve(Logic.not(a), Logic.not(b), c));
+          assertFalse(solver.solve(a, Logic.not(b), c));
+          assertTrue(solver.solve(Logic.not(a)));
+          assertTrue(solver.solve(c));
+          assertTrue(solver.solve(Logic.not(c)));
+        }
+        monosat.Solver solver = new monosat.Solver();
+        solver.loadConstraints(filename);
+
+        Lit a = solver.getLiteral("a");
+        Lit b = solver.getLiteral("b");
+        Lit c = solver.getLiteral("c");
+
+        assertTrue(solver.solve());
+        assertTrue(solver.solve(a, b, c));
+        assertFalse(solver.solve(Logic.not(a), b, c));
+        assertTrue(solver.solve(Logic.not(a), Logic.not(b), c));
+        assertFalse(solver.solve(a, Logic.not(b), c));
+        assertTrue(solver.solve(Logic.not(a)));
+        assertTrue(solver.solve(c));
+        assertTrue(solver.solve(Logic.not(c)));
+    }
 }

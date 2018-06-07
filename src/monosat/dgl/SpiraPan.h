@@ -716,57 +716,64 @@ public:
 			history_qhead = g.historySize();//have to skip any additions or deletions that are left here, as otherwise the tree wont be an MST at the beginning of the addEdgeToMST method, which is an error.
 
 		}
+		if(g.nodes()==0){
+			//special case for empty graph:
+			num_sets = 0;
+			min_weight=0;
 
-		//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
-		for (int i = history_qhead; i < g.historySize(); i++) {
-
-			int edgeid = g.getChange(i).id;
-			if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
-				prims();//to maintain correctness in spirapan, prims apparently must be called before addEdgeToMST.
-				//however, the current implementation can likely be improved by only running prims on the components of the endpoints of edgeid...
-				edge_enabled[edgeid]=true;
-				addEdgeToMST(edgeid);
-			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
-				removeEdgeFromMST(edgeid);
-				edge_enabled[edgeid]=false;
-			}
+		}else {
 			//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
-		}
-#ifdef DEBUG_DGL
-		for(int i = 0;i<g.edges();i++)
-			assert(g.edgeEnabled(i)==edge_enabled[i]);
-#endif
-		prims();
-		//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
-		//g.drawFull(true);
-		dbg_parents();
-		//dbg_printSpanningTree();
-#ifdef DEBUG_DGL
-		Weight expect = dbg.forestWeight();
-		//dbg.dbg_printSpanningTree();
-		assert(min_weight == dbg.forestWeight());
-		assert(num_sets == dbg.numComponents());
-#endif
+			for (int i = history_qhead; i < g.historySize(); i++) {
 
-		status.setMinimumSpanningTree(num_sets > 1 ? INF : min_weight, num_sets <= 1);
-
-		//if(reportPolarity>-1){
-		for (int i = 0; i < in_tree.size(); i++) {
-
-			//Note: for the tree edge detector, polarity is effectively reversed.
-			if (reportPolarity < 1 && (!g.edgeEnabled(i) || in_tree[i])) {
-				status.inMinimumSpanningTree(i, true);
-#ifdef DEBUG_DGL
-				assert(!g.edgeEnabled(i) || dbg.edgeInTree(i));
-#endif
-			} else if (reportPolarity > -1 && (g.edgeEnabled(i) && !in_tree[i])) {
-				status.inMinimumSpanningTree(i, false);
-#ifdef DEBUG_DGL
-				assert(!dbg.edgeInTree(i));
-#endif
+				int edgeid = g.getChange(i).id;
+				if (g.getChange(i).addition && g.edgeEnabled(edgeid) && !edge_enabled[edgeid]) {
+					prims();//to maintain correctness in spirapan, prims apparently must be called before addEdgeToMST.
+					//however, the current implementation can likely be improved by only running prims on the components of the endpoints of edgeid...
+					edge_enabled[edgeid] = true;
+					addEdgeToMST(edgeid);
+				} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid) && edge_enabled[edgeid]) {
+					removeEdgeFromMST(edgeid);
+					edge_enabled[edgeid] = false;
+				}
+				//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
 			}
+#ifdef DEBUG_DGL
+            for(int i = 0;i<g.edges();i++)
+                assert(g.edgeEnabled(i)==edge_enabled[i]);
+#endif
+			prims();
+			//std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
+			//g.drawFull(true);
+			dbg_parents();
+			//dbg_printSpanningTree();
+#ifdef DEBUG_DGL
+            Weight expect = dbg.forestWeight();
+            //dbg.dbg_printSpanningTree();
+            assert(min_weight == dbg.forestWeight());
+            assert(num_sets == dbg.numComponents());
+#endif
+			assert(dbg_uptodate());
 		}
-		assert(dbg_uptodate());
+			status.setMinimumSpanningTree(num_sets > 1 ? INF : min_weight, num_sets <= 1);
+
+			//if(reportPolarity>-1){
+			for (int i = 0; i < in_tree.size(); i++) {
+
+				//Note: for the tree edge detector, polarity is effectively reversed.
+				if (reportPolarity < 1 && (!g.edgeEnabled(i) || in_tree[i])) {
+					status.inMinimumSpanningTree(i, true);
+#ifdef DEBUG_DGL
+					assert(!g.edgeEnabled(i) || dbg.edgeInTree(i));
+#endif
+				} else if (reportPolarity > -1 && (g.edgeEnabled(i) && !in_tree[i])) {
+					status.inMinimumSpanningTree(i, false);
+#ifdef DEBUG_DGL
+					assert(!dbg.edgeInTree(i));
+#endif
+				}
+			}
+
+
 		num_updates++;
 		last_modification = g.getCurrentHistory();
 		last_deletion = g.nDeletions();
@@ -811,7 +818,7 @@ public:
 	Weight & weight() override{
 		update();
 		assert(dbg_uptodate());
-		if (num_sets == 1)
+		if (num_sets <= 1)
 			return min_weight;
 		else
 			return INF;
