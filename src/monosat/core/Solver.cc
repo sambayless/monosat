@@ -194,9 +194,6 @@ bool Solver::addClause_(vec<Lit>& ps, bool is_derived_clause) {
 		ca[cr].setDerived(is_derived_clause);
 		clauses.push(cr);
 		attachClause(cr);
-		if(cr==34){
-		    int a=1;
-		}
 	}
 
 	return true;

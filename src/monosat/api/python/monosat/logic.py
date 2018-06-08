@@ -19,6 +19,8 @@
 
 import collections
 import math
+import warnings
+
 import monosat.monosat_c
 import numbers
 
@@ -620,7 +622,11 @@ def Assert(a):
 
     a = VAR(a)
     if a.isConstFalse():
-        print("Warning: asserted constant false variable")
+        warnings.warn(
+            "Asserted a trivial contradiction",
+            UserWarning,
+        )
+        #print("Warning: asserted constant false variable")
     _checkLits((a,))
     _monosat.addUnitClause(a.getLit())
 

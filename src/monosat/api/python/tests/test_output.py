@@ -1,4 +1,6 @@
 import unittest
+import warnings
+
 import monosat
 import shutil, tempfile
 import os
@@ -26,7 +28,7 @@ class TestOutput(unittest.TestCase):
         self.assertTrue(monosat.Solve())
 
         # read in the previously saved constraints (these can also be read in on the command line, eg ./monosat tutorial.gnf
-        monosat.Monosat().readGNF(filename)
+        monosat.Monosat().loadConstraints(filename)
         result2 = monosat.Solve()
         self.assertEqual(result,result2)
         os.remove(filename)
@@ -37,7 +39,13 @@ class TestOutput(unittest.TestCase):
         filename = test_file.name
         test_file.close()
         monosat.Monosat().newSolver(arguments="-decide-theories")
-        monosat.Monosat().setOutputFile(output_file=filename)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            monosat.Monosat().setOutputFile(output_file=filename)
+            self.assertEqual(len(w), 1)
+            self.assertTrue(issubclass(w[-1].category, DeprecationWarning))
+            self.assertTrue( "deprecated" in str(w[-1].message))
+
         a = monosat.Var()
         b = monosat.Var()
         c = monosat.Or(a, monosat.Not(b))
@@ -54,7 +62,7 @@ class TestOutput(unittest.TestCase):
         self.assertTrue(monosat.Solve())
 
         # read in the previously saved constraints (these can also be read in on the command line, eg ./monosat tutorial.gnf
-        monosat.Monosat().readGNF(filename)
+        monosat.Monosat().loadConstraints(filename)
         result2 = monosat.Solve()
         self.assertEqual(result,result2)
         os.remove(filename)

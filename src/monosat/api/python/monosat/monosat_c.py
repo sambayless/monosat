@@ -222,6 +222,7 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.deleteSolver.argtypes = [c_solver_p]
 
             self.monosat_c.readGNF.argtypes = [c_solver_p, c_char_p]
+            self.monosat_c.loadGNF.argtypes = [c_solver_p, c_char_p]
 
             self.monosat_c.solve.argtypes = [c_solver_p]
             self.monosat_c.solve.restype = c_bool
@@ -942,8 +943,8 @@ class Monosat(metaclass=Singleton):
         self.solver._true = self.getTrue()
         return self.solver
 
-    def readGNF(self, filename):
-        self.monosat_c.readGNF(self.solver._ptr, c_char_p(filename.encode("ascii")))
+    def loadConstraints(self, filename):
+        self.monosat_c.loadGNF(self.solver._ptr, c_char_p(filename.encode("ascii")))
 
     def getEmptyIntArray(self, length):
         if length > len(self._int_array):

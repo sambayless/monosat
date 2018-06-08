@@ -127,6 +127,7 @@ from monosat_header cimport reaches as _reaches_monosat
 from monosat_header cimport reachesBackward as _reachesBackward_monosat
 from monosat_header cimport onPath as _onPath_monosat
 from monosat_header cimport readGNF as _readGNF_monosat
+from monosat_header cimport loadGNF as _loadGNF_monosat
 from monosat_header cimport setConflictLimit as _setConflictLimit_monosat
 from monosat_header cimport setDecisionPolarity as _setDecisionPolarity_monosat
 from monosat_header cimport setDecisionPriority as _setDecisionPriority_monosat
@@ -1372,11 +1373,13 @@ def onPath( S ,  G , nodeOnPath, _from ,  to ):
 
 def readGNF( S , bytes filename ):
     """Cython signature: void readGNF(void* S, char * filename)"""
-    
     assert isinstance(filename, bytes), 'arg filename wrong type'
-
-
     _readGNF_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>filename))
+
+def loadGNF( S , bytes filename ):
+    """Cython signature: void loadGNF(void* S, char * filename)"""
+    assert isinstance(filename, bytes), 'arg filename wrong type'
+    _loadGNF_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<char *>filename))
 
 def setConflictLimit( S ,  num_conflicts ):
     """Cython signature: void setConflictLimit(void* S, int num_conflicts)"""

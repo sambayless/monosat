@@ -32,6 +32,8 @@ cdef extern from "monosat/api/Monosat.h":
 
     void readGNF(SolverPtr S, char* filename)
 
+    void loadGNF(SolverPtr S, char* filename)
+
     bint solve(SolverPtr S)
 
     bint solveAssumptions(SolverPtr S, int* assumptions, int n_assumptions)

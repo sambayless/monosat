@@ -1,4 +1,6 @@
 import unittest
+import warnings
+
 import monosat
 class TestLogic(unittest.TestCase):
     def test_newLit(self):
@@ -29,7 +31,11 @@ class TestLogic(unittest.TestCase):
         self.assertTrue(monosat.solver.Solve())
         monosat.logic.AssertTrue(monosat.logic.true())
         self.assertTrue(monosat.solver.Solve())
-        monosat.logic.AssertFalse(monosat.logic.true())
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            monosat.logic.AssertFalse(monosat.logic.true())
+            self.assertTrue( "Asserted a trivial contradiction" in str(w[-1].message))
+
         self.assertFalse(monosat.solver.Solve())
         monosat.Monosat().newSolver()
         self.assertTrue(monosat.solver.Solve())
@@ -37,12 +43,22 @@ class TestLogic(unittest.TestCase):
     def test_deprecated_init(self):
         monosat.Monosat().newSolver()
         #tests the deprecated init function
-        monosat.Monosat().init("-decide-theories")
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            monosat.Monosat().init("-decide-theories")
+            self.assertEqual(len(w), 1)
+            self.assertTrue(issubclass(w[-1].category, DeprecationWarning))
+            self.assertTrue( "deprecated" in str(w[-1].message))
+
         self.assertTrue(monosat.solver.Solve())
         self.assertTrue(monosat.solver.Solve())
         monosat.logic.AssertTrue(monosat.logic.true())
         self.assertTrue(monosat.solver.Solve())
-        monosat.logic.AssertFalse(monosat.logic.true())
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            monosat.logic.AssertFalse(monosat.logic.true())
+            self.assertTrue( "Asserted a trivial contradiction" in str(w[-1].message))
+
         self.assertFalse(monosat.solver.Solve())
         monosat.Monosat().newSolver()
         self.assertTrue(monosat.solver.Solve())
