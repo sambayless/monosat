@@ -936,15 +936,19 @@ class Monosat(metaclass=Singleton):
         )
         self.newSolver(arguments=self.solver.arguments, output_file=output_file)
 
-    def newSolver(self, arguments=None, output_file=None):
+    def newSolver(self, arguments=None, output_file=None, define_true=True):
         if self.solver is not None:
             self.solver.delete()
         self.solver = Solver(self.monosat_c, arguments, output_file)
-        self.solver._true = self.getTrue()
+        if define_true:
+            self.solver._true = self.getTrue()
         return self.solver
 
-    def loadConstraints(self, filename):
-        self.monosat_c.loadGNF(self.solver._ptr, c_char_p(filename.encode("ascii")))
+    def loadConstraints(self, filename, process_solve_statements=False):
+        if process_solve_statements:
+            self.monosat_c.readGNF(self.solver._ptr, c_char_p(filename.encode("ascii")))
+        else:
+            self.monosat_c.loadGNF(self.solver._ptr, c_char_p(filename.encode("ascii")))
 
     def getEmptyIntArray(self, length):
         if length > len(self._int_array):

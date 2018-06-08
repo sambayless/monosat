@@ -677,7 +677,9 @@ int main(int argc, char** argv) {
 			}
 		}
 		gzclose(in);
-
+		if(opt_ignore_solve_statements){
+			parser.assumptions.clear();
+		}
 
 		//processPriority(S,(const char *) opt_priority);
 		//processDecidable(S , (const char*) opt_decidable);
