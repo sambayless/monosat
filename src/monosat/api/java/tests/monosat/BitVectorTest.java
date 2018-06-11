@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -56,6 +57,51 @@ public class BitVectorTest {
     BitVector bv = new BitVector(s, 4);
     assertEquals(bv.width(), 4);
     assertEquals(bv.size(), 4);
+  }
+
+  @Test
+  public void testExplicitLits(){
+    Solver s = new Solver();
+    ArrayList<Lit> bits = new ArrayList<>();
+    for (int n = 0;n<4;n++){
+      bits.add(new Lit(s));
+    }
+    BitVector bv = new BitVector(s, bits);
+    assertEquals(bv.width(), 4);
+    assertEquals(bv.size(), 4);
+    for (int n = 0;n<4;n++){
+      Lit bit = bv.get(n);
+      Lit l = bits.get(n);
+      assertEquals(bit,l);
+    }
+    for (int n = 0;n<4;n++){
+      Lit bit = bv.getBits().get(n);
+      Lit l = bits.get(n);
+      assertEquals(bit,l);
+    }
+  }
+
+  @Test
+  public void testAnonBitvector(){
+    Solver s = new Solver();
+    BitVector bv = new BitVector(s, 4,false);
+    assertEquals(bv.width(), 4);
+    assertEquals(bv.size(), 0);
+    assert(bv.getBits().size()==0);
+  }
+
+  @Test
+  public void testConstantBitvector(){
+    Solver s = new Solver();
+    BitVector bv = new BitVector(s, 4,7);
+    assertEquals(bv.width(), 4);
+    assertEquals(bv.size(), 4);
+    for (int n = 0;n<4;n++){
+      Lit bit = bv.get(n);
+      if(bit!=Lit.True && bit != Lit.False){
+        fail("Bitvector constant must define constant true/false literals");
+      }
+    }
   }
 
   @Test

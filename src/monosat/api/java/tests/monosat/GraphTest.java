@@ -46,6 +46,21 @@ public class GraphTest {
   }
 
   @Test
+  public void edgeLits() {
+    Solver s = new Solver();
+    Graph g = new Graph(s);
+    for (int i = 0; i < 4; i++) {
+      g.addNode();
+    }
+
+    Lit n1 = new Lit(s);
+    Lit e_0_1 = g.addEdge(0, 1);
+    Lit e_0_2 = g.addEdge(0, 2);
+
+    assertEquals(e_0_1.toVar(),n1.toVar()+1);
+    assertEquals(e_0_2.toVar(),n1.toVar()+2);
+  }
+  @Test
   public void nEdges() {
     Solver s = new Solver();
     Graph g = new Graph(s);

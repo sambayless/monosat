@@ -58,6 +58,13 @@ public class LitTest {
     assertTrue(s.solve(a, b.not()));
     assertTrue(a.value());
     assertFalse(b.value());
+
+    assertEquals(Lit.True.toVar(),Lit.False.toVar());
+    assertEquals(Lit.True.toVar(),0);
+    assertEquals(Lit.True.toVar()+1,a.toVar());
+    assertEquals(Lit.True.toVar()+2,b.toVar());
+    assertEquals(Lit.True.toVar()+3,c.toVar());
+
   }
 
   @Test

@@ -98,7 +98,11 @@ public final class BitVector {
     id =
         MonosatJNI.newBitvector(
             solver.getSolverPtr(), solver.bvPtr, solver.getVarBuffer(literals,0), literals.size());
-    bits.addAll(literals);
+    //bits.addAll(literals);
+    for (int i = 0; i < MonosatJNI.nBitvectorBits(solver.getSolverPtr(), solver.bvPtr, id); i++) {
+      int l = MonosatJNI.getBitvectorBit(solver.getSolverPtr(), solver.bvPtr, id, i);
+      bits.add(solver.getLiteral(l));
+    }
     solver.registerBitVector(this);
     this._name = name;
     if (name.length() > 0) {
@@ -312,12 +316,15 @@ public final class BitVector {
   }
 
   /**
-   * Get the bitwidth of this (eg, number of bits) of this bitvector.
-   *
-   * @return The bitwidth of this bitvector.
+   * Get the number of defined, explicit bit literals in this Bitvector.
+   * Normally, this is equal to the width of the bitvector,
+   * but in some cases a bitvector may have no explicit literals (in which case,
+   * the size is exactly 0, even if the width of the bitvector is non-zero).
+   * Size is always either equal to width(), or exactly 0.
+   * @return The number of explicitly defined bit literals in the soover.
    */
   public int size() {
-    return width();
+    return bits.size();
   }
 
   /**
