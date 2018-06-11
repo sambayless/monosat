@@ -1076,9 +1076,9 @@ int newNamedVar(Monosat::SimpSolver * S,const char  * varname){
                 }
             }
         }
-        Var v = newVar(S);
-        setVariableName(S,v,varname);
-        return v;
+        Var v = S->newVar();
+        setVariableName(S,externalVar(S,v),varname);
+        return externalVar(S,v);
     }else{
         return newVar(S);
     }
@@ -1315,63 +1315,45 @@ int getBitvector(SolverPtr S, BVTheoryPtr bv, const char * name){
 }
 
 int newBVComparison_const_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
-	//Var v = newVar(S);
-	//Lit l =mkLit(v);
 	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::lt,internalBV(bv,bvID),weight));
 	write_out(S,"bv const < %d %d %" PRId64 "\n",dimacs(S,l),bvID, weight);
 
 	return externalLit(S,l);
 }
 int newBVComparison_bv_lt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
-	//Var v = newVar(S);
-	//Lit l =mkLit(v);
 	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::lt,internalBV(bv,bvID),compareID));
 	write_out(S,"bv < %d %d %d\n",dimacs(S,l),bvID, compareID);
 
 	return externalLit(S,l);
 }
 int newBVComparison_const_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
-	//Var v = newVar(S);
-	//Lit l =mkLit(v);
-
 	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::leq,internalBV(bv,bvID),weight));
 	//printf("Const bv leq bv %d to %" PRId64 " = var %d\n",bvID, weight, dimacs(S,l));
 	write_out(S,"bv const <= %d %d %" PRId64 "\n",dimacs(S,l),bvID, weight);
 	return externalLit(S,l);
 }
 int newBVComparison_bv_leq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
-	//Var v = newVar(S);
-	// Lit l =mkLit(v);
 	Lit l =bv->toSolver(bv->newComparisonBV(Monosat::Comparison::leq,internalBV(bv,bvID),compareID));
 	write_out(S,"bv <= %d %d %d\n",dimacs(S,l),bvID, compareID);
 	return externalLit(S,l);
 }
 
 int newBVComparison_const_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
-	// Var v = newVar(S);
-	// Lit l =mkLit(v);
 	Lit l =bv->toSolver( bv->newComparison(Monosat::Comparison::gt,internalBV(bv,bvID),weight));
 	write_out(S,"bv const > %d %d %" PRId64 "\n",dimacs(S,l),bvID, weight);
 	return externalLit(S,l);
 }
 int newBVComparison_bv_gt(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
-	//Var v = newVar(S);
-	//Lit l =mkLit(v);
 	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::gt,internalBV(bv,bvID),compareID));
 	write_out(S,"bv > %d %d %d\n",dimacs(S,l),bvID, compareID);
 	return externalLit(S,l);
 }
 int newBVComparison_const_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int64_t weight){
-	//Var v = newVar(S);
-	//Lit l =mkLit(v);
 	Lit l =bv->toSolver(bv->newComparison(Monosat::Comparison::geq,internalBV(bv,bvID),weight));
-	//printf("Const bv geq bv %d to %" PRId64 " = var %d\n",bvID, weight, dimacs(S,l));
 	write_out(S,"bv const >= %d %d %" PRId64 "\n",dimacs(S,l),bvID, weight);
 	return externalLit(S,l);
 }
 int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int compareID){
-	//Var v = newVar(S);
-	//Lit l =mkLit(v);
 	Lit l =bv->toSolver( bv->newComparisonBV(Monosat::Comparison::geq,internalBV(bv,bvID),compareID));
 	write_out(S,"bv >= %d %d %d\n",dimacs(S,l),bvID, compareID);
 	return externalLit(S,l);
@@ -1684,7 +1666,7 @@ const char * getNodeName(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int6
 }
 
 int newEdge(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to,  int64_t weight){
-	Var v = newVar(S);
+	Var v = S->newVar();
 	Lit l =mkLit(v);
 
 	write_out(S,"edge %d %d %d %d %" PRId64 "\n",G->getGraphID(),from,to, dimacs(S,l),weight);
@@ -1700,14 +1682,14 @@ int nEdges(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G){
 
 
 int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight){
-	Var v = newVar(S);
+	Var v = S->newVar();
 	Lit l =mkLit(v);
 	write_out(S,"edge %d %d %d %d %f\n",G->getGraphID(),from,to, dimacs(S,l),weight);
 	G->newEdge( from,  to, v,  weight );
 	return externalLit(S,l);
 }
 int newEdge_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G,int from,int  to, int bvID){
-	Var v = newVar(S);
+	Var v = S->newVar();
 	Lit l =mkLit(v);
 	write_out(S,"edge_bv %d %d %d %d %d\n",G->getGraphID(),from,to, dimacs(S,l),bvID);
 	G->newEdgeBV( from,  to, v,  internalBV(S,bvID) );
@@ -1861,7 +1843,7 @@ int maximumFlow_gt_bv(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t
     }
 }
 int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
-	Var v = newVar(S);
+	Var v = S->newVar();
 	Lit l =mkLit(v);
 	write_out(S,"mst_weight_leq %d %d %d %d %d %" PRId64 "\n",G->getGraphID(), dimacs(S,l),weight);
 	G->minimumSpanningTree(v, weight,true);
@@ -1869,7 +1851,7 @@ int minimumSpanningTree_leq(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<i
 	return externalLit(S,l);
 }
 int minimumSpanningTree_lt(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G, int64_t weight){
-	Var v = newVar(S);
+	Var v = S->newVar();
 	Lit l =mkLit(v);
 	write_out(S,"mst_weight_lt  %d %d %d %d %d %" PRId64 "\n",G->getGraphID(), dimacs(S,l),weight);
 	G->minimumSpanningTree(v, weight,false);
@@ -2001,7 +1983,7 @@ int newTransition(Monosat::SimpSolver * S, Monosat::FSMTheorySolver * fsmTheory,
 	if(!fsmTheory){
 		fsmTheory = initFSMTheory(S);
 	}
-	Var v = newVar(S);
+	Var v = S->newVar();
 	Lit l =mkLit(v);
 	fsmTheory->newTransition(fsmID,fromNode,toNode,inputLabel,outputLabel,v);
 	write_out(S,"transition %d %d %d %d %d %d\n", fsmID,fromNode,toNode,inputLabel,outputLabel,dimacs(S,l));
@@ -2035,7 +2017,7 @@ int fsmAcceptsString(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  fsmThe
 		fsmTheory = initFSMTheory(S);
 	}
 
-	Var v = newVar(S);
+	Var v = S->newVar();
 	Lit l =mkLit(v);
 	fsmTheory->addAcceptLit(fsmID,startNode,acceptNode,stringID,v);
 	write_out(S,"accepts %d %d %d %d %d\n",fsmID,startNode, acceptNode, stringID, dimacs(S,l));
@@ -2045,7 +2027,7 @@ int fsmCompositionAccepts(Monosat::SimpSolver * S, Monosat::FSMTheorySolver *  f
 	if(!fsmTheory){
 		fsmTheory = initFSMTheory(S);
 	}
-	Var v = newVar(S);
+	Var v = S->newVar();
 	Lit l =mkLit(v);
 	fsmTheory->addComposeAcceptLit(fsmGeneratorID,fsmAcceptorID,gen_startNode,gen_acceptNode,acceptor_startNode,acceptor_acceptNode, stringID,v);
 	write_out(S,"accepts_composition %d %d %d %d %d %d %d %d\n",fsmGeneratorID,fsmAcceptorID,gen_startNode,gen_acceptNode,acceptor_startNode,acceptor_acceptNode, stringID, dimacs(S,l));
