@@ -1340,10 +1340,10 @@ public final class Graph {
     for (Edge e : getAllEdges()) {
       writer.append(
           "n"
-              + getName(e.from)
+              + (e.from)
               + "->"
               + "n"
-              +  getName(e.to)
+              +  (e.to)
               + "[label=\""
               + e.l.toString()
               + "\"");

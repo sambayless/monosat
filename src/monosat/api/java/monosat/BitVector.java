@@ -97,7 +97,7 @@ public final class BitVector {
     }
     id =
         MonosatJNI.newBitvector(
-            solver.getSolverPtr(), solver.bvPtr, solver.getLitBuffer(literals), literals.size());
+            solver.getSolverPtr(), solver.bvPtr, solver.getVarBuffer(literals,0), literals.size());
     bits.addAll(literals);
     solver.registerBitVector(this);
     this._name = name;
