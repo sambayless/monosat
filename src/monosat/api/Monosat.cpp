@@ -1251,7 +1251,8 @@ int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 	static vec<Var> lits;
 	lits.clear();
 	for (int i = 0;i<n_bits;i++){
-		lits.push(Var(bits[i]));
+		Var v =internalVar(S,bits[i]);
+		lits.push(v);
 	}
 	int bvID = bv->nBitvectors();
 	bv->newBitvector(bvID,lits);
@@ -1379,7 +1380,8 @@ int newBVComparison_bv_geq(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int6
 int newBVComparison_const_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int64_t> *  bv, int bvID, Weight weight){
     Lit a = internalLit(S,newBVComparison_const_geq(S,bv,bvID,weight));
     Lit b = internalLit(S,newBVComparison_const_gt(S,bv,bvID,weight));
-    Lit c = mkLit(S->newVar());S->disableElimination(var(c));
+    Lit c = mkLit(S->newVar());
+    S->disableElimination(var(c));
     S->addClause(a, ~c);
     S->addClause(~b, ~c);
     S->addClause(c, ~a, b);
@@ -1389,7 +1391,8 @@ int newBVComparison_bv_eq(Monosat::SimpSolver * S,  Monosat::BVTheorySolver<int6
 
     Lit a = internalLit(S,newBVComparison_bv_geq(S,bv,bvID,compareID));
     Lit b = internalLit(S,newBVComparison_bv_gt(S,bv,bvID,compareID));
-    Lit c = mkLit(S->newVar());S->disableElimination(var(c));
+    Lit c = mkLit(S->newVar());
+    S->disableElimination(var(c));
     S->addClause(a, ~c);
     S->addClause(~b, ~c);
     S->addClause(c, ~a, b);
