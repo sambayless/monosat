@@ -83,10 +83,6 @@ class TestGraph(unittest.TestCase):
         self.assertTrue(monosat.Solve(r))
         self.assertTrue(r.value())
         self.assertTrue(r2.value())
-        print(g.getPath(r, False))
-        print(g.getPath(r2, False))
-        print(g.getPath(r, True))
-        print(g.getPath(r2, True))
         self.assertEqual(g.getPath(r, False), g.getPath(r2, False))
         self.assertEqual(g.getPath(r, True), g.getPath(r2, True))
 
@@ -167,8 +163,6 @@ class TestGraph(unittest.TestCase):
         # There should only be one solution to this: 0->1, 1->2, 2->3
         nodes = g.getPath(r, False)
         edges = g.getPath(r, True)
-        print(nodes)
-        print(edges)
         self.assertEqual(len(edges), 3)
         self.assertEqual(len(nodes), 4)
 
@@ -184,10 +178,6 @@ class TestGraph(unittest.TestCase):
         self.assertTrue(monosat.Solve(r))
         self.assertTrue(r.value())
         self.assertTrue(r2.value())
-        print(g.getPath(r, False))
-        print(g.getPath(r2, False))
-        print(g.getPath(r, True))
-        print(g.getPath(r2, True))
         self.assertEqual(g.getPath(r, False), g.getPath(r2, False))
         self.assertEqual(g.getPath(r, True), g.getPath(r2, True))
 
