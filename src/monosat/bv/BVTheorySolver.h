@@ -8509,6 +8509,99 @@ private:
 	}
 
 public:
+    Lit newComparisonEQ_BV(int bvID,int toID, bool isEquality, Var outerVar = var_Undef) {
+	    if(isEquality) {
+            Lit a = newComparisonBV(Comparison ::geq,bvID,toID);
+            Lit b = newComparisonBV(Comparison ::leq,bvID,toID);
+            Lit c;
+            if(outerVar==var_Undef) {
+                c = mkLit(newVar());
+            }else{
+                c = mkLit(newVar(outerVar, -1,-1,true));
+            }
+            S->disableElimination(var(toSolver(c)));
+            addClause(a, ~c);
+            addClause(b, ~c);
+            addClause(c, ~a, ~b);
+
+            //add redundant (but likely helpful) bit level implications
+            vec<Lit> &bits1 = getBits( bvID);
+            vec<Lit> &bits2 = getBits(toID);
+            if (bits1.size() == bits2.size()) {
+                //watch out for anonymous bitvectors
+                for (int i = 0; i < bits1.size(); i++) {
+                    Lit l1 = bits1[i];
+                    Lit l2 = bits2[i];
+                    //either each bit is equal, or c is false
+                    addClause(l1, ~l2, ~c);
+                    addClause(~l1, l2, ~c);
+                }
+            }
+            return c;
+        }else{
+            Lit a = newComparisonBV(Comparison ::geq,bvID,toID);
+            Lit b = newComparisonBV(Comparison ::leq,bvID,toID);
+            Lit c;
+            if(outerVar==var_Undef) {
+                c = ~mkLit(newVar());
+            }else{
+                c = ~mkLit(newVar(outerVar, -1,-1,true));
+            }
+            S->disableElimination(var(toSolver(c)));
+            addClause(a, ~c);
+            addClause(b, ~c);
+            addClause(c, ~a, ~b);
+
+            //add redundant (but likely helpful) bit level implications
+            vec<Lit> &bits1 = getBits( bvID);
+            vec<Lit> &bits2 = getBits(toID);
+            if (bits1.size() == bits2.size()) {
+                //watch out for anonymous bitvectors
+                for (int i = 0; i < bits1.size(); i++) {
+                    Lit l1 = bits1[i];
+                    Lit l2 = bits2[i];
+                    //either each bit is equal, or c is false
+                    addClause(l1, ~l2, ~c);
+                    addClause(~l1, l2, ~c);
+                }
+            }
+            return ~c;
+	    }
+	}
+    Lit newComparisonEQ(int bvID,const Weight & to, bool isEquality, Var outerVar = var_Undef) {
+	    //there is room to improve this by
+        //operating at the bit level if bvID has bits,
+        //and by making these comparisons one sided if they are min or max val.
+        if(isEquality) {
+            Lit a = newComparison(Comparison ::geq,bvID,to);
+            Lit b = newComparison(Comparison ::leq,bvID,to);
+            Lit c;
+            if(outerVar==var_Undef) {
+                c = mkLit(newVar());
+            }else{
+                c = mkLit(newVar(outerVar, -1,-1,true));
+            }
+            S->disableElimination(var(toSolver(c)));
+            addClause(a, ~c);
+            addClause(b, ~c);
+            addClause(c, ~a, ~b);
+            return c;
+        }else{
+            Lit a = newComparison(Comparison ::geq,bvID,to);
+            Lit b = newComparison(Comparison ::leq,bvID,to);
+            Lit c;
+            if(outerVar==var_Undef) {
+                c = ~mkLit(newVar());
+            }else{
+                c = ~mkLit(newVar(outerVar, -1,-1,true));
+            }
+            S->disableElimination(var(toSolver(c)));
+            addClause(a, ~c);
+            addClause(b, ~c);
+            addClause(c, ~a, ~b);
+            return ~c;
+        }
+    }
 	Lit newComparisonBV(Comparison op, int bvID,int toID, Var outerVar = var_Undef) {
 
 		if(!hasBV(bvID)){

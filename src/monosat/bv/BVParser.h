@@ -73,6 +73,15 @@ private:
 		Var var;
 	};
 	vec<Compare> compares;
+
+	struct CompareEQ{
+		int bvID;
+		int64_t w;
+		bool isEquality;
+		Var var;
+	};
+	vec<CompareEQ> compare_eqs;
+
 	struct CompareBV{
 		int bvID;
 		int compareID;
@@ -81,13 +90,14 @@ private:
 	};
 	vec<CompareBV> comparebvs;
 
-/*	struct AddConst{
-		int resultID;
-		int aBV;
-		int64_t b;
+	struct CompareBV_EQ{
+		int bvID;
+		int compareID;
+		bool isEquality;
+		Var var;
 	};
+	vec<CompareBV_EQ> comparebv_eqs;
 
-	vec<AddConst> addconsts;*/
 	struct AddBV{
 		int resultID;
 		int aBV;
@@ -383,6 +393,34 @@ private:
 
 	}
 
+	void readCompareBV_EQ(B& in, Solver& S,bool isEquality) {
+
+		//bv_lt bvID var weight
+		skipWhitespace(in);
+		int v_int= parseInt(in);
+
+		v_int = v_int - 1;
+		Var v = (Var)v_int;
+		if(this->inVarMap((Var)v_int))
+			return;//deal with this better in the future...
+		Var ov = v;
+		v = mapVar(S, v);
+		skipWhitespace(in);
+		//bool arg1_is_bv=match(in,"bv");
+		int64_t arg1 = parseInt(in);
+		skipWhitespace(in);
+		//bool arg2_is_bv=match(in,"bv");
+		int64_t arg2 = parseInt(in);
+
+
+		comparebv_eqs.push();
+		comparebv_eqs.last().bvID = (int) arg1;
+		comparebv_eqs.last().compareID = (int) arg2;
+		comparebv_eqs.last().isEquality = isEquality;
+		comparebv_eqs.last().var = v;
+
+	}
+
 	void readCompareBV(B& in, Solver& S,Comparison c) {
 
 		//bv_lt bvID var weight
@@ -405,26 +443,37 @@ private:
 		//bool arg2_is_bv=match(in,"bv");
 		int64_t arg2 = parseInt(in);
 
+		comparebvs.push();
+		comparebvs.last().bvID = (int) arg1;
+		comparebvs.last().compareID = (int) arg2;
+		comparebvs.last().c = c;
+		comparebvs.last().var = v;
 
-/*
-		if (arg2_is_bv && ! arg1_is_bv){
-			c=~c;
-			std::swap(arg1_is_bv,arg2_is_bv);
-			std::swap(arg1,arg2);
-		}*/
-		//if(arg2_is_bv){
-			comparebvs.push();
-			comparebvs.last().bvID = (int) arg1;
-			comparebvs.last().compareID = (int) arg2;
-			comparebvs.last().c = c;
-			comparebvs.last().var = v;
-		/*}else{
-			compares.push();
-			compares.last().bvID =(int)  arg1;
-			compares.last().w = arg2;
-			compares.last().c = c;
-			compares.last().var = v;
-		}*/
+	}
+
+	void readCompareEq(B& in, Solver& S, bool isEquality) {
+
+		skipWhitespace(in);
+		int v_int= parseInt(in);
+
+		v_int = v_int - 1;
+		Var v = (Var)v_int;
+		if(this->inVarMap((Var)v_int))
+			return;//deal with this better in the future...
+		Var ov = v;
+		v = mapVar(S, v);
+		skipWhitespace(in);
+		//bool arg1_is_bv=match(in,"bv");
+		int64_t arg1 = parseInt(in);
+		skipWhitespace(in);
+		//bool arg2_is_bv=match(in,"bv");
+		int64_t arg2 = parseLong(in);
+		compare_eqs.push();
+		compare_eqs.last().bvID = arg1;
+		compare_eqs.last().w = arg2;
+		compare_eqs.last().isEquality=isEquality;
+		compare_eqs.last().var = v;
+
 	}
 
 	void readCompare(B& in, Solver& S,Comparison c) {
@@ -508,6 +557,12 @@ public:
 
 					readCompare(in, S,Comparison::gt);
 					return true;
+				}else if (match(in, "==")) {
+					readCompareEq(in, S,true);
+					return true;
+				}else if (match(in, "!=")) {
+					readCompareEq(in, S,false);
+					return true;
 				}else
 					readConstBV(in,S);
 				return true;
@@ -547,6 +602,12 @@ public:
 
 				readCompareBV(in, S,Comparison::gt);
 				return true;
+			}else if (match(in, "==")) {
+				readCompareBV_EQ(in, S,true);
+				return true;
+			}else if (match(in, "!=")) {
+				readCompareBV_EQ(in, S,false);
+				return true;
 			}else if (match(in,"ite")){
 				readIteBV(in,S);
 				return true;
@@ -578,7 +639,7 @@ public:
 
 	void implementConstraints(Solver & S) {
 		theory = (BVTheorySolver<int64_t>*) S.bvtheory;
-		if(bvs.size() || multbvs.size() || divbvs.size()  || subtractionbvs.size() || addbvs.size() || comparebvs.size() || compares.size() || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
+		if(bvs.size() || multbvs.size() || divbvs.size()  || subtractionbvs.size() || addbvs.size() || comparebvs.size() ||  comparebv_eqs.size() || compares.size()  ||  compare_eqs.size()  || itebvs.size() || minmaxs.size() || popCounts.size()  || theory){
 
 			if(!theory){
 				theory = new BVTheorySolver<int64_t>(&S);
@@ -613,6 +674,15 @@ public:
 			}
 			compares.clear();
 
+            for(auto & c:compare_eqs){
+                c.bvID = mapBV(S,c.bvID);
+                if(!theory->hasBV(c.bvID)){
+                    parse_errorf("Undefined bitvector ID %d",c.bvID);
+                }
+                theory->newComparisonEQ(c.bvID,c.w,c.isEquality,c.var);
+            }
+            compare_eqs.clear();
+
 			for(auto & c:comparebvs){
 				c.bvID = mapBV(S,c.bvID);
 				c.compareID = mapBV(S,c.compareID);
@@ -626,6 +696,20 @@ public:
 				theory->newComparisonBV(c.c,c.bvID,c.compareID,c.var);
 			}
 			comparebvs.clear();
+
+            for(auto & c:comparebv_eqs){
+                c.bvID = mapBV(S,c.bvID);
+                c.compareID = mapBV(S,c.compareID);
+                if(!theory->hasBV(c.bvID)){
+                    parse_errorf("Undefined bitvector ID %d",c.bvID);
+                }
+                if(!theory->hasBV(c.compareID)){
+                    parse_errorf("Undefined bitvector ID %d",c.compareID);
+                }
+
+                theory->newComparisonEQ_BV(c.bvID,c.compareID,c.isEquality,c.var);
+            }
+            comparebv_eqs.clear();
 
 			for(auto & c:addbvs){
 				c.aBV = mapBV(S,c.aBV);

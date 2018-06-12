@@ -147,7 +147,7 @@ public final class Solver implements Closeable {
    * @param args A list of strings, with each string representing an argument to pass to the solver.
    */
   public Solver(ArrayList<String> args) {
-    this(collectArgs(args), false);
+    this(String.join(" ",args), false);
   }
 
   /**
@@ -158,7 +158,7 @@ public final class Solver implements Closeable {
    * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
    */
   public Solver(ArrayList<String> args, String outputFile) {
-    this(collectArgs(args), false, outputFile);
+    this(String.join(" ",args), false, outputFile);
   }
 
   /**
@@ -171,7 +171,7 @@ public final class Solver implements Closeable {
    *     default.
    */
   public Solver(ArrayList<String> args, boolean enablePreprocessing) {
-    this(collectArgs(args), enablePreprocessing, "");
+    this(String.join(" ",args), enablePreprocessing, "");
   }
 
   /**
@@ -185,7 +185,7 @@ public final class Solver implements Closeable {
    * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
    */
   public Solver(ArrayList<String> args, boolean enablePreprocessing, String outputFile) {
-    this(collectArgs(args), enablePreprocessing, outputFile);
+    this(String.join(" ",args), enablePreprocessing, outputFile);
   }
 
   /**
@@ -211,7 +211,7 @@ public final class Solver implements Closeable {
   public Solver(String args, String outputFile) {
     this(args, false, outputFile);
   }
-
+  private String outputFile = "";
   /**
    * Instantiate a new Solver, with the given settings. MonoSAT has many command line options, which
    * can be passed here.
@@ -223,6 +223,24 @@ public final class Solver implements Closeable {
    * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
    */
   public Solver(String args, boolean enablePreprocessing, String outputFile) {
+    this(args,enablePreprocessing, outputFile,true);
+    }
+
+  /**
+   * Instantiate a new Solver, with the given settings. MonoSAT has many command line options, which
+   * can be passed here.
+   *
+   * @param args A string of space-delimited arguments to pass to the solver.
+   * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+   *     improve performance, but requires some extra care in solver usage, and so is disabled by
+   *     default.
+   * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+   * @param defineTrue If true (the default), define the global literal 'True' in the solver. If false,
+   * then the global literal True will be left unconstrained in the solver. This is
+   * occasionally required for dealing with plain CNFs, in which '1' is not defined to be True.
+   *
+   */
+  public Solver(String args, boolean enablePreprocessing, String outputFile, boolean defineTrue) {
     if (args != null && args.length() > 0) {
       solverPtr = MonosatJNI.newSolver("monosat " + args);
     } else {
@@ -233,24 +251,28 @@ public final class Solver implements Closeable {
     }
     // Keep a global list of all solvers that yet created
     solvers.put(this, true);
+    this.outputFile= outputFile;
     if (outputFile != null && outputFile.length() > 0) {
       MonosatJNI.setOutputFile(solverPtr, outputFile);
     }
     if (!enablePreprocessing) {
       disablePreprocessing();
     }
-    int true_lit = MonosatJNI.true_lit(solverPtr);
-    assert (true_lit == 0);
-    registerLit(Lit.True, Lit.False);
-    this.addClause(Lit.True);
-    // Ensure that the True lit returned by circuit operations (eg, and())
-    // is the same as this True Lit.
+    if (defineTrue) {
+      int true_lit = MonosatJNI.true_lit(solverPtr);
+      assert (true_lit == 0);
+      registerLit(Lit.True, Lit.False);
+      this.addClause(Lit.True);
+      // Ensure that the True lit returned by circuit operations (eg, and())
+      // is the same as this True Lit.
 
-    assert (Lit.True == toLit(true_lit));
-
+      assert (Lit.True == toLit(true_lit));
+      assert (positiveLiterals.contains(Lit.True));
+    }
     initBV();
     initBuffers();
-    assert (positiveLiterals.contains(Lit.True));
+
+
   }
 
     /**
@@ -271,19 +293,7 @@ public final class Solver implements Closeable {
     return MonosatJNI.getVersion();
   }
 
-  /**
-   * Used internally to convert a list of settings into a single string.
-   *
-   * @param args A list of command line settings.
-   * @return A string representation of the settings.
-   */
-  private static String collectArgs(ArrayList<String> args) {
-    StringBuilder arg = new StringBuilder();
-    for (String s : args) {
-      arg.append(s).append(" ");
-    }
-    return arg.toString();
-  }
+
 
   /**
    * Load a formula into the solver. The formula may be in standard DIMACS CNF format, or MonoSAT's
@@ -1999,8 +2009,9 @@ public final class Solver implements Closeable {
       assertTrue(args[0]);
     } else if (args.length == 2) {
       MonosatJNI.AssertAnd(this.getSolverPtr(), args[0].l, args[1].l);
+    } else {
+      assertAnd(Arrays.asList(args));
     }
-    assertAnd(Arrays.asList(args));
   }
 
   /**
@@ -2030,8 +2041,9 @@ public final class Solver implements Closeable {
       assertTrue(args[0]);
     } else if (args.length == 2) {
       MonosatJNI.AssertOr(this.getSolverPtr(), args[0].l, args[1].l);
+    } else {
+      assertOr(Arrays.asList(args));
     }
-    assertOr(Arrays.asList(args));
   }
 
   /**
@@ -2061,8 +2073,9 @@ public final class Solver implements Closeable {
       assertTrue(args[0].not());
     } else if (args.length == 2) {
       MonosatJNI.AssertNand(this.getSolverPtr(), args[0].l, args[1].l);
+    } else {
+      assertNand(Arrays.asList(args));
     }
-    assertNand(Arrays.asList(args));
   }
 
   /**
@@ -2089,8 +2102,9 @@ public final class Solver implements Closeable {
       assertTrue(args[0].not());
     } else if (args.length == 2) {
       MonosatJNI.AssertNor(this.getSolverPtr(), args[0].l, args[1].l);
+    } else {
+      assertNor(Arrays.asList(args));
     }
-    assertNor(Arrays.asList(args));
   }
 
   /**
@@ -2116,8 +2130,9 @@ public final class Solver implements Closeable {
       assertTrue(args[0]); // If this the correct behaviour here?
     } else if (args.length == 2) {
       MonosatJNI.AssertXor(this.getSolverPtr(), args[0].l, args[1].l);
+    } else {
+      assertXor(Arrays.asList(args));
     }
-    assertXor(Arrays.asList(args));
   }
 
   /**
@@ -2143,8 +2158,9 @@ public final class Solver implements Closeable {
       assertTrue(args[0]); // If this the correct behaviour here?
     } else if (args.length == 2) {
       MonosatJNI.AssertXnor(this.getSolverPtr(), args[0].l, args[1].l);
+    } else {
+      assertXnor(Arrays.asList(args));
     }
-    assertXnor(Arrays.asList(args));
   }
 
   /**
