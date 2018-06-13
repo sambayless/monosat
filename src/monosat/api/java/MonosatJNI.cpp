@@ -1281,7 +1281,67 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
     return 0;
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdgeLiteralN
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint n) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getEdgeLiteralN(solver, graph,n));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
 
+
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1to
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint edgeLit) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getEdge_to(solver, graph,edgeLit));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1from
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint edgeLit) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getEdge_from(solver, graph,edgeLit));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getEdge_1weight_1const
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint edgeLit) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getEdge_weight_const(solver, graph,edgeLit));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1weight_1bv
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint edgeLit) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jint(getEdge_weight_bv(solver, graph,edgeLit));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_edgeHasBVWeight
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint edgeLit) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    return jboolean(edgeHasBVWeight(solver, graph,edgeLit));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jint from, jint to) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);

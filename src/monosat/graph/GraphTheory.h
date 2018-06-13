@@ -2944,6 +2944,40 @@ public:
 	int nEdges() {
 		return edge_list.size();
 	}
+	const vec<Edge> & getEdges()const{
+		return edge_list;
+	}
+	bool isEdge(Lit edgeLit){
+		Var v = var(edgeLit);
+		return v>=0 && v<vars.size() && vars[v].isEdge;
+	}
+	const Edge & getEdge(Lit edgeLit){
+		if(!isEdge(edgeLit)){
+			throw std::runtime_error("No such edge in graph");
+		}
+		int edgeID =getEdgeID(var(edgeLit));
+		return edge_list[edgeID];
+	}
+	const bool edgeHasBVWeight(Lit edgeLit){
+		if(!isEdge(edgeLit)){
+			throw std::runtime_error("No such edge in graph");
+		}
+        int edgeID = getEdge(edgeLit).edgeID;
+		return edgeID<edge_bv_weights.size();
+	}
+	Weight getEdgeConstantWeight(Lit edgeLit){
+		if(edgeHasBVWeight(edgeLit)){
+			throw std::runtime_error("Edge has bitvector weight");
+		}
+		int edgeID = getEdge(edgeLit).edgeID;
+		return edge_weights[edgeID];
+	}
+	int getEdgeBVWeight(Lit edgeLit){
+		if(!edgeHasBVWeight(edgeLit)){
+			throw std::runtime_error("Edge does not have bitvector weight");
+		}
+		return getEdge(edgeLit).bvID;
+	}
 	CRef newReasonMarker(int detectorID) {
 		CRef reasonMarker = S->newReasonMarker(this);
 		int mnum = CRef_Undef - reasonMarker;
@@ -3115,7 +3149,7 @@ public:
 		}
 		while(from>=nNodes()||to>=nNodes())
 			newNode();
-		has_any_bitvector_edges=true;
+		    has_any_bitvector_edges=true;
 			assert(outerVar!=var_Undef);
 			assert(edge_weights.size()==0);
 			/*	if(outerVar==var_Undef)

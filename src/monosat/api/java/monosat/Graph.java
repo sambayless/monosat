@@ -170,8 +170,41 @@ public final class Graph {
     solver.allGraphs.put(graphPtr, this);
 
     this.bitwidth = MonosatJNI.getGraphWidth(solver.getSolverPtr(), graphPtr);
+
     for (int n = 0; n < nNodes(); n++) {
       addNode(MonosatJNI.getNodeName(solver.getSolverPtr(), graphPtr, n), n);
+    }
+    //create edge objects for each edge in the solver.
+    //it might be better to do this lazilly
+    for(int n = 0;n<nEdges();n++){
+
+      Lit l = solver.toLit(MonosatJNI.getEdgeLiteralN(solver.getSolverPtr(), graphPtr,n));
+      int from = MonosatJNI.getEdge_from(solver.getSolverPtr(), graphPtr,l.toInt());
+      int to = MonosatJNI.getEdge_to(solver.getSolverPtr(), graphPtr,l.toInt());
+      boolean hasBV = MonosatJNI.edgeHasBVWeight(solver.getSolverPtr(), graphPtr,l.toInt());
+      Edge e;
+      if(hasBV){
+        int bvID = MonosatJNI.getEdge_weight_bv(solver.getSolverPtr(), graphPtr,l.toInt());
+        BitVector bv = solver.toBitVector(bvID);
+        e = new Edge(from, to, l, bv);
+      }else{
+        long weight = MonosatJNI.getEdge_weight_const(solver.getSolverPtr(), graphPtr,l.toInt());
+        e = new Edge(from, to, l, weight);
+      }
+
+      Map<Integer, LinkedList<Edge>> edge_map = adjacencyList.get(from);
+      if (edge_map.get(to) == null) {
+        edge_map.put(to, new LinkedList<>());
+      }
+
+      edge_map.get(to).add(e);
+      edgeLitMap.put(l, e);
+      all_edges.add(e);
+      all_edge_lits.add(l);
+      all_out_edge_lits.get(from).add(l);
+      all_in_edge_lits.get(to).add(l);
+      all_node_edge_lits.get(from).add(l);
+      all_node_edge_lits.get(to).add(l);
     }
   }
 
@@ -424,7 +457,7 @@ public final class Graph {
    *
    * @param from The source node.
    * @param to The destination node.
-   * @return True if there is a directed edge from the node 'from' to the node 'to'.
+   * @return An edge, if there is a directed edge from the node 'from' to the node 'to'.
    * @throws RuntimeException If there is no directed edge from 'from' to 'to'.
    */
   public Edge getEdge(int from, int to) {
@@ -440,6 +473,18 @@ public final class Graph {
     } else {
       return edge_list.getFirst();
     }
+  }
+
+  /**
+   * If there is a directed edge with the given name, return it.
+   *
+   * @param name The name of the edge to check for.
+   * @return An edge, if there is a directed edge with the given name in this graph.
+   * @throws RuntimeException If there is no directed edge with this name.
+   */
+  public Edge getEdge(String name) {
+    Lit l = solver.getLiteral(name);
+    return getEdge(l);
   }
 
   /**

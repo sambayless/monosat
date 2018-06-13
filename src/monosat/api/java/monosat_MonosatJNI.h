@@ -993,6 +993,54 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    getEdgeLiteralN
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdgeLiteralN
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getEdge_to
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1to
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getEdge_from
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1from
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getEdge_weight_const
+ * Signature: (JJI)J
+ */
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getEdge_1weight_1const
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    getEdge_weight_bv
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1weight_1bv
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    edgeHasBVWeight
+ * Signature: (JJI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_edgeHasBVWeight
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    reaches
  * Signature: (JJII)I
  */

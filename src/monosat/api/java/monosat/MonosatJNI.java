@@ -403,6 +403,18 @@ final class MonosatJNI { // package level access specifier
 
   public static native int nEdges(long solverPtr, long graphPtr);
 
+  public static native int getEdgeLiteralN(long solverPtr, long graphPtr, int n);
+
+  public static native int getEdge_to(long solverPtr, long graphPtr, int edgeLit);
+
+  public static native int getEdge_from(long solverPtr, long graphPtr, int edgeLit);
+
+  public static native long getEdge_weight_const(long solverPtr, long graphPtr, int edgeLit);
+
+  public static native int getEdge_weight_bv(long solverPtr, long graphPtr, int edgeLit);
+
+  public static native boolean edgeHasBVWeight(long solverPtr, long graphPtr, int edgeLit);
+  
   public static native int reaches(long solverPtr, long graphPtr, int from, int to);
 
   public static native int reachesBackward(long solverPtr, long graphPtr, int from, int to);

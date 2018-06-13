@@ -1582,9 +1582,14 @@ public class GraphTest {
     Lit e_1_2 = g1.addEdge(1, 2,"edge4");
     Lit e_2_3 = g1.addEdge(2, 3,"edge5");
     Lit e_3_0 = g1.addEdge(3, 0,"edge6");
+    assertEquals(g1.nEdges(),6);
+    assertEquals(g1.nEdges(),g1.getAllEdges().size());
+
+    assertEquals(g1.getEdge(s.getLiteral("edge1")).to,1);
+    assertEquals(g1.getEdge(s.getLiteral("edge1")).from,0);
+    assertEquals(g1.getEdge(s.getLiteral("edge1")).l,s.getLiteral("edge1"));
 
     s.close();
-
 
     monosat.Solver s2 = new monosat.Solver();
     assertTrue(s2.solve());
@@ -1596,5 +1601,17 @@ public class GraphTest {
     assertEquals(s2.getLiteral("edge1").toInt(),e_0_1.toInt());
     assertEquals(s2.getLiteral("edge6").toInt(),e_3_0.toInt());
 
+    assertEquals(g2.nEdges(),6);
+    assertEquals(g2.nEdges(),g2.getAllEdges().size());
+    
+    assertEquals(g2.getEdge(s2.getLiteral("edge1")).to,1);
+    assertEquals(g2.getEdge(s2.getLiteral("edge1")).from,0);
+    assertEquals(g2.getEdge(s2.getLiteral("edge1")).l,s2.getLiteral("edge1"));
+
+    assertEquals(g2.getEdge(s2.getLiteral("edge6")).to,0);
+    assertEquals(g2.getEdge(s2.getLiteral("edge6")).from,3);
+    assertEquals(g2.getEdge(s2.getLiteral("edge6")).l,s2.getLiteral("edge6"));
+
+    assertEquals(g2.getEdge(3,0).l,s2.getLiteral("edge6"));
   }
 }

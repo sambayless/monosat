@@ -312,7 +312,12 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   int newEdge_bv(SolverPtr S, GraphTheorySolver_long G,int from,int  to, int bvID);
   int nNodes(SolverPtr S,GraphTheorySolver_long G);
   int nEdges(SolverPtr S,GraphTheorySolver_long G);
-
+  int getEdgeLiteralN(SolverPtr S,GraphTheorySolver_long G, int n);
+  int getEdge_to(SolverPtr S,GraphTheorySolver_long G, int edgeLit);
+  int getEdge_from(SolverPtr S,GraphTheorySolver_long G, int edgeLit);
+  Weight getEdge_weight_const(SolverPtr S,GraphTheorySolver_long G, int edgeLit);
+  int getEdge_weight_bv(SolverPtr S,GraphTheorySolver_long G, int edgeLit);
+  bool edgeHasBVWeight(SolverPtr S,GraphTheorySolver_long G, int edgeLit);
 
   int reaches(SolverPtr S,GraphTheorySolver_long G,int from, int to);
   int reachesBackward(SolverPtr S,GraphTheorySolver_long G,int from, int to);

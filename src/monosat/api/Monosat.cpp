@@ -433,7 +433,10 @@ Var internalBV(Monosat::BVTheorySolver<int64_t> *  bv, int bvID){
 Var externalBV(Monosat::BVTheorySolver<int64_t> *  bv, int bvID){
 	return bv->unmapBV(bvID);
 }
-
+Var externalBV(Monosat::SimpSolver * S, int bvID){
+    Monosat::BVTheorySolver<int64_t> *  bv = (Monosat::BVTheorySolver<int64_t> *) S->getBVTheory();
+    return bv->unmapBV(bvID);
+}
 void setOutputFile(Monosat::SimpSolver * S,const  char * output){
 	MonosatData * d = (MonosatData*) S->_external_data;
 	assert(d);
@@ -1662,7 +1665,27 @@ int nNodes(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G){
 int nEdges(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G){
 	return G->nEdges();
 }
-
+int getEdgeLiteralN(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int n){
+	if(n<0 || n>=G->getEdges().size()){
+		api_errorf("No such edge: %d",n);
+	}
+	return externalLit(S,G->toSolver(mkLit(G->getEdges()[n].v)));
+}
+int getEdge_to(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
+	return G->getEdge(S->getTheoryLit(internalLit(S,edgeLit))).to;
+}
+int getEdge_from(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
+	return G->getEdge(S->getTheoryLit(internalLit(S,edgeLit))).from;
+}
+Weight getEdge_weight_const(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
+	return G->getEdgeConstantWeight(S->getTheoryLit(internalLit(S,edgeLit)));
+}
+int getEdge_weight_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
+	return externalBV(S, G->getEdgeBVWeight(S->getTheoryLit(internalLit(S,edgeLit))));
+}
+bool edgeHasBVWeight(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
+	return G->edgeHasBVWeight(S->getTheoryLit(internalLit(S,edgeLit)));
+}
 
 int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight){
 	Var v = S->newVar();
