@@ -2359,34 +2359,29 @@ public final class Solver implements Closeable {
    */
   public void assertEqual(BitVector a, BitVector b) {
     validate(a, b);
-    assertTrue(a.geq(b));
-    assertTrue(a.leq(b));
+    assertTrue(a.eq(b));
   }
 
   /**
-   * Assert that BitVector's a is equal to a constant.
+   * Assert that BitVector a is equal to a constant.
    *
    * @param a The BitVector to be constrained.
    * @param constant Must be non-negative, and < 2^a.width()
    */
   public void assertEqual(BitVector a, long constant) {
     validate(a);
-    BitVector b = this.bv(a.width(), constant);
-    assertTrue(a.geq(b));
-    assertTrue(a.leq(b));
+    assertTrue(a.eq(constant));
   }
 
   /**
-   * Assert that BitVector's a is equal to a constant.
+   * Assert that BitVector a is equal to a constant.
    *
    * @param constant Must be non-negative, and < 2^a.width()
    * @param a The BitVector to be constrained.
    */
   public void assertEqual(long constant, BitVector a) {
     validate(a);
-    BitVector b = this.bv(a.width(), constant);
-    assertTrue(a.geq(b));
-    assertTrue(a.leq(b));
+    assertTrue(a.eq(constant));
   }
 
   /**

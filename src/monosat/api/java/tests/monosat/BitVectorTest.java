@@ -597,6 +597,46 @@ public class BitVectorTest {
   }
 
   @Test
+  public void testLoadingBV_EQ() throws IOException {
+    File file = File.createTempFile("test", ".gnf");
+    String filename = file.getAbsolutePath().toString();
+    file.delete();
+    {
+      monosat.Solver s = new monosat.Solver("", filename);
+
+      BitVector bv1 = new BitVector(s, 4, "A");
+      BitVector bv2 = new BitVector(s, 4, "B");
+
+      BitVector bv3 = new BitVector(s, 4, "C");
+      Logic.assertTrue(bv1.eq(bv2));
+      Logic.assertTrue(bv1.neq(bv3));
+      assertTrue(s.solve());
+      assertTrue(s.solve(bv1.eq(bv2)));
+      assertTrue(s.solve(bv1.eq(bv1)));
+      assertFalse(s.solve(bv1.neq(bv2)));
+      assertFalse(s.solve(bv1.eq(bv3)));
+      assertTrue(s.solve(bv1.neq(bv3)));
+      assertFalse(s.solve(bv2.eq(bv3)));
+      assertTrue(s.solve(bv2.neq(bv3)));
+      s.close();
+    }
+
+    monosat.Solver s2 = new monosat.Solver();
+    s2.loadConstraints(filename);
+    BitVector bv1 = s2.getBitVector("A");
+    BitVector bv2 = s2.getBitVector("B");
+    BitVector bv3 = s2.getBitVector("C");
+    assertTrue(s2.solve());
+    assertTrue(s2.solve());
+    assertTrue(s2.solve(bv1.eq(bv2)));
+    assertTrue(s2.solve(bv1.eq(bv1)));
+    assertFalse(s2.solve(bv1.neq(bv2)));
+    assertFalse(s2.solve(bv1.eq(bv3)));
+    assertTrue(s2.solve(bv1.neq(bv3)));
+    assertFalse(s2.solve(bv2.eq(bv3)));
+    assertTrue(s2.solve(bv2.neq(bv3)));
+  }
+  @Test
   public void testLoadingBVIterators() throws IOException {
     File file = File.createTempFile("test", ".gnf");
     String filename = file.getAbsolutePath().toString();
