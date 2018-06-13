@@ -24,13 +24,13 @@ matrix:
   include:
     - java: openjdk8
       python: "3.4"
-      env: TEST_PYTHON=1 JDK_VERSION="openjdk8" PYTHON_VERSION="python3.4"
+      env: TEST_PYTHON=1 BUILD_TARGET="libmonosat" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.4"
     - java: oraclejdk8
-      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" JDK_VERSION="oraclejdk8" PYTHON_VERSION="python3.4"
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DJAVA=ON" JDK_VERSION="oraclejdk8" PYTHON_VERSION="python3.4"
       python: "3.4"
     - java: openjdk9
       python: "3.4"
-      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.4"
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.4"
       os: linux
       dist: trusty
       compiler: clang
@@ -38,7 +38,7 @@ matrix:
       python: "3.6"
       os: osx
       compiler: clang
-      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
   allow_failures:
     - java: openjdk8
       python: "3.4"
@@ -49,7 +49,7 @@ matrix:
           packages:
             - g++-5
       env:
-        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_ARGS="-DJAVA=ON" MATRIX_EVAL="CC=gcc-5 && CXX=g++-5" JDK_VERSION="oraclejdk9" PYTHON_VERSION="python3.4"
+        - TEST_PYTHON=1 TEST_JAVA=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DJAVA=ON" MATRIX_EVAL="CC=gcc-5 && CXX=g++-5" JDK_VERSION="oraclejdk9" PYTHON_VERSION="python3.4"
 
     - java: openjdk8
       python: "3.4"
@@ -76,7 +76,7 @@ before_install:
 
 install:
   - cmake ${BUILD_ARGS} .
-  - make
+  - make ${BUILD_TARGET}
   - sudo make install
 
 script:
