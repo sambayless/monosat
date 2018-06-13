@@ -1532,7 +1532,8 @@ void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars){
 	if(n_vars>1){
 		write_out(S,"amo");
 		for(int i = 0;i<n_vars;i++){
-			write_out(S," %d",dimacs(S,mkLit(vars[i])));
+			Var v = internalVar(S,vars[i]);
+			write_out(S," %d",dimacs(S,mkLit(v)));
 		}
 
 		write_out(S," 0\n");
