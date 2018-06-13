@@ -294,14 +294,23 @@ public final class Lit {
    * or if the new name is not a valid ID.
    */
   public void setName(String name) {
-    if(this._name.length()>0){
-      throw new IllegalArgumentException("Previously named literals cannot be renamed (this literal is already named " +
-              name() + ")");
-    }else{
-      String proposedName = MonosatJNI.validID(name);
-      MonosatJNI.setVariableName(solver.getSolverPtr(), toVar(), proposedName);
-      _name = proposedName;
-      not()._name = proposedName;
+    if(name==null || name.length()==0){
+      if (this._name.length() > 0) {
+        throw new IllegalArgumentException(
+                "Previously named literals cannot be renamed (this literal is already named "
+                        + name() + ")");
+      }
+    } else {
+      if (this._name.length() > 0) {
+        throw new IllegalArgumentException(
+            "Previously named literals cannot be renamed (this literal is already named "
+                + name() + ")");
+      } else {
+        String proposedName = MonosatJNI.validID(name);
+        MonosatJNI.setVariableName(solver.getSolverPtr(), toVar(), proposedName);
+        _name = proposedName;
+        not()._name = proposedName;
+      }
     }
   }
 

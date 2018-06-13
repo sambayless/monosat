@@ -636,6 +636,18 @@ public final class Graph {
   }
 
   /**
+   * Add a new directed edge to the graph, from node 'from' to node 'to'. The edge will have weight
+   * '1'.
+   *
+   * @param from The source node.
+   * @param to The destination node.
+   * @param name An (optional) name for the edge literal. If empty, the literal will be unnamed.
+   * @return The literal that controls whether this edge is included in the graph.
+   */
+  public Lit addEdge(int from, int to,String name) {
+    return addEdge(from, to, 1,name);
+  }
+  /**
    * Add a new directed edge to the graph, from node 'from' to node 'to', with a constant weight.
    *
    * <p>Implementation note: Currently, reachability queries in MonoSAT are much faster if all of
@@ -647,11 +659,29 @@ public final class Graph {
    * @return The literal that controls whether this edge is included in the graph.
    */
   public Lit addEdge(int from, int to, long constantWeight) {
+    return addEdge(from,to,constantWeight,"");
+  }
+  /**
+   * Add a new directed edge to the graph, from node 'from' to node 'to', with a constant weight.
+   *
+   * <p>Implementation note: Currently, reachability queries in MonoSAT are much faster if all of
+   * the edges in a graph are strictly > 0.
+   *
+   * @param from The source node.
+   * @param to The destination node.
+   * @param constantWeight The constant weight of this edge. Must be >=0.
+   * @param name An (optional) name for the edge literal. If empty, the literal will be unnamed.
+   * @return The literal that controls whether this edge is included in the graph.
+   */
+  public Lit addEdge(int from, int to, long constantWeight, String name) {
     validateNode(from);
     validateNode(to);
     if (bitwidth >= 0) {
-      return addEdge(from, to, solver.bv(bitwidth, constantWeight));
+      return addEdge(from, to, solver.bv(bitwidth, constantWeight),name);
     } else {
+      if(solver.hasLiteral(name)){
+        throw new IllegalArgumentException("There is already a literal with name " + name + " in the solver");
+      }
       Lit l =
           solver.toLit(MonosatJNI.newEdge(solver.getSolverPtr(), graphPtr, from, to, constantWeight));
       Map<Integer, LinkedList<Edge>> edge_map = adjacencyList.get(from);
@@ -667,6 +697,7 @@ public final class Graph {
       all_in_edge_lits.get(to).add(l);
       all_node_edge_lits.get(from).add(l);
       all_node_edge_lits.get(to).add(l);
+      l.setName(name);
       return l;
     }
   }
@@ -682,12 +713,29 @@ public final class Graph {
    * @return The literal that controls whether this edge is included in the graph.
    */
   public Lit addEdge(int from, int to, BitVector weight) {
+    return addEdge(from,to,weight,"");
+  }
+  /**
+   * Add a new directed edge to the graph, from node 'from' to node 'to', with a BitVector edge
+   * weight. The BitVector must have width = Graph.bitwidth(), and may be either a variable
+   * BitVector, or a constant BitVector.
+   *
+   * @param from The source node.
+   * @param to The destination node.
+   * @param weight The BitVector weight of this edge.
+   * @param name An (optional) name for the edge literal. If empty, the literal will be unnamed.
+   * @return The literal that controls whether this edge is included in the graph.
+   */
+  public Lit addEdge(int from, int to, BitVector weight, String name) {
     validateNode(from);
     validateNode(to);
     if (this.bitwidth < 0) {
       throw new RuntimeException(
           "In order to use bitvector edge weights, the bitwidth must be passed to the graph constructor, eg:"
               + "Graph g = new Graph(solver, 8); will accept edges with bitvectors of size 8. Otherwise, edge weights are assumed to be constant integers.");
+    }
+    if(solver.hasLiteral(name)){
+      throw new IllegalArgumentException("There is already a literal with name " + name + " in the solver");
     }
     Lit l = solver.toLit(MonosatJNI.newEdge_bv(solver.getSolverPtr(), graphPtr, from, to, weight.id));
     Map<Integer, LinkedList<Edge>> edge_map = adjacencyList.get(from);
@@ -703,6 +751,7 @@ public final class Graph {
     all_in_edge_lits.get(to).add(l);
     all_node_edge_lits.get(from).add(l);
     all_node_edge_lits.get(to).add(l);
+    l.setName(name);
     return l;
   }
 
@@ -719,6 +768,19 @@ public final class Graph {
   }
 
   /**
+   * Add a new undirected edge to the graph, from node 'from' to node 'to'. The edge will have
+   * weight '1'.
+   *
+   * @param from The source node.
+   * @param to The destination node.
+   * @param name An (optional) name for the edge literal. If empty, the literal will be unnamed.
+   * @return The literal that controls whether this edge is included in the graph.
+   */
+  public Lit addUndirectedEdge(int from, int to, String name) {
+    return addUndirectedEdge(from, to, 1,name);
+  }
+
+  /**
    * Add a new undirected edge to the graph, from node 'from' to node 'to', with a constant weight.
    *
    * <p>Implementation note: Currently, reachability queries in MonoSAT are much faster if all of
@@ -730,14 +792,34 @@ public final class Graph {
    * @return The literal that controls whether this edge is included in the graph.
    */
   public Lit addUndirectedEdge(int from, int to, long constantWeight) {
+    return addUndirectedEdge(from,to,constantWeight);
+  }
+  /**
+   * Add a new undirected edge to the graph, from node 'from' to node 'to', with a constant weight.
+   *
+   * <p>Implementation note: Currently, reachability queries in MonoSAT are much faster if all of
+   * the edges in a graph are strictly > 0.
+   *
+   * @param from The source node.
+   * @param to The destination node.
+   * @param constantWeight The constant weight of this edge. Must be >=0.
+   * @param name An (optional) name for the edge literal. If empty, the literal will be unnamed.
+   * @return The literal that controls whether this edge is included in the graph.
+   */
+  public Lit addUndirectedEdge(int from, int to, long constantWeight, String name) {
     validateNode(to);
     validateNode(from);
     if (bitwidth >= 0) {
-      return addUndirectedEdge(from, to, solver.bv(bitwidth, constantWeight));
+      return addUndirectedEdge(from, to, solver.bv(bitwidth, constantWeight),name);
     } else {
+      if(solver.hasLiteral(name)){
+        throw new IllegalArgumentException("There is already a literal with name " + name + " in the solver");
+      }
       Lit l = addEdge(from, to, constantWeight);
       Lit l2 = addEdge(to, from, constantWeight);
       solver.assertEqual(l, l2);
+      l.setName(name);
+      l2.setName(name+"_back");
       return l;
     }
   }
@@ -753,6 +835,21 @@ public final class Graph {
    * @return The literal that controls whether this edge is included in the graph.
    */
   public Lit addUndirectedEdge(int from, int to, BitVector weight) {
+    return addUndirectedEdge(from,to,weight,"");
+  }
+
+  /**
+   * Add a new undirected edge to the graph, from node 'from' to node 'to', with a BitVector edge
+   * weight. The BitVector must have width = Graph.bitwidth(), and may be either a variable
+   * BitVector, or a constant BitVector.
+   *
+   * @param from The source node.
+   * @param to The destination node.
+   * @param weight The BitVector weight of this edge.
+   * @param name An (optional) name for the edge literal. If empty, the literal will be unnamed.
+   * @return The literal that controls whether this edge is included in the graph.
+   */
+  public Lit addUndirectedEdge(int from, int to, BitVector weight, String name) {
     validateNode(to);
     validateNode(from);
     if (this.bitwidth < 0) {
@@ -760,9 +857,14 @@ public final class Graph {
           "In order to use bitvector edge weights, the bitwidth must be passed to the graph constructor, eg:"
               + "Graph g = new Graph(solver, 8); will accept edges with bitvectors of size 8. Otherwise, edge weights are assumed to be constant integers.");
     }
+    if(solver.hasLiteral(name)){
+      throw new IllegalArgumentException("There is already a literal with name " + name + " in the solver");
+    }
     Lit l = addEdge(from, to, weight);
     Lit l2 = addEdge(to, from, weight);
     solver.assertEqual(l, l2);
+    l.setName(name);
+    l2.setName(name+"_back");
     return l;
   }
 

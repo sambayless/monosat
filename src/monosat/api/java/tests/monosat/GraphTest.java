@@ -1275,6 +1275,76 @@ public class GraphTest {
   }
 
   @Test
+  public void testNamedEdges() throws IOException {
+
+
+    monosat.Solver s = new monosat.Solver();
+    Graph g1 = new Graph(s, 4,"g1");
+    for (int i = 0; i < 4; i++) {
+      g1.addNode();
+    }
+    Lit l = new Lit(s);
+    Lit e_0_1 = g1.addEdge(0, 1);
+    Lit e_0_2 = g1.addEdge(0, 2,"");
+    Lit e_1_2 = g1.addEdge(0, 2,"");
+    Lit e_1_3 = g1.addEdge(1, 3,"edge1");
+    Lit e_1_3_b = g1.addEdge(1, 3,"edge2");
+    assertEquals(g1.nEdges(),5);
+
+    try {
+      g1.addEdge(1, 3,"edge2");
+      Assert.fail("No two edges can have the same name");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+    assertEquals(g1.nEdges(),5);
+
+    try {
+      g1.addEdge(2, 0,"edge1");
+      Assert.fail("No two edges can have the same name");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+    try {
+      g1.addEdge(0, 0,"Name With Spaces");
+      Assert.fail("Expected a bad name exception");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+
+    try {
+      g1.addEdge(1,0, "Name With Spaces");
+      Assert.fail("Expected a bad name exception");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+    assertEquals(g1.nEdges(),5);
+
+    Lit e_3_1 = g1.addEdge(3,1, tricky_name);
+    assertEquals(g1.nEdges(),6);
+
+    try {
+      g1.addEdge(1,0, "Name With \n NewLine");
+      Assert.fail("Expected a bad name exception");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+    try {
+      g1.addEdge(1,2, "Name With \t tab");
+      Assert.fail("Expected a bad name exception");
+    } catch (IllegalArgumentException except) {
+      // ok
+    }
+    assertEquals(g1.nEdges(),6);
+    assertEquals(e_0_1.name(), "");
+    assertEquals(e_0_2.name(), "");
+    assertEquals(e_1_2.name(), "");
+    assertEquals(e_1_3.name(), "edge1");
+    assertEquals(e_1_3_b.name(), "edge2");
+    assertEquals(e_3_1.name(), tricky_name);
+
+  }
+  @Test
   public void testNamedGraphs() {
     monosat.Solver s = new monosat.Solver();
     Graph g1 = new Graph(s, 4);
@@ -1492,4 +1562,39 @@ public class GraphTest {
         assertEquals(g2.getNode(tricky_name), n2);
 
     }
+
+  @Test
+  public void testLoadingNamedEdges() throws IOException {
+    File file = File.createTempFile("test", ".gnf");
+    String filename = file.getAbsolutePath().toString();
+    file.delete();
+
+
+    monosat.Solver s = new monosat.Solver("", filename);
+    Graph g1 = new Graph(s, 4,"g1");
+    for (int i = 0; i < 4; i++) {
+      g1.addNode();
+    }
+    Lit l = new Lit(s);
+    Lit e_0_1 = g1.addEdge(0, 1,"edge1");
+    Lit e_0_2 = g1.addEdge(0, 2,"edge2");
+    Lit e_1_3 = g1.addEdge(1, 3,"edge3");
+    Lit e_1_2 = g1.addEdge(1, 2,"edge4");
+    Lit e_2_3 = g1.addEdge(2, 3,"edge5");
+    Lit e_3_0 = g1.addEdge(3, 0,"edge6");
+
+    s.close();
+
+
+    monosat.Solver s2 = new monosat.Solver();
+    assertTrue(s2.solve());
+    s2.loadConstraints(filename);
+    assertTrue(s2.solve());
+
+    Graph g2 = s2.getGraph("g1");
+
+    assertEquals(s2.getLiteral("edge1").toInt(),e_0_1.toInt());
+    assertEquals(s2.getLiteral("edge6").toInt(),e_3_0.toInt());
+
+  }
 }

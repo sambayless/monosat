@@ -1632,6 +1632,22 @@ public final class Solver implements Closeable {
   }
 
   /**
+ * Test if the solver has an existing named literal with the given name.
+ * Note that an IllegalArgumentException will be thrown if the name is not a valid
+ * identifier.
+ *
+ * @param name The name of the literal to check for.
+ * @return True if there is a literal with the given name in the solver.
+ * @throws IllegalArgumentException If the name is not a valid identifier.
+ */
+  public boolean hasLiteral(String name) {
+      if (name == null || name.length() == 0) {
+          return false;
+      }
+      return MonosatJNI.hasVariableWithName(getSolverPtr(), MonosatJNI.validID(name));
+  }
+
+  /**
    * Retrieve an existing named bitvector from the solver, by looking up its name.
    *
    * @param name The name of the bitvector to check for.
