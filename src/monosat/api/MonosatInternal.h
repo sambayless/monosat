@@ -28,7 +28,6 @@
 #include "monosat/core/Solver.h"
 #include "monosat/simp/SimpSolver.h"
 #include "monosat/graph/GraphTheory.h"
-#include "monosat/geometry/GeometryTheory.h"
 #include "monosat/fsm/FSMTheory.h"
 #include "monosat/pb/PbTheory.h"
 #include "monosat/amo/AMOTheory.h"
@@ -42,6 +41,8 @@
 #include "monosat/pb/PbSolver.h"
 #include "monosat/routing/FlowRouter.h"
 #include "monosat/api/Circuit.h"
+#include <string>
+#include <cstdio>
 
 
 //Helper data structures for the Monosat API, intended for internal use only.
@@ -57,7 +58,7 @@ struct MonosatData{
     vec<Objective> optimization_objectives;
     Dimacs<StreamBuffer, SimpSolver> * parser=nullptr;
     FILE * outfile =nullptr;
-    string args = "";
+    std::string args = "";
     MonosatData(SimpSolver * solver):circuit(*solver){
 
     }

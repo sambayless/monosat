@@ -173,52 +173,6 @@ set(SOURCE_FILES
         src/monosat/fsm/LSystemTheory.h
         src/monosat/fsm/P0LAcceptDetector.cpp
         src/monosat/fsm/P0LAcceptDetector.h
-        src/monosat/geometry/alg/Heap.h
-        src/monosat/geometry/bounds/BoundingBox.h
-        src/monosat/geometry/bounds/BoundingSphere.h
-        src/monosat/geometry/bounds/BoundingVolume.h
-        src/monosat/geometry/cevans/halfspaceContainer.h
-        src/monosat/geometry/cevans/halfspaceD2.h
-        src/monosat/geometry/cevans/halfspaceD3.h
-        src/monosat/geometry/cevans/indextable.h
-        src/monosat/geometry/cevans/mathlib.cpp
-        src/monosat/geometry/cevans/mathlib.h
-        src/monosat/geometry/cevans/partitionspace.h
-        src/monosat/geometry/cevans/point.h
-        src/monosat/geometry/cevans/quickhull2D.h
-        src/monosat/geometry/cevans/quickhull3D.h
-        src/monosat/geometry/cevans/typedefs.h
-        src/monosat/geometry/cevans/typeop.h
-        src/monosat/geometry/cevans/zero.h
-        src/monosat/geometry/polypartition/polypartition.h
-        src/monosat/geometry/ConvexHull.h
-        src/monosat/geometry/ConvexHullCollisionDetection.cpp
-        src/monosat/geometry/ConvexHullCollisionDetector.h
-        src/monosat/geometry/ConvexHullDetector.cpp
-        src/monosat/geometry/ConvexHullDetector.h
-        src/monosat/geometry/ConvexPolygon.cpp
-        src/monosat/geometry/ConvexPolygon.h
-        src/monosat/geometry/Delaunay.h
-        src/monosat/geometry/DelaunayPolypartition.cpp
-        src/monosat/geometry/DelaunayPolypartition.h
-        src/monosat/geometry/GeometryDetector.h
-        src/monosat/geometry/GeometryParser.h
-        src/monosat/geometry/GeometryTheory.h
-        src/monosat/geometry/GeometryTypes.h
-        src/monosat/geometry/GridHeightmap.cpp
-        src/monosat/geometry/GridHeightmap.h
-        src/monosat/geometry/Heightmap.h
-        src/monosat/geometry/HeightmapDetector.h
-        src/monosat/geometry/Line.h
-        src/monosat/geometry/LineSegment.h
-        src/monosat/geometry/MonotoneConvexHull.h
-        src/monosat/geometry/PointSet.cpp
-        src/monosat/geometry/PointSet.h
-        src/monosat/geometry/Polygon.h
-        src/monosat/geometry/PolygonSet.h
-        src/monosat/geometry/QuickConvexHull.cpp
-        src/monosat/geometry/QuickConvexHull.h
-        src/monosat/geometry/Shape.h
         src/monosat/graph/AllPairsDetector.cpp
         src/monosat/graph/AllPairsDetector.h
         src/monosat/graph/ConnectedComponentsDetector.cpp

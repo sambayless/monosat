@@ -206,8 +206,7 @@ extern DoubleOption opt_rnd_shortest_edge;
 extern BoolOption opt_components_learn_connect;
 extern BoolOption opt_learn_unreachable_component;
 extern BoolOption opt_dinics_recursive;
-extern StringOption opt_hull_alg;
-extern StringOption opt_convex_pip;
+
 
 extern BoolOption opt_conflict_dfs;
 extern BoolOption opt_conflict_from_source;
@@ -254,10 +253,8 @@ extern BoolOption opt_graph_cache_propagation;
 extern IntOption opt_graph_use_cache_for_decisions;
 extern OptionSet opt_route;
 extern OptionSet opt_route2;
-enum class PointInPolygonAlg {
-	ALG_FULL, ALG_RECURSIVE_SPLIT
-};
-extern PointInPolygonAlg pipalg;
+
+
 
 enum class ReachAlg {
 	ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_RAMAL_REPS, ALG_RAMAL_REPS_BATCHED,ALG_RAMAL_REPS_BATCHED2

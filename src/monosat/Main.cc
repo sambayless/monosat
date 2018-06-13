@@ -49,8 +49,6 @@
 #include <iterator>
 #include "simp/SimpSolver.h"
 #include "pb/PbParser.h"
-#include "geometry/GeometryTheory.h"
-#include "geometry/GeometryParser.h"
 #include "bv/BVParser.h"
 #include "amo/AMOTheory.h"
 #include "amo/AMOParser.h"
@@ -101,7 +99,7 @@ static void SIGINT_exit(int signum) {
 	_exit(1);
 }
 
-//Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
+//Select which algorithms to apply for graph solvers, by parsing command line arguments and defaults.
 void selectAlgorithms(){
 	mincutalg = MinCutAlg::ALG_EDMONSKARP;
 
@@ -510,9 +508,6 @@ int main(int argc, char** argv) {
 		StringOption opt_theory_witness_file("MAIN", "theory-witness-file", "write witness for theories to file", "");
 
 		BoolOption opb("PB", "opb", "Parse the input as pseudo-boolean constraints in .opb format", false);
-		BoolOption precise("GEOM", "precise",
-						   "Solve geometry using precise rational arithmetic (instead of unsound, but faster, floating point arithmetic)",
-						   true);
 
 		BoolOption opt_ignore_solve_statements("MAIN","ignore-solves","Ignore any solve statements in the GNF",false);
 
@@ -552,7 +547,7 @@ int main(int argc, char** argv) {
 			fprintf(stderr, "WARNING: for repeatability, setting FPU to use double precision\n");
 #endif
 
-		//Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
+		//Select which algorithms to apply for graph theory solvers, by parsing command line arguments and defaults.
 		selectAlgorithms();
 
 		double initial_time = rtime(0);
@@ -621,7 +616,7 @@ int main(int argc, char** argv) {
 		SymbolParser<char*,SimpSolver> symbolParser;
 		parser.addParser(&symbolParser);
 
-		GraphParser<char *, SimpSolver> graphParser(precise,bvParser.theory);
+		GraphParser<char *, SimpSolver> graphParser(true,bvParser.theory);
 		parser.addParser(&graphParser);
 
 		FlowRouterParser<char *, SimpSolver> flowRouterParser(&graphParser);
@@ -637,13 +632,7 @@ int main(int argc, char** argv) {
 
 		AMOParser<char *, SimpSolver> amo;
 		parser.addParser(&amo);
-		GeometryParser<char *, SimpSolver, mpq_class>  preciseGeometryParser;
-		GeometryParser<char *, SimpSolver, double> doubleGeometryParser;
-		if (precise) {
-			parser.addParser(&preciseGeometryParser);
-		} else {
-			parser.addParser(&doubleGeometryParser);
-		}
+
 
 
 

@@ -30,7 +30,6 @@
 #include "monosat/core/Solver.h"
 #include "monosat/simp/SimpSolver.h"
 #include "monosat/graph/GraphTheory.h"
-#include "monosat/geometry/GeometryTheory.h"
 #include "monosat/fsm/FSMTheory.h"
 #include "monosat/pb/PbTheory.h"
 #include "monosat/amo/AMOTheory.h"

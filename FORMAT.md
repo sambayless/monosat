@@ -1,6 +1,6 @@
 # MonoSAT File Format
 
-MonoSAT is a SAT Modulo Theory solver for Boolean Monotonic Theories, featuring support for a wide set of graph properties, as well as a number of other theories, including some limited geometric properties (currently, for convex hulls), and finite state machine synthesis (still experimental).
+MonoSAT is a SAT Modulo Theory solver for Boolean Monotonic Theories, featuring support for a wide set of graph properties, as well as a number of other theories, including finite state machine synthesis (still experimental).
 
 This file documents MonoSAT's __*.GNF__ file format, which is a superset of the common [DIMACS CNF format](http://www.cs.ubc.ca/~hoos/SATLIB/Benchmarks/SAT/satformat.ps) (specifically, a superset of DIMACS as parsed by Minisat).
 

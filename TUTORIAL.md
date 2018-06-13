@@ -66,7 +66,7 @@ result = Solve([~b])
 Now, onto the interesting stuff. 
 MonoSAT has support for several useful theories, including some common ones (Bitvectors, Cardinality constraints), 
 and some uncommon ones - especially, graph predicates such as reachability, shortest paths, maximum flows, and minimum spanning tree length.
-In fact, MonoSAT has support for many more theories from other domains, including geometry, finite state machines, and more, but the graph theory is the most well supported, currently.
+In fact, MonoSAT has support for many more theories from other domains, including finite state machines, but the graph theory is the most well supported, currently.
 
 Constructing a graph in MonoSAT is as easy as:
 ```py

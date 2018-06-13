@@ -3,7 +3,7 @@
 
 MonoSAT is a SAT Modulo Theory solver for *[monotonic theories]*, over Booleans and bitvectors. It supports a wide set of graph predicates (including reachability, shortest paths, maximum *s-t* flow, minimum spanning tree, and acyclicity constraints). 
 MonoSAT supports reasoning about graphs that are either directed or undirected (including graphs that may have cycles). Edges may (optionally) have constant or Bitvector weights.
-MonoSAT also has limited support for geometric constraints involving convex hulls of point sets, and experimental support for constraints on finite state machines.
+MonoSAT also has experimental support for constraints on finite state machines.
 
 MonoSAT can be used from the command line, or as a Python 3 library. See the installation instructions below; see also the [tutorial].
 
@@ -97,7 +97,7 @@ MonoSAT is based on [MiniSat 2][Minisat], and supports many of the same calling 
 $monosat [-witness|-witness-file=filename] input_file.gnf
 ```
 
-Where input_file.gnf is a file in [GNF format][FORMAT] (a very simple extension of DIMACS CNF format to support graph, finite state machine, and geometry predicates). Use `-witness` to print the solution (if one exists) to stdout, or `-witness-file` to save it to file.
+Where input_file.gnf is a file in [GNF format][FORMAT] (a very simple extension of DIMACS CNF format to support graph, bitvector, and finite state machine predicates). Use `-witness` to print the solution (if one exists) to stdout, or `-witness-file` to save it to file.
 
 MonoSAT includes a very large set of configuration options - most of which you should stay away from unless you know what you are doing or want to explore the internals of MonoSAT (also, some of those configuration options might lead to buggy behaviour). Two options that often have a large impact on performance are `-decide-theories` and `-conflict-min-cut`:
 
@@ -112,7 +112,7 @@ MonoSAT implements a generalization of the circuit routing heuristics described 
 ### Source Overview
 MonoSAT is written in C++. Core SAT solver functionality is in the `core/` and `simp/` directories; in particular, note `core/Config.cpp`, which is a central listing of all the configuration options available to MonoSAT. 
 
-The graph and finite state machine theory solvers can be found in `graph/` and `fsm/`, the (not currently maintained) geometry theory is in `geom/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library'). 
+The graph and finite state machine theory solvers can be found in `graph/` and `fsm/`. Many of the graph algorithsms used by MonoSAT are collected in  `dgl/` (for 'Dynamic Graph Library').
 
 `dgl/` incldudes C++ implementations of several dynamic graph algorithms (as well as some more common graph algorithms), and is well-optimized for medium sized (<20,000 nodes, < 100,000 edges), sparse graphs. The algorithms in dgl are designed for the case where the set of *possible* edges (and nodes) is fixed and known in advance (or only changes infrequently), and from that fixed set of possible edges many subsets of edges will subsequently be selected to be included in or excluded from the graph. 'dgl' supports templated edge weights and edge capacities, and has been tested successfully with integers, floats, and GMP arbitrary precision rationals.
 
@@ -153,7 +153,7 @@ $cmake -DGPL=OFF
 
 ### Acknowledgements
 
-MonoSAT was made possible by the use of several open-source projects, including the afore-mentioned [MiniSat], as well as a high-performance [dynamic maximum-flow algorithm] by Pushmeet Kohli and Philip Torr, Emil Stefanov's implementation of [Disjoint Sets], a [Link-Cut Tree] implementation by Daniel Sleator, and a [computational geometry library] by Chelton Evans.
+MonoSAT was made possible by the use of several open-source projects, including the afore-mentioned [MiniSat], as well as a high-performance [dynamic maximum-flow algorithm] by Pushmeet Kohli and Philip Torr, Emil Stefanov's implementation of [Disjoint Sets], and a [Link-Cut Tree] implementation by Daniel Sleator.
 
 [monotonic theories]: http://www.cs.ubc.ca/labs/isd/Projects/monosat/smmt.pdf
 [FORMAT]: FORMAT.md
@@ -167,7 +167,6 @@ MonoSAT was made possible by the use of several open-source projects, including 
 [GPLv2]: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 [dynamic maximum-flow algorithm]:http://research.microsoft.com/en-us/um/people/pkohli/code/rrr.txt
 [Link-Cut Tree]: http://codeforces.com/contest/117/submission/860934
-[computational geometry library]:http://www.fluxionsdividebyzero.com/p1/math/geometry/geom.html
 [Disjoint Sets]: http://web.rememberingemil.org/Projects/DisjointSets.aspx.html
 
 ### Publications using MonoSAT

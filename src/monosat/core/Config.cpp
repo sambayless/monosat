@@ -35,7 +35,6 @@ static const char* _cat_sms = "SMS";
 static const char* _cat_graph = "GRAPH";
 static const char* _cat_bv = "BV";
 static const char* _cat_amo = "AMO";
-static const char* _cat_geom = "GEOMETRY";
 static const char* _cat_fsm = "FSM";
 
 
@@ -335,8 +334,6 @@ BoolOption Monosat::opt_skip_additions(_cat_graph, "skip-additions", "", false);
 
 BoolOption Monosat::opt_allow_reach_decisions(_cat_graph, "allow-reach-decision", "", true);
 
-StringOption Monosat::opt_hull_alg(_cat_geom, "hull", "Select convex-hull algorithm (monotone,quick)", "monotone");
-
 BoolOption Monosat::opt_conflict_dfs(_cat_graph, "conflict-dfs",
                                      "Use a DFS (instead of a BFS) to find the conflict cut", true);
 BoolOption Monosat::opt_conflict_from_source(_cat_graph, "conflict-from-source",
@@ -455,4 +452,3 @@ ComponentsAlg Monosat::componentsalg = ComponentsAlg::ALG_DISJOINT_SETS;
 MinSpanAlg Monosat::mstalg = MinSpanAlg::ALG_KRUSKAL;
 CycleAlg Monosat::cyclealg= CycleAlg::ALG_PK_CYCLE;
 
-PointInPolygonAlg Monosat::pipalg = PointInPolygonAlg::ALG_RECURSIVE_SPLIT;

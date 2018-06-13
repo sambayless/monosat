@@ -24,7 +24,6 @@
 #include "monosat/core/Solver.h"
 #include "monosat/simp/SimpSolver.h"
 #include "monosat/graph/GraphTheory.h"
-#include "monosat/geometry/GeometryTheory.h"
 #include "monosat/fsm/FSMTheory.h"
 #include "monosat/pb/PbTheory.h"
 #include "monosat/amo/AMOTheory.h"
@@ -202,7 +201,7 @@ void disableResourceLimits(){
 
 }
 
-//Select which algorithms to apply for graph and geometric theory solvers, by parsing command line arguments and defaults.
+//Select which algorithms to apply for graph theory solvers, by parsing command line arguments and defaults.
 void _selectAlgorithms(){
 	mincutalg = MinCutAlg::ALG_EDMONSKARP;
 

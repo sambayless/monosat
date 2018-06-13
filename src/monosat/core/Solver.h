@@ -38,8 +38,6 @@
 
 
 
-//this is _really_ ugly...
-template<unsigned int D, class T> class GeometryTheorySolver;
 
 namespace Monosat {
 template<typename Weight> class GraphTheorySolver;
@@ -56,7 +54,7 @@ public:
 	//fix this...
 	friend class Theory;
 	template<typename Weight> friend class GraphTheorySolver;
-	//template<unsigned int D, class T> friend class GeometryTheorySolver;
+
 	friend class FSMTheorySolver;
 	friend class LSystemSolver;
 
