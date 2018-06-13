@@ -621,4 +621,37 @@ public class LogicTest {
         assertTrue(solver.solve(c));
         assertTrue(solver.solve(Logic.not(c)));
     }
+
+
+  @Test
+  public void testLoadingAMO() throws IOException {
+    File f = File.createTempFile("test", ".gnf");
+    String filename = f.getAbsolutePath().toString();
+    f.delete();
+
+    {
+      Solver solver = new monosat.Solver("", filename);
+
+      Lit a = new Lit(solver,"a");
+      Lit b = new Lit(solver,"b");
+      Lit c = new Lit(solver,"c");
+      Logic.assertAtMostOne(a, b,c);
+      assertFalse(solver.solve(a, b, c));
+      assertTrue(solver.solve(a, Logic.not(b), c.not()));
+      assertTrue(solver.solve(Logic.not(a), b, Logic.not(c)));
+      assertTrue(solver.solve(Logic.not(a), Logic.not(b), c));
+    }
+    monosat.Solver solver = new monosat.Solver();
+    solver.loadConstraints(filename);
+
+    Lit a = solver.getLiteral("a");
+    Lit b = solver.getLiteral("b");
+    Lit c = solver.getLiteral("c");
+
+    assertTrue(solver.solve());
+    assertFalse(solver.solve(a, b, c));
+    assertTrue(solver.solve(a, Logic.not(b), c.not()));
+    assertTrue(solver.solve(Logic.not(a), b, Logic.not(c)));
+    assertTrue(solver.solve(Logic.not(a), Logic.not(b), c));
+  }
 }
