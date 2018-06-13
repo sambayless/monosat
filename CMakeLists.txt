@@ -425,8 +425,18 @@ endif()
 target_link_libraries(monosat gmpxx)
 target_link_libraries(monosat gmp)
 
+if (UNIX)
+    #librt is needed for clock_gettime, which is enabled for linux only
+    #(clock_gettime is used for capturing detailed timing statistics only)
+    if (NOT APPLE)
+        target_link_libraries(monosat rt)
+    else()
+        target_link_libraries(monosat)
+    endif()
+endif (UNIX)
+
 if (JAVA)
-    target_link_libraries(monosat ${JNI_LIBRARIES}) #Not clear if this is required
+    target_link_libraries(libmonosat ${JNI_LIBRARIES}) #Not clear if this is required
 
     add_jar(monosat_jar ${JAVA_SOURCE_FILES} OUTPUT_NAME monosat)
     get_target_property(_jarFile monosat_jar JAR_FILE)
@@ -477,19 +487,10 @@ if (JAVA)
     SET_DIRECTORY_PROPERTIES(PROPERTIES
             ADDITIONAL_MAKE_CLEAN_FILES "monosat_src.zip")
 
-
+    add_dependencies(libmonosat monosat_jar)
 
 endif (JAVA)
 
-if (UNIX)
-    #librt is needed for clock_gettime, which is enabled for linux only
-    #(clock_gettime is used for capturing detailed timing statistics only)
-    if (NOT APPLE)
-        target_link_libraries(monosat rt)
-    else()
-        target_link_libraries(monosat)
-    endif()
-endif (UNIX)
 
 install(TARGETS monosat_static libmonosat libmonosat_static
         RUNTIME DESTINATION bin
