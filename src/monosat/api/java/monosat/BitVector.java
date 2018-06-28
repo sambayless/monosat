@@ -819,9 +819,9 @@ public final class BitVector {
 
   public String toString() {
     if (this._name.length() > 0) {
-      return _name + " (BV " + id + ", width" + width() + ")";
+      return _name + "(BV" + id + ",width" + width() + ")";
     } else {
-      return "BV " + id + ", width" + width();
+      return "BV" + id + ",width" + width();
     }
   }
 

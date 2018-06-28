@@ -288,6 +288,24 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setPropagationLimit
 }
 
 
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_nConflicts
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
+    return jlong(nConflicts(reinterpret_cast<SolverPtr>(solverPtr)));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_nPropagations
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
+    return jlong(nPropagations(reinterpret_cast<SolverPtr>(solverPtr)));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
+
+
+
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveLimited
         (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
     return solveLimited(reinterpret_cast<SolverPtr>(solverPtr));
@@ -481,6 +499,14 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nClauses
     return 0;
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nLearnedClauses
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    return jint(nLearnedClauses(solver));
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectors
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr) try {

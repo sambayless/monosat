@@ -956,6 +956,17 @@ void setPropagationLimit(Monosat::SimpSolver * S,int num_propagations){
 }
 
 
+uint64_t nConflicts(Monosat::SimpSolver * S){
+    return S->conflicts;
+}
+
+uint64_t nPropagations(Monosat::SimpSolver * S){
+	return S->propagations;
+}
+
+int nLearnedClauses(Monosat::SimpSolver * S){
+	return S->nLearnts();
+}
 
 int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	bool found_optimal=true;
@@ -1017,7 +1028,15 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_ass
 }
 
 bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
-	return _solve(S,assumptions,n_assumptions) == toInt(l_True);
+    S->budgetOff();//solve() and solveAssumtpions() ignores
+	int r = _solve(S,assumptions,n_assumptions);
+	if (r==toInt(l_True)){
+	    return true;
+	}else if (r==toInt(l_False)){
+	    return false;
+	}else{
+        throw std::runtime_error("Solver gave up without determining SAT or UNSAT (this might indicate an out of memory or ulimit issue.)");
+	}
 }
 bool lastSolutionWasOptimal(Monosat::SimpSolver * S){
 	MonosatData * d = (MonosatData*) S->_external_data;

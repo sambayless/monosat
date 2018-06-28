@@ -103,10 +103,16 @@ final class MonosatJNI { // package level access specifier
   // l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
   public static native void setConflictLimit(long solverPtr, int num_conflicts);
 
+  //Number of conflicts in the solver
+  public static native long nConflicts(long solverPtr);
+
   // Sets the maximum number of (additional) propagation rounds allowed in the solver before
   // returning l_Undef from
   // solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
   public static native void setPropagationLimit(long solverPtr, int num_propagations);
+
+  //number of propagation rounds in the solver
+  public static native long nPropagations(long solverPtr);
 
   // Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within
   // any resource limits that have been set)
@@ -195,6 +201,8 @@ final class MonosatJNI { // package level access specifier
   public static native int nVars(long solverPtr);
 
   public static native int nClauses(long solverPtr);
+
+  public static native int nLearnedClauses(long solverPtr);
 
   public static native int nBitvectors(long solverPtr, long bvPtr);
 

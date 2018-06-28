@@ -105,6 +105,11 @@ typedef int64_t Weight;
   //Sets the maximum number of (additional) propagations allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.
   void setPropagationLimit(SolverPtr S,int num_propagations);
 
+  uint64_t nConflicts(SolverPtr S);
+
+  uint64_t nPropagations(SolverPtr S);
+
+
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
   int solveLimited(SolverPtr S);
   //Returns 0 for satisfiable, 1 for proved unsatisfiable, 2 for failed to find a solution (within any resource limits that have been set)
@@ -197,6 +202,7 @@ typedef int64_t Weight;
   void disablePreprocessing(SolverPtr S);
   int nVars(SolverPtr S);
   int nClauses(SolverPtr S);
+  int nLearnedClauses(SolverPtr S);
   int nBitvectors(SolverPtr S,BVTheoryPtr bv);
 
   bool addClause(SolverPtr S,int * lits, int n_lits);

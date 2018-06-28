@@ -325,7 +325,7 @@ public final class Lit {
     } else if (l == 1) {
       return "False";
     } else if (!_name.isEmpty()) {
-      return _name + " (" + "Lit" + l + ")";
+      return _name + "(" + "Lit" + l + ")";
     }
     return "Lit" + l;
   }

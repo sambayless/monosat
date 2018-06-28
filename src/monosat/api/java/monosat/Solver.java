@@ -647,6 +647,15 @@ public final class Solver implements Closeable {
   }
 
   /**
+   * Get the number of learned clauses in this solver.
+   *
+   * @return The number of learned clauses in this solver.
+   */
+  public int nLearnedClauses() {
+    return MonosatJNI.nLearnedClauses(getSolverPtr());
+  }
+
+  /**
    * Get the number of bitvectors in this solver.
    *
    * @return The number of bitvectors in this solver.
@@ -875,7 +884,7 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Sets the (approximate) time limit in seconds before returning Boolean.empty() from
+   * Sets the (approximate) time limit in seconds before returning empty from
    * solveLimited(); ignored by solve(). Set to <0 to disable time limit. Note that the solver will
    * only respect this limit on a best effort basis.
    *
@@ -887,7 +896,7 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Sets the (approximate) memory limit in megabytes before returning Boolean.empty() from
+   * Sets the (approximate) memory limit in megabytes before returning empty from
    * solveLimited(); ignored by solve(). Set to <0 to disable memory limit. Note that the solver
    * will only respect this limit on a best effort basis.
    *
@@ -900,7 +909,7 @@ public final class Solver implements Closeable {
 
   /**
    * Sets the maximum number of (further) conflicts allowed in the solver before returning
-   * Boolean.empty() from solveLimited(); ignored by solve(). Set to <0 to disable conflict limit.
+   * empty from solveLimited(); ignored by solve(). Set to <0 to disable conflict limit.
    *
    * @param conflicts The number of additional conflicts rounds allowed by the next call to
    *     solveLimited().
@@ -910,8 +919,24 @@ public final class Solver implements Closeable {
   }
 
   /**
+   * Get the total number of conflicts that have occurred in the solver.
+   * @return The total number of conflicts that have occurred in the solver.
+   */
+  public long nConflicts(){
+    return MonosatJNI.nConflicts(getSolverPtr());
+  }
+
+  /**
+   * Get the total number of unit propagations that have occurred in the solver.
+   * @return The total number of unit propagations that have occurred in the solver.
+   */
+  public long nPropagations(){
+    return MonosatJNI.nPropagations(getSolverPtr());
+  }
+
+  /**
    * Sets the maximum number of (further) propagation rounds allowed in the solver before returning
-   * Boolean.empty() from solveLimited(); ignored by solve(). Set to <0 to disable propagation
+   * empty from solveLimited(); ignored by solve(). Set to <0 to disable propagation
    * limit.
    *
    * @param propagations The number of additional propagation rounds allowed by the next call to

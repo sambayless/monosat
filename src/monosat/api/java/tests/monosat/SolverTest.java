@@ -43,6 +43,14 @@ public class SolverTest {
   }
 
   @Test
+  public void testConstraints() {
+    monosat.Solver s = new monosat.Solver();
+    Constraints.nqueens(s,4);
+    assertTrue(s.solve());
+
+  }
+
+  @Test
   public void testArguments() {
     monosat.Solver s = new monosat.Solver("-no-reach-underapprox-cnf");
     assertTrue(s.solve());

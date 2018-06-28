@@ -201,11 +201,27 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setConflictLimit
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    nConflicts
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_nConflicts
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    setPropagationLimit
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setPropagationLimit
   (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    nPropagations
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_nPropagations
+  (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -373,6 +389,14 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nVars
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nClauses
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    nLearnedClauses
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nLearnedClauses
   (JNIEnv *, jclass, jlong);
 
 /*

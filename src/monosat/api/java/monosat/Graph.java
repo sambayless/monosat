@@ -109,6 +109,15 @@ public final class Graph {
 
   private final String _name;
 
+  public String toString() {
+    if (this._name.length() > 0) {
+      return _name + "(Graph)";
+    } else {
+      return "Graph";
+    }
+  }
+
+
   /**
    * Instantiate a graph in solver. This graph can have unweighted edges, or constant (long)
    * weighted edges. To create a graph with variable (BitVector) weighted edges @see #Graph(Solver,
