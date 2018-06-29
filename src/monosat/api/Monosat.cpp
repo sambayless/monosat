@@ -552,10 +552,12 @@ void deleteSolver (Monosat::SimpSolver * S)
 	if(S->_external_data){
 		MonosatData* data = (MonosatData*) S->_external_data;
 		if(data->has_timer) {
+#ifndef __APPLE__
 			//attempt to delete the timer
 			if (timer_delete(data->solver_timer) == -1) {
 				api_errorf("Failed to delete timer");
 			}
+#endif
 			data->has_timer=false;
 		}
 		if(data->outfile){
