@@ -47,6 +47,13 @@
 
 //Helper data structures for the Monosat API, intended for internal use only.
 
+#ifndef __APPLE__
+typedef timer_t posix_timer;
+#else
+//apple doesn't define timer_t
+typedef void* posix_timer;
+#endif
+
 struct MonosatData{
     Monosat::Circuit<Monosat::SimpSolver> circuit;
     Monosat::BVTheorySolver<int64_t> * bv_theory=nullptr;
@@ -54,7 +61,7 @@ struct MonosatData{
     PB::PbSolver * pbsolver=nullptr;
     int time_limit = -1;
     bool has_timer = false;
-    timer_t solver_timer;
+    posix_timer solver_timer;
     vec< Monosat::GraphTheorySolver<int64_t> *> graphs;
     bool last_solution_optimal=true;
     bool has_conflict_clause_from_last_solution=false;
