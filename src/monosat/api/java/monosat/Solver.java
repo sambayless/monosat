@@ -888,6 +888,8 @@ public final class Solver implements Closeable {
    * solveLimited(); ignored by solve(). Set to <0 to disable time limit. Note that the solver will
    * only respect this limit on a best effort basis.
    *
+   * Note: setTimeLimit has no effect on mac.
+   *
    * @param seconds The (approximate) number of seconds to limit the solver to, in the next call to
    *     solveLimited().
    */

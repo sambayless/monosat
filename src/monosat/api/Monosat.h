@@ -96,7 +96,9 @@ typedef int64_t Weight;
   //Solve under assumptions, and also minimize a set of BVs (in order of precedence)
   //bool solveAssumptions_MinBVs(SolverPtr S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs);
 
-  //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
+  // Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve().
+  // Set to <=0 to disable time limit.
+  // Note that setTimeLimit has no effect on OSX.
   void setTimeLimit(SolverPtr S,int seconds);
 
   //Sets the maximum number of (additional) conflicts allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.

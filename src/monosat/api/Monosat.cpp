@@ -51,10 +51,7 @@
 using namespace Monosat;
 using namespace std;
 
-#ifdef __APPLE__
-using sighandler_t = sig_t;
 
-#endif
 
 //Supporting function for throwing parse errors
 inline void api_errorf(const char *fmt, ...) {
@@ -71,6 +68,7 @@ inline void api_errorf(const char *fmt, ...) {
 
 static std::set<Solver*> solvers;
 
+#ifndef __APPLE__
 static void solverTimerHandler(int signal, siginfo_t *si, void *uc )
 {
 	timer_t *timer_id = (timer_t *) si->si_value.sival_ptr;
@@ -143,8 +141,21 @@ void disableTimeLimit(Monosat::SimpSolver * S){
     }
 }
 
+#endif
+
+#ifdef __APPLE__
+//timer_t and create_timer not supported on OSX,
+//its not clear what a simple alternative would be.
+//So time limits will just not be enforced on OSX at all.
+void enforceTimeLimit(Monosat::SimpSolver * S){
 
 
+}
+
+void disableTimeLimit(Monosat::SimpSolver * S){
+
+}
+#endif
 
 //Select which algorithms to apply for graph theory solvers, by parsing command line arguments and defaults.
 void _selectAlgorithms(){

@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 package monosat;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.io.File;
@@ -93,7 +94,9 @@ public class ResourceLimitTest {
 
   @Test
   public void testTimeLimit() {
-        Solver s2 = new Solver();
+    //Time limits are not implemented for mac
+    Assume.assumeFalse(System.getProperty("os.name").toLowerCase().startsWith("mac"));
+    Solver s2 = new Solver();
     Constraints.unsatQueens(s2,12);
     s2.setTimeLimit(1);
 
@@ -111,6 +114,8 @@ public class ResourceLimitTest {
 
   @Test
   public void testSolveIgnoresTimeLimit() {
+    //Time limits are not implemented for mac
+    Assume.assumeFalse(System.getProperty("os.name").toLowerCase().startsWith("mac"));
     Solver s2 = new Solver();
     Constraints.unsatQueens(s2,12);
     s2.setTimeLimit(1);
@@ -121,7 +126,8 @@ public class ResourceLimitTest {
 
   @Test
   public void testSecondSolverIgnoresTimeLimit() {
-
+    //Time limits are not implemented for mac
+    Assume.assumeFalse(System.getProperty("os.name").toLowerCase().startsWith("mac"));
     Solver s = new Solver();
     s.setTimeLimit(1);
 
