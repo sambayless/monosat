@@ -95,9 +95,6 @@ final class MonosatJNI { // package level access specifier
   // ignored by solve(). Set to <0 to disable time limit.
   public static native void setTimeLimit(long solverPtr, int seconds);
 
-  // Sets the (approximate) memory limit in megabytes before returning l_Undef from solveLimited;
-  // ignored by solve(). Set to <0 to disable memory limit.
-  public static native void setMemoryLimit(long solverPtr, int mb);
 
   // Sets the maximum number of (additional) conflicts allowed in the solver before returning
   // l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.

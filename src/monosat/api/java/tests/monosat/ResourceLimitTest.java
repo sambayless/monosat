@@ -37,15 +37,14 @@ public class ResourceLimitTest {
 
     Solver s = new Solver();
 
-    Constraints.nqueens(s,100);
+    Constraints.unsatQueens(s,12);
     s.setConflictLimit(-1);
-    assertTrue(s.solve());
+    assertFalse(s.solve());
 
-    //this requires roughly 300 conflicts to solve (with no exact guarantees)
     long n_conflicts =  s.nConflicts();
     assertTrue(n_conflicts>10);
     Solver s2 = new Solver();
-    Constraints.nqueens(s2,100);
+    Constraints.unsatQueens(s2,12);
     s2.setConflictLimit(10);
     s2.setPropagationLimit(-1);
     assertEquals(s2.solveLimited(), Optional.empty());
@@ -53,7 +52,7 @@ public class ResourceLimitTest {
     assertEquals(s2.solveLimited(), Optional.empty());
 
     s2.setConflictLimit(-1);//disable limit and solve again
-    assertEquals(s2.solveLimited().get(),true);
+    assertFalse(s2.solveLimited().get());
 
 
   }
@@ -61,11 +60,11 @@ public class ResourceLimitTest {
   @Test
   public void testSolveIgnoresLimits() {
     Solver s = new Solver();
-    Constraints.nqueens(s,100);
+    Constraints.unsatQueens(s,12);
     s.setConflictLimit(10);
     s.setPropagationLimit(10);
     //solver.solve() ignores resource limitations
-    assertEquals(s.solve(), true);
+    assertFalse(s.solve());
   }
 
   @Test
@@ -73,47 +72,63 @@ public class ResourceLimitTest {
 
     Solver s = new Solver();
 
-    Constraints.nqueens(s,100);
+    Constraints.unsatQueens(s,12);
     s.setPropagationLimit(-1);
-    assertTrue(s.solve());
+    assertFalse(s.solve());
 
     long n_props =  s.nPropagations();
-    System.out.println(n_props);
     assertTrue(n_props>10);
     Solver s2 = new Solver();
-    Constraints.nqueens(s2,100);
+    Constraints.unsatQueens(s2,12);
     s2.setPropagationLimit(10);
     s2.setConflictLimit(-1);
     assertEquals(s2.solveLimited(), Optional.empty());
     //limit still applies for a second solve
     assertEquals(s2.solveLimited(), Optional.empty());
     s2.setPropagationLimit(-1);//disable limit and solve again
-    assertEquals(s2.solveLimited().get(),true);
+    assertFalse(s2.solveLimited().get());
 
 
   }
 
   @Test
   public void testTimeLimit() {
-
-    Solver s = new Solver();
-    Constraints.nqueens(s,100);
-    long start_time = System.nanoTime();
-    assertTrue(s.solve());
-    long end_time = System.nanoTime();
-    int elapsed_seconds = (int) Math.floorDiv((end_time-start_time),1000000000L);
-    System.out.println(elapsed_seconds);
-    assertTrue(elapsed_seconds>2);
-
-    Solver s2 = new Solver();
-    Constraints.nqueens(s2,100);
+        Solver s2 = new Solver();
+    Constraints.unsatQueens(s2,12);
     s2.setTimeLimit(1);
+
+    long start_time = System.nanoTime();
+    //s2.solve();
     assertEquals(s2.solveLimited(), Optional.empty()); //not enough time to solve
+    long elapsed_seconds = (int) Math.floorDiv((System.nanoTime()-start_time),1000000000L);
+    //System.out.println(elapsed_seconds);
+    assertTrue(elapsed_seconds<=3);
     //limit still applies for a second solve
     assertEquals(s2.solveLimited(), Optional.empty()); //not enough time to solve
     s2.setTimeLimit(-1);//disable limit
-    assertEquals(s2.solveLimited().get(),true);
+    assertFalse(s2.solveLimited().get());
+  }
+
+  @Test
+  public void testSolveIgnoresTimeLimit() {
+    Solver s2 = new Solver();
+    Constraints.unsatQueens(s2,12);
+    s2.setTimeLimit(1);
+    assertFalse(s2.solve());
 
   }
 
+
+  @Test
+  public void testSecondSolverIgnoresTimeLimit() {
+
+    Solver s = new Solver();
+    s.setTimeLimit(1);
+
+    Solver s2 = new Solver();
+    Constraints.unsatQueens(s2,12);
+    //s2 ignores time limit
+    assertFalse(s2.solveLimited().get());
+
+  }
 }

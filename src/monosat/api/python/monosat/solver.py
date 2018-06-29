@@ -18,19 +18,18 @@ def Solve(
     preprocessing=True,
     bvs_to_minimize=None,
     time_limit_seconds=None,
-    memory_limit_mb=None,
+
     conflict_limit=None
 ):
     WriteConstraints()
     if time_limit_seconds is None or time_limit_seconds <= 0:
         time_limit_seconds = -1
-    if memory_limit_mb is None or memory_limit_mb <= 0:
-        memory_limit_mb = -1
+
     if conflict_limit is None or conflict_limit <= 0:
         conflict_limit = -1
 
     Monosat().setTimeLimit(time_limit_seconds)
-    Monosat().setMemoryLimit(memory_limit_mb)
+
     Monosat().setConflictLimit(conflict_limit)
 
     # if preprocessing:

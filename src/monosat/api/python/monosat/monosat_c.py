@@ -252,7 +252,7 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.minimizeConflictClause.argtypes = [c_solver_p]
 
             self.monosat_c.setTimeLimit.argtypes = [c_solver_p, c_int]
-            self.monosat_c.setMemoryLimit.argtypes = [c_solver_p, c_int]
+
             self.monosat_c.setConflictLimit.argtypes = [c_solver_p, c_int]
             self.monosat_c.setPropagationLimit.argtypes = [c_solver_p, c_int]
 
@@ -994,11 +994,7 @@ class Monosat(metaclass=Singleton):
         else:
             self.monosat_c.setTimeLimit(self.solver._ptr, seconds)
 
-    def setMemoryLimit(self, mb):
-        if mb is None or mb < 0:
-            self.monosat_c.setMemoryLimit(self.solver._ptr, -1)
-        else:
-            self.monosat_c.setMemoryLimit(self.solver._ptr, mb)
+
 
     def setConflictLimit(self, conflicts):
         if conflicts is None or conflicts < 0:

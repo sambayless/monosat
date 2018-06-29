@@ -1,6 +1,7 @@
 package monosat;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /**
  * Produces MonoSAT constraints for testing purposes.
@@ -8,7 +9,7 @@ import java.util.ArrayList;
  * effectively in the solver.
  */
 public class Constraints {
-    public static void nqueens(Solver s, int n){
+    public static ArrayList<ArrayList<Lit>> nqueens(Solver s, int n){
         ArrayList<ArrayList<Lit>> rows = new ArrayList<ArrayList<Lit>>();
         for(int i = 0;i<n;i++){
             ArrayList<Lit> row = new ArrayList<Lit>();
@@ -64,5 +65,14 @@ public class Constraints {
                 }
             }
         }
+        return rows;
+    }
+
+    public static void unsatQueens(Solver s, int n){
+        ArrayList<ArrayList<Lit>> rows = nqueens(s,n);
+        ArrayList<Lit> lits = new ArrayList<>();
+        rows.forEach(lits::addAll);
+
+        s.assertPB(lits,Comparison.GEQ,n+1);//assert n+1 queens are enabled
     }
 }

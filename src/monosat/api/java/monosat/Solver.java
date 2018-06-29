@@ -896,18 +896,6 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Sets the (approximate) memory limit in megabytes before returning empty from
-   * solveLimited(); ignored by solve(). Set to <0 to disable memory limit. Note that the solver
-   * will only respect this limit on a best effort basis.
-   *
-   * @param mb An approximate limit on the memory consumed by the native library, in megabytes, in
-   *     the next call to solveLimited().
-   */
-  public void setMemoryLimit(int mb) {
-    MonosatJNI.setMemoryLimit(getSolverPtr(), mb);
-  }
-
-  /**
    * Sets the maximum number of (further) conflicts allowed in the solver before returning
    * empty from solveLimited(); ignored by solve(). Set to <0 to disable conflict limit.
    *
@@ -951,7 +939,6 @@ public final class Solver implements Closeable {
    * violated. To set resource limits, see:
    *
    * @see #setTimeLimit(int)
-   * @see #setMemoryLimit(int)
    * @see #setConflictLimit(int)
    * @see #setPropagationLimit(int)
    * @return An Optional containing True if a satisfying solution was found, False if the
@@ -970,7 +957,6 @@ public final class Solver implements Closeable {
    * violated. To set resource limits, see:
    *
    * @see #setTimeLimit(int)
-   * @see #setMemoryLimit(int)
    * @see #setConflictLimit(int)
    * @see #setPropagationLimit(int)
    * @param assumptions Literals to enforce temporarily during the solve call.
@@ -993,7 +979,6 @@ public final class Solver implements Closeable {
    * violated. To set resource limits, see:
    *
    * @see #setTimeLimit(int)
-   * @see #setMemoryLimit(int)
    * @see #setConflictLimit(int)
    * @see #setPropagationLimit(int)
    * @param assumptions Literals to enforce temporarily during the solve call.
@@ -1462,17 +1447,22 @@ public final class Solver implements Closeable {
     switch (c) {
       case LT:
         MonosatJNI.assertPB_lt(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        break;
       case LEQ:
         MonosatJNI.assertPB_leq(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        break;
       case EQ:
         MonosatJNI.assertPB_eq(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        break;
       case GEQ:
         MonosatJNI.assertPB_geq(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        break;
       case GT:
         MonosatJNI.assertPB_gt(getSolverPtr(), compareTo, args.size(), getLitBuffer(args), wt_buffer);
+        break;
       case NEQ:
       default:
-        throw new IllegalArgumentException("Unsupported comparison");
+        throw new UnsupportedOperationException("Unsupported comparison " + c);
     }
   }
 

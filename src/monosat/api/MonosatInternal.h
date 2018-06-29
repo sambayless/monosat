@@ -43,7 +43,7 @@
 #include "monosat/api/Circuit.h"
 #include <string>
 #include <cstdio>
-
+#include <ctime>
 
 //Helper data structures for the Monosat API, intended for internal use only.
 
@@ -52,6 +52,9 @@ struct MonosatData{
     Monosat::BVTheorySolver<int64_t> * bv_theory=nullptr;
     Monosat::FSMTheorySolver * fsm_theory=nullptr;
     PB::PbSolver * pbsolver=nullptr;
+    int time_limit = -1;
+    bool has_timer = false;
+    timer_t solver_timer;
     vec< Monosat::GraphTheorySolver<int64_t> *> graphs;
     bool last_solution_optimal=true;
     bool has_conflict_clause_from_last_solution=false;

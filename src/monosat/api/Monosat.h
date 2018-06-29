@@ -98,8 +98,7 @@ typedef int64_t Weight;
 
   //Sets the (approximate) time limit in seconds before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable time limit.
   void setTimeLimit(SolverPtr S,int seconds);
-  //Sets the (approximate) memory limit in megabytes before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable memory limit.
-  void setMemoryLimit(SolverPtr S,int mb);
+
   //Sets the maximum number of (additional) conflicts allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
   void setConflictLimit(SolverPtr S,int num_conflicts);
   //Sets the maximum number of (additional) propagations allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable propagation limit.

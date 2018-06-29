@@ -39,6 +39,7 @@
 #include "monosat/Version.h"
 #include "MonosatInternal.h"
 #include <csignal>
+#include <ctime>
 #include <set>
 #include <iostream>
 #include <string>
@@ -68,138 +69,82 @@ inline void api_errorf(const char *fmt, ...) {
 
 }
 
-namespace APISignal{
-//Global time and memory limits shared among all solvers
-static  int64_t time_limit=-1;
-static int64_t memory_limit=-1;
-
-static bool has_system_time_limit=false;
-static rlim_t system_time_limit;
-static bool has_system_mem_limit=false;
-static rlim_t system_mem_limit;
-
 static std::set<Solver*> solvers;
 
-static sighandler_t system_sigxcpu_handler = nullptr;
-
-//static initializer, following http://stackoverflow.com/a/1681655
-namespace {
-struct initializer {
-	initializer() {
-		system_sigxcpu_handler=nullptr;
-		time_limit=-1;
-		memory_limit=-1;
-		has_system_time_limit=false;
-		has_system_mem_limit=false;
-	}
-
-	~initializer() {
-		solvers.clear();
-	}
-};
-static initializer i;
-}
-void disableResourceLimits();
-static void SIGNAL_HANDLER_api(int signum) {
-	disableResourceLimits();
-	printf("Interupting solver due to resource limit\n");
-	fflush(stdout);
-	for(Solver* solver:solvers)
-		solver->interrupt();
-
-}
-
-
-void enableResourceLimits(){
-	struct rusage ru;
-	getrusage(RUSAGE_SELF, &ru);
-	time_t cur_time = ru.ru_utime.tv_sec;
-
-	rlimit rl;
-	getrlimit(RLIMIT_CPU, &rl);
-	if(!has_system_time_limit){
-		has_system_time_limit=true;
-		system_time_limit=rl.rlim_cur;
-	}
-	if (time_limit < INT32_MAX && time_limit>=0) {
-		assert(cur_time>=0);
-		int64_t local_time_limit = 	 time_limit+cur_time;//make this a relative time limit
-		if(opt_verb>1){
-			printf("Limiting cpu time to %" PRId64 "\n",local_time_limit);
+static void solverTimerHandler(int signal, siginfo_t *si, void *uc )
+{
+	timer_t *timer_id = (timer_t *) si->si_value.sival_ptr;
+	//find the solver this timer belongs to, if any
+	for (Solver * S:solvers){
+		assert(S);
+		MonosatData * d = (MonosatData*) S->_external_data;
+		if(d) {
+			if (*timer_id == d->solver_timer){
+				S->interrupt();//interrupt the solver
+				break;
+			}
 		}
-		if (rl.rlim_max == RLIM_INFINITY || (rlim_t) local_time_limit < rl.rlim_max) {
-			rl.rlim_cur = local_time_limit;
-			if (setrlimit(RLIMIT_CPU, &rl) == -1)
-				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
-		}
-	}else{
-		rl.rlim_cur = rl.rlim_max;
-		if (setrlimit(RLIMIT_CPU, &rl) == -1)
-			api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
-	}
-
-	getrlimit(RLIMIT_AS, &rl);
-	if(!has_system_mem_limit){
-		has_system_mem_limit=true;
-		system_mem_limit=rl.rlim_cur;
-	}
-	// Set limit on virtual memory:
-	if (memory_limit < INT32_MAX && memory_limit>=0) {
-		rlim_t new_mem_lim = (rlim_t) memory_limit * 1024 * 1024; //Is this safe?
-		if(opt_verb>1){
-			printf("Limiting virtual memory to %" PRId64 "\n",new_mem_lim);
-		}
-		if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
-			rl.rlim_cur = new_mem_lim;
-			if (setrlimit(RLIMIT_AS, &rl) == -1)
-				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
-		}else{
-			rl.rlim_cur = rl.rlim_max;
-			if (setrlimit(RLIMIT_AS, &rl) == -1)
-				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
-		}
-	}
-	sighandler_t old_sigxcpu = signal(SIGXCPU, SIGNAL_HANDLER_api);
-	if(old_sigxcpu != SIGNAL_HANDLER_api){
-		system_sigxcpu_handler = old_sigxcpu;//store this value for later
 	}
 }
 
-void disableResourceLimits(){
-	rlimit rl;
-	getrlimit(RLIMIT_CPU, &rl);
-	if(has_system_time_limit){
-		has_system_time_limit=false;
-		if (rl.rlim_max == RLIM_INFINITY || (rlim_t)system_time_limit < rl.rlim_max) {
-			rl.rlim_cur = system_time_limit;
-			if (setrlimit(RLIMIT_CPU, &rl) == -1)
-				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
-		}else{
-			rl.rlim_cur = rl.rlim_max;
-			if (setrlimit(RLIMIT_CPU, &rl) == -1)
-				api_errorf("WARNING! Could not set resource limit: CPU-time.\n");
-		}
+void enforceTimeLimit(Monosat::SimpSolver * S){
+
+	MonosatData * d = (MonosatData*) S->_external_data;
+	int seconds = d->time_limit;
+	if(seconds<=0){
+		seconds=0; //0 disarms the timer.
 	}
-	getrlimit(RLIMIT_AS, &rl);
-	if(has_system_mem_limit){
-		has_system_mem_limit=false;
-		if (rl.rlim_max == RLIM_INFINITY || system_mem_limit < rl.rlim_max) {
-			rl.rlim_cur = system_mem_limit;
-			if (setrlimit(RLIMIT_AS, &rl) == -1)
-				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
-		}else{
-			rl.rlim_cur = rl.rlim_max;
-			if (setrlimit(RLIMIT_AS, &rl) == -1)
-				fprintf(stderr, "WARNING! Could not set resource limit: Virtual memory.\n");
+
+	if (seconds>0 && !d->has_timer){
+		//create a timer if required
+		d->has_timer=true;
+
+		struct sigevent  te;
+		struct itimerspec its;
+		struct sigaction sa;
+		int sigNo = SIGRTMIN;
+
+		/* Set up signal handler. */
+		sa.sa_flags = SA_SIGINFO;
+		sa.sa_sigaction = solverTimerHandler;
+		sigemptyset(&sa.sa_mask);
+
+		if (sigaction(sigNo, &sa, nullptr) == -1)
+		{
+			api_errorf("Failed to install signal handling for timer.");
 		}
+
+		te.sigev_notify = SIGEV_SIGNAL;
+		te.sigev_signo = sigNo;
+		te.sigev_value.sival_ptr = &d->solver_timer;
+		timer_create(CLOCK_REALTIME, &te,&d->solver_timer); //consider also cpu time
 	}
-	if (system_sigxcpu_handler){
-		signal(SIGXCPU, system_sigxcpu_handler);
-		system_sigxcpu_handler=nullptr;
+
+	if(d->has_timer) {
+		struct itimerspec its;
+		its.it_interval.tv_sec = 0;
+		its.it_interval.tv_nsec = 0;
+		its.it_value.tv_sec = seconds;
+		its.it_value.tv_nsec = 0;
+		timer_settime(d->solver_timer, 0, &its, nullptr);
+		d->time_limit = seconds;
 	}
 }
 
+void disableTimeLimit(Monosat::SimpSolver * S){
+	MonosatData * d = (MonosatData*) S->_external_data;
+    if(d->has_timer) {
+        struct itimerspec its;
+        its.it_interval.tv_sec = 0;
+        its.it_interval.tv_nsec = 0;
+        its.it_value.tv_sec = 0;
+        its.it_value.tv_nsec = 0;
+        timer_settime(d->solver_timer, 0, &its, nullptr);
+    }
 }
+
+
+
 
 //Select which algorithms to apply for graph theory solvers, by parsing command line arguments and defaults.
 void _selectAlgorithms(){
@@ -513,7 +458,7 @@ Monosat::SimpSolver * newSolver_arg(const char*argv){
 
 
 Monosat::SimpSolver * newSolver_args(int argc,  char**argv){
-	using namespace APISignal;
+
 	string args ="";
 	for (int i = 0;i<argc;i++){
 		args.append(" ");
@@ -591,11 +536,17 @@ void closeFile (Monosat::SimpSolver * S){
 
 void deleteSolver (Monosat::SimpSolver * S)
 {
-	using namespace APISignal;
 	S->interrupt();
 	solvers.erase(S);//remove S from the list of solvers in the signal handler
 	if(S->_external_data){
 		MonosatData* data = (MonosatData*) S->_external_data;
+		if(data->has_timer) {
+			//attempt to delete the timer
+			if (timer_delete(data->solver_timer) == -1) {
+				api_errorf("Failed to delete timer");
+			}
+			data->has_timer=false;
+		}
 		if(data->outfile){
 			fclose(data->outfile);
 			data->outfile = nullptr;
@@ -752,7 +703,7 @@ int minimizeUnsatCore(Monosat::SimpSolver * S, int * unsat_assumptions, int n_li
 	}
 	write_out(S,"\n");
 
-	APISignal::enableResourceLimits();
+	enforceTimeLimit(S);
 
 	S->cancelUntil(0);
 	S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
@@ -765,6 +716,7 @@ int minimizeUnsatCore(Monosat::SimpSolver * S, int * unsat_assumptions, int n_li
 	}
 	//lbool minimizeUnsatCore(SimpSolver & S,vec<Lit> & assumptions,bool do_simp){
 	lbool r = minimizeCore(*S,assumptions,opt_pre);
+	disableTimeLimit(S);
 	assert(assumptions.size()<=n_lits);
 	//store the minimized conflict back in the unsat assumptions pointer
 	for(int i = 0;i<assumptions.size();i++){
@@ -786,7 +738,7 @@ int minimizeUnsatCore(Monosat::SimpSolver * S, int * unsat_assumptions, int n_li
 		printStats(S);
 
 	}
-	APISignal::disableResourceLimits();
+
 	return assumptions.size();
 }
 
@@ -937,17 +889,16 @@ bool solve(Monosat::SimpSolver * S){
 	return solveAssumptions(S,nullptr,0);
 }
 
-
-
 void setTimeLimit(Monosat::SimpSolver * S,int seconds){
-	using namespace APISignal;
-	// Set limit on CPU-time:
-	time_limit=seconds;
+
+	MonosatData * d = (MonosatData*) S->_external_data;
+
+	if(seconds<=0){
+		seconds=0; //0 disarms the timer.
+	}
+	d->time_limit = seconds;
 }
-void setMemoryLimit(Monosat::SimpSolver * S,int mb){
-	using namespace APISignal;
-	memory_limit=mb;
-}
+
 void setConflictLimit(Monosat::SimpSolver * S,int num_conflicts){
 	S->setConfBudget(num_conflicts);
 }
@@ -981,7 +932,7 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 	}
 	write_out(S,"\n");
 
-	APISignal::enableResourceLimits();
+	enforceTimeLimit(S);
 
 	S->cancelUntil(0);
 	S->preprocess();//do this _even_ if sat based preprocessing is disabled! Some of the theory solvers depend on a preprocessing call being made!
@@ -1005,6 +956,7 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 		d->pbsolver->convert();
 	}
 	lbool r = optimize_and_solve(*S, assume,objectives,opt_pre,found_optimal);
+	disableTimeLimit(S);
 	d->last_solution_optimal=found_optimal;
 	if(r==l_False){
 		d->has_conflict_clause_from_last_solution=true;
@@ -1013,7 +965,7 @@ int _solve(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
 		printStats(S);
 
 	}
-	APISignal::disableResourceLimits();
+
 
 	return toInt(r);
 }
@@ -1028,7 +980,9 @@ int solveAssumptionsLimited(Monosat::SimpSolver * S,int * assumptions, int n_ass
 }
 
 bool solveAssumptions(Monosat::SimpSolver * S,int * assumptions, int n_assumptions){
-    S->budgetOff();//solve() and solveAssumtpions() ignores
+    setTimeLimit(S,-1);//clear the time limit, if any
+	S->budgetOff();//solve() and solveAssumtpions() ignore resource limits
+
 	int r = _solve(S,assumptions,n_assumptions);
 	if (r==toInt(l_True)){
 	    return true;
@@ -1062,24 +1016,6 @@ int getConflictClause(Monosat::SimpSolver * S, int * store_clause, int max_store
 	}
 }
 
-
-/*
-bool solveAssumptions_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
-	APISignal::disableResourceLimits();
-	S->budgetOff();
-	lbool ret = toLbool(_solve(S,assumptions, n_assumptions, minimize_bvs, n_minimize_bvs));
-	if(ret==l_True){
-		return true;
-	}else if (ret==l_False){
-		return false;
-	}else{
-		throw std::runtime_error("Failed to solve!");
-	}
-}
-int solveAssumptionsLimited_MinBVs(Monosat::SimpSolver * S,int * assumptions, int n_assumptions, int * minimize_bvs, int n_minimize_bvs){
-	int r = _solve(S, assumptions,  n_assumptions,  minimize_bvs,  n_minimize_bvs);
-	return r;
-}*/
 
 
 int newVar(Monosat::SimpSolver * S){

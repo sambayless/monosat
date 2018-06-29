@@ -9,6 +9,8 @@ import org.junit.runners.Suite;
   monosat.GraphTest.class,
   monosat.LogicTest.class,
   monosat.SolverTest.class,
-  monosat.LitTest.class
+  monosat.LitTest.class,
+  monosat.PseudoBooleanTest.class,
+  monosat.ResourceLimitTest.class
 })
 public class TestSuite {}

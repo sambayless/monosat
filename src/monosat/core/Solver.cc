@@ -3010,17 +3010,17 @@ lbool Solver::solve_() {
 
 		if (!withinBudget()) {
 
-			printf("Solver is giving up due to budget constraints: ");
+			//printf("Solver is giving up due to budget constraints: ");
 			if(conflict_budget >= 0 && conflicts >= conflict_budget){
-				printf("too many conflicts ");
+			//	printf("too many conflicts ");
 			}
 			if(propagation_budget >= 0 && propagations >= propagation_budget){
-				printf("too many propagations ");
+			//	printf("too many propagations ");
 			}
 			if(asynch_interrupt){
-				printf("resource limit, memory limit, or user interupt triggered ");
+			//	printf("resource limit, memory limit, or user interupt triggered ");
 			}
-			printf("\n");
+			//printf("\n");
 			break;
 		}
 		curr_restarts++;

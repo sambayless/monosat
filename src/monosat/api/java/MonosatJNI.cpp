@@ -264,14 +264,6 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setTimeLimit
 }
 
 
-JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setMemoryLimit
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint limit) try {
-    setMemoryLimit(reinterpret_cast<SolverPtr>(solverPtr), limit);
-}catch(...) { 
-    javaThrow(env);
-}
-
-
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setConflictLimit
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint limit) try {
     setConflictLimit(reinterpret_cast<SolverPtr>(solverPtr), limit);
