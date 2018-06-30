@@ -449,7 +449,7 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Check an array of literal arguments.
+   * Check an array of literal arguments for invalid literals.
    *
    * @param args An array of literals to check.
    * @throws NullPointerException If any literal in args is null.
@@ -462,15 +462,17 @@ public final class Solver implements Closeable {
     }
   }
 
+
+
   /**
-   * Check a collection of literal arguments.
+   * Check a collection of literal arguments for invalid literals.
    *
-   * @param args A collection of literals to check.
+   * @param args Literals to check.
    * @throws NullPointerException If any literal in args is null.
    * @throws IllegalArgumentException If any literal in args does not belong to this solver or is
    *     not a valid literal.
    */
-  protected void validate(Collection<Lit> args) {
+  protected void validate(Iterable<Lit> args) {
     for (Lit l : args) {
       validate(l);
     }
@@ -1066,7 +1068,7 @@ public final class Solver implements Closeable {
   }
 
   /**
-   * Internal method used to maintain an iterable list of bitvectors in the solver.
+   * Internal method used to maintain an internal list of bitvectors in the solver.
    *
    * @param bv The BitVector to add to the solver.
    */
@@ -1405,14 +1407,33 @@ public final class Solver implements Closeable {
    * <p>For example, if c is Comparison.LEQ, and compareTo is 3, then at most 3 literals from args
    * may be true.
    *
-   * @param args A collection of args, whose sum will be compared.
+   * @param args One or more literals, whose sum will be compared.
    * @param c The comparison operation to perform.
    * @param compareTo The constant to compare the sum of the true lits in args to.
    */
   public void assertPB(Collection<Lit> args, Comparison c, int compareTo) {
-    validate(args);
-    ArrayList<Lit> tmp = new ArrayList<>(args);
-    assertPB(tmp, null, c, compareTo);
+    assertPB(args, null, c, compareTo);
+  }
+
+  /**
+   * Enforce a weighted pseudo-Boolean constraint. The weighted number of true literals from among
+   * args must satisfy comparison c relative to compare to.
+   *
+   * @param args One or more literals, whose sum will be compared.
+   * @param weights Weights for each literal in args (if fewer weights than args are supplied, the
+   *     remaining weights will be set to '1').
+   * @param c The comparison operation to perform.
+   * @param compareTo The constant to compare the sum of the true lits in args to.
+   */
+  public void assertPB(Collection<Lit> args, Collection<Integer> weights, Comparison c, int compareTo) {
+    ArrayList<Lit> a = new ArrayList<Lit>();
+    ArrayList<Integer> w = null;
+    args.forEach(a::add);
+    if(weights!=null){
+      w = new ArrayList<Integer>();
+      weights.forEach(w::add);
+    }
+    assertPB(a,w, c, compareTo);
   }
 
   /**
@@ -1427,6 +1448,7 @@ public final class Solver implements Closeable {
    */
   public void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
     validate(args);
+
 
     IntBuffer wt_buffer = getBuffer(1, args.size());
     int n_wts = 0;

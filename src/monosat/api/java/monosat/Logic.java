@@ -21,10 +21,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 package monosat;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
+
+import static java.util.Collections.emptyIterator;
 
 /**
  * Logic provides static accessors for common logic operations. These static methods form a
@@ -93,7 +93,7 @@ public final class Logic {
    * @param args A collection of literals.
    * @return The solver of one of the literals, if at least one of the literals has a solver.
    */
-  private static Solver getSolver(Collection<Lit> args) {
+  private static Solver getSolver(Iterable<Lit> args) {
     for (Lit l : args) {
       if (l == null || l == Lit.Error || l == Lit.Undef) {
         throw new IllegalArgumentException("Invalid literal " + String.valueOf(l));
@@ -1151,17 +1151,19 @@ public final class Logic {
    * @param c The comparison operation to perform.
    * @param compareTo The constant to compare the sum of the true lits in args to.
    */
-  public static void assertPB(List<Lit> args, List<Integer> weights, Comparison c, int compareTo) {
+  public static void assertPB(Collection<Lit> args, Collection<Integer> weights, Comparison c, int compareTo) {
     Solver solver = getSolver(args);
     if (solver != null) {
       solver.assertPB(args, c, compareTo);
     } else {
       int trueCount = 0;
-      for (int i = 0; i < args.size(); i++) {
-        Lit l = args.get(i);
+      Iterator<Lit> it = args.iterator();
+      Iterator<Integer> wit = weights!=null ? weights.iterator():Collections.emptyIterator();
+      while (it.hasNext()) {
+        Lit l = it.next();
         int weight = 1;
-        if (i < weights.size()) {
-          weight = weights.get(i);
+        if (wit.hasNext()) {
+          weight = wit.next();
         }
         if (l == Lit.True) {
           trueCount += weight;

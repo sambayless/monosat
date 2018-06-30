@@ -1,7 +1,7 @@
 package monosat;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
+
 
 /**
  * Produces MonoSAT constraints for testing purposes.
