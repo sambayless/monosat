@@ -38,7 +38,6 @@
 #include "monosat/fsm/FSMParser.h"
 #include "monosat/core/Dimacs.h"
 #include "monosat/core/AssumptionParser.h"
-#include "monosat/fsm/LSystemParser.h"
 #include "monosat/core/Solver.h"
 #include "monosat/core/Config.h"
 #include <unistd.h>
@@ -627,8 +626,6 @@ int main(int argc, char** argv) {
 
 		FSMParser<char*,SimpSolver> fsmParser;
 		parser.addParser(&fsmParser);
-		LSystemParser<char*,SimpSolver>  lparser;
-		parser.addParser(&lparser);
 
 		AMOParser<char *, SimpSolver> amo;
 		parser.addParser(&amo);

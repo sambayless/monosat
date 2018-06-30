@@ -153,7 +153,6 @@ set(SOURCE_FILES
         src/monosat/fsm/alg/NFALinearGeneratorAcceptor.h
         src/monosat/fsm/alg/NFATransduce.h
         src/monosat/fsm/alg/NFATypes.h
-        src/monosat/fsm/alg/NP0LAcceptor.h
         src/monosat/fsm/alg/NFAAcceptor.h
         src/monosat/fsm/alg/NFAGraphAccept.h
         src/monosat/fsm/DynamicFSM.h
@@ -168,11 +167,6 @@ set(SOURCE_FILES
         src/monosat/fsm/FSMTheory.h
         src/monosat/fsm/FSMTransducesDetector.cpp
         src/monosat/fsm/FSMTransducesDetector.h
-        src/monosat/fsm/LSystem.h
-        src/monosat/fsm/LSystemParser.h
-        src/monosat/fsm/LSystemTheory.h
-        src/monosat/fsm/P0LAcceptDetector.cpp
-        src/monosat/fsm/P0LAcceptDetector.h
         src/monosat/graph/AllPairsDetector.cpp
         src/monosat/graph/AllPairsDetector.h
         src/monosat/graph/ConnectedComponentsDetector.cpp
