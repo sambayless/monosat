@@ -132,7 +132,6 @@ from monosat_header cimport setConflictLimit as _setConflictLimit_monosat
 from monosat_header cimport setDecisionPolarity as _setDecisionPolarity_monosat
 from monosat_header cimport setDecisionPriority as _setDecisionPriority_monosat
 from monosat_header cimport setDecisionVar as _setDecisionVar_monosat
-from monosat_header cimport setMemoryLimit as _setMemoryLimit_monosat
 from monosat_header cimport setOutputFile as _setOutputFile_monosat
 from monosat_header cimport setPropagationLimit as _setPropagationLimit_monosat
 from monosat_header cimport setTimeLimit as _setTimeLimit_monosat
@@ -1418,14 +1417,6 @@ def setDecisionVar( S ,  var ,  decidable ):
 
 
     _setDecisionVar_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>var), (<bint>decidable))
-
-def setMemoryLimit( S ,  mb ):
-    """Cython signature: void setMemoryLimit(void* S, int mb)"""
-    
-    assert isinstance(mb, (int, long)), 'arg mb wrong type'
-
-
-    _setMemoryLimit_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<int>mb))
 
 def setOutputFile( S , bytes output ):
     """Cython signature: void setOutputFile(void* S, char * output)"""
