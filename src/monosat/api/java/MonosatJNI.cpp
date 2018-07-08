@@ -649,6 +649,15 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1anon
     return 0;
 }
 
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1lazy
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint length) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
+    return newBitvector_lazy(solver, bv, (int *) env->GetDirectBufferAddress(array), length);
+}catch(...) {
+    javaThrow(env);
+    return 0;
+}
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jobject array, jint length) try {

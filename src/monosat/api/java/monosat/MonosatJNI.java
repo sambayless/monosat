@@ -236,6 +236,8 @@ final class MonosatJNI { // package level access specifier
 
   public static native int newBitvector_anon(long solverPtr, long bvPtr, int bvWidth);
 
+  public static native int newBitvector_lazy(long solverPtr, long bvPtr, IntBuffer bits, int n_bits);
+
   public static native int newBitvector(long solverPtr, long bvPtr, IntBuffer bits, int n_bits);
 
   public static native void setBitvectorName(long solverPtr, long bvPtr, int bvID, String name);

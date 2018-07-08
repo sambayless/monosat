@@ -64,6 +64,25 @@ public final class BitVector {
   private final String _name;
 
   /**
+   * MonoSAT supports different types of bitvectors.
+   */
+  public enum Type{
+    /**
+     * A theory-interpreted bitvector, with 1 literal bit bit
+     */
+    BV,
+    /**
+     * A bitvector that only operates at the SAT level until
+     * it is completely assigned.
+     */
+     Lazy,
+    /**
+     * A bitvector that is theory-interpreted, but has no literals.
+     */
+    Anonymous
+  }
+
+  /**
    * Creates a new BitVector using the given literals. The width of the bitvector will equal
    * literals.size().
    *
@@ -158,11 +177,10 @@ public final class BitVector {
    * @param solver The solver that this bitvector will belong to.
    * @param width The number of bits in this BitVector. Width must be a non-zero positive integer <=
    *     63.
-   * @param introduceLiterals If true (the default), create width number of new literals to
-   *     represent the bitvector. If false, the no literals are introduced for this bitvector.
+   * @param type The type of Bitvector to create.
    */
-  public BitVector(Solver solver, int width, boolean introduceLiterals) {
-    this(solver, width, "", introduceLiterals);
+  public BitVector(Solver solver, int width, Type type) {
+    this(solver, width, "", type);
   }
 
   /**
@@ -177,7 +195,7 @@ public final class BitVector {
    *     unnamed).
    */
   public BitVector(Solver solver, int width, String name) {
-    this(solver, width, name, true);
+    this(solver, width, name, Type.BV);
   }
 
   /**
@@ -189,7 +207,7 @@ public final class BitVector {
    *     63.
    */
   public BitVector(Solver solver, int width) {
-    this(solver, width, "", true);
+    this(solver, width, "", Type.BV);
   }
 
   /**
@@ -202,10 +220,9 @@ public final class BitVector {
    * @param name An (optional) name for the bitvector. Must be unique, and may not contain spaces or
    *     non-printable * characters. May be the empty string (in which case the bitvector is
    *     unnamed).
-   * @param introduceLiterals If true (the default), create width number of new literals to
-   *     represent the bitvector. If false, the no literals are introduced for this bitvector.
+   * @param type The type of bitvector to create.
    */
-  public BitVector(Solver solver, int width, String name, boolean introduceLiterals) {
+  public BitVector(Solver solver, int width, String name, Type type) {
     this.solver = solver;
     if (width <= 0) {
       throw new IllegalArgumentException("BitVector width must be >0");
@@ -224,15 +241,20 @@ public final class BitVector {
     } else {
       this._name = "";
     }
-    if (!introduceLiterals) {
+    if (type==Type.Anonymous) {
       id = MonosatJNI.newBitvector_anon(solver.getSolverPtr(), solver.bvPtr, width);
     } else {
       for (int i = 0; i < width; i++) {
         bits.add(new Lit(solver));
       }
-      id =
-          MonosatJNI.newBitvector(
-              solver.getSolverPtr(), solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size());
+      if(type==Type.Lazy){
+        id = MonosatJNI.newBitvector_lazy(solver.getSolverPtr(), solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size
+                ());
+      }else if (type==Type.BV) {
+        id = MonosatJNI.newBitvector(solver.getSolverPtr(), solver.bvPtr, solver.getVarBuffer(bits, 0), bits.size());
+      }else{
+        throw new IllegalArgumentException("No such type: " + type);
+      }
     }
     assert (id >= 0);
 

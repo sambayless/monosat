@@ -1218,7 +1218,23 @@ int newBitvector_const(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t>
 	write_out(S,"bv const %d %d %" PRId64 "\n",bvID, bvWidth, constval);
 	return bvID;
 }
-
+int newBitvector_lazy(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits){
+    static vec<Var> lits;
+    lits.clear();
+    for (int i = 0;i<n_bits;i++){
+        Var v =internalVar(S,bits[i]);
+        lits.push(v);
+    }
+    int bvID = bv->nBitvectors();
+    bv->newBitvector_Lazy(bvID,lits);
+    bvID = externalBV(bv,bvID);
+    write_out(S,"bv lazy %d %d",bvID, n_bits);
+    for (int i = 0;i<n_bits;i++){
+        write_out(S," %d",dimacs(S,mkLit(lits[i])));
+    }
+    write_out(S,"\n");
+    return bvID;
+}
 
 int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int * bits, int n_bits){
 	static vec<Var> lits;

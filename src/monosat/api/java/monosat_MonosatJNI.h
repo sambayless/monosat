@@ -185,14 +185,6 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setTimeLimit
 
 /*
  * Class:     monosat_MonosatJNI
- * Method:    setMemoryLimit
- * Signature: (JI)V
- */
-JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setMemoryLimit
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     monosat_MonosatJNI
  * Method:    setConflictLimit
  * Signature: (JI)V
  */
@@ -518,6 +510,14 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1const
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1anon
   (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    newBitvector_lazy
+ * Signature: (JJLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1lazy
+  (JNIEnv *, jclass, jlong, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI

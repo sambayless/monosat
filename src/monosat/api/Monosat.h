@@ -226,6 +226,7 @@ typedef int64_t Weight;
   BVTheoryPtr initBVTheory(SolverPtr S);
   int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, Weight constval);
   int newBitvector_anon(SolverPtr S, BVTheoryPtr bv, int bvWidth);
+  int newBitvector_lazy(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits);
   int newBitvector(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits);
 
   void setBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID, const char * name);
