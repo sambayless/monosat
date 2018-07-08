@@ -444,22 +444,22 @@ if (JAVA)
 
     message(STATUS "Monosat java source will be stored in to ${CMAKE_BINARY_DIR}/monosat_src.zip")
 
-    #Appending  "&&" "true" to each of the commands below, to suppress non-zero exit codes in cse of errors,
+    #Appending  "|| true" to each of the commands below, to suppress non-zero exit codes in case of errors,
     #To ensure that these commands, if they fail, cannot prevent the libmonosat target as a whole from building.
     #Is there a better way to make custom commands non-failing/optional in cmake?
     #This will likely only work correctly for unix targets
     add_custom_command(TARGET libmonosat
             POST_BUILD
             COMMAND
-            "${Java_JAR_EXECUTABLE}" "cfM" "${CMAKE_BINARY_DIR}/monosat_src.zip" ${RELATIVE_JAVA_PATHS}  "&&" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
+            "${Java_JAR_EXECUTABLE}" "cfM" "${CMAKE_BINARY_DIR}/monosat_src.zip" ${RELATIVE_JAVA_PATHS}  "||" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
             #OUTPUT "${CMAKE_BINARY_DIR}/monosat_src.zip"
-            WORKING_DIRECTORY  "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
+            WORKING_DIRECTORY  "${CMAKE_SOURCE_DIR}/src/monosat/api/java/"
             )
 
     #add_custom_command(TARGET libmonosat
     #        POST_BUILD
     #        COMMAND
-    #        "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_CURRENT_BINARY_DIR}/javadoc"  ${RELATIVE_JAVA_PATHS} "&&" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
+    #        "${Java_JAVADOC_EXECUTABLE}" "-d" "${CMAKE_CURRENT_BINARY_DIR}/javadoc"  ${RELATIVE_JAVA_PATHS} "||" "true" # do not quote RELATIVE_JAVA_PATHS, or else semicolons will be injected between items.
     #        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/monosat/api/java/"
     #        #OUTPUT "${CMAKE_BINARY_DIR}/javadoc"
     #        )
@@ -467,14 +467,14 @@ if (JAVA)
     #        POST_BUILD
     #        DEPENDS ${CMAKE_BINARY_DIR}/javadoc
     #        COMMAND
-    #        "${Java_JAR_EXECUTABLE}" "cfM" "monosat_javadoc.zip" "-C" "${CMAKE_CURRENT_BINARY_DIR}" "javadoc"  "&&" "true"
+    #        "${Java_JAR_EXECUTABLE}" "cfM" "monosat_javadoc.zip" "-C" "${CMAKE_CURRENT_BINARY_DIR}" "javadoc"  "||" "true"
     #        #OUTPUT "${CMAKE_BINARY_DIR}/monosat_javadoc.zip"
     #        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     #        )
     #add_custom_command(TARGET libmonosat
     #        POST_BUILD
     #        DEPENDS ${CMAKE_BINARY_DIR}/javadoc
-    #        COMMAND cmake -E remove_directory  "${CMAKE_BINARY_DIR}/javadoc" "&&" "true"
+    #        COMMAND cmake -E remove_directory  "${CMAKE_BINARY_DIR}/javadoc" "||" "true"
     #        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     #        )
     #ensure the source, doc archives are cleaned with make clean
