@@ -52,17 +52,29 @@ $DYLD_LIBRARY_PATH=/opt/local/lib LIBRARY_PATH=/opt/local/lib make
 $sudo make install
 ```
 
-### Install the Python library
+### Installing the Python library
 
-To install the Python library (system-wide), first build MonoSAT (see above), cd into 'src/monosat/api/python', and then use Python's setuptools to install the Python library (see below).
-
-On Ubuntu (14.04/16.04):
+To install the Python library (system-wide) on your system's default Python version:
 ```
-$cmake .
+$cmake -DPYTHON=ON .
 $make
-$cd src/monosat/api/python
-$sudo python3 setup.py install -f
+$sudo make install
 ```
+
+MonoSAT also has support for Cython bindings, which are about 30% faster but require you to have a wokring installation of cython:
+```
+$cmake -DPYTHON=ON -DCYTHON=ON .
+$make
+$sudo make install
+```
+
+To install MonoSAT in an alternative python version (or in a virtual env or a non-standard location), first build MonoSAT as normal, then cd into 'src/monosat/api/python', and then use `setup.py` to install the Python library manually, eg:
+```
+$cd src/monosat/api/python
+$sudo python3.6 setup.py install -f
+```
+
+Above, `-f` ensures that if you have previously installed a version of the monosat library, it will be overwritten cleanly with the new version.
 
 See the [tutorial] and [tutorial.py] for instructions on using the Python library.
 
