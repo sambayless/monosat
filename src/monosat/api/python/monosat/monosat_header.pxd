@@ -40,8 +40,6 @@ cdef extern from "monosat/api/Monosat.h":
 
     void setTimeLimit(SolverPtr S, int seconds)
 
-    void setMemoryLimit(SolverPtr S, int mb)
-
     void setConflictLimit(SolverPtr S, int num_conflicts)
 
     void setPropagationLimit(SolverPtr S, int num_propagations)
