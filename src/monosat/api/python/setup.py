@@ -6,15 +6,20 @@ import platform
 import shutil
 import sys
 from distutils.core import setup
-
+from setuptools.command.install import install
 if sys.version_info[0] < 3:
     sys.exit('Sorry, Python < 3 is not supported')
 
 monosat_path ="../../../../src/"
 #Set to False to disable compiling cython modules, set to True to enable cython
 use_cython=False
+# it would be better to make this a command line option for setuptools,
+# possibly as described in https://stackoverflow.com/a/33181352
+if "MONOSAT_CYTHON" in os.environ:
+    use_cython= str(os.environ["MONOSAT_CYTHON"])=="1"
 
 if use_cython:
+    print("Attempting Cython installation")
     # attempt to load the cython modules
     try:
         from distutils.extension import Extension

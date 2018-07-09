@@ -25,6 +25,9 @@ matrix:
     - java: openjdk8
       python: "3.4"
       env: TEST_PYTHON=1 BUILD_TARGET="libmonosat" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.4"
+    - java: openjdk8
+      python: "3.4"
+      env: TEST_CYTHON=1 BUILD_TARGET="libmonosat" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.4"
     - java: oraclejdk8
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DJAVA=ON" JDK_VERSION="oraclejdk8" PYTHON_VERSION="python3.4"
       python: "3.4"
@@ -82,5 +85,6 @@ install:
 script:
  - ROOT=$PWD
  - if [[ "$TEST_PYTHON" -eq "1" ]]; then echo "Running python tests" && cd ${ROOT}/src/monosat/api/python/ && sudo python3 setup.py -q install && python3 -m unittest discover && echo "Completed python tests"; fi
+ - if [[ "$TEST_CYTHON" -eq "1" ]]; then echo "Running cython tests" && cd ${ROOT}/src/monosat/api/python/ && MONOSAT_CYTHON=1 sudo -E python3 setup.py -q install && python3 -m unittest discover && echo "Completed cython tests"; fi
  - if [[ "$TEST_JAVA" -eq "1" ]]; then echo "Running java tests" &&  cd ${ROOT}/src/monosat/api/java/tests && javac -cp ".:${ROOT}/monosat.jar:junit-4.12.jar:hamcrest-core-1.3.jar" monosat/*.java && java -Djava.library.path=${ROOT} -cp ".:${ROOT}/monosat.jar:junit-4.12.jar:hamcrest-core-1.3.jar" org.junit.runner.JUnitCore  monosat.TestSuite && echo "Completed java tests"; fi
 
