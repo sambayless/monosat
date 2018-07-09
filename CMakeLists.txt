@@ -1,10 +1,14 @@
-cmake_minimum_required(VERSION 2.7)
+cmake_minimum_required(VERSION 3.02)
 project(monosat)
 include(GNUInstallDirs)
 #enable to include built-in support for Pseudo-Boolean constraints (recommended)
 option (PB_SUPPORT "Combile with Pseudo-Boolean support (using Minisat+)" ON)
 #set to compile Java JNI support into the shared library (requires a JDK)
-option(JAVA "Build the java library" OFF)
+option(JAVA "Build the Java library" OFF)
+#set to install python support (requires python 3+)
+option(PYTHON "Install the Python3 library" OFF)
+#set to install python using the cython bindings (only takes effect if PYTHON is set to ON)
+option(CYTHON "Use Cython for Python bindings (requires Cython)" OFF)
 #set to OFF to disable linking GPL sources
 option(GPL "Link GPLv2 sources, so that the compiled binary is licensed under the terms of the GPLv2, rather than MIT (greatly improves the performance of maximum flow predicates significantly)." ON)
 option(SHOW_GIT_VERSION "Include git --describe in the build version" ON)
@@ -528,3 +532,31 @@ if (JAVA)
     install_jar(monosat_jar ${CMAKE_INSTALL_FULL_LIBDIR})
     #install_jni_symlink(monosat_jar . )
 endif(JAVA)
+
+if (PYTHON)
+    message(STATUS "Including Python library support")
+    set(Python_ADDITIONAL_VERSIONS 3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8)
+    # following https://bloerg.net/2012/11/10/cmake-and-distutils.html
+    find_package(PythonInterp 3 REQUIRED)
+
+    set(SETUP_PY "${CMAKE_BINARY_DIR}/setup.py")
+    set(DEPS      "${CMAKE_SOURCE_DIR}/src/monosat/api/python/monosat/__init__.py")
+    set(OUTPUT      "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
+    set(PACKAGE_DIR "${CMAKE_SOURCE_DIR}/src/monosat/api/python/")
+    if (CYTHON)
+        message(STATUS "Python library will use Cython (if available)")
+        set(USE_CYTHON "True")
+    endif()
+
+    configure_file("${PACKAGE_DIR}/setup.py" ${SETUP_PY})
+    add_custom_command(OUTPUT ${OUTPUT}
+            COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} build
+            COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
+            DEPENDS ${DEPS})
+
+    add_custom_target(target ALL DEPENDS ${OUTPUT})
+
+    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install -f)")
+else()
+    message(STATUS "Not including Python library support. To enable Python support, set -DPYTHON=ON.")
+endif()
