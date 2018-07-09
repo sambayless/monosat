@@ -12,7 +12,7 @@ if sys.version_info[0] < 3:
 
 #Set to False to disable compiling cython modules, set to True to enable cython
 
-use_cython=True
+use_cython=False
 
 # let cmake configure whether we use cython or not
 # this string will be replaced by cmake with a string literal in that case
@@ -85,7 +85,7 @@ if use_cython:
         ext_modules = cythonize([Extension("monosat.monosat_p", [package_dir + "/monosat/monosat_p.pyx"],
                                            include_dirs=[".",package_dir, package_dir+"/monosat",monosat_path], libraries=["monosat"],
                                            language="c",extra_compile_args=["-DNDEBUG","-O3"]
-                                           )],include_path = ['.',"monosat"], gdb_debug=True),
+                                           )],include_path = [package_dir,package_dir+"/monosat"], gdb_debug=True),
         install_requires=['cython'],
         packages=['monosat'],
         package_data={'monosat': [sharedlib]},
