@@ -85,7 +85,7 @@ java -Djava.library.path=path/to/libmonosat.so -cp path/to/monosat.jar mypacakge
 
 On OSX, you would instead use ```path/to/libmonosat.dylib```
 
-See [Tutorial.java] for instructions on using the Python library.
+See [Tutorial.java] for instructions on using the Java library.
 
 ### Command-Line Usage
 
