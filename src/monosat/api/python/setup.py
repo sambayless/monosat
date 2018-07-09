@@ -61,8 +61,11 @@ else:
 
 
 orig_lib = library_dir + "/" + sharedlib
+copy_lib = package_dir + "/monosat/" + sharedlib
 if os.path.exists(orig_lib):
-    shutil.copy2(orig_lib, package_dir + "/monosat/")
+    # only copy the library if it hasn't already been copied (this facilitates separate build/install steps)
+    if  not os.path.exists(copy_lib) or os.path.getmtime(orig_lib) > os.path.getmtime(copy_lib):
+        shutil.copy2(orig_lib, package_dir + "/monosat/")
 
 
 if not os.path.exists(package_dir + "/monosat/" + sharedlib):
