@@ -152,7 +152,7 @@ int Ors_(Monosat::SimpSolver *S, int *lits, int n_lits, int lit_out) {
 
 //If this gate is true, then all of vals must be true.
 //But if this gate is false, vals may be true or false.
-int ImpliesAnd(Monosat::SimpSolver *S, int *lits, int n_lits, int lit_out) {
+int ImpliesAnd_(Monosat::SimpSolver *S, int *lits, int n_lits, int lit_out) {
     MonosatData *d = (MonosatData *) S->_external_data;
     assert(d);
     Monosat::Circuit<Monosat::SimpSolver> &circuit = d->circuit;
@@ -194,6 +194,22 @@ void AssertImpliesAnd_(Monosat::SimpSolver *S, int implies, int *lits, int n_lit
 
     toVec(S,lits,n_lits,tmp_lits_a);
     circuit.AssertImpliesAnd_(internalLit_(S,implies), tmp_lits_a,internalLit_(S,lit_out));
+}
+void AssertImpliesOr(Monosat::SimpSolver *S, int implies, int *lits, int n_lits) {
+    MonosatData *d = (MonosatData *) S->_external_data;
+    assert(d);
+    Monosat::Circuit<Monosat::SimpSolver> &circuit = d->circuit;
+    toVec(S,lits,n_lits,tmp_lits_a);
+    circuit.AssertImpliesOr_(internalLit_(S,implies), tmp_lits_a,lit_Undef);
+}
+
+void AssertImpliesAnd(Monosat::SimpSolver *S, int implies, int *lits, int n_lits) {
+    MonosatData *d = (MonosatData *) S->_external_data;
+    assert(d);
+    Monosat::Circuit<Monosat::SimpSolver> &circuit = d->circuit;
+
+    toVec(S,lits,n_lits,tmp_lits_a);
+    circuit.AssertImpliesAnd_(internalLit_(S,implies), tmp_lits_a,lit_Undef);
 }
 
 int Ors(Monosat::SimpSolver *S, int *lits, int n_lits) {

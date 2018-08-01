@@ -2030,6 +2030,61 @@ public final class Solver implements Closeable {
   }
 
   /**
+   * Create a new literal that evaluates to true if a is false, or if a is true and if at least one element of args
+   * it true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public Lit impliesOr(Lit a, Collection<Lit> args) {
+    validate(a);
+    validate(args);
+    return this.toLit(MonosatJNI.ImpliesOr_(this.getSolverPtr(), this.getLitBuffer(args), args.size(),a.toInt()));
+  }
+
+  /**
+   * Create a new literal that evaluates to true if a is false, or if a is true and if at least one element of args
+   * it true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public Lit impliesOr(Lit a, Lit... args) {
+    validate(a);
+    validate(args);
+    return this.toLit(MonosatJNI.ImpliesOr_(this.getSolverPtr(), this.getLitBuffer(args,0), args.length,a.toInt()));
+  }
+
+  /**
+   * Create a new literal that evaluates to true if a is false, or if a is true and if at least one element of args
+   * it true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public Lit impliesAnd(Lit a, Collection<Lit> args) {
+    validate(a);
+    validate(args);
+    return this.toLit(MonosatJNI.ImpliesAnd(this.getSolverPtr(), this.getLitBuffer(args), args.size(),a.toInt()));
+  }
+
+  /**
+   * Create a new literal that evaluates to true if a is false, or if a is true and if at least one element of args
+   * it true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public Lit impliesAnd(Lit a, Lit... args) {
+    validate(a);
+    validate(args);
+    return this.toLit(MonosatJNI.ImpliesAnd(this.getSolverPtr(), this.getLitBuffer(args,0), args.length,a.toInt()));
+  }
+  /**
    * Assert that Lit a must be true in the solver.
    *
    * @param a The literal to assert true.
@@ -2248,6 +2303,63 @@ public final class Solver implements Closeable {
   public void assertImplies(Lit a, Lit b) {
     validate(a, b);
     assertOr(a.not(), b);
+  }
+
+  /**
+   * Assert that a implies that at least one element of args is true
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition disjunction.
+   */
+  public void assertImpliesOr(Lit a, Collection<Lit> args) {
+    validate(a);
+    validate(args);
+    if(args.size()==0){
+      //do nothing
+    }else {
+      MonosatJNI.AssertImpliesOr(this.getSolverPtr(), a.toInt(), this.getLitBuffer(args), args.size());
+    }
+  }
+  /**
+   * Assert that a implies that at least one element of args is true
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition disjunction.
+   */
+  public void assertImpliesOr(Lit a, Lit... args) {
+    assertImpliesOr(a,Arrays.asList(args));
+  }
+
+  /**
+   * Assert that a implies that all elements of args are true
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition disjunction.
+   */
+  public void assertImpliesAnd(Lit a, Collection<Lit> args) {
+    validate(a);
+    validate(args);
+    if(args.size()==0){
+      //do nothing
+    }else {
+      MonosatJNI.AssertImpliesAnd(this.getSolverPtr(), a.toInt(), this.getLitBuffer(args), args.size());
+    }
+  }
+
+  /**
+   * Assert that a implies that all elements of args are true
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition disjunction.
+   */
+  public void assertImpliesAnd(Lit a, Lit... args) {
+    validate(a);
+    validate(args);
+    if(args.length==0){
+      //do nothing
+    }else{
+      MonosatJNI.AssertImpliesAnd(this.getSolverPtr(), a.toInt(), this.getLitBuffer(args,0), args.length);
+    }
   }
 
   /**

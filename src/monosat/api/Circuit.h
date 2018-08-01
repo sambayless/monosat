@@ -265,12 +265,14 @@ public:
         return out;
     }
 
-    void AssertImpliesAnd_(Lit implies, const vec <Lit> &vals, Lit out) {
+    void AssertImpliesAnd_(Lit implies, const vec <Lit> &vals, Lit out=lit_Undef) {
         tmp.clear();
         for (Lit l:vals) {
             if (isConstFalse(l)) {
                 if (out != lit_Undef) {
                     AssertImplies(implies, ~out);
+                }else{
+                    Assert(~implies);
                 }
                 return;
             } else if (isConstTrue(l)) {
@@ -280,20 +282,33 @@ public:
             }
         }
 
+        if(tmp.size()==0){
+            if (out == lit_Undef) {
+                //do nothing
+            }else{
+                Assert(out);//out holds always
+            }
+        }else {
+            if (out == lit_Undef) {
+                for (Lit l:tmp) {
+                    _addClause(l, ~implies);
+                }
+            } else {
+                for (Lit l:tmp) {
+                    _addClause(l, ~out, ~implies);
+                }
+            }
 
-        if (out == lit_Undef) {
-            out = mkLit(S.newVar());
+            for (int i = 0; i < tmp.size(); i++) {
+                tmp[i] = ~tmp[i];
+            }
+            if (out == lit_Undef) {
+                tmp.push(out);
+            }
+            tmp.push(~implies);
+            _addClause(tmp);
+            tmp.clear();
         }
-        for (Lit l:tmp) {
-            _addClause(l, ~out, ~implies);
-        }
-        for (int i = 0; i < tmp.size(); i++) {
-            tmp[i] = ~tmp[i];
-        }
-        tmp.push(out);
-        tmp.push(~implies);
-        _addClause(tmp);
-        tmp.clear();
     }
 
     Lit And(Lit a, Lit b) {

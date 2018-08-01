@@ -553,6 +553,8 @@ final class MonosatJNI { // package level access specifier
   public static native void AssertImpliesAnd_(
       long solverPtr, int implies, IntBuffer lits, int n_lits, int lit_out);
 
+  public static native void AssertImpliesAnd(long solverPtr, int implies, IntBuffer lits, int n_lits);
+
   public static native int Ands(long solverPtr, IntBuffer lits, int n_lits);
 
   public static native int And(long solverPtr, int lit_a, int lit_b);
@@ -574,6 +576,9 @@ final class MonosatJNI { // package level access specifier
   // This is an OR condition that holds only if implies is true
   public static native void AssertImpliesOr_(
       long solverPtr, int implies, IntBuffer lits, int n_lits, int lit_out);
+
+    public static native void AssertImpliesOr(
+            long solverPtr, int implies, IntBuffer lits, int n_lits);
 
   public static native int Ors(long solverPtr, IntBuffer lits, int n_lits);
 

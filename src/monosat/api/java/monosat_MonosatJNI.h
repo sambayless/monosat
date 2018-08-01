@@ -185,14 +185,6 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setTimeLimit
 
 /*
  * Class:     monosat_MonosatJNI
- * Method:    setMemoryLimit
- * Signature: (JI)V
- */
-JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setMemoryLimit
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     monosat_MonosatJNI
  * Method:    setConflictLimit
  * Signature: (JI)V
  */
@@ -1353,6 +1345,14 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd_1
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    AssertImpliesAnd
+ * Signature: (JILjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd
+  (JNIEnv *, jclass, jlong, jint, jobject, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    Ands
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
@@ -1414,6 +1414,14 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr_1
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr_1
   (JNIEnv *, jclass, jlong, jint, jobject, jint, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertImpliesOr
+ * Signature: (JILjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr
+  (JNIEnv *, jclass, jlong, jint, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
