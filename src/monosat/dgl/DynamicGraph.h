@@ -27,6 +27,7 @@
 #include <sstream>
 #include <cstdint>
 #include <sstream>
+#include <stdexcept>
 #include <cstdio>
 #include "Graph.h"
 
