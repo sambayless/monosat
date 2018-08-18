@@ -139,6 +139,53 @@ public final class Solver implements Closeable {
   public Solver(boolean enablePreprocessing) {
     this("", enablePreprocessing);
   }
+  /**
+   * Instantiate a new Solver, with the given list of settings. MonoSAT has many command line
+   * options, which can be passed here.
+   *
+   * @param args A list of strings, with each string representing an argument to pass to the solver.
+   */
+  public Solver(String[] args) {
+    this(Arrays.asList(args), false);
+  }
+
+  /**
+   * Instantiate a new Solver, with the given list of settings, and with constraints written to the
+   * specified output file. MonoSAT has many command line options, which can be passed here.
+   *
+   * @param args A list of strings, with each string representing an argument to pass to the solver.
+   * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+   */
+  public Solver(String[] args, String outputFile) {
+    this(Arrays.asList(args), false, outputFile);
+  }
+
+  /**
+   * Instantiate a new Solver, with the given list of settings. MonoSAT has many command line
+   * options, which can be passed here.
+   *
+   * @param args A list of strings, with each string representing an argument to pass to the solver.
+   * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+   *     improve performance, but requires some extra care in solver usage, and so is disabled by
+   *     default.
+   */
+  public Solver(String[] args, boolean enablePreprocessing) {
+    this(Arrays.asList(args), enablePreprocessing, "");
+  }
+
+  /**
+   * Instantiate a new Solver, with the given list of settings, and with constraints written to the
+   * specified output file. MonoSAT has many command line options, which can be passed here.
+   *
+   * @param args A list of strings, with each string representing an argument to pass to the solver.
+   * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+   *     improve performance, but requires some extra care in solver usage, and so is disabled by
+   *     default.
+   * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+   */
+  public Solver(String[] args, boolean enablePreprocessing, String outputFile) {
+    this(Arrays.asList(args), enablePreprocessing, outputFile);
+  }
 
   /**
    * Instantiate a new Solver, with the given list of settings. MonoSAT has many command line
@@ -146,7 +193,7 @@ public final class Solver implements Closeable {
    *
    * @param args A list of strings, with each string representing an argument to pass to the solver.
    */
-  public Solver(ArrayList<String> args) {
+  public Solver(List<String> args) {
     this(String.join(" ",args), false);
   }
 
@@ -157,7 +204,7 @@ public final class Solver implements Closeable {
    * @param args A list of strings, with each string representing an argument to pass to the solver.
    * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
    */
-  public Solver(ArrayList<String> args, String outputFile) {
+  public Solver(List<String> args, String outputFile) {
     this(String.join(" ",args), false, outputFile);
   }
 
@@ -170,7 +217,7 @@ public final class Solver implements Closeable {
    *     improve performance, but requires some extra care in solver usage, and so is disabled by
    *     default.
    */
-  public Solver(ArrayList<String> args, boolean enablePreprocessing) {
+  public Solver(List<String> args, boolean enablePreprocessing) {
     this(String.join(" ",args), enablePreprocessing, "");
   }
 
@@ -184,7 +231,7 @@ public final class Solver implements Closeable {
    *     default.
    * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
    */
-  public Solver(ArrayList<String> args, boolean enablePreprocessing, String outputFile) {
+  public Solver(List<String> args, boolean enablePreprocessing, String outputFile) {
     this(String.join(" ",args), enablePreprocessing, outputFile);
   }
 
