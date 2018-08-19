@@ -113,7 +113,8 @@ Var Solver::newVar(bool sign, bool dvar) {
 	if (v < min_decision_var)
 		p = 1;
 	priority[v]=p;
-	theory_vars[v]=TheoryData();
+	theory_vars[v].theoryMap.clear(true);
+	theory_vars[v].theories.clear(true);
 	activity[v] = (rnd_init_act ? drand(random_seed) * 0.00001 : 0);
 	seen[v] = 0;
 	polarity[v]=opt_init_rnd_phase ? irand(random_seed, 1) : sign;
@@ -437,8 +438,10 @@ void Solver::cancelUntil(int lev) {
 			if(xlev<=lev){
 				to_reenqueue.push(trail[c]);
 			}else{
-				if(hasTheory(x)){
-					int theoryID = getTheoryID(x);
+				//if(hasTheory(x)){
+                for(int n = 0;n<getNTheories(x);n++) {
+                    int theoryID = getTheoryID(x,n);
+                    Lit l = getTheoryLit(trail[c],n);
 
 					if(c<= satisfied_theory_trail_pos[theoryID]){
 						satisfied_theory_trail_pos[theoryID]=-1;
@@ -447,14 +450,16 @@ void Solver::cancelUntil(int lev) {
 					}
 
 					if(satisfied_theory_trail_pos[theoryID]< 0 ) {
-						theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
-					}else if (c>satisfied_theory_trail_pos[theoryID] && c<= post_satisfied_theory_trail_pos[theoryID]){
-						theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
+                        theories[theoryID]->undecideTheory(l);
+                    } else if (c > satisfied_theory_trail_pos[theoryID] &&
+                               c <= post_satisfied_theory_trail_pos[theoryID]) {
+                        theories[theoryID]->undecideTheory(l);
 						post_satisfied_theory_trail_pos[theoryID]= c-1;
 					}
 					assert(satisfied_theory_trail_pos[theoryID]<c);
 					assert(post_satisfied_theory_trail_pos[theoryID]<c);
 				}
+				//}
 				assigns[x] = l_Undef;
 				if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
 					polarity[x] = sign(trail[c]);
@@ -489,7 +494,7 @@ void Solver::cancelUntil(int lev) {
 				post_satisfied_theory_trail_pos[theoryID]=-1;
 				//printf("theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
 			}else if (c>satisfied_theory_trail_pos[theoryID] && c<= post_satisfied_theory_trail_pos[theoryID]){
-				theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
+				theories[theoryID]->undecideTheory(getTheoryLit(trail[c],theories[theoryID]));
 				post_satisfied_theory_trail_pos[theoryID]= c-1;
 			}
 		}
@@ -543,13 +548,14 @@ void Solver::cancelUntil(int lev) {
 		if(lowest_re_enqueue>-1){
 			for(int q = lowest_re_enqueue;q<trail.size();q++){ //should this be q<qhead, or q<=qhead?
 				Lit p = trail[q];
-				if (hasTheory(p)) {
-					int theoryID = getTheoryID(p);
+                for(int n = 0;n<getNTheories(var(p));n++) {
+                    int theoryID = getTheoryID(p,n);
+                    Lit theoryLit = getTheoryLit(p,n);
 					theories[theoryID]->backtrackUntil(decisionLevel());
 					if (theory_reprop_trail_pos[theoryID] ==-1 &&  q>= theory_init_prop_trail_pos[theoryID] && !theorySatisfied(theories[theoryID])) {
 						needsPropagation(theoryID);
 						//theories[theoryID]->backtrackUntil(level(var(p)));
-						theories[theoryID]->enqueueTheory(getTheoryLit(p));
+						theories[theoryID]->enqueueTheory(theoryLit);
 					}
 				}
 			}
@@ -562,10 +568,13 @@ void Solver::cancelUntil(int lev) {
 			assert(level(var(p)) <=lev);
 			trail.push(p);
 			//is this really needed?
-			if (hasTheory(p) && ! theorySatisfied(theories[getTheoryID(p)])) {
-				int theoryID = getTheoryID(p);
+            for(int n = 0;n<getNTheories(var(p));n++) {
+                int theoryID = getTheoryID(p,n);
+                Lit l = getTheoryLit(p,n);
+                if (!theorySatisfied(theories[theoryID])) {
 				needsPropagation(theoryID);
-				theories[theoryID]->enqueueTheory(getTheoryLit(p));
+                    theories[theoryID]->enqueueTheory(l);
+                }
 			}
 		}
 		//should qhead be adjusted, here? Or do we want to repropagate these literals? (currently, re-propagating these literals).
@@ -645,11 +654,13 @@ void Solver::instantiateLazyDecision(Lit p,int atLevel, CRef reason){
 		throw std::runtime_error("Critical error: bad decision");
 	}
 	trail[trail_pos]=p;
-
-	if (hasTheory(p)  && ! theorySatisfied(theories[getTheoryID(p)])) {
-		int theoryID = getTheoryID(p);
+    for(int n = 0;n<getNTheories(var(p));n++) {
+        int theoryID = getTheoryID(p, n);
+        Lit l = getTheoryLit(p, n);
+        if (!theorySatisfied(theories[theoryID])) {
 		needsPropagation(theoryID);
-		theories[theoryID]->enqueueTheory(getTheoryLit(p));
+            theories[theoryID]->enqueueTheory(l);
+        }
 	}
 }
 void Solver::analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics, int minimimum_involved_decision_priority){
@@ -1052,10 +1063,14 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 		vardata[var(p)] = mkVarData(from, lev);
 		trail.push_(p);
 		//lazy_heap.insert(toInt(p));
-		if (hasTheory(p)  && ! theorySatisfied(theories[getTheoryID(p)])) {
-			int theoryID = getTheoryID(p);
+
+        for(int n = 0;n<getNTheories(var(p));n++) {
+            int theoryID = getTheoryID(p, n);
+            Lit l = getTheoryLit(p, n);
+            if (!theorySatisfied(theories[theoryID])) {
 			needsPropagation(theoryID);
-			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+                theories[theoryID]->enqueueTheory(l);
+            }
 		}
 	}else if(value(p)==l_Undef){
 		uncheckedEnqueue(p, from);
@@ -1063,84 +1078,18 @@ void Solver::enqueueLazy(Lit p, int lev, CRef from){
 		//do nothing
 	}
 }
-/*
-
-void Solver::unsafeUnassign(Lit p){
-    if(value(p)!=l_True)
-        return;
-    assert(level(var(p))==decisionLevel());
-    for (int c = trail.size() - 1; ; c--) {
-        Var x = var(trail[c]);
-        int xlev = level(x);
-
-      {
-            if(hasTheory(x)){
-                int theoryID = getTheoryID(x);
-
-                if(c<= satisfied_theory_trail_pos[theoryID]){
-                    satisfied_theory_trail_pos[theoryID]=-1;
-                    post_satisfied_theory_trail_pos[theoryID]=-1;
-                    //printf("theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
-                }
-
-                if(satisfied_theory_trail_pos[theoryID]< 0 ) {
-                    theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
-                }else if (c>satisfied_theory_trail_pos[theoryID] && c<= post_satisfied_theory_trail_pos[theoryID]){
-                    theories[theoryID]->undecideTheory(getTheoryLit(trail[c]));
-
-                    post_satisfied_theory_trail_pos[theoryID]= c-1;
-                }
-                assert(satisfied_theory_trail_pos[theoryID]<c);
-                assert(post_satisfied_theory_trail_pos[theoryID]<c);
-            }
-            assigns[x] = l_Undef;
-            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last()))
-                polarity[x] = sign(trail[c]);
-            insertVarOrder(x);
-        }
-        trail.pop();
-        if(x==var(p)){
-            break;
-        }
-
-    }
-    assert(trail.size());
-
-
-    if(qhead>trail.size())
-        qhead = trail.size();
-
-    if (local_qhead > qhead) {
-        local_qhead = qhead;
-    }
-    if (S && super_qhead > S->qhead) {
-        super_qhead = S->qhead;
-    }
-
-
-    if(qhead>trail.size()){
-        throw std::runtime_error("Internal error in backtracking");
-    }
-
-}
-*/
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
 	assert(value(p) == l_Undef);
-	if(toInt(p)==46){
-	    int a=1;
-	}
-    if(toInt(p)==47){
-        int a=1;
-    }
 	assigns[var(p)] = lbool(!sign(p));
 	vardata[var(p)] = mkVarData(from, decisionLevel());
 	trail.push_(p);
-	if (hasTheory(p)) {
-		int theoryID = getTheoryID(p);
+    for(int n = 0;n<getNTheories(var(p));n++) {
+        int theoryID = getTheoryID(p, n);
+        Lit l = getTheoryLit(p, n);
 		if(!theorySatisfied(theories[theoryID])) {
 			needsPropagation(theoryID);
-			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+			theories[theoryID]->enqueueTheory(l);
 		}
 	}
 }
@@ -1345,11 +1294,11 @@ void Solver::enqueueAnyUnqueued(){
 		lev_0_pos = trail.size();
 	}
 	for(int i = 0;i< trail.size();i++){
-		Lit l = trail[i];
+		Lit p = trail[i];
 
-		if(hasTheory(l) ){
-			int theoryID = getTheoryID(l);
-			Lit theoryLit = getTheoryLit(l);
+        for(int n = 0;n<getNTheories(var(p));n++) {
+            int theoryID = getTheoryID(p, n);
+            Lit l = getTheoryLit(p, n);
 
 
 
@@ -1357,7 +1306,7 @@ void Solver::enqueueAnyUnqueued(){
 			if(start>=0 && start<= i) {
 				Theory * theory = theories[theoryID];
 
-				theory->enqueueTheory(theoryLit);
+				theory->enqueueTheory(l);
 				assert(post_satisfied_theory_trail_pos[theoryID]<=i);
 				post_satisfied_theory_trail_pos[theoryID] = i;
 				assert(post_satisfied_theory_trail_pos[theoryID]>=satisfied_theory_trail_pos[theoryID]);
@@ -1682,11 +1631,13 @@ void Solver::detectPureTheoryLiterals(){
 			if (lit_counts[toInt(l)].seen && !lit_counts[toInt(l)].occurs) {
 				//stats_pure_lits--;
 				lit_counts[toInt(l)].occurs = true;
+                for(int n = 0;n<getNTheories(v);n++) {
+                    int theoryID = getTheoryID(v, n);
+                    Lit theoryLit = getTheoryLit(l, n);
 
-				if (hasTheory(v)) {
 					stats_pure_theory_lits--;
 					if(value(l)==l_Undef) {
-						theories[getTheoryID(v)]->setLiteralOccurs(~getTheoryLit(l), true);
+						theories[theoryID]->setLiteralOccurs(~theoryLit, true);
 					}
 				}
 			}
@@ -1694,10 +1645,12 @@ void Solver::detectPureTheoryLiterals(){
 				//stats_pure_lits--;
 				lit_counts[toInt(~l)].occurs = true;
 
-				if (hasTheory(v)) {
+                for(int n = 0;n<getNTheories(v);n++) {
+                    int theoryID = getTheoryID(v, n);
+                    Lit theoryLit = getTheoryLit(l, n);
 					stats_pure_theory_lits--;
 					if(value(l)==l_Undef) {
-						theories[getTheoryID(v)]->setLiteralOccurs(~getTheoryLit(~l), true);
+						theories[theoryID]->setLiteralOccurs(theoryLit, true);
 					}
 				}
 			}
@@ -1707,11 +1660,15 @@ void Solver::detectPureTheoryLiterals(){
 
 				//stats_pure_lits++;
 				if (hasTheory(v)) {
+                    for(int n = 0;n<getNTheories(v);n++) {
+                        int theoryID = getTheoryID(v, n);
+                        Lit theoryLit = getTheoryLit(l, n);
 					stats_pure_theory_lits++;
 					if(value(l)==l_Undef) {
-						theories[getTheoryID(v)]->setLiteralOccurs(~getTheoryLit(l), false);
+                            theories[theoryID]->setLiteralOccurs(~theoryLit, false);
 					}
 					//setPolarity(v,false);
+                    }
 				} else {
 					//we can safely assign this now...
 					if (!lit_counts[toInt(~l)].seen) {
@@ -1730,9 +1687,13 @@ void Solver::detectPureTheoryLiterals(){
 				//stats_pure_lits++;
 				if (hasTheory(v)) {
 					stats_pure_theory_lits++;
+					for(int n = 0;n<getNTheories(v);n++) {
+						int theoryID = getTheoryID(v, n);
+						Lit theoryLit = getTheoryLit(l, n);
 					if(value(l)==l_Undef) {
 						//level 0 variables are already handled through a separate mechanism in the theory solvers...
-						theories[getTheoryID(v)]->setLiteralOccurs(~getTheoryLit(~l), false);
+							theories[theoryID]->setLiteralOccurs(theoryLit, false);
+						}
 					}
 					//setPolarity(v,true);
 					if (!lit_counts[toInt(l)].occurs) {
@@ -2159,7 +2120,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter ==  473 || iter==290 || iter==289) {//3150 //3144
+		if (++iter == 1029) {//3150 //3144
 			int a = 1;
 		}
 
@@ -2952,9 +2913,10 @@ lbool Solver::solve_() {
 	//this can be improved
 	for (int i = 0; i < qhead; i++) {
 		Lit p = trail[i];
-		if (hasTheory(p)) {
-			int theoryID = getTheoryID(p);
-			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+		for(int n = 0;n<getNTheories(var(p));n++) {
+			int theoryID = getTheoryID(p, n);
+			Lit theoryLit = getTheoryLit(p, n);
+			theories[theoryID]->enqueueTheory(theoryLit);
 		}
 	}
 	// Search:

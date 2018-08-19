@@ -1131,7 +1131,7 @@ public:
 	void addComposeAcceptSuffixLit(Var composeAcceptVar, int startSuffixState, int acceptSuffixState, Var suffixVar){
 		assert(composeAcceptVar<gen_accept_lit_map.size());
 		assert(gen_accept_lit_map[composeAcceptVar]);
-		Var v = this->S->getTheoryVar(composeAcceptVar);
+		Var v = this->S->getTheoryVar(composeAcceptVar,this);
 		gen_accept_lit_map[composeAcceptVar]->addSuffixLit(mkLit(v),startSuffixState,acceptSuffixState,suffixVar);
 	}
 

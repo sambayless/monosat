@@ -226,6 +226,7 @@ typedef int64_t Weight;
   BVTheoryPtr initBVTheory(SolverPtr S);
   int newBitvector_const(SolverPtr S, BVTheoryPtr bv, int bvWidth, Weight constval);
   int newBitvector_anon(SolverPtr S, BVTheoryPtr bv, int bvWidth);
+  int newBitvector_lazy(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits);
   int newBitvector(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits);
 
   void setBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID, const char * name);
@@ -289,6 +290,10 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
   //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
   //for small numbers of variables, consider using a direct CNF encoding instead
   void at_most_one(SolverPtr S, int * vars, int n_vars);
+
+  //simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS) may be true.
+  //for small numbers of variables, consider using a direct CNF encoding instead
+  void at_most_one_lit(SolverPtr S, int * literals, int n_lits);
 
   void assertPB_lt(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);
   void assertPB_leq(SolverPtr S, int rhs, int n_args, int * literals, int * coefficients);

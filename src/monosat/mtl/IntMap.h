@@ -52,6 +52,7 @@ public:
     void     clear  (bool dispose = false) { map.clear(dispose); }
     void     moveTo (IntMap& to)           { map.moveTo(to.map); to.index = index; }
     void     copyTo (IntMap& to) const     { map.copyTo(to.map); to.index = index; }
+    int      size() const {return map.size();}
 };
 
 

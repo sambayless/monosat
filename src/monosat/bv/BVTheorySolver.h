@@ -154,7 +154,8 @@ public:
 		cause_is_invert = 14,
         cause_is_mult=15,
         cause_is_mult_argument=16,
-        cause_is_unary=17
+        cause_is_unary=17,
+        cause_is_lazy_bits= 18
 	};
 	struct Cause{
 
@@ -650,6 +651,388 @@ public:
 
 	};
 
+	/**
+	 * Only takes effect if the bitvector is unambiguously assigned
+	 */
+	class LazyBitOp:public Operation{
+	public:
+		using Operation::getID;
+		using Operation::theory;
+    private:
+        int n_assigned =0;
+	public:
+		int bvID=-1;
+		int getBV()override{
+			return bvID;
+		}
+
+        LazyBitOp(BVTheorySolver & theory,int bvID):Operation(theory),bvID(bvID){
+
+		}
+		void move(int bvID)override{
+			this->bvID=bvID;
+		}
+		OperationType getType()const override{
+			return OperationType::cause_is_lazy_bits;
+		}
+		void enqueue(Lit l, bool alter_trail) override {
+            vec<Lit> & bv = theory.bitvectors[bvID];
+			importTheory(theory);
+			Var v = var(l);
+			n_assigned+=1;
+			assert(n_assigned>=0);
+            assert(n_assigned<=bv.size());
+            if(n_assigned>=bv.size()){
+                theory.skip_updates[bvID]=false;
+            }
+
+			if(alter_trail && n_assigned>=bv.size()){
+				addAlteredBV(bvID);
+			}
+		}
+        void backtrack(Assignment & e, bool rewind)override{
+            vec<Lit> & bv = theory.bitvectors[bvID];
+            importTheory(theory);
+            if(!e.isBoundAssignment()) {
+                Var v = e.var;
+                n_assigned -= 1;
+                assert(n_assigned >= 0);
+                assert(n_assigned <= bv.size());
+                theory.skip_updates[bvID]=true;
+            }
+        }
+		bool propagate(bool & changed,vec<Lit> & conflict) override{
+			vec<Lit> & bv = theory.bitvectors[bvID];
+			importTheory(theory);
+
+
+			Weight & underApprox = under_approx[bvID];
+			Weight & overApprox = over_approx[bvID];
+			Weight under;
+			Weight over;
+			bool new_change;
+			do{
+				if(underApprox>overApprox){
+					double startconftime = rtime(2);
+					theory.stats_num_conflicts++;
+					if(opt_verb>1){
+						printf("bv approximation update conflict %" PRId64 "\n", theory.stats_num_conflicts);
+					}
+					//propagationtime += startconftime - startproptime;
+					//this is already a conflict;
+					analyzeValueReason(Comparison::geq, bvID,underApprox,conflict);
+					analyzeValueReason(Comparison::leq, bvID,overApprox,conflict);
+
+					analyze(conflict);
+
+					theory.stats_conflict_time+=rtime(2)-startconftime;
+					return false;
+				}
+
+				under =0;
+				over= evalBit<Weight>(bv.size())-1; //evalBit<Weight>(bv.size())-1;
+				new_change=false;
+				//for(int i = 0;i<bv.size();i++){
+				for(int i = bv.size()-1;i>=0;i--){
+					Weight bit = evalBit<Weight>(i);
+					lbool val = value(bv[i]);
+					Lit l = bv[i];
+					if(val==l_True){
+						under+=bit;
+						assert_in_range(under,bvID);
+						if(under>overApprox){
+							double startconftime = rtime(2);
+							//propagationtime += startconftime - startproptime;
+							//this is a conflict
+							for(int j = bv.size()-1;j>=i;j--){
+								Weight bit =  evalBit<Weight>(j);
+								lbool val = value(bv[j]);
+								if(val==l_True){
+									conflict.push(toSolver(~bv[j]));
+								}
+							}
+							theory.stats_num_conflicts++;theory.stats_bit_conflicts++;
+							if(opt_verb>1){
+								printf("bv bit conflict %" PRId64 "\n", theory.stats_num_conflicts);
+							}
+							theory.buildComparisonReason(Comparison::leq,bvID,overApprox,conflict);
+
+							theory.stats_conflict_time+=rtime(2)-startconftime;
+							return false;
+
+						}
+					}else if (val==l_False){
+						over-=bit;
+						assert_in_range(under,bvID);
+						if(over<underApprox){
+							double startconftime = rtime(2);
+							//propagationtime += startconftime - startproptime;
+							//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
+							//is this really the best way to handle this conflict?
+							for(int j = bv.size()-1;j>=i;j--){
+								Weight bit =  evalBit<Weight>(j);;
+								lbool val = value(bv[j]);
+								if(val==l_False){
+									conflict.push(toSolver(bv[j]));
+								}
+							}
+							theory.stats_num_conflicts++;theory.stats_bit_conflicts++;
+							if(opt_verb>1){
+								printf("bv bit conflict %" PRId64 "\n", theory.stats_num_conflicts);
+							}
+							theory.buildComparisonReason(Comparison::geq,bvID,underApprox,conflict);
+
+							theory.stats_conflict_time+=rtime(2)-startconftime;
+							return false;
+
+						}
+					}else{
+						assert_in_range(over-bit,bvID);
+						assert_in_range(under+bit,bvID);
+						if(over-bit < underApprox){
+							enqueue(l, theory.bvprop_marker);
+							under+=bit;
+						}else if (under+bit>overApprox){
+							enqueue(~l, theory.bvprop_marker);
+							over-=bit;
+						}
+					}
+				}
+				new_change = theory.updateApproximations(bvID);
+				changed|=new_change;
+
+			}while(new_change);//the bit assignment updates above can force a more precise over or under approximation, which can in turn lead to further bit assignments (I think this can happen?).
+			return true;
+		}
+
+
+		bool checkApproxUpToDate(Weight & under_out,Weight&over_out)override{
+			importTheory(theory);
+			Weight under=0;
+			Weight over=0;
+
+			vec<Lit> & bv = theory.bitvectors[bvID];
+			int n_seen_assigned=0;
+			for(int i = 0;i<bv.size();i++){
+				lbool val = value(bv[i]);
+				if(val==l_True){
+					Weight bit = evalBit<Weight>(i);
+					under+=bit;
+					over+=bit;
+					n_seen_assigned++;
+				}else if (val==l_False){
+					n_seen_assigned++;
+				}else{
+					Weight bit = evalBit<Weight>(i);
+					over+=bit;
+
+				}
+			}
+			if(n_seen_assigned!=n_assigned){
+				throw std::runtime_error("Critical error in BV solver - lazy op");
+			}
+			if (n_assigned<bv.size()){
+				return true;
+			}
+			if(under>under_out)
+				under_out=under;
+			if(over<over_out)
+				over_out=over;
+			return true;
+		}
+
+		void updateApprox(Var ignore_bv, Weight & under_new, Weight & over_new, Cause & under_cause_new, Cause & over_cause_new) override{
+			importTheory(theory);
+			//only has an effect if exactly one value remains for the bitvector
+			Weight under=0;
+			Weight over=0;
+			vec<Lit> & bv = theory.bitvectors[bvID];
+			for(int i = 0;i<bv.size();i++){
+				if(var(bv[i])==ignore_bv){
+					Weight bit = evalBit<Weight>(i);
+					over+=bit;
+					continue;
+				}
+				lbool val = value(bv[i]);
+				if(val==l_True){
+					Weight bit =  evalBit<Weight>(i);
+					under+=bit;
+					over+=bit;
+
+				}else if (val==l_False){
+
+				}else{
+					Weight bit = evalBit<Weight>(i);
+					over+=bit;
+				}
+			}
+			//needed in case a decision was made, to preserve that decision's cause here...
+			if(under==over) {
+				if (under > under_new) {
+					under_new = under;
+					under_cause_new.clear();
+					under_cause_new.setType(getType());
+					under_cause_new.index = getID();
+				}
+				if (over < over_new) {
+					over_new = over;
+					over_cause_new.clear();
+					over_cause_new.setType(getType());
+					over_cause_new.index = getID();
+				}
+			}else{
+				//bit blast op has no effect otherwise
+			}
+		}
+
+		void buildReason(Lit p,CRef marker, vec<Lit> & reason)override{
+			importTheory(theory);
+			assert (marker == theory.bvprop_marker);
+			Var v = var(p);
+			reason.push(toSolver(p));
+			theory.rewind_trail_pos(theory.analysis_trail_pos-1);
+			assert(value(p)==l_Undef);
+			Weight underApprox = under_approx[bvID];
+			Weight overApprox = over_approx[bvID];
+
+
+			assert(under_approx>=0); assert(overApprox>=0);
+			vec<Lit> & bv = theory.bitvectors[bvID];
+
+			int bitpos=-1;
+			for(int i = bv.size()-1;i>=0;i--){
+				lbool val = value(bv[i]);
+				Lit l = bv[i];
+				if(var(bv[i])==v){
+					bitpos=i;
+					break;
+				}
+			}
+
+
+			assert(bitpos>=0);
+			Weight under = 0;
+			Weight over= evalBit<Weight>(bv.size())-1;//evalBit<Weight>(bv.size())-1;
+
+			for(int i = bv.size()-1;i>=0;i--){
+				Weight bit =  evalBit<Weight>(i);
+				lbool val = value(bv[i]);
+				Lit l = bv[i];
+				if(val==l_True){
+					under+=bit;
+					//assert(under<=overApprox);
+				}else if (val==l_False){
+					over-=bit;
+					//assert(over>=underApprox);
+				}else if (bitpos==i){
+
+					if(over-bit<underApprox){
+						assert(bitpos==i);
+						//this is a conflict. Either this bit, or any previously assigned false bit, must be true, or the underapprox must be larger than it currently is.
+						//is this really the best way to handle this conflict?
+						for(int j = bv.size()-1;j>=i;j--){
+							Weight bit =  evalBit<Weight>(j);
+							lbool val = value(bv[j]);
+							if(val==l_False){
+								reason.push(toSolver(bv[j]));
+							}
+						}
+						theory.buildComparisonReason(Comparison::geq,bvID,underApprox,reason);
+						break;
+
+					}
+					if(under+bit>overApprox){
+						assert(bitpos==i);
+						//this is a conflict
+						for(int j = bv.size()-1;j>=i;j--){
+							Weight bit =  evalBit<Weight>(j);;
+							lbool val = value(bv[j]);
+							if(val==l_True){
+								reason.push(toSolver(~bv[j]));
+							}
+						}
+						theory.buildComparisonReason(Comparison::leq,bvID,overApprox,reason);
+						break;
+					}
+				}
+			}
+
+		}
+
+
+		void analyzeReason(bool compareOver,Comparison op, Weight  to,  vec<Lit> & conflict) override{
+			importTheory(theory);
+			vec<Lit> & bv = theory.bitvectors[bvID];
+			if(compareOver){
+				Weight over = over_approx[bvID];
+				for(int i =0;i<bv.size();i++){
+					Lit bl = bv[i];
+					if(value(bl)==l_False ){
+						Weight bit = evalBit<Weight>(i);
+						if(theory.comp(op,over+bit,to)&& theory.level(var(bl))>0){
+							//then we can skip this bit, because we would still have had a conflict even if it was assigned true.
+							over+=bit;
+						}else{
+							assert(value(bl)==l_False);
+							conflict.push(toSolver(bl));
+						}
+					}
+				}
+			}else{
+				Weight under = under_approx[bvID];
+				for(int i =0;i<bv.size();i++){
+					Lit bl = bv[i];
+					lbool val = value(bl);
+
+					if(value(bl)==l_True){
+						Weight bit = evalBit<Weight>(i);
+						if(theory.comp(op,under-bit,to)  && theory.level(var(bl))>0){
+							//then we can skip this bit, because we would still have had a conflict even if it was assigned false.
+							under-=bit;
+						}else{
+							assert(value(~bl)==l_False);
+							conflict.push(toSolver(~bl));
+						}
+					}
+				}
+			}
+
+		}
+
+		bool checkSolved()override{
+			importTheory(theory);
+			vec<Lit> & bv = theory.bitvectors[bvID];
+			Weight over=0;
+			Weight under=0;
+
+			//assert(bv.size());
+
+			for(int i = 0;i<bv.size();i++){
+				lbool val = value(bv[i]);
+				if(val==l_True){
+					Weight bit = evalBit<Weight>(i);
+					under+=bit;
+					over+=bit;
+				}else if (val==l_False){
+
+				}else{
+					Weight bit = evalBit<Weight>(i);
+					over+=bit;
+				}
+			}
+			if(over<over_approx[bvID])
+				return false;
+			if(under>under_approx[bvID])
+				return false;
+
+			return true;
+		}
+
+		void bitblast(Circuit<TheorySolver> &c) override {
+			//do nothing
+		}
+
+	};
 
     class UnaryOrderOp : public Operation {
     public:
@@ -4709,7 +5092,7 @@ public:
 	vec<bool> comparison_needs_repropagation;
 	vec<int> repropagate_comparisons;
 
-
+    vec<bool> skip_updates;//if true, the bitvector should skip updating during updateApproximations, unless this is a solve check
 
 
 	struct ToAnalyze{
@@ -6335,6 +6718,9 @@ public:
 			(*over_store) = over_approx[bvID];
 			return true;
 		}
+		if(bvID<skip_updates.size() && skip_udpates[bvID]){
+			return true;
+		}
 		Weight under =under_approx0[bvID];
 		Weight over=over_approx0[bvID];
 		vec<Lit> & bv = bitvectors[bvID];
@@ -6477,7 +6863,7 @@ public:
 	bool propagateTheory(vec<Lit> & conflict)override{
 		return propagateTheory(conflict,false);
 	}
-	bool propagateTheory(vec<Lit> & conflict, bool force_propagation) {
+	bool propagateTheory(vec<Lit> & conflict, bool force_propagation, bool isSolveCheck=false) {
 		static int realprops = 0;
 		stats_propagations++;
 
@@ -6496,7 +6882,7 @@ public:
 		}
 		S->theoryPropagated(this);
 		rewind_trail_pos(trail.size());
-		if (++realprops == 129 ) {
+		if (++realprops == 23 ) {
 			int a =1;
 		}
 		//printf("bv prop %d\n",stats_propagations);
@@ -6510,7 +6896,15 @@ public:
 		}
 		
 		conflict.clear();
-		
+		if(isSolveCheck){
+			//force delayed bv's to be evaluated if this is a solve check.
+			for(int bvID = 0;bvID<skip_updates.size();bvID++){
+				if (skip_updates[bvID] && !alteredBV[bvID]){
+					alteredBV[bvID]=true;
+					altered_bvs.push(bvID);
+				}
+			}
+		}
 
 		while(altered_bvs.size()){
 			int bvID = altered_bvs.last();
@@ -6521,7 +6915,11 @@ public:
 				alteredBV[bvID]=false;
 				continue;
 			}
-
+			if(!isSolveCheck && bvID<skip_updates.size() && skip_updates[bvID]){
+				altered_bvs.pop(); //this isn't safe to do, because recently enforced comparisons need to be propagated, even if the under/over approx didn't change.
+				alteredBV[bvID]=false;
+				continue;
+			}
 		//for(int bvID = 0;bvID<bitvectors.size();bvID++){
 			assert(alteredBV[bvID]);
 			Weight  underApprox_prev = under_approx[bvID];
@@ -7142,7 +7540,7 @@ public:
 
 	bool solveTheory(vec<Lit> & conflict) override {
 		requiresPropagation = true;		//Just to be on the safe side... but this shouldn't really be required.
-		bool ret = propagateTheory(conflict);
+		bool ret = propagateTheory(conflict,false,true);
 		//Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
 		assert(ret);
 		return ret;
@@ -7590,7 +7988,7 @@ public:
 		compares.growTo(bvID+1);
 		bvconst.growTo(bvID+1);
 		operation_ids.growTo(bvID+1);
-
+		skip_updates.growTo(bvID+1,false);
 		under_causes.growTo(bvID+1);
 		over_causes.growTo(bvID+1);
 		cause_set.growTo(bvID+1);
@@ -7842,6 +8240,7 @@ public:
 		under_causes.growTo(bvID+1);
 		over_causes.growTo(bvID+1);
 		cause_set.growTo(bvID+1);
+		skip_updates.growTo(bvID+1,false);
 		eq_bitvectors.growTo(bvID+1,-1);
 		eq_bitvectors[bvID]=bvID;
 
@@ -7876,6 +8275,69 @@ public:
 		S->needsPropagation(getTheoryIndex());
 		return BitVector(*this,bvID);
 	}
+	/*
+	 * Create a bitblasted bitvector, with no theory backing.
+	 * (any comparisons/equality checks with a bitblasted bitvector will also be bit blasted)
+	 */
+	BitVector newBitvector_Lazy(int bvID, vec<Var> & vars){
+		if(bvID<0){
+			bvID = nBitvectors();
+		}
+		if(bvID==55349){
+			int a=1;
+		}
+		if(vars.size()> (sizeof(Weight) *8)-1){
+			throw std::runtime_error("Bit widths larger than " + std::to_string(sizeof(Weight)*8-1) + " are not currently supported (was " + std::to_string(vars.size()) + ")");
+		}
+		n_bits+=vars.size();
+		//bv_callbacks.growTo(id+1,nullptr);
+		bitvectors.growTo(bvID+1);
+		theoryIds.growTo(bvID+1,-1);
+		symbols.resize(bvID+1,std::string());
+		under_approx.growTo(bvID+1,-1);
+		over_approx.growTo(bvID+1,-1);
+		under_approx0.growTo(bvID+1,-1);
+		over_approx0.growTo(bvID+1,-1);
+		alteredBV.growTo(bvID+1);
+		bvcompares.growTo(bvID+1);
+		compares.growTo(bvID+1);
+		bvconst.growTo(bvID+1);
+		operation_ids.growTo(bvID+1);
+		skip_updates.growTo(bvID+1);
+		under_causes.growTo(bvID+1);
+		over_causes.growTo(bvID+1);
+		cause_set.growTo(bvID+1);
+		eq_bitvectors.growTo(bvID+1,-1);
+		eq_bitvectors[bvID]=bvID;
+
+		pending_under_analyses.growTo(bvID+1,-1);
+		pending_over_analyses.growTo(bvID+1,-1);
+		bv_needs_propagation.growTo(bvID+1);
+		bv_needs_propagation[bvID]=true;
+
+		if(under_approx[bvID]>-1){
+			throw std::invalid_argument("Redefined bitvector ID " + std::to_string(bvID) );
+		}
+		under_approx[bvID]=0;
+		if(vars.size()>0)
+			over_approx[bvID]=evalBit<Weight>(vars.size())-1;
+		else
+			over_approx[bvID]=0;
+		under_approx0[bvID]=under_approx[bvID];
+		over_approx0[bvID]=over_approx[bvID];
+		skip_updates[bvID]=true;
+		LazyBitOp * op = new LazyBitOp(*this, bvID);
+		addOperation(bvID,op);
+		for(int i = 0;i<vars.size();i++){
+			bitvectors[bvID].push(mkLit(newVar(vars[i],op->getID())));
+		}
+
+		alteredBV[bvID]=true;
+		altered_bvs.push(bvID);
+		requiresPropagation=true;
+		S->needsPropagation(getTheoryIndex());
+		return BitVector(*this,bvID);
+	}
 
 	BitVector newBitvector(int bvID, int bitwidth,Weight constval=-1, int equivalentBV=-1){
 		if(bvID<0){
@@ -7900,6 +8362,7 @@ public:
 		over_approx0.growTo(bvID+1,-1);
 		bvconst.growTo(bvID+1);
 		alteredBV.growTo(bvID+1);
+		skip_updates.growTo(bvID+1);
 		bvcompares.growTo(bvID+1);
 		compares.growTo(bvID+1);
 		operation_ids.growTo(bvID+1);
@@ -8178,11 +8641,11 @@ public:
 		if (to < 0) {
 			std::stringstream ss;
 			ss << to;
-			throw std::runtime_error("Cannot compare Bitvectors to negative values " + ss.str());
+			throw std::runtime_error("Cannot compare Bitvectors to negative values: " + ss.str());
 		} else if (to > max_val) {
 			std::stringstream ss;
 			ss << to;
-			throw std::runtime_error("Cannot compare Bitvectors to value outside of bitwidth range " + ss.str());
+			throw std::runtime_error("Cannot compare Bitvectors to value outside of bitwidth range: " + ss.str());
 		}
 
 		if (to <= 0 && op == Comparison::geq) {

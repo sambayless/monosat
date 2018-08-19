@@ -996,6 +996,7 @@ public final class Graph {
   public Lit onPath(int nodeOnPath, int from, int to) {
     validateNode(from);
     validateNode(to);
+    validateNode(nodeOnPath);
     return solver.toLit(MonosatJNI.onPath(solver.getSolverPtr(), graphPtr, nodeOnPath, from, to));
   }
 

@@ -65,6 +65,7 @@ private:
     };
     Solver * S;
     GraphTheorySolver<Weight> *g_theory=nullptr;
+    Theory * maxFlowTheory = nullptr;
     MaxflowDetector<Weight> * maxflow_detector=nullptr;
     vec<Net> nets;
 
@@ -658,12 +659,12 @@ FlowRouter<Weight>::FlowRouter(Solver * S,GraphTheorySolver<Weight> * g,int sour
     S->addTheory(this);
 
     routerID = getTheoryIndex();
-    Theory * t = S->theories[S->getTheoryID(maxflowLit)];
+    maxFlowTheory = S->theories[S->getTheoryID(maxflowLit,0)];
    //this is really a mess...
    //and should be done more safely in the future...
    //This code is recovering the reachability detector associated with each net member
-   GraphTheorySolver<Weight> * g2 = (GraphTheorySolver<Weight> *) t;
-   Detector * d =  g2->detectors[g2->getDetector(var(S->getTheoryLit(maxflowLit)))];
+   GraphTheorySolver<Weight> * g2 = (GraphTheorySolver<Weight> *) maxFlowTheory;
+   Detector * d =  g2->detectors[g2->getDetector(var(S->getTheoryLit(maxflowLit,maxFlowTheory)))];
    assert(d);
    assert(d->getName().compare("Max-flow Detector")==0);
    MaxflowDetector<Weight> * rd = (MaxflowDetector<Weight> *) d;
@@ -722,12 +723,12 @@ void FlowRouter<Weight>::addNet(Lit disabledEdge,vec<Lit> & dest_edges, vec<Lit>
         nets.last().reach_lits.push(l);
 
         assert(S->hasTheory(l));
-        Theory * t = S->theories[S->getTheoryID(l)];
+        Theory * t = S->theories[S->getTheoryID(l,0)];
         //this is really a mess...
         //and should be done more safely in the future...
         //This code is recovering the reachability detector associated with each net member
         GraphTheorySolver<Weight> * g = (GraphTheorySolver<Weight> *) t;
-        Detector * d =  g->detectors[g->getDetector(var(S->getTheoryLit(l)))];
+        Detector * d =  g->detectors[g->getDetector(var(S->getTheoryLit(l,g)))];
         assert(d);
         assert(d->getName().compare("Reachability Detector")==0);
         ReachDetector<Weight> * rd = (ReachDetector<Weight> *) d;
@@ -739,7 +740,7 @@ void FlowRouter<Weight>::addNet(Lit disabledEdge,vec<Lit> & dest_edges, vec<Lit>
         }else{
             assert(source==common_source);
         }
-        int dest = rd->getReachNode(S->getTheoryLit(l));
+        int dest = rd->getReachNode(S->getTheoryLit(l,t));
 
         assert(dest>=0);
         if(opt_flow_router_heuristic>0){
@@ -837,7 +838,7 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
                 if (S->value(l) == l_True) {
                     Lit edge_lit = net.dest_edgelits[i];
                     //find an endpoint that is not yet connected in the under approx graph, or arbitrarily use the last one if all of them are connected
-                    if ((!r->isConnected(S->getTheoryLit(l), false))) {
+                    if ((!r->isConnected(S->getTheoryLit(l,g_theory), false))) {
                         OpportunisticHeuristic * h = net.heuristics[i];
 
                         int heuristic_value = h->getParentHeuristic()->getHeuristicOrder();
@@ -865,7 +866,7 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit> &conflict, bool solve) {
             if (S->value(l) == l_True) {
                 Lit edge_lit = net.dest_edgelits[i];
                 //find an endpoint that is not yet connected in the under approx graph, or arbitrarily use the last one if all of them are connected
-                if ((!r->isConnected(S->getTheoryLit(l), false))) {
+                if ((!r->isConnected(S->getTheoryLit(l,g_theory), false))) {
                     if (unrouted == lit_Undef || unrouted==edge_lit) {
                         unrouted = edge_lit;
                         unrouted_n = i;
@@ -1054,7 +1055,7 @@ void FlowRouter<Weight>::drawGrid(DynamicGraph<Weight> & g,int net_to_draw, bool
         all_starts.push(r->source);
         for(int j = 0;j<net.reach_lits.size();j++){
             Lit l = net.reach_lits[j];
-            int node =  net.detectors[j]->getNode(var(S->getTheoryLit(l)));
+            int node =  net.detectors[j]->getNode(var(S->getTheoryLit(l,g_theory)));
             all_dests.push(node);
         }
     }

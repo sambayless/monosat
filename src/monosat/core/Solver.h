@@ -358,34 +358,57 @@ public:
 
 
     inline bool hasTheory(Var v) {
-		return v>=0 && v<theory_vars.size() && theory_vars[v].isTheoryVar;
+		return v>=0 && v<theory_vars.size() && theory_vars[v].theories.size()>0;
 	}
 	inline bool hasTheory(Lit l) {
-		return var(l)>=0 && var(l)<theory_vars.size() && theory_vars[var(l)].isTheoryVar;
+		return hasTheory(var(l));
 	}
-    inline int getTheoryID(Var v) {
-		return theory_vars[v].theory - 1;
+	inline int getNTheories(Var v){
+		if(!hasTheory(v)){
+			return 0;
+		}else{
+			return theory_vars[v].theories.size();
 	}
-    inline int getTheoryID(Lit l) {
-		return theory_vars[var(l)].theory - 1;
 	}
-    inline Var getTheoryVar(Var v) {
+	inline int getTheoryID(Var v, int theoryN) {
+		return theory_vars[v].theories[theoryN].theory;
+	}
+    inline int getTheoryID(Lit l, int theoryN) {
+		return getTheoryID(var(l),theoryN);
+	}
+    inline Var getTheoryVar(Var v, int theoryN) {
 		assert(hasTheory(v));
 		//is this check too expensive? Does getTheoryVar appear in any tight loops?
 		if(!hasTheory(v)){
 			throw std::runtime_error("Literal " + std::to_string(toInt(toLit(v))) + " is not a theory atom");
 		}
-		return (Var) theory_vars[v].theory_var;
+		return (Var) theory_vars[v].theories[theoryN].theory_var;
 	}
     vec<Theory*> & getTheories() override {
         return theories;
     }
 	//Translate a literal into its corresponding theory literal (if it has a theory literal)
-	Lit getTheoryLit(Lit l) {
+	Lit getTheoryLit(Lit l, int theoryN) {
 		assert(hasTheory(l));
-		return mkLit(getTheoryVar(var(l)), sign(l));
+		return mkLit(getTheoryVar(var(l),theoryN), sign(l));
 	}
-
+	bool theoryHasVar(Var solverVar, Theory * t){
+	    int theoryID = t->getTheoryIndex();
+	    return hasTheory(solverVar) && theory_vars[solverVar].theoryMap.has(theoryID) && theory_vars[solverVar].theoryMap[theoryID]!=var_Undef;
+	}
+    Var getTheoryVar(Var v, Theory * t){
+        return theory_vars[v].theoryMap[t->getTheoryIndex()];
+	}
+    Lit getTheoryLit(Lit l, Theory * t){
+	    return mkLit(getTheoryVar(var(l),t),sign(l));
+        /*assert(getNTheories(var(l))<10);
+        for(int n = 0;n<getNTheories(var(l));n++){
+            if(getTheoryID(l,n)==t->getTheoryIndex()){
+                return getTheoryLit(l,n);
+            }
+        }
+        throw std::runtime_error("No such theory lit");*/
+	}
 	Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar) override {
 		while(nVars()<=solverVar)
 			newVar();
@@ -399,25 +422,24 @@ public:
 			//handle the True literal specially, so that all the theories can share it...
 			return;
 		}
-		if (hasTheory(solverVar)) {
-			throw std::runtime_error("Variable used for multiple atoms.");
+		if (theoryHasVar(solverVar, theories[theory]) && getTheoryVar(solverVar,theories[theory])!=theoryVar) {
+			throw std::runtime_error("Variable used for multiple atoms in one theory.");
 		}
-		assert(!hasTheory(solverVar));
-		theory_vars[solverVar].theory = theory + 1;
-		theory_vars[solverVar].theory_var = theoryVar;
+		//assert(!hasTheory(solverVar));
+		int theoryN = theory_vars[solverVar].theories.size();
+        theory_vars[solverVar].theories.push({theory,theoryVar});
+        theory_vars[solverVar].theoryMap.insert(theory,theoryVar,var_Undef);
 		all_theory_vars.push(solverVar);
 		assert(hasTheory(solverVar));
-		assert(getTheoryID(solverVar) == theory);
-		assert(getTheoryVar(solverVar) == theoryVar);
+		assert(getTheoryID(solverVar,theoryN) == theory);
+		assert(getTheoryVar(solverVar,theoryN) == theoryVar);
 
 		//if (value(solverVar) != l_Undef)
 		initialPropagate = true;//if pure literal detection is used, then we NEED to run simplify before
 		//the next call to propagate, and initialPropagate is being used to force that.
 
 	}
-	void setTheoryName(int theory, const std::string & name) {
 
-	}
 	const char * getTheoryType()override{
 		return "Solver";
 	}
@@ -428,10 +450,10 @@ public:
 			return nullptr;
 		}
 	}
-	void remapTheoryVar(Var solverVar, Var newTheoryVar) {
+/*	void remapTheoryVar(Var solverVar, Var newTheoryVar) {
 		assert(hasTheory(solverVar));
 		theory_vars[solverVar].theory_var = newTheoryVar;
-	}
+	}*/
 
 	void preprocess() override {
 		for(Theory *t:theories){
@@ -458,7 +480,8 @@ public:
 		theory_reason.clear();
 
 		double start_t = rtime(1);
-		t->buildReason(getTheoryLit(p), theory_reason, cr);
+
+		t->buildReason(getTheoryLit(p,t), theory_reason, cr);
 
 		stats_theory_conflict_time+= (rtime(1)-start_t);
 		assert(theory_reason[0] == p);
@@ -872,12 +895,22 @@ protected:
 		}
 	};
 	struct TheoryData {
+        int theory;
+        Var theory_var;
+    };
+	struct TheoryMap{
+	    IntMap<int,Var> theoryMap;
+	    vec<TheoryData> theories;
+	};
+
+
+	/*struct TheoryData {
 		union {
 			struct {
 				unsigned int theory ;
 				unsigned int theory_var;//these were previously packed together into a 32bit int, but that has proved insufficient in practice.
 			};
-			unsigned int isTheoryVar; //true if non-zero - this property is ensured by adding 1 to theory_var
+			unsigned int:1 isTheoryVar; //true if non-zero - this property is ensured by adding 1 to theory_var
 		};
 		TheoryData() :
 				isTheoryVar(0) {
@@ -886,7 +919,7 @@ protected:
 				theory(theory), theory_var(theory_lit) {
 
 		}
-	};
+	};*/
 
 	// Solver state:
 	//
@@ -904,7 +937,7 @@ protected:
 	vec<char> decision;         // Declares if a variable is eligible for selection in the decision heuristic.
 	vec<int> priority;		  // Static, lexicographic heuristic. Larger values are higher priority (decided first).
 
-	vec<TheoryData> theory_vars;
+	vec<TheoryMap> theory_vars;
 	vec<Lit> to_analyze;
 	vec<Lit> to_reenqueue;
 	vec<Lit> trail;            // Assignment stack; stores all assigments made in the order they were made.

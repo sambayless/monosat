@@ -927,10 +927,10 @@ public:
 	 * @param edgeVar
 	 */
 	void checkGraphLit(Lit solverLit, bool edgeVar){
-        if(!S->hasTheory(solverLit) || S->getTheoryID(solverLit)!=this->theory_index){
+        if(!S->hasTheory(solverLit)){
             throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " does not belong to graph " + std::to_string(this->getGraphID()));
         }
-        Lit theoryLit = S->getTheoryLit(solverLit);
+        Lit theoryLit = S->getTheoryLit(solverLit,this);
         if (isEdgeVar(var(theoryLit)) ) {
         	if(!edgeVar) {
 				throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " is an edge literal");
@@ -962,7 +962,7 @@ public:
 	    return solverLit;
 	}
 	Lit getCanonicalTheoryLit(Lit theoryLit){
-	    return S->getTheoryLit(getCanonicalSolverLit(toSolver(theoryLit)));
+	    return S->getTheoryLit(getCanonicalSolverLit(toSolver(theoryLit)),this);
 	}
 	void makeEqual(Lit l1, Lit l2, bool linkSolverLit = false) {
 		Lit o1 = toSolver(l1);
@@ -1133,8 +1133,8 @@ public:
 	    while (S->nVars() <= solverVar)
 			S->newVar();
 
-		if(S->hasTheory(solverVar) &&  S->getTheoryID(solverVar)==getTheoryIndex()){
-			return S->getTheoryVar(solverVar);
+		if(S->theoryHasVar(solverVar,this)){
+			return S->getTheoryVar(solverVar,this);
 		}
 
 		Var v = vars.size();
@@ -1444,7 +1444,7 @@ public:
 		for (int i = 0; i < S->trail.size(); i++) {
 			if (!S->hasTheory(S->trail[i]) || S->getTheoryID(S->trail[i]) != getTheoryIndex())
 				continue;
-			Lit l = S->getTheoryLit(S->trail[i]);
+			Lit l = S->getTheoryLit(S->trail[i],this);
 			Var v = var(l);
 			if (isEdgeVar(v)) {
 				Edge & e = edge_list[getEdgeID(v)];
@@ -2443,7 +2443,7 @@ public:
 
 
 		static int itp = 0;
-		if (++itp == 4) {
+		if (++itp == 57) {
 			int a = 1;
 		}
 		dbg_graphsUpToDate();
@@ -3895,11 +3895,10 @@ public:
 			addDetector(mstDetector);
 
 		}
-		if (!S->hasTheory(edgeVar) || (S->getTheoryID(edgeVar) != getTheoryIndex())
-				|| !isEdgeVar(S->getTheoryVar(edgeVar))) {
+		if (!S->theoryHasVar(edgeVar,this) || !isEdgeVar(S->getTheoryVar(edgeVar,this))) {
 			throw std::runtime_error("Bad edge variable");
 		}
-		edgeVar = S->getTheoryVar(edgeVar);
+		edgeVar = S->getTheoryVar(edgeVar,this);
 		int edgeid = getEdgeID(edgeVar);
 		assert(edgeid >= 0);
 		if (edge_list[edgeid].v == var_Undef) {
@@ -4144,7 +4143,7 @@ public:
 
 		checkGraphLit(solverLit,false);
 
-        Lit theoryLit = S->getTheoryLit(solverLit);
+        Lit theoryLit = S->getTheoryLit(solverLit,this);
         Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
 		//this is awful, fix this!!
@@ -4191,7 +4190,7 @@ public:
              return r1&& r2;
          }
 		 checkGraphLit(solverLit,false);
-         Lit theoryLit =  S->getTheoryLit(solverLit);
+         Lit theoryLit =  S->getTheoryLit(solverLit,this);
          Var v = var(theoryLit);
 		Detector * d= detectors[getDetector(v)];
 

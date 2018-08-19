@@ -513,6 +513,14 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1anon
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    newBitvector_lazy
+ * Signature: (JJLjava/nio/IntBuffer;I)I
+ */
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1lazy
+  (JNIEnv *, jclass, jlong, jlong, jobject, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    newBitvector
  * Signature: (JJLjava/nio/IntBuffer;I)I
  */
@@ -849,10 +857,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1unary
 
 /*
  * Class:     monosat_MonosatJNI
- * Method:    at_most_one
+ * Method:    at_most_one_lit
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
-JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one_1lit
   (JNIEnv *, jclass, jlong, jobject, jint);
 
 /*

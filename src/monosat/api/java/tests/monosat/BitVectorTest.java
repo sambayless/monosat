@@ -84,12 +84,22 @@ public class BitVectorTest {
   @Test
   public void testAnonBitvector(){
     Solver s = new Solver();
-    BitVector bv = new BitVector(s, 4,false);
+    BitVector bv = new BitVector(s, 4, BitVector.Type.Anonymous);
     assertEquals(bv.width(), 4);
     assertEquals(bv.size(), 0);
     assert(bv.getBits().size()==0);
+    assertTrue(s.solve());
   }
 
+  @Test
+  public void testLazyBitvector(){
+    Solver s = new Solver();
+    BitVector bv = new BitVector(s, 4, BitVector.Type.Lazy);
+    assertEquals(bv.width(), 4);
+    assertEquals(bv.size(), 4);
+    assert(bv.getBits().size()==4);
+    assertTrue(s.solve());
+  }
   @Test
   public void testConstantBitvector(){
     Solver s = new Solver();
