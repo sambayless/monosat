@@ -927,7 +927,7 @@ public:
 	 * @param edgeVar
 	 */
 	void checkGraphLit(Lit solverLit, bool edgeVar){
-        if(!S->hasTheory(solverLit)){
+        if(!S->theoryHasVar(var(solverLit),this)){
             throw std::runtime_error("Literal " + std::to_string(toInt(solverLit)) + " does not belong to graph " + std::to_string(this->getGraphID()));
         }
         Lit theoryLit = S->getTheoryLit(solverLit,this);
