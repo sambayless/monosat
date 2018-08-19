@@ -464,7 +464,7 @@ public class LitTest {
 
         assertEquals(6,s.nVars());
         {
-          Iterator<Lit> it = s.literals();
+          Iterator<Lit> it = s.literals().iterator();
           assertEquals(it.next(), Lit.True);
           assertEquals(it.next(), a);
           assertEquals(it.next(), b);
@@ -480,7 +480,7 @@ public class LitTest {
           }
        }
         {
-          Iterator<Lit> it2 = s.namedLiterals();
+          Iterator<Lit> it2 = s.namedLiterals().iterator();
           assertEquals(it2.next(), Lit.True);
           assertEquals(it2.next(), c);
           assertEquals(it2.next(), e);
@@ -552,7 +552,7 @@ public class LitTest {
         // The solver should (now) maintain integer mappings of literals after loading from disk
 
         {
-            Iterator<Lit> it = s2.literals();
+            Iterator<Lit> it = s2.literals().iterator();
             assertEquals(it.next(), Lit.True);
             assertEquals(it.next(), n2);
             it.next();
@@ -570,7 +570,7 @@ public class LitTest {
 
         }
         {
-            Iterator<Lit> it2 = s2.namedLiterals();
+            Iterator<Lit> it2 = s2.namedLiterals().iterator();
             assertEquals(it2.next(), Lit.True);
             assertEquals(it2.next(), n2);
             assertEquals(it2.next(), c2);
