@@ -1092,10 +1092,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1unary
 }
 
 
-JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one_1lit
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject array, jint n_args) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    at_most_one(solver, (int *) env->GetDirectBufferAddress(array), n_args);
+    at_most_one_lit(solver, (int *) env->GetDirectBufferAddress(array), n_args);
 }catch(...) { 
     javaThrow(env);
 }
@@ -1759,7 +1759,13 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd_1
 }catch(...) { 
     javaThrow(env);
 }
-
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint implies, jobject lits, jint n_lits) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    AssertImpliesAnd(solver, implies, (int *) env->GetDirectBufferAddress(lits), n_lits);
+}catch(...) {
+    javaThrow(env);
+}
 
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits) try {
@@ -1804,7 +1810,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors_1
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesAnd
         (JNIEnv *env, jclass monosat_class, jlong solverPtr, jobject lits, jint n_lits, jint lit_out) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return jint(ImpliesAnd(solver, (int *) env->GetDirectBufferAddress(lits), n_lits, lit_out));
+    return jint(ImpliesAnd_(solver, (int *) env->GetDirectBufferAddress(lits), n_lits, lit_out));
 }catch(...) { 
     javaThrow(env);
     return 0;
@@ -1835,6 +1841,14 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr_1
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     AssertImpliesOr_(solver, implies, (int *) env->GetDirectBufferAddress(lits), n_lits, lit_out);
 }catch(...) { 
+    javaThrow(env);
+}
+
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jint implies, jobject lits, jint n_lits) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    AssertImpliesOr(solver, implies, (int *) env->GetDirectBufferAddress(lits), n_lits);
+}catch(...) {
     javaThrow(env);
 }
 

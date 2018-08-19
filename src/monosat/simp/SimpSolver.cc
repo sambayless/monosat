@@ -627,8 +627,11 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 	for (int i = 0; i < qhead; i++) {
 		Lit p = trail[i];
 		if (hasTheory(p)) {
-			int theoryID = getTheoryID(p);
-			theories[theoryID]->enqueueTheory(getTheoryLit(p));
+			for(int n = 0;n<getNTheories(var(p));n++){
+				int theoryID = getTheoryID(p,n);
+				Lit l = getTheoryLit(p,n);
+				theories[theoryID]->enqueueTheory(l);
+			}
 		}
 	}
 

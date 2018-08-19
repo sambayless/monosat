@@ -168,13 +168,13 @@ private:
 		//return v;
 		assert(v < vars.size());
 		assert(S->hasTheory(vars[v].solverVar));
-		assert(S->getTheoryVar(vars[v].solverVar) == v);
+		assert(S->getTheoryVar(vars[v].solverVar,this) == v);
 		return vars[v].solverVar;
 	}
 
 	inline Lit toSolver(Lit l) {
 		assert(S->hasTheory(vars[var(l)].solverVar));
-		assert(S->getTheoryVar(vars[var(l)].solverVar) == var(l));
+		assert(S->getTheoryVar(vars[var(l)].solverVar,this) == var(l));
 		return mkLit(vars[var(l)].solverVar, sign(l));
 	}
 

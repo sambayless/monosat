@@ -8640,11 +8640,11 @@ public:
 		if (to < 0) {
 			std::stringstream ss;
 			ss << to;
-			throw std::runtime_error("Cannot compare Bitvectors to negative values " + ss.str());
+			throw std::runtime_error("Cannot compare Bitvectors to negative values: " + ss.str());
 		} else if (to > max_val) {
 			std::stringstream ss;
 			ss << to;
-			throw std::runtime_error("Cannot compare Bitvectors to value outside of bitwidth range " + ss.str());
+			throw std::runtime_error("Cannot compare Bitvectors to value outside of bitwidth range: " + ss.str());
 		}
 
 		if (to <= 0 && op == Comparison::geq) {

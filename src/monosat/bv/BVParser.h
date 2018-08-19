@@ -677,10 +677,10 @@ public:
 						mappedBV=bv.id;
 					this->addBVToMap(bv.id,mappedBV);
 					assert(mappedBV==mapBV(S,bv.id));
-					if(bv.anon) {
-						assert(bv.vector.size() == 0);
-						assert(bv.constval < 0);
-						theory->newBitvector_Anon(mappedBV, bv.width);
+					if(bv.anon){
+						assert(bv.vector.size()==0);
+						assert(bv.constval<0);
+						theory->newBitvector_Anon(mappedBV,bv.width);
 					}else if (bv.lazy){
 						theory->newBitvector_Lazy(mappedBV,bv.vector);
 					}else if(bv.constval>=0){

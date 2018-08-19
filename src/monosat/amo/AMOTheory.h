@@ -40,8 +40,8 @@ public:
 	CRef assign_false_reason;
 	//CRef assign_true_reason;
 
-	vec<Var> amo;//list of variables, at most one of which should be true.
-
+	vec<Lit> amo;//list of variables, at most one of which should be true.
+	VMap<Lit> positive;
 	vec<Lit> tmp_clause;
 
 	double propagationtime=0;
@@ -52,8 +52,8 @@ public:
 	int64_t stats_reasons = 0;
 	int64_t stats_conflicts = 0;
 
-	Var true_var=var_Undef;
-	Var conflict_var=var_Undef;
+	Lit true_lit=lit_Undef;
+	Lit conflict_lit=lit_Undef;
 	bool needs_propagation=false;
 	bool clausified = false;
 public:
@@ -113,8 +113,15 @@ public:
 
 	//Add a variable (not literal!) to the set of which at most one may be true.
 	void addVar(Var solverVar){
-		S->newTheoryVar(solverVar, getTheoryIndex(),solverVar);//using same variable indices in the theory as out of the theory
-		amo.push(solverVar);
+		addLit(mkLit(solverVar));
+
+	}
+
+	//Add a literal to the set of which at most one may be true.
+	void addLit(Lit solverLit){
+		S->newTheoryVar(var(solverLit), getTheoryIndex(),var(solverLit));//using same variable indices in the theory as out of the theory
+		amo.push(solverLit);
+		positive.insert(var(solverLit),solverLit,lit_Undef);
 	}
 
 
@@ -134,39 +141,40 @@ public:
 		return S->decisionLevel();
 	}
 	inline void undecideTheory(Lit l) override {
-		if(var(l)==true_var){
+		if(l==true_lit){
 			needs_propagation=false;
-			true_var=var_Undef;
-			assert(conflict_var==var_Undef);
+			true_lit=lit_Undef;
+			assert(conflict_lit==lit_Undef);
 		}
-		if(var(l)==conflict_var){
-			conflict_var=var_Undef;
+		if(l==conflict_lit){
+			conflict_lit=lit_Undef;
 		}
 	}
 	void enqueueTheory(Lit l) override {
 		if(clausified)
 			return;
-		if(conflict_var==var_Undef){
-			if (!sign(l)){
-				if (true_var==var_Undef){
-					true_var=var(l);
+		if(conflict_lit==lit_Undef){
+			Lit expected = positive[var(l)];
+			if (l==expected){
+				if (true_lit==lit_Undef){
+					true_lit=l;
 					assert(!needs_propagation);
 					if(opt_amo_eager_prop){
 						//enqueue all of the remaining lits in the solver, now.
 						stats_propagations++;
-						for(Var v:amo){
-							if(v!=true_var){
-								S->enqueue(mkLit(v,true),assign_false_reason);
+						for(Lit l:amo){
+							if(l!=true_lit){
+								S->enqueue(~l,assign_false_reason);
 							}
 						}
 					}else{
 						needs_propagation=true;
 					}
-				}else if (var(l)==true_var){
+				}else if (l==true_lit){
 					//we already knew this lit was assigned to true, do nothing.
 				}else{
-					//there is a conflict - both conflict_var and true_var are assigned true, which is not allowed.
-					conflict_var=var(l);
+					//there is a conflict - both conflict_lit and true_lit are assigned true, which is not allowed.
+					conflict_lit=l;
 				}
 			}else{
 				//it is always safe to assign a var to false.
@@ -186,23 +194,23 @@ public:
 			bool has_true_lit=false;
 			int i,j=0;
 			for (i = 0; i < amo.size(); i++) {
-				Lit l = mkLit(amo[i]);
+				Lit l = amo[i];
 				if (S->value(l) == l_False && S->level(var(l)) == 0) {
 					//drop this literal from the set
 				} else if (S->value(l) == l_True && S->level(var(l)) == 0) {
-					amo[j++]=var(l);
+					amo[j++]=l;
 					has_true_lit=true;
 				} else {
 					n_nonconstants++;
-					amo[j++]=var(l);
+					amo[j++]=l;
 				}
 			}
 			amo.shrink(i-j);
 			if(has_true_lit || amo.size()==0 || amo.size()<=opt_clausify_amo){
 				clausified=true;
 				vec<Lit> amoLits;
-				for(Var v:amo){
-					amoLits.push(mkLit(v));
+				for(Lit l:amo){
+					amoLits.push(l);
 				}
 				if(opt_verb>1){
 					printf("Clausifying amo theory %d with %d lits\n",this->getTheoryIndex(),amo.size());
@@ -212,24 +220,24 @@ public:
 			}
 		}
 
-		if(conflict_var!=var_Undef){
+		if(conflict_lit!=lit_Undef){
 			conflict.clear();
-			assert(true_var!=var_Undef);
-			assert(true_var!=conflict_var);
-			conflict.push(mkLit(conflict_var,true));
-			conflict.push(mkLit(true_var,true));
+			assert(true_lit!=lit_Undef);
+			assert(true_lit!=conflict_lit);
+			conflict.push(~conflict_lit);
+			conflict.push(~true_lit);
 			needs_propagation=false;
 			stats_conflicts++;
 			return false;
-		}else if (true_var!=var_Undef && needs_propagation){
+		}else if (true_lit!=lit_Undef && needs_propagation){
 			stats_propagations++;
 			needs_propagation=false;
 			assert(!opt_amo_eager_prop);
 			//enqueue all of the remaining lits in the solver, now.
-			for(Var v:amo){
-				if(v!=true_var){
+			for(Lit l:amo){
+				if(l!=true_lit){
 					stats_lit_propagations++;
-					S->enqueue(mkLit(v,true),assign_false_reason);
+					S->enqueue(~l,assign_false_reason);
 				}
 			}
 		}
@@ -255,20 +263,20 @@ public:
 	inline void buildReason(Lit p, vec<Lit> & reason, CRef reason_marker) override {
 		stats_reasons++;
 		assert(reason_marker==assign_false_reason);
-		if(var(p)!=true_var){
+		if(p!=true_lit){
 			assert(sign(p));
 			assert(S->value(p)==l_True);
-			assert(S->value(true_var)==l_True);
-			reason.push(mkLit( var(p),true));
-			reason.push(mkLit(true_var,true));//either true_var (currently assigned true) must be false, or var(p) must be false
+			assert(S->value(true_lit)==l_True);
+			reason.push(p);
+			reason.push(~true_lit);//either true_lit (currently assigned true) must be false, or p must be false
 		}else{
 			assert(false);
 		}
 	}
 	bool check_solved() override {
 		int n_true=0;
-		for (Var v:amo){
-			if(S->value(v)==l_True){
+		for (Lit l:amo){
+			if(S->value(l)==l_True){
 				n_true+=1;
 				if(n_true>1){
 					return false;

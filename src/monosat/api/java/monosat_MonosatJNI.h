@@ -857,10 +857,10 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1unary
 
 /*
  * Class:     monosat_MonosatJNI
- * Method:    at_most_one
+ * Method:    at_most_one_lit
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
-JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one_1lit
   (JNIEnv *, jclass, jlong, jobject, jint);
 
 /*
@@ -1353,6 +1353,14 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd_1
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    AssertImpliesAnd
+ * Signature: (JILjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd
+  (JNIEnv *, jclass, jlong, jint, jobject, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    Ands
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
@@ -1414,6 +1422,14 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr_1
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr_1
   (JNIEnv *, jclass, jlong, jint, jobject, jint, jint);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    AssertImpliesOr
+ * Signature: (JILjava/nio/IntBuffer;I)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr
+  (JNIEnv *, jclass, jlong, jint, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI

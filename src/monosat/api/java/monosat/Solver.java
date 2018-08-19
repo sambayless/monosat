@@ -139,6 +139,53 @@ public final class Solver implements Closeable {
   public Solver(boolean enablePreprocessing) {
     this("", enablePreprocessing);
   }
+  /**
+   * Instantiate a new Solver, with the given list of settings. MonoSAT has many command line
+   * options, which can be passed here.
+   *
+   * @param args A list of strings, with each string representing an argument to pass to the solver.
+   */
+  public Solver(String[] args) {
+    this(Arrays.asList(args), false);
+  }
+
+  /**
+   * Instantiate a new Solver, with the given list of settings, and with constraints written to the
+   * specified output file. MonoSAT has many command line options, which can be passed here.
+   *
+   * @param args A list of strings, with each string representing an argument to pass to the solver.
+   * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+   */
+  public Solver(String[] args, String outputFile) {
+    this(Arrays.asList(args), false, outputFile);
+  }
+
+  /**
+   * Instantiate a new Solver, with the given list of settings. MonoSAT has many command line
+   * options, which can be passed here.
+   *
+   * @param args A list of strings, with each string representing an argument to pass to the solver.
+   * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+   *     improve performance, but requires some extra care in solver usage, and so is disabled by
+   *     default.
+   */
+  public Solver(String[] args, boolean enablePreprocessing) {
+    this(Arrays.asList(args), enablePreprocessing, "");
+  }
+
+  /**
+   * Instantiate a new Solver, with the given list of settings, and with constraints written to the
+   * specified output file. MonoSAT has many command line options, which can be passed here.
+   *
+   * @param args A list of strings, with each string representing an argument to pass to the solver.
+   * @param enablePreprocessing If true, support for pre-processing is enabled. Pre-processing can
+   *     improve performance, but requires some extra care in solver usage, and so is disabled by
+   *     default.
+   * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
+   */
+  public Solver(String[] args, boolean enablePreprocessing, String outputFile) {
+    this(Arrays.asList(args), enablePreprocessing, outputFile);
+  }
 
   /**
    * Instantiate a new Solver, with the given list of settings. MonoSAT has many command line
@@ -146,7 +193,7 @@ public final class Solver implements Closeable {
    *
    * @param args A list of strings, with each string representing an argument to pass to the solver.
    */
-  public Solver(ArrayList<String> args) {
+  public Solver(List<String> args) {
     this(String.join(" ",args), false);
   }
 
@@ -157,7 +204,7 @@ public final class Solver implements Closeable {
    * @param args A list of strings, with each string representing an argument to pass to the solver.
    * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
    */
-  public Solver(ArrayList<String> args, String outputFile) {
+  public Solver(List<String> args, String outputFile) {
     this(String.join(" ",args), false, outputFile);
   }
 
@@ -170,7 +217,7 @@ public final class Solver implements Closeable {
    *     improve performance, but requires some extra care in solver usage, and so is disabled by
    *     default.
    */
-  public Solver(ArrayList<String> args, boolean enablePreprocessing) {
+  public Solver(List<String> args, boolean enablePreprocessing) {
     this(String.join(" ",args), enablePreprocessing, "");
   }
 
@@ -184,7 +231,7 @@ public final class Solver implements Closeable {
    *     default.
    * @param outputFile A file to write constraints to, in MonoSAT's GNF format.
    */
-  public Solver(ArrayList<String> args, boolean enablePreprocessing, String outputFile) {
+  public Solver(List<String> args, boolean enablePreprocessing, String outputFile) {
     this(String.join(" ",args), enablePreprocessing, outputFile);
   }
 
@@ -1376,27 +1423,15 @@ public final class Solver implements Closeable {
    * @param args A collection of Lits, at most one of which can be true.
    */
   public void assertAtMostOne(Collection<Lit> args) {
-    // simple at-most-one constraint: asserts that at most one of the set of variables (NOT
-    // LITERALS) may be true.
-    // for small numbers of variables, consider using a direct CNF encoding instead
+    // simple at-most-one constraint: asserts that at most one of the set of literals may be true.
     validate(args);
     if (args.size() <= 6) {
       // make this constant configurable in the future
       // for small enough sets of literals, directly instantiate the binary clauses constraining
-      // them
-      // rather than introduce an amo theory
+      // them rather than introduce an amo theory
       MonosatJNI.AssertAMO(getSolverPtr(), getLitBuffer(args), args.size());
     } else {
-      // workaround for internal limitations in monosat which require the
-      // amo constraints to operate only on variables (not literals), which must also not have been
-      // used elsewhere
-      ArrayList<Integer> vars = new ArrayList<Integer>();
-      for (Lit l : args) {
-        Lit l2 = new Lit(this, false);
-        assertEqual(l, l2);
-        vars.add(l2.toVar());
-      }
-      MonosatJNI.at_most_one(getSolverPtr(), getIntBuffer(vars, 0), args.size());
+      MonosatJNI.at_most_one_lit(getSolverPtr(), getLitBuffer(args, 0), args.size());
     }
   }
 
@@ -1531,7 +1566,7 @@ public final class Solver implements Closeable {
    *
    * @return An iterator over the literals in the solver.
    */
-  public Iterator<Lit> literals() {
+  public Iterable<Lit> literals() {
     return new LitIterator(false);
   }
 
@@ -1541,12 +1576,12 @@ public final class Solver implements Closeable {
    *
    * @return An iterator over the named literals in the solver.
    */
-  public Iterator<Lit> namedLiterals() {
+  public Iterable<Lit> namedLiterals() {
     return new LitIterator(true);
   }
 
   /** An iterator over literals in the solver. */
-  public class LitIterator implements java.util.Iterator<Lit> {
+  public class LitIterator implements java.util.Iterator<Lit>,java.lang.Iterable<Lit> {
     private int index = 0;
 
     final boolean named;
@@ -1580,6 +1615,11 @@ public final class Solver implements Closeable {
     public void remove() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public Iterator<Lit> iterator() {
+      return this;
+    }
   }
 
   /**
@@ -1588,7 +1628,7 @@ public final class Solver implements Closeable {
    *
    * @return An iterator over the literals in the solver.
    */
-  public Iterator<BitVector> bitvectors() {
+  public Iterable<BitVector> bitvectors() {
     return new BVIterator(false);
   }
 
@@ -1598,12 +1638,12 @@ public final class Solver implements Closeable {
    *
    * @return An iterator over the named literals in the solver.
    */
-  public Iterator<BitVector> namedBitVectors() {
+  public Iterable<BitVector> namedBitVectors() {
     return new BVIterator(true);
   }
 
   /** An iterator over bitvectors in the solver. */
-  public class BVIterator implements java.util.Iterator<BitVector> {
+  public class BVIterator implements java.util.Iterator<BitVector>,java.lang.Iterable<BitVector> {
     private int index = 0;
 
     final boolean named;
@@ -1637,6 +1677,11 @@ public final class Solver implements Closeable {
     @Override
     public void remove() {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterator<BitVector> iterator() {
+      return this;
     }
   }
   /**
@@ -2030,6 +2075,61 @@ public final class Solver implements Closeable {
   }
 
   /**
+   * Create a new literal that evaluates to true if a is false, or if a is true and if at least one element of args
+   * it true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public Lit impliesOr(Lit a, Collection<Lit> args) {
+    validate(a);
+    validate(args);
+    return this.toLit(MonosatJNI.ImpliesOr_(this.getSolverPtr(), this.getLitBuffer(args), args.size(),a.toInt()));
+  }
+
+  /**
+   * Create a new literal that evaluates to true if a is false, or if a is true and if at least one element of args
+   * it true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public Lit impliesOr(Lit a, Lit... args) {
+    validate(a);
+    validate(args);
+    return this.toLit(MonosatJNI.ImpliesOr_(this.getSolverPtr(), this.getLitBuffer(args,0), args.length,a.toInt()));
+  }
+
+  /**
+   * Create a new literal that evaluates to true if a is false, or if a is true and if at least one element of args
+   * it true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public Lit impliesAnd(Lit a, Collection<Lit> args) {
+    validate(a);
+    validate(args);
+    return this.toLit(MonosatJNI.ImpliesAnd(this.getSolverPtr(), this.getLitBuffer(args), args.size(),a.toInt()));
+  }
+
+  /**
+   * Create a new literal that evaluates to true if a is false, or if a is true and if at least one element of args
+   * it true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public Lit impliesAnd(Lit a, Lit... args) {
+    validate(a);
+    validate(args);
+    return this.toLit(MonosatJNI.ImpliesAnd(this.getSolverPtr(), this.getLitBuffer(args,0), args.length,a.toInt()));
+  }
+  /**
    * Assert that Lit a must be true in the solver.
    *
    * @param a The literal to assert true.
@@ -2248,6 +2348,61 @@ public final class Solver implements Closeable {
   public void assertImplies(Lit a, Lit b) {
     validate(a, b);
     assertOr(a.not(), b);
+  }
+
+  /**
+   * Assert that a implies that at least one element of args is true
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition disjunction.
+   */
+  public void assertImpliesOr(Lit a, Collection<Lit> args) {
+    validate(a);
+    validate(args);
+
+      MonosatJNI.AssertImpliesOr(this.getSolverPtr(), a.toInt(), this.getLitBuffer(args), args.size());
+
+  }
+  /**
+   * Assert that a implies that at least one element of args is true
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition disjunction.
+   */
+  public void assertImpliesOr(Lit a, Lit... args) {
+    assertImpliesOr(a,Arrays.asList(args));
+  }
+
+  /**
+   * Assert that a implies that all elements of args are true
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition disjunction.
+   */
+  public void assertImpliesAnd(Lit a, Collection<Lit> args) {
+    validate(a);
+    validate(args);
+    if(args.size()==0){
+      //do nothing
+    }else {
+      MonosatJNI.AssertImpliesAnd(this.getSolverPtr(), a.toInt(), this.getLitBuffer(args), args.size());
+    }
+  }
+
+  /**
+   * Assert that a implies that all elements of args are true
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition disjunction.
+   */
+  public void assertImpliesAnd(Lit a, Lit... args) {
+    validate(a);
+    validate(args);
+    if(args.length==0){
+      //do nothing
+    }else{
+      MonosatJNI.AssertImpliesAnd(this.getSolverPtr(), a.toInt(), this.getLitBuffer(args,0), args.length);
+    }
   }
 
   /**

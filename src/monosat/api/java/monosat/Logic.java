@@ -78,7 +78,7 @@ public final class Logic {
   private static Solver getSolver(Lit... args) {
     for (Lit l : args) {
       if (l == null || l == Lit.Error || l == Lit.Undef) {
-        throw new IllegalArgumentException("Invalid literal " + String.valueOf(l));
+        throw new IllegalArgumentException("Invalid literal: " + String.valueOf(l));
       }
       if (l.solver != null) {
         return l.solver;
@@ -86,6 +86,8 @@ public final class Logic {
     }
     return null;
   }
+
+
 
   /**
    * Helper method to retrieve the solver from an array of literals.
@@ -96,7 +98,7 @@ public final class Logic {
   private static Solver getSolver(Iterable<Lit> args) {
     for (Lit l : args) {
       if (l == null || l == Lit.Error || l == Lit.Undef) {
-        throw new IllegalArgumentException("Invalid literal " + String.valueOf(l));
+        throw new IllegalArgumentException("Invalid literal: " + String.valueOf(l));
       }
       if (l.solver != null) {
         return l.solver;
@@ -104,7 +106,32 @@ public final class Logic {
     }
     return null;
   }
-
+  /**
+   * Helper method to retrieve the solver from an array of literals.
+   *
+   * @param args A collection of literals.
+   * @return The solver of one of the literals, if at least one of the literals has a solver.
+   */
+  private static Solver getSolver(Iterable<Lit> args, Lit... lits) {
+    Solver s = getSolver(args);
+    if (s== null){
+      s = getSolver(lits);
+    }
+    return s;
+  }
+  /**
+   * Helper method to retrieve the solver from an array of literals.
+   *
+   * @param args A collection of literals.
+   * @return The solver of one of the literals, if at least one of the literals has a solver.
+   */
+  private static Solver getSolver(Lit[] args, Lit... lits) {
+    Solver s = getSolver(args);
+    if (s== null){
+      s = getSolver(lits);
+    }
+    return s;
+  }
   /**
    * By default, certain trivial contradictions (such as AssertFalse(True), or AssertOr() with empty
    * arguments) will be caught, and log a warning. This is useful, as such contradictions are almost
@@ -204,7 +231,116 @@ public final class Logic {
       }
     }
   }
+  /**
+   *  Create a new literal that evaluates to true if a is false, or if a is true and at least one element of args is
+   *  true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public static Lit impliesOr(Lit a, Collection<Lit> args) {
+    Solver solver = getSolver(args,a);
+    if (solver != null) {
+      return solver.impliesOr(a, args);
+    } else {
+      if (a == Lit.True) {
+        boolean allFalse = true;
+        for(Lit l:args){
+          if(!l.isConstFalse()){
+            allFalse = false;
+          }
+        }
+        if(!allFalse || args.size()==0) {
+          return Lit.False;
+        }
+      }
+      return Lit.True;
+    }
+  }
 
+  /**
+   *  Create a new literal that evaluates to true if a is false, or if a is true and at least one element of args is
+   *  true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public static Lit impliesOr(Lit a, Lit... args) {
+    Solver solver = getSolver(args,a);
+    if (solver != null) {
+      return solver.impliesOr(a, args);
+    } else {
+      if (a == Lit.True) {
+        boolean allFalse = true;
+        for(Lit l:args){
+          if(!l.isConstFalse()){
+            allFalse = false;
+          }
+        }
+        if(!allFalse || args.length==0) {
+          return Lit.False;
+        }
+      }
+      return Lit.True;
+    }
+  }
+
+  /**
+   *  Create a new literal that evaluates to true if a is false, or if a is true and all literals in args
+   *  are true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public static Lit impliesAnd(Lit a, Collection<Lit> args) {
+    Solver solver = getSolver(args,a);
+    if (solver != null) {
+      return solver.impliesAnd(a, args);
+    } else {
+      if (a == Lit.True) {
+        boolean anyFalse = false;
+        for(Lit l:args){
+          if(l.isConstFalse()){
+            anyFalse = true;
+          }
+        }
+        if(anyFalse) {
+          return Lit.False;
+        }
+      }
+      return Lit.True;
+    }
+  }
+  /**
+   *  Create a new literal that evaluates to true if a is false, or if a is true and all literals in args
+   *  are true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   * @return A new literal representing an implication gate.
+   */
+  public static Lit impliesAnd(Lit a, Lit... args) {
+    Solver solver = getSolver(args,a);
+    if (solver != null) {
+      return solver.impliesAnd(a, args);
+    } else {
+      if (a == Lit.True) {
+        boolean anyFalse = false;
+        for(Lit l:args){
+          if(l.isConstFalse()){
+            anyFalse = true;
+          }
+        }
+        if(anyFalse) {
+          return Lit.False;
+        }
+      }
+      return Lit.True;
+    }
+  }
   /**
    * Create a new literal that will evaluate to 'then' if condition is true, and to 'els' otherwise.
    *
@@ -874,6 +1010,104 @@ public final class Logic {
     } else {
       if (a == Lit.True && b == Lit.False) {
         contradiction();
+      }
+    }
+  }
+
+  /**
+   * Assert that a implies the disjunction of args: If a is true, then at least one element of args must be true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   */
+  public static void assertImpliesOr(Lit a, Collection<Lit> args) {
+    Solver solver = getSolver(args,a);
+    if (solver != null) {
+      solver.assertImpliesOr(a, args);
+    } else {
+      if (a == Lit.True) {
+        boolean allFalse = true;
+        for(Lit l:args){
+          if(!l.isConstFalse()){
+            allFalse = false;
+          }
+        }
+        if(allFalse || args.size()==0) {
+          contradiction();
+        }
+      }
+    }
+  }
+  /**
+   * Assert that a implies the disjunction of args: If a is true, then at least one element of args must be true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   */
+  public static void assertImpliesOr(Lit a, Lit... args) {
+    Solver solver = getSolver(args,a);
+    if (solver != null) {
+      solver.assertImpliesOr(a, args);
+    } else {
+      if (a == Lit.True) {
+        boolean allFalse = true;
+        for(Lit l:args){
+          if(!l.isConstFalse()){
+            allFalse = false;
+          }
+        }
+        if(allFalse || args.length==0) {
+          contradiction();
+        }
+      }
+    }
+  }
+
+  /**
+   * Assert that a implies the conjunction of args: If a is true, then all elements elements of args must be true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   */
+  public static void assertImpliesAnd(Lit a, Collection<Lit> args) {
+    Solver solver = getSolver(args,a);
+    if (solver != null) {
+      solver.assertImpliesAnd(a, args);
+    } else {
+      if (a == Lit.True) {
+        boolean anyFalse = false;
+        for(Lit l:args){
+          if(l.isConstFalse()){
+            anyFalse = true;
+          }
+        }
+        if(anyFalse) {
+          contradiction();
+        }
+      }
+    }
+  }
+  /**
+   * Assert that a implies the conjunction of args: If a is true, then all elements elements of args must be true.
+   *
+   * @param a The pre-condition.
+   * @param args The post-condition.
+   */
+  public static void assertImpliesAnd(Lit a, Lit... args) {
+    Solver solver = getSolver(args,a);
+    if (solver != null) {
+      solver.assertImpliesAnd(a, args);
+    } else {
+      if (a == Lit.True) {
+        boolean anyFalse = false;
+        for(Lit l:args){
+          if(l.isConstFalse()){
+            anyFalse = true;
+          }
+        }
+        if(anyFalse) {
+          contradiction();
+        }
       }
     }
   }

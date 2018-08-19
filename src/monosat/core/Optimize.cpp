@@ -1752,6 +1752,19 @@ lbool minimizeCore(SimpSolver & S,vec<Lit> & assumptions,bool do_simp){
 			unprovables.insert(potential_removal);//we couldn't prove this literal must be kept in the set
 		}
 	}
+
+	//remove any literals from assumptions that are no longer in the conflict
+	int i, j = 0;
+	for (i = 0; i < assumptions.size(); i++) {
+		assert(assumptions[i] != lit_Undef);
+		if (assumptions[i] == trueLit) {
+            //drop this literal
+		} else {
+			assumptions[j++] = assumptions[i];
+		}
+	}
+	assumptions.shrink(i - j);
+
 	bool any_unprovable = false;
 	for(Lit l:assumptions){
 		if(unprovables.contains(l)){

@@ -491,6 +491,12 @@ public class LogicTest {
     assertTrue(solver.solve(a, b.not()));
     assertTrue(solver.solve(b));
     assertTrue(solver.solve(c));
+
+    Logic.assertAtMostOne();//this should have no effect
+    assertTrue(solver.solve(c));
+
+    solver.assertAtMostOne();
+    assertTrue(solver.solve(c));
   }
 
   @Test

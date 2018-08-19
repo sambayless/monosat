@@ -727,7 +727,7 @@ public class BitVectorTest {
     // The solver should (now) maintain integer mappings of literals after loading from disk
 
     {
-      Iterator<BitVector> it = s2.bitvectors();
+      Iterator<BitVector> it = s2.bitvectors().iterator();
       it.next();
       it.next();
       it.next();
@@ -743,7 +743,7 @@ public class BitVectorTest {
       }
     }
     {
-      Iterator<BitVector> it = s2.namedBitVectors();
+      Iterator<BitVector> it = s2.namedBitVectors().iterator();
       assertEquals(it.next(), bv1);
       assertEquals(it.next(), bv2);
       assertEquals(it.next(), bv3);

@@ -1530,6 +1530,24 @@ void at_most_one(Monosat::SimpSolver * S, int * vars, int n_vars){
 		}
 	}
 }
+//simple at-most-one constraint: asserts that at most one of the set of ltierals may be true.
+//for small numbers of variables, consider using a direct CNF encoding instead
+void at_most_one_lit(Monosat::SimpSolver * S, int * literals, int n_lits){
+    if(n_lits>1){
+        write_out(S,"amo");
+        for(int i = 0;i<n_lits;i++){
+            Lit l = internalLit(S,literals[i]);
+            write_out(S," %d",dimacs(S,l));
+        }
+
+        write_out(S," 0\n");
+        AMOTheory* amo = new  AMOTheory(S);
+        for(int i = 0;i<n_lits;i++){
+            Lit l = internalLit(S,literals[i]);
+            amo->addLit(l);
+        }
+    }
+}
 
 void flushPB(Monosat::SimpSolver * S){
 	MonosatData *d = (MonosatData *) S->_external_data;
@@ -1656,19 +1674,19 @@ int getEdgeLiteralN(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t>
 	return externalLit(S,G->toSolver(mkLit(G->getEdges()[n].v)));
 }
 int getEdge_to(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
-	return G->getEdge(S->getTheoryLit(internalLit(S,edgeLit))).to;
+	return G->getEdge(S->getTheoryLit(internalLit(S,edgeLit),G)).to;
 }
 int getEdge_from(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
-	return G->getEdge(S->getTheoryLit(internalLit(S,edgeLit))).from;
+	return G->getEdge(S->getTheoryLit(internalLit(S,edgeLit),G)).from;
 }
 Weight getEdge_weight_const(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
-	return G->getEdgeConstantWeight(S->getTheoryLit(internalLit(S,edgeLit)));
+	return G->getEdgeConstantWeight(S->getTheoryLit(internalLit(S,edgeLit),G));
 }
 int getEdge_weight_bv(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
-	return externalBV(S, G->getEdgeBVWeight(S->getTheoryLit(internalLit(S,edgeLit))));
+	return externalBV(S, G->getEdgeBVWeight(S->getTheoryLit(internalLit(S,edgeLit),G)));
 }
 bool edgeHasBVWeight(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> *G, int edgeLit){
-	return G->edgeHasBVWeight(S->getTheoryLit(internalLit(S,edgeLit)));
+	return G->edgeHasBVWeight(S->getTheoryLit(internalLit(S,edgeLit),G));
 }
 
 int newEdge_double(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<double> *G,int from,int  to,  double weight){
@@ -1883,10 +1901,10 @@ void newEdgeSet(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,i
 		if(!S->hasTheory(outer)){
 			api_errorf("Bad edge set variable %d",outer+1);
 		}
-		if(S->getTheoryID(outer)!=G->getTheoryIndex()){
+		/*if(S->getTheoryID(outer)!=G->getTheoryIndex()){
 			api_errorf("Wrong graph (%d) for variable %d",G->getTheoryIndex(),outer+1);
-		}
-		Var v = S->getTheoryVar(outer);
+		}*/
+		Var v = S->getTheoryVar(outer,G);
 		if(!G->isEdgeVar(v)){
 			api_errorf("Variable %d is not an edge variable",outer+1);
 		}
@@ -2124,27 +2142,27 @@ int getModel_Path_EdgeLits(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<in
 int64_t getModel_MaxFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal){
 	Lit l = internalLit(S,maxflow_literal);
 	G->checkGraphLit(l,false);
-	return G->getModel_MaximumFlow(S->getTheoryLit(l));
+	return G->getModel_MaximumFlow(S->getTheoryLit(l,G));
 }
 int64_t getModel_EdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
 	Lit l = internalLit(S,maxflow_literal);
 	Lit e = internalLit(S,edge_assignment_literal);
 	G->checkGraphLit(l,false);
 	G->checkGraphLit(e,true);
-	return G->getModel_MaximumFlow_EdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
+	return G->getModel_MaximumFlow_EdgeFlow(S->getTheoryLit(l,G),S->getTheoryLit(e,G));
 }
 int64_t getModel_AcyclicEdgeFlow(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int maxflow_literal, int edge_assignment_literal){
 	Lit l = internalLit(S,maxflow_literal);
 	Lit e = internalLit(S,edge_assignment_literal);
 	G->checkGraphLit(l,false);
 	G->checkGraphLit(e,true);
-	return G->getModel_MaximumFlow_AcyclicEdgeFlow(S->getTheoryLit(l),S->getTheoryLit(e));
+	return G->getModel_MaximumFlow_AcyclicEdgeFlow(S->getTheoryLit(l,G),S->getTheoryLit(e,G));
 }
 
 int64_t getModel_MinimumSpanningTreeWeight(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int spanning_tree_literal){
 	Lit l = internalLit(S,spanning_tree_literal);
 	G->checkGraphLit(l,false);
-	return G->getModel_MinimumSpanningWeight(S->getTheoryLit(l));
+	return G->getModel_MinimumSpanningWeight(S->getTheoryLit(l,G));
 }
 /* //Get the length of a valid path (from a reachability or shortest path constraint)
  int64_t getModel_PathLength(Monosat::SimpSolver * S,Monosat::GraphTheorySolver<int64_t> *G,int reach_or_shortest_path_lit){

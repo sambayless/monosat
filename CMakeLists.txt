@@ -556,7 +556,7 @@ if (PYTHON)
 
     add_custom_target(target ALL DEPENDS ${OUTPUT})
 
-    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install -f)")
+    install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install -f --prefix=${CMAKE_INSTALL_PREFIX})")
 else()
     message(STATUS "Not including Python library support. To enable Python support, set -DPYTHON=ON.")
 endif()

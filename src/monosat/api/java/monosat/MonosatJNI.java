@@ -351,10 +351,10 @@ final class MonosatJNI { // package level access specifier
   public static native void bv_unary(
       long solverPtr, long bvPtr, IntBuffer args, int n_args, int resultID);
 
-  // simple at-most-one constraint: asserts that at most one of the set of variables (NOT LITERALS)
+  // simple at-most-one constraint: asserts that at most one of the set of lit
   // may be true.
   // for small numbers of variables, consider using a direct CNF encoding instead
-  public static native void at_most_one(long solverPtr, IntBuffer vars, int n_vars);
+  public static native void at_most_one_lit(long solverPtr, IntBuffer lits, int n_lits);
 
   public static native void assertPB_lt(
       long solverPtr, int rhs, int n_args, IntBuffer literals, IntBuffer coefficients);
@@ -555,6 +555,8 @@ final class MonosatJNI { // package level access specifier
   public static native void AssertImpliesAnd_(
       long solverPtr, int implies, IntBuffer lits, int n_lits, int lit_out);
 
+  public static native void AssertImpliesAnd(long solverPtr, int implies, IntBuffer lits, int n_lits);
+
   public static native int Ands(long solverPtr, IntBuffer lits, int n_lits);
 
   public static native int And(long solverPtr, int lit_a, int lit_b);
@@ -576,6 +578,9 @@ final class MonosatJNI { // package level access specifier
   // This is an OR condition that holds only if implies is true
   public static native void AssertImpliesOr_(
       long solverPtr, int implies, IntBuffer lits, int n_lits, int lit_out);
+
+    public static native void AssertImpliesOr(
+            long solverPtr, int implies, IntBuffer lits, int n_lits);
 
   public static native int Ors(long solverPtr, IntBuffer lits, int n_lits);
 

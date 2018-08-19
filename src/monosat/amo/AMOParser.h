@@ -41,7 +41,7 @@ template<class B, class Solver>
 class AMOParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
 
-	vec<Var> vars;
+	vec<Lit> lits;
 	
 public:
 	AMOParser():Parser<B, Solver> ("At-Most-One") {
@@ -54,23 +54,26 @@ public:
 			return false;
 		if (match(in,"amo")){
 			//read in amo constraints the same way as clauses, except that all ints are interpreted as variables, not lits, for now:
-			vars.clear();
+			lits.clear();
 			for (;;) {
 				int parsed_var = parseInt(in);
 				if (parsed_var == 0)
 					break;
+				bool sign = false;
 				if(parsed_var<0){
-					throw parse_error("at-most-one constraints currently only accept variables (eg, must be >0), not literals");
+					sign=true;
+					parsed_var = -parsed_var;
 				}
 				Var var = parsed_var-1;
 				var= mapVar(S,var);
-				vars.push(var);
+				Lit l = mkLit(var,sign);
+				lits.push(l);
 			}
-			if(vars.size()>1){
+			if(lits.size()>1){
 				//else this constraint has no effect
 				AMOTheory * amo = new AMOTheory(&S);
-				for (Var v : vars)
-					amo->addVar(v);
+				for (Lit l : lits)
+					amo->addLit(l);
 
 			}
 			return true;
