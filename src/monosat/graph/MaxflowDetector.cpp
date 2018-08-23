@@ -771,7 +771,7 @@ bool MaxflowDetector<Weight,Graph>::propagate(vec<Lit> & conflict, bool backtrac
         return true;
     }
     static int iter1 = 0;
-    if (++iter1 == 7 ) {
+    if (++iter1==156 || iter1==19) {
         int a = 1;
     }
 
