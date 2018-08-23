@@ -324,6 +324,8 @@ if (GPL)
     MESSAGE( STATUS "Linking GPLv2 source files. Use \"cmake -DGPL=OFF\" to build without GPL sources." )
     add_definitions(-DLINK_GPL)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_FILES_GPL})
+else()
+    MESSAGE( STATUS "Not linking GPLv2 source files (this will result in reduced maximum-flow performance). Use \"cmake -DGPL=ON\" to build with GPL sources." )
 endif()
 
 
