@@ -517,7 +517,7 @@ private:
 				 F[rev[id]]-=m;
 				 }*/
 				// F[v][u] = F[v][u] - m;
-				assert(F[id] <= g.getWeight(id));
+				//assert(F[id] <= g.getWeight(id));
 				v = u;
 			}
 			dbg_print_graph(s, t, -1, -1);
