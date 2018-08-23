@@ -119,7 +119,7 @@ class EdmondsKarpDynamic: public MaxFlow<Weight>, public DynamicGraphAlgorithm {
 				///(If there is available capacity, and v is not seen before in search)
 
 				Weight f = 0;
-				Weight c = F[id];
+				Weight c = std::min(F[id],g.getWeight(id));
 
 				//  int fr = F[id];
 				if (((c - f) > 0) && (prev[v].from == -1)) {
@@ -267,15 +267,54 @@ public:
 		for (int i = history_qhead; i < g.historySize(); i++) {
 			int edgeid = g.getChange(i).id;
 			if (g.getChange(i).addition && g.edgeEnabled(edgeid)) {
-				added_Edges = true;
-				edge_enabled[edgeid] = true;
-			} else if (!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
+
+                added_Edges = true;
+                edge_enabled[edgeid] = true;
+
+			} else if (g.getChange(i).weight_increase && g.edgeEnabled(edgeid)) {
+                added_Edges = true;
+                edge_enabled[edgeid] = true;
+			}else if (g.getChange(i).weight_decrease && g.edgeEnabled(edgeid)) {
+				Weight fv = F[edgeid];
+				edge_enabled[edgeid]=true;
+				//check if the maxflow from u to v has not lowered now that we've decreased this edge.
+				//if it hasn't, then we are still safe
+				int u = g.getEdge(edgeid).from;
+				int v = g.getEdge(edgeid).to;
+
+				if (fv < 0) {
+					std::swap(u, v);
+					fv = -fv;
+				}
+				assert(fv >= 0);
+				if(fv> g.getWeight(edgeid)) {
+
+					Weight diff = fv-g.getWeight(edgeid);
+					F[edgeid] = g.getWeight(edgeid);
+					//F[edgeid] = std::min(F[edgeid],g.getWeight(edgeid));
+					Weight flow = maxFlow_residual(u, v, diff);                        //fix this!
+					assert(flow <= diff);
+                    assert(diff>=0);
+					if (flow == diff) {
+						//then we are ok.
+					} else {
+
+						//the total flow in the network has to be decreased by delta.
+						Weight delta = diff - flow;
+						assert(delta > 0);
+						needsReflow = true;
+						//temporarily connect s and t by an arc of infinite capacity and run maxflow algorithm again from vin to vout
+						flow = maxFlow_p(u, v, s, t, delta);
+
+					}
+
+					markChanged(edgeid);
+				}
+			}else if(!g.getChange(i).addition && !g.edgeEnabled(edgeid)) {
 				//assert(edge_enabled[edgeid]);
 				edge_enabled[edgeid] = false;
 				Weight fv = F[edgeid]; //g.all_edges[edgeid].from;
-				if (fv == 0) {
-					//do nothing.
-				} else {
+				if(fv>0){
 					//ok, check if the maxflow from u to v has not lowered now that we've removed this edge.
 					//if it hasn't, then we are still safe
 					int u = g.getEdge(edgeid).from;
@@ -285,7 +324,7 @@ public:
 						std::swap(u, v);
 						fv = -fv;
 					}
-					assert(fv > 0);
+					assert(fv >= 0);
 					Weight flow = maxFlow_residual(u, v, fv);    					//fix this!
 					assert(flow <= fv);
 					if (flow == fv) {
@@ -422,7 +461,7 @@ private:
 		}
 	}
 
-	Weight maxFlow_residual(int s, int t, Weight & bound) {
+	Weight maxFlow_residual(int s, int t, Weight bound) {
 		/*
 		 #ifdef DEBUG_DGL
 		 Graph d;
@@ -455,13 +494,13 @@ private:
 		while (true) {
 			dbg_print_graph(s, t, -1, -1);
 			Weight m = BreadthFirstSearch(s, t, bound);
-			if (bound >= 0 && new_flow + m > bound) {
-				m = bound - new_flow;
+			if (bound >= 0 && m > bound) {
+				m = bound;
 			}
 
 			if (m <= 0)
 				break;
-
+			bound-=m;
 			new_flow = new_flow + m;
 
 			int v = t;
@@ -576,7 +615,7 @@ private:
 
 			for (int i = 0; i < g.nIncoming(u); i++) {
 				int id = g.incoming(u, i).id;
-				if (!edge_enabled[(g.incoming(u, i).id)])
+				if (!edge_enabled[id])
 					continue;
 
 				int v = g.incoming(u, i).node;
@@ -665,7 +704,7 @@ private:
 #endif
 	}
 
-	Weight maxFlow_p(int s, int t, int shortCircuitFrom, int shortCircuitTo, Weight & bound) {
+	Weight maxFlow_p(int s, int t, int shortCircuitFrom, int shortCircuitTo, Weight bound) {
 		//
 		Weight newFlow = 0;
 #ifdef DEBUG_DGL
@@ -707,12 +746,13 @@ private:
 			Weight m = BreadthFirstSearch(s, t, shortCircuitFrom, shortCircuitTo, bound, shortCircuitFlow,
 										  allow_flow_cycles);
 
-			if (bound >= 0 && newFlow + m > bound) {
-				m = bound - newFlow;
+			if (bound >= 0 && m > bound) {
+				m = bound;
 			}
 			if (m == 0)
 				break;
-
+			assert(m>=0);
+			bound-=m;
 			newFlow = newFlow + m;
 
 			int v = t;
@@ -738,7 +778,7 @@ private:
 					assert(id >= 0);
 					assert(id < F.size());
 
-					assert(F[id] <= g.getWeight(id));
+
 				} else {
 					u = shortCircuitFrom;
 				}

@@ -1285,7 +1285,7 @@ public:
     const Weight update() override {
         if (!warning_issued){
             warning_issued=true;
-            fprintf(stderr,"Warning: MonoSAT was built without GPL sources, which may decrease performance of the solver on Maximum Flow predicates.\n");
+            fprintf(stderr,"Warning: MonoSAT was built without GPL sources, which will greatly decrease performance of the solver on maximum flow predicates.\n");
         }
         return EdmondsKarpDynamic<Weight>::update();
     }

@@ -1442,7 +1442,7 @@ public:
 		static vec<Lit> c;
 		c.clear();
 		for (int i = 0; i < S->trail.size(); i++) {
-			if (!S->hasTheory(S->trail[i]) || S->getTheoryID(S->trail[i]) != getTheoryIndex())
+			if (!S->hasTheory(S->trail[i]) || S->theoryHasVar(var(S->trail[i]),this) != getTheoryIndex())
 				continue;
 			Lit l = S->getTheoryLit(S->trail[i],this);
 			Var v = var(l);
@@ -2443,7 +2443,7 @@ public:
 
 
 		static int itp = 0;
-		if (++itp == 57) {
+		if (++itp == 33) {
 			int a = 1;
 		}
 		dbg_graphsUpToDate();
