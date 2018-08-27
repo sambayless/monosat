@@ -568,9 +568,7 @@ public:
 			const_true=mkLit(newVar(false,false));
 			addClause(const_true);
 			assert(isConstantTrue(const_true));
-			if(!hasName(var(const_true))) {
-				setVariableName(var(const_true), "True");
-			}
+			addVariableName(var(const_true), "True");
 		}
 
 		return const_true;
@@ -591,18 +589,31 @@ public:
 	bool hasVariable(const std::string & name){
 		return getVariable(name)!=var_Undef;
 	}
-	bool hasName(Var v){
-		return getVariableName(v).size()>0;
+	int variableNameCount(Var v){
+		if(v<0 | !varnames.count(v)){
+			return 0;
+		}else{
+			return varnames[v].size();
+		}
+	}
+	bool hasName(Var v, std::string name){
+		return v!=var_Undef && getVariable(name)==v;
 	}
 	//Associate variable v with a name.
 	//If name is empty, then remove any existing name associated with v
-	void setVariableName(Var v, const std::string & name);
-	//Returns the name associated with this variable, or an empty string of there is no name.
-	const std::string & getVariableName(Var v){
+	//If the variable already has this name, do nothing
+	void addVariableName(Var v, const std::string & name);
+	//Returns the nth name associated with this variable, or an empty string of there is no name.
+	const std::string & getVariableName(Var v, int nameIndex =0){
 		if(v<0 || !varnames.count(v)){
 			return empty_name;
 		}
-		return varnames[v];
+		std::vector<std::string> & names = varnames[v];
+		if(nameIndex<0 || names.size()<nameIndex){
+			return empty_name;
+		}else{
+			return names[nameIndex];
+		}
 	}
 
 	//Get the variable associated with this name (if any).
@@ -736,7 +747,7 @@ public:
 	int super_offset = -1;
 	DimacsMap * varRemap=nullptr;
 
-    std::map<int,std::string> varnames;  //Optional names associated with each variable
+    std::map<int,std::vector<std::string>> varnames;  //Optional names associated with each variable
 	std::map<std::string, int> namemap; //variable name lookup map
     vec<Var> named_variables;//all variables that have names, in the order they were named
     static const std::string empty_name;

@@ -66,15 +66,28 @@ final class MonosatJNI { // package level access specifier
   //this will be called automatically if the solver is deleted
   public static native void closeFile (long solverPtr);
 
-  // Set a variable name. Name must consist of printable ascii characeters,
-  // and must be unique (or it may be empty). If variable previously had a name
-  // that name will be replaced by this one. If name is empty, then
-  // variable will no longer have a name after this call.
-  public static native void setVariableName(long solverPtr, int variable, String name);
+  // Adds a variable name. The name must consist of printable ascii characeters,
+  // and must be unique (or it may be empty). If the variable previously had
+  // a name, it will have multiple names after this call.
+  public static native void addVariableName(long solverPtr, int variable, String name);
 
-  public static native String getVariableName(long solverPtr, int variable);
+  // True if the specified variable has the given name
+  public static native boolean variableHasName(long solverPtr, int variable, String name);
 
-  public static native boolean variableHasName(long solverPtr, int variable);
+
+
+  /*
+   * Get a variable's name. If the variable has more than one name, then name index
+   * selects which name to return (in the order they were assigned).
+   * Otherwise, it should be set to 0.
+   * If the variable has no names, or if nameIndex is out of range, this returns
+   * the empty string.
+   */
+  public static native String getVariableName(long solverPtr, int variable, int nameIndex);
+
+
+  //Return the number of names associated with a variable.
+  public static native int variableNameCount(long solverPtr, int variable);
 
   public static native boolean hasVariableWithName(long solverPtr, String name);
 

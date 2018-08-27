@@ -139,20 +139,20 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_closeFile
     javaThrow(env);
 }
 
-JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setVariableName
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addVariableName
         (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable, jstring name) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     const char *str = env->GetStringUTFChars(name, 0);
-    setVariableName(solver,variable,str);
+    addVariableName(solver,variable,str);
     env->ReleaseStringUTFChars(name, str);
 }catch(...) {
     javaThrow(env);
 }
 
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable) try {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable,jint nameIndex) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    const char * name = getVariableName(solver,variable);
+    const char * name = getVariableName(solver,variable,nameIndex);
     return env->NewStringUTF(name);
 }catch(...) {
     javaThrow(env);
@@ -160,9 +160,23 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
 }
 
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_variableHasName
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable,jstring name) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    const char *str = env->GetStringUTFChars(name, 0);
+    jboolean result = variableHasName(solver,variable,str);
+    env->ReleaseStringUTFChars(name, str);
+    return result;
+}catch(...) {
+    javaThrow(env);
+    return false; //unreachable
+}
+
+
+
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_variableNameCount
         (JNIEnv *env, jclass monosat_class, jlong solverPtr,jint variable) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
-    return variableHasName(solver,variable);
+    return variableNameCount(solver,variable);
 }catch(...) {
     javaThrow(env);
     return false;

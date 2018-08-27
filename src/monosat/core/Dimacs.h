@@ -166,11 +166,7 @@ public:
 				used_symbols.insert(name_str);
 				Var internalVar = mapVar(S,externalVar);
 
-				if(S.hasVariable(name_str) && S.getVariable(name_str)!=internalVar){
-					//The solver is in a bad state
-					parse_errorf("Variable renamed while reading GNF file %s\n", name_str.c_str());
-				}
-				S.setVariableName(internalVar,name_str);
+				S.addVariableName(internalVar,name_str);
 
 				return true;
 			} else {

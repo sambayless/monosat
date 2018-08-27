@@ -1560,6 +1560,31 @@ public final class Solver implements Closeable {
     return new BitVector(this, width, constant);
   }
 
+    /**
+     * Assign a name to a literal.
+     * <p>
+     * Literals in MonoSAT may have zero or more names.
+     * Positive and negative signed literals of a variable share the same names.
+     * @param l The literal to add a name to.
+     * @param name The name to assign to the literal.
+     * If the string is empty, then no name will be
+     * added to this literal. Otherwise, the name must be unique,
+     * and is restricted to printable ASCII characters.
+     *
+     * @throws IllegalArgumentException If the new name is not a valid ID.
+     */
+    public void addName(Lit l, String name) {
+        validate(l);
+        if(name!=null && name.length()>0) {
+            String proposedName = MonosatJNI.validID(name);
+            MonosatJNI.addVariableName(getSolverPtr(), l.toVar(), proposedName);
+            if (l._name == null || l._name.length() == 0) {
+                l._name = proposedName;
+                l.not()._name = proposedName;
+            }
+        }
+    }
+
   /**
    * Returns an iterator over the (positive) literals in the solver. Each literal in the iterator
    * has positive sign.

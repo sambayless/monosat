@@ -105,26 +105,34 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_closeFile
 
 /*
  * Class:     monosat_MonosatJNI
- * Method:    setVariableName
+ * Method:    addVariableName
  * Signature: (JILjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setVariableName
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addVariableName
+  (JNIEnv *, jclass, jlong, jint, jstring);
+
+/*
+ * Class:     monosat_MonosatJNI
+ * Method:    variableHasName
+ * Signature: (JILjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_variableHasName
   (JNIEnv *, jclass, jlong, jint, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
  * Method:    getVariableName
- * Signature: (JI)Ljava/lang/String;
+ * Signature: (JII)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
-  (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
- * Method:    variableHasName
- * Signature: (JI)Z
+ * Method:    variableNameCount
+ * Signature: (JI)I
  */
-JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_variableHasName
+JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_variableNameCount
   (JNIEnv *, jclass, jlong, jint);
 
 /*

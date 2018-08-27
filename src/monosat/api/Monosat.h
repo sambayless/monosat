@@ -164,14 +164,17 @@ typedef int64_t Weight;
   //If the name is not empty, and is non-unique or invalid, an exception will be thrown and no variable will be created at all.
   int newNamedVar(SolverPtr S,const char  * varname);
 
-  //Associate a unique name with this variable.
+  //Associate a unique name with this variable. Variables may have multiple names.
   //varname must consist of printable ascii characters, and may not contain a newline.
-  //If varname is null or length-0, then this will remove any existing name.
-  //If varname is non-unique, or if this variable already has a name, throw an excpetion
-  void setVariableName(SolverPtr S, int variable, const char  * varname);
-  bool variableHasName(SolverPtr S, int variable);
+  //If varname is null or length-0, or equal to an existing name of this variable, this will have no effect.
+  //If varname is non-unique throw an excpetion
+  void addVariableName(SolverPtr S, int variable, const char  * varname);
+  //True iff this variable's names include varname
+  bool variableHasName(SolverPtr S, int variable, const char  * varname);
+  //The number of names associated with this variable.
+  int variableNameCount(SolverPtr S, int variable);
   bool hasVariableWithName(SolverPtr S, const char * name);
-  const char * getVariableName(SolverPtr S, int variable);
+  const char * getVariableName(SolverPtr S, int variable, int nameIndex);
   int getVariable(SolverPtr S, const char * varname);
 
   //Get the nth named variable (in the order that the named variables were assigned names)

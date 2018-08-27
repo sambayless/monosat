@@ -1050,7 +1050,7 @@ int newNamedVar(Monosat::SimpSolver * S,const char  * varname){
             }
         }
         Var v = S->newVar();
-        setVariableName(S,externalVar(S,v),varname);
+        addVariableName(S,externalVar(S,v),varname);
         return externalVar(S,v);
     }else{
         return newVar(S);
@@ -1059,19 +1059,30 @@ int newNamedVar(Monosat::SimpSolver * S,const char  * varname){
 }
 
 
-void setVariableName(Monosat::SimpSolver * S, int variable, const char  * varname){
-	if(varname==nullptr){
-		S->setVariableName(internalVar(S,variable), "");
+void addVariableName(Monosat::SimpSolver * S, int variable, const char  * varname){
+	if(varname==nullptr || strlen(varname)<=0){
+		//do nothing
+		//S->addVariableName(internalVar(S,variable), "");
 	}else{
 		std::string name(varname);
-		S->setVariableName(internalVar(S,variable), varname);
+		S->addVariableName(internalVar(S,variable), varname);
 		write_out(S, "symbol %d %s\n", variable + 1, varname);
 	}
 }
 
-bool variableHasName(Monosat::SimpSolver * S, int variable){
-	return S->hasName(internalVar(S,variable));
+int variableNameCount(Monosat::SimpSolver * S, int variable){
+	return S->variableNameCount(internalVar(S,variable));
 }
+
+bool variableHasName(Monosat::SimpSolver * S, int variable, const char * varname){
+	if(varname==nullptr || strlen(varname)<=0){
+		return false;
+	}else {
+		std::string name(varname);
+		return S->hasName(internalVar(S, variable),varname);
+	}
+}
+
 bool hasVariableWithName(Monosat::SimpSolver * S, const char * name){
 	return S->hasVariable(name);
 }
@@ -1079,8 +1090,8 @@ Var getVariable(Monosat::SimpSolver * S, const char * varname){
 	return externalVar(S,S->getVariable(varname));
 }
 //Return the name associated with this string, or the empty string if there is no name associated with this string.
-const char * getVariableName(Monosat::SimpSolver * S, int variable){
-	return S->getVariableName(internalVar(S,variable)).c_str();
+const char * getVariableName(Monosat::SimpSolver * S, int variable,int nameIndex){
+	return S->getVariableName(internalVar(S,variable),nameIndex).c_str();
 }
 
 Var getNamedVariableN(Monosat::SimpSolver * S,int n){

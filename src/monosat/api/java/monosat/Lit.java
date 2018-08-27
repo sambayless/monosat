@@ -21,6 +21,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 package monosat;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -74,7 +76,11 @@ public final class Lit {
   /** The solver instance this literal belongs to. */
   protected final monosat.Solver solver;
 
-  private String _name;
+  /**
+  * The name of the variable, if any.
+  * If the variable has multiple names, this contains the first assigned name.
+  */
+  protected String _name = "";
   /**
    * The integer value of this literal. Note that this is not marked final, as released literals may
    * be renumbered.
@@ -104,7 +110,7 @@ public final class Lit {
     assert (literal >= 0);
     this.l = literal;
     this.solver = solver;
-    this._name = MonosatJNI.getVariableName(solver.getSolverPtr(), toVar());
+    this._name = MonosatJNI.getVariableName(solver.getSolverPtr(), toVar(),0);
   }
 
   /**
@@ -279,39 +285,49 @@ public final class Lit {
     return ((l / 2) + 1) * (this.sign() ? -1 : 1);
   }
 
+    /**
+     * Get the name of this variable. If this variable has multiple names,
+     * return the first assigned name. If it has no name, return the empty string.
+     * Note that both polarities of a variable share the same names.
+     * @return The name of this literal.
+     */
   public String name() {
     return _name;
   }
 
+    /**
+     * Return all the names of the variable.
+     * @return All the names of this variable.
+     */
+  public Iterable<String> names(){
+      return new NameIterator();
+  }
+
+
+
   /**
-   * Assign a name to this (previously unnamed) literal.
-   * <p>
-   * @param name The name to assign to this literal.
-   * If the string is empty, then no name will be
-   * associated with * the literal. Otherwise, the name must be unique,
-   * and is restricted to printable ASCII characters.
-   * @throws IllegalArgumentException If the variable was previously named,
-   * or if the new name is not a valid ID.
+   * Synonym for Solver.addName(); adds a name to this variable.
+   *
+   * @see Solver#addName
+   * @param name The name to add to this solver
+   * @throws IllegalArgumentException If the new name is not a valid ID.
    */
+  @Deprecated
   public void setName(String name) {
-    if(name==null || name.length()==0){
-      if (this._name.length() > 0) {
-        throw new IllegalArgumentException(
-                "Previously named literals cannot be renamed (this literal is already named "
-                        + name() + ")");
+      getSolver().addName(this,name);
+  }
+
+  public boolean hasName(String name) {
+      if (this == Lit.True || this==Lit.False || this==Lit.Undef || this==Lit.Error) {
+          return _name.equals(name);
       }
-    } else {
-      if (this._name.length() > 0) {
-        throw new IllegalArgumentException(
-            "Previously named literals cannot be renamed (this literal is already named "
-                + name() + ")");
-      } else {
-        String proposedName = MonosatJNI.validID(name);
-        MonosatJNI.setVariableName(solver.getSolverPtr(), toVar(), proposedName);
-        _name = proposedName;
-        not()._name = proposedName;
-      }
-    }
+
+      if(name!=null && name.length()>0) {
+            String proposedName = MonosatJNI.validID(name);
+            return MonosatJNI.variableHasName(solver.getSolverPtr(), toVar(), proposedName);
+        }else{
+            return false;
+        }
   }
 
   @Override
@@ -532,4 +548,46 @@ public final class Lit {
     }
     return !getConstantValue().orElse(true);
   }
+
+
+    /** An iterator over names of a literal. */
+    public class NameIterator implements java.util.Iterator<String>,java.lang.Iterable<String> {
+        private int index = 0;
+
+        protected NameIterator() {
+
+        }
+
+        @Override
+        public boolean hasNext() {
+            if(Lit.this == Lit.True || Lit.this==Lit.False || Lit.this==Lit.Undef || Lit.this==Lit.False){
+                return index==0;
+            }else {
+                return index < MonosatJNI.variableNameCount(Lit.this.getSolver().getSolverPtr(), Lit.this.toVar());
+            }
+        }
+
+        @Override
+        public String next() {
+            if (!hasNext()) {
+                throw new IndexOutOfBoundsException();
+            }
+            if(Lit.this == Lit.True || Lit.this==Lit.False || Lit.this==Lit.Undef || Lit.this==Lit.False){
+                return Lit.this._name;
+            }else {
+                return MonosatJNI.getVariableName(Lit.this.getSolver().getSolverPtr(), Lit.this.toVar(), index++);
+            }
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterator<String> iterator() {
+            return this;
+        }
+    }
+
 }
