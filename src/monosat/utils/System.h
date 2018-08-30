@@ -48,7 +48,6 @@ static inline double Monosat::fastTime(void) {return (double)clock() / CLOCKS_PE
 
 #else
 #include <ctime>
-#include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
 static inline double Monosat::fastTime(void) {

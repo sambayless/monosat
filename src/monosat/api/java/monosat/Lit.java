@@ -573,6 +573,7 @@ public final class Lit {
                 throw new IndexOutOfBoundsException();
             }
             if(Lit.this == Lit.True || Lit.this==Lit.False || Lit.this==Lit.Undef || Lit.this==Lit.False){
+                index=1;
                 return Lit.this._name;
             }else {
                 return MonosatJNI.getVariableName(Lit.this.getSolver().getSolverPtr(), Lit.this.toVar(), index++);
