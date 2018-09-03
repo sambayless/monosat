@@ -35,7 +35,7 @@
 #include "monosat/core/Config.h"
 #include <cinttypes>
 #include <map>
-
+#include <string>
 
 
 
@@ -590,7 +590,7 @@ public:
 		return getVariable(name)!=var_Undef;
 	}
 	int variableNameCount(Var v){
-		if(v<0 | !varnames.count(v)){
+		if((v<0) || !varnames.count(v)){
 			return 0;
 		}else{
 			return varnames[v].size();
