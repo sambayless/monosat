@@ -36,7 +36,8 @@
 #include <cinttypes>
 #include <map>
 #include <string>
-
+#include <sstream>
+#include <iostream>
 
 
 namespace Monosat {
@@ -604,7 +605,7 @@ public:
 	//If the variable already has this name, do nothing
 	void addVariableName(Var v, const std::string & name);
 	//Returns the nth name associated with this variable, or an empty string of there is no name.
-	const std::string & getVariableName(Var v, int nameIndex =0){
+	const std::string getVariableName(Var v, int nameIndex =0){
 		if(v<0 || !varnames.count(v)){
 			return empty_name;
 		}
