@@ -3265,7 +3265,7 @@ void Solver::addVariableName(Var v, const std::string & name){
 
 		if (hasVariable(name)){
 		    if(getVariable(name)!=v) {
-                throw std::invalid_argument("All variable names must be unique.");
+                throw std::invalid_argument("All variable names must be unique: " + name);
             }else{
 		        //this variable already has this name, do nothing
 		        return;

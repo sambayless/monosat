@@ -235,7 +235,7 @@ public final class BitVector {
 
       if (MonosatJNI.hasBitvectorWithName(solver.getSolverPtr(), solver.bvPtr, name)) {
         // this name is already used
-        throw new IllegalArgumentException("No two bitvectors may have the same (non-empty) name");
+        throw new IllegalArgumentException("No two bitvectors may have the same (non-empty) name: " + name);
       }
 
     } else {

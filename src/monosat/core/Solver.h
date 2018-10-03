@@ -135,7 +135,7 @@ public:
 	void addTheory(Theory*t) override {
 		if(t->getName().size()>0) {
 		    if (theorymap.count(t->getName())>0){
-                throw std::invalid_argument("All theory names must be unique.");
+                throw std::invalid_argument("All theory names must be unique: "  + t->getName());
 		    }
 			theorymap.insert({t->getName(), t});
 		}

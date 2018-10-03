@@ -1040,7 +1040,7 @@ int newNamedVar(Monosat::SimpSolver * S,const char  * varname){
     if(varname != nullptr && strlen(varname)>0) {
         std::string name(varname);
         if (S->hasVariable(name)){
-            throw std::invalid_argument("All variable names must be unique.");
+            throw std::invalid_argument(std::string("All variable names must be unique: ") + std::string(varname));
         }else{
             //check if any chars of name are illegal
             for(char c:name){
