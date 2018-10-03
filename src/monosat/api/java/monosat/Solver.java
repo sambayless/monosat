@@ -77,7 +77,7 @@ public final class Solver implements Closeable {
   /**
    * Contains only the positive versions of instantiated literals, in the order they were created.
    */
-  private final LinkedHashSet<Lit> positiveLiterals = new LinkedHashSet<>();
+  private final ArrayList<Lit> positiveLiterals = new ArrayList<>();
   /** Each unique bitvector, stored by bvID. */
   private final ArrayList<BitVector> bvmap = new ArrayList<>();
   /**
@@ -314,7 +314,7 @@ public final class Solver implements Closeable {
       // is the same as this True Lit.
 
       assert (Lit.True == toLit(true_lit));
-      assert (positiveLiterals.contains(Lit.True));
+
     }
     initBV();
     initBuffers();
@@ -1204,10 +1204,8 @@ public final class Solver implements Closeable {
     assert (allLits.get(l.l) == l);
 
     if (l.sign()) {
-      assert (!positiveLiterals.contains(notL));
       positiveLiterals.add(notL);
     } else {
-      assert (!positiveLiterals.contains(l));
       positiveLiterals.add(l);
     }
   }
@@ -1239,7 +1237,6 @@ public final class Solver implements Closeable {
       assert (!allLits.get(var * 2).sign());
       assert (allLits.get(var * 2 + 1).sign());
 
-      assert (!positiveLiterals.contains(l));
       positiveLiterals.add(l);
     }
     assert (allLits.get(literal) != null);
@@ -1253,7 +1250,7 @@ public final class Solver implements Closeable {
    * @return unmodifiable view of the positive literals in the solver.
    */
   public Collection<Lit> getLits() {
-    return Collections.unmodifiableSet(positiveLiterals);
+    return positiveLiterals;
   }
 
   /**

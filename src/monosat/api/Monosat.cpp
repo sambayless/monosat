@@ -1091,7 +1091,9 @@ Var getVariable(Monosat::SimpSolver * S, const char * varname){
 }
 //Return the name associated with this string, or the empty string if there is no name associated with this string.
 const char * getVariableName(Monosat::SimpSolver * S, int variable,int nameIndex){
-	return S->getVariableName(internalVar(S,variable),nameIndex).c_str();
+	const std::string & name = S->getVariableName(internalVar(S,variable),nameIndex);
+	const char * str = name.c_str();
+	return str;
 }
 
 Var getNamedVariableN(Monosat::SimpSolver * S,int n){
