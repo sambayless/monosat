@@ -5070,7 +5070,7 @@ public:
 	CRef popcount_marker;
 	Lit const_true=lit_Undef;
 	vec<int> named_bvs;//all bit vectors with names, in the order they were created
-	std::vector<std::string> symbols;
+	std::vector<std::vector<std::string>> symbols;
 	std::map<std::string,int> symbol_map;
 	vec<Assignment> trail;
 	vec<int> trail_lim;
@@ -7873,31 +7873,38 @@ public:
 		requiresPropagation=true;
 		return getBV(resultID);
 	}
-	void setSymbol(int bvID, const std::string & symbol){
+	void addSymbol(int bvID, const std::string & symbol){
 	    if(bvID<0 || bvID>=symbols.size()){
 			throw std::invalid_argument("No such bitvector");
 	    }
-	    if (symbols[bvID].size()>0){
-			throw std::invalid_argument("Redefined bitvector symbol");
-	    }
-
-		if (symbol.size()>0){
+	    if (symbol.size()>0){
 
 	    	if (symbol_map.count(symbol)>0){
-				throw std::invalid_argument("All bitvector names must be unique");
+	    	    if(symbol_map[symbol]!=bvID) {
+                    throw std::invalid_argument("All bitvector names must be unique: " + symbol);
+                }else{
+	    	        //this bv already has this name, do nothing
+	    	        return;
+	    	    }
 	    	}
-			named_bvs.push(bvID);
-            symbols[bvID]=symbol;
+	    	if(symbols[bvID].size()==0) {
+                named_bvs.push(bvID);
+            }
+            symbols[bvID].push_back(symbol);
             symbol_map.insert({symbol,bvID});
 		}else{
 	    	//do nothing
 	    }
 	}
-
-	const std::string & getSymbol(int bvID){
+    /**
+     * Get the name of a bitvector, if it has a name.
+     * If the bitvector has multiple names, return the 'nameIndex'th name.
+     * @return
+     */
+	const std::string & getSymbol(int bvID, int nameIndex=0){
 		static std::string empty("");
-		if(bvID>=0 && bvID<symbols.size()) {
-			return symbols[bvID];
+		if(bvID>=0 && bvID<symbols.size() && nameIndex>=0 && nameIndex<symbols[bvID].size()) {
+			return symbols[bvID][nameIndex];
 		}else{
 			return empty;
 		}
@@ -7978,7 +7985,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		symbols.resize(bvID+1,std::string());
+		symbols.resize(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -8227,7 +8234,7 @@ public:
 
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		symbols.resize(bvID+1,std::string());
+		symbols.resize(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -8292,7 +8299,7 @@ public:
 		//bv_callbacks.growTo(id+1,nullptr);
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		symbols.resize(bvID+1,std::string());
+		symbols.resize(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);
@@ -8354,7 +8361,7 @@ public:
 
 		bitvectors.growTo(bvID+1);
 		theoryIds.growTo(bvID+1,-1);
-		symbols.resize(bvID+1,std::string());
+		symbols.resize(bvID+1);
 		under_approx.growTo(bvID+1,-1);
 		over_approx.growTo(bvID+1,-1);
 		under_approx0.growTo(bvID+1,-1);

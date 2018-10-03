@@ -562,10 +562,11 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasBitvectorWithName
 /*
  * Class:     monosat_MonosatJNI
  * Method:    getBitvectorName
- * Signature: (JJI)Ljava/lang/String;
+ * Signature: (JJII)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getBitvectorName
-  (JNIEnv *, jclass, jlong, jlong, jint);
+  (JNIEnv *, jclass, jlong, jlong, jint,jint);
+
 
 /*
  * Class:     monosat_MonosatJNI

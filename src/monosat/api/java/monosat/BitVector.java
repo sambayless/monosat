@@ -61,7 +61,7 @@ public final class BitVector {
   private final int width;
   private final Solver solver;
   private final ArrayList<Lit> bits = new ArrayList<Lit>();
-  private final String _name;
+  protected String _name;
 
   /**
    * MonoSAT supports different types of bitvectors.

@@ -724,10 +724,10 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasBitvectorWithName
 
 
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getBitvectorName
-        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID) try {
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong bitvectorPtr, jint bvID, int nameIndex) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
     BVTheoryPtr bv = reinterpret_cast<BVTheoryPtr>(bitvectorPtr);
-    return  env->NewStringUTF(getBitvectorName(solver,bv,bvID));
+    return  env->NewStringUTF(getBitvectorName(solver,bv,bvID,nameIndex));
 }catch(...) {
     javaThrow(env);
     return 0;

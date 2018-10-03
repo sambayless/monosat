@@ -1581,7 +1581,28 @@ public final class Solver implements Closeable {
             }
         }
     }
-
+    /**
+     * Assign a name to a BitVector.
+     * <p>
+     * BitVectors in MonoSAT may have zero or more names.
+     * @param bv The BitVector to add a name to.
+     * @param name The name to assign to the BitVector.
+     * If the string is empty, then no name will be
+     * added to this BitVector. Otherwise, the name must be unique,
+     * and is restricted to printable ASCII characters.
+     *
+     * @throws IllegalArgumentException If the new name is not a valid ID.
+     */
+    public void addName(BitVector bv, String name) {
+        validate(bv);
+        if(name!=null && name.length()>0) {
+            String proposedName = MonosatJNI.validID(name);
+            MonosatJNI.setBitvectorName(getSolverPtr(),bvPtr, bv.getID(), proposedName);
+            if (bv._name == null || bv._name.length() == 0) {
+                bv._name = proposedName;
+            }
+        }
+    }
   /**
    * Returns an iterator over the (positive) literals in the solver. Each literal in the iterator
    * has positive sign.

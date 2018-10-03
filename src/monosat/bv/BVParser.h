@@ -854,7 +854,7 @@ public:
 				int bvID = symbols[i].first;
 
 				if (theory->hasBV(bvID)){
-					theory->setSymbol(bvID, symbols[i].second);
+					theory->addSymbol(bvID, symbols[i].second);
 				}else{
 					fprintf(stderr,"Unmatched bv symbol definition for %d : %s\n",bvID,symbols[i].second.c_str());
 				}

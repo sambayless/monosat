@@ -1055,14 +1055,11 @@ int newNamedVar(Monosat::SimpSolver * S,const char  * varname){
     }else{
         return newVar(S);
     }
-
 }
-
 
 void addVariableName(Monosat::SimpSolver * S, int variable, const char  * varname){
 	if(varname==nullptr || strlen(varname)<=0){
 		//do nothing
-		//S->addVariableName(internalVar(S,variable), "");
 	}else{
 		std::string name(varname);
 		S->addVariableName(internalVar(S,variable), varname);
@@ -1269,7 +1266,7 @@ int newBitvector(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv,
 
 void setBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, const char * name){
 	if(name != nullptr && strlen(name)>0) {
-		bv->setSymbol(internalBV(bv,bvID), name);
+		bv->addSymbol(internalBV(bv,bvID), name);
 		write_out(S, "bv symbol %d %s\n", bvID, name);
 	}
 }
@@ -1282,8 +1279,8 @@ bool hasBitvectorWithName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64
 	return bv->hasBitVector(name);
 }
 
-const char * getBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID){
-	return bv->getSymbol(internalBV(bv,bvID)).c_str();
+const char * getBitvectorName(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bv, int bvID, int nameIndex){
+	return bv->getSymbol(internalBV(bv,bvID),nameIndex).c_str();
 }
 
 /*

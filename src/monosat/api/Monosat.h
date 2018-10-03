@@ -233,7 +233,7 @@ typedef int64_t Weight;
   int newBitvector(SolverPtr S, BVTheoryPtr bv, int * bits, int n_bits);
 
   void setBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID, const char * name);
-  const char * getBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID);
+  const char * getBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID, int nameIndex);
   int getBitvector(SolverPtr S, BVTheoryPtr bv, const char * name);
 
   //True if this bit vector has a non-empty name.
