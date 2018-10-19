@@ -569,7 +569,7 @@ public:
 			const_true=mkLit(newVar(false,false));
 			addClause(const_true);
 			assert(isConstantTrue(const_true));
-			addVariableName(var(const_true), "True");
+			addLiteralName(const_true, "True");
 		}
 
 		return const_true;
@@ -587,29 +587,30 @@ public:
 		varRemap=map;
 	}
 
-	bool hasVariable(const std::string & name){
-		return getVariable(name)!=var_Undef;
+	bool hasLiteral(const std::string & name){
+		return getLiteral(name)!=lit_Undef;
 	}
-	int variableNameCount(Var v){
-		if((v<0) || !varnames.count(v)){
+	int literalNameCount(Lit l){
+		if((var(l)<0) || !litnames.count(toInt(l))){
 			return 0;
 		}else{
-			return varnames[v].size();
+			return litnames[toInt(l)].size();
 		}
 	}
-	bool hasName(Var v, std::string name){
-		return v!=var_Undef && getVariable(name)==v;
+	bool hasName(Lit l, std::string name){
+		return var(l)>=0 && getLiteral(name)==l;
 	}
 	//Associate variable v with a name.
 	//If name is empty, then remove any existing name associated with v
 	//If the variable already has this name, do nothing
-	void addVariableName(Var v, const std::string & name);
+    //Assigned the negated polarity the same name prefixed with '~'
+	void addLiteralName(Lit l, const std::string & name);
 	//Returns the nth name associated with this variable, or an empty string of there is no name.
-	const std::string & getVariableName(Var v, int nameIndex =0){
-		if(v<0 || !varnames.count(v)){
+	const std::string & getLiteralName(Lit l, int nameIndex =0){
+		if(l==lit_Undef || !litnames.count(toInt(l))){
 			return empty_name;
 		}
-		std::vector<std::string> & names = varnames[v];
+		std::vector<std::string> & names = litnames[toInt(l)];
 		if(nameIndex<0 || names.size()<nameIndex){
 			return empty_name;
 		}else{
@@ -619,16 +620,17 @@ public:
 
 	//Get the variable associated with this name (if any).
 	//Returns Var_Undef if there is no variable assocaited with this name.
-	Var getVariable(const std::string & name){
+	Lit getLiteral(const std::string & name){
 		if (!namemap.count(name)){
-			return var_Undef;
+			return lit_Undef;
 		}
 		return namemap[name];
 	}
+    const vec<Lit> & namedLiterals(){
+        return named_literals;
+    }
 
-	const vec<Var> & namedVariables(){
-        return named_variables;
-	}
+
 
 	// Variable mode:
 	//
@@ -748,9 +750,10 @@ public:
 	int super_offset = -1;
 	DimacsMap * varRemap=nullptr;
 
-    std::map<int,std::vector<std::string>> varnames;  //Optional names associated with each variable
-	std::map<std::string, int> namemap; //variable name lookup map
-    vec<Var> named_variables;//all variables that have names, in the order they were named
+    std::map<int,std::vector<std::string>> litnames;  //Optional names associated with each literal
+	std::map<std::string, Lit> namemap; //literal name lookup map
+    vec<Lit> named_literals;//all literals that have names, in the order they were named
+
     static const std::string empty_name;
 
 

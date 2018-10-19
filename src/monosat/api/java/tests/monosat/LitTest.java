@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
 
 public class LitTest {
   static final String tricky_name =
-      "~`Name-with/\"\'//<>printable_\\characters?!@#$%^&*()-+{}[]|1234567890";
+      "`Name-with/\"\'//<>printable_\\characters?!@#$%^&*()-+{}[]|1234567890";
 
   @Test
   public void testGlobals() {
@@ -181,8 +181,8 @@ public class LitTest {
 
       assertEquals(a.name(), a.not().name());
       assertEquals(b.name(), b.not().name());
-      assertEquals(c.name(),c.not().name());
-      assertEquals(e.name(), e.not().name());
+      assertEquals("~" + c.name(),c.not().name());
+      assertEquals("~" +e.name(), e.not().name());
 
     try {
       s.getLiteral("");
@@ -246,13 +246,13 @@ public class LitTest {
 
 
         assertEquals(a.name(), "MyLiteral2");
-        assertEquals(b.name(), "MyLiteral3");
+        assertEquals(b.name(), "~MyLiteral3");
         assertEquals(c.name(), "MyLiteral");
 
 
-        assertEquals(a.name(), a.not().name());
-        assertEquals(b.name(), b.not().name());
-        assertEquals(c.name(),c.not().name());
+        assertEquals("~"+a.name(), a.not().name());
+        assertEquals(b.name(),"~"+ b.not().name());
+        assertEquals("~"+c.name(),c.not().name());
 
 
         try {
@@ -266,11 +266,17 @@ public class LitTest {
         assertEquals(s.getLiteral("False"), Lit.False); // "False" is always named in the solver
         assertEquals(s.getLiteral("MyLiteral"), c);
         assertEquals(s.getLiteral("MyLiteral2"), a);
-        assertEquals(s.getLiteral("MyLiteral3"), b);
+        assertEquals(s.getLiteral("MyLiteral3"), b.not());
 
         assertTrue(a.hasName("MyLiteral2"));
+        assertFalse(a.hasName("~MyLiteral2"));
+        assertFalse(a.not().hasName("MyLiteral2"));
+        assertTrue(a.not().hasName("~MyLiteral2"));
         assertTrue(c.hasName("MyLiteral"));
-        assertTrue(b.hasName("MyLiteral3"));
+        assertFalse(c.hasName("~MyLiteral"));
+        assertTrue(c.not().hasName("~MyLiteral"));
+        assertTrue(b.hasName("~MyLiteral3"));
+        assertTrue(b.not().hasName("MyLiteral3"));
         assertFalse(a.hasName("MyLiteral3"));
         assertFalse(a.hasName("MyLiteral"));
         assertFalse(c.hasName("MyLiteral2"));
@@ -278,6 +284,7 @@ public class LitTest {
         assertFalse(b.hasName("MyLiteral2"));
 
         assertTrue(a.hasName("MyLiteral4"));
+        assertTrue(a.not().hasName("~MyLiteral4"));
 
         ArrayList<String> anames = new ArrayList<>();
         for(String str:a.names()){
@@ -415,6 +422,58 @@ public class LitTest {
     assertEquals(e2.toInt(), e.toInt());
   }
 
+    @Test
+    public void testLoadingNegatedLits() throws IOException {
+        File file = File.createTempFile("test", ".gnf");
+        String filename = file.getAbsolutePath().toString();
+        file.delete();
+
+        monosat.Solver s = new monosat.Solver("", filename);
+        monosat.Lit a = new monosat.Lit(s);
+        monosat.Lit b = new monosat.Lit(s, "");
+        monosat.Lit b2 = new monosat.Lit(s, ""); // it is ok for multiple literals to have empty names
+        monosat.Lit c = new monosat.Lit(s, "MyLiteral");
+
+        monosat.Lit e = new monosat.Lit(s, tricky_name);
+
+        s.addClause(c.not(), e.not());
+
+        try {
+            monosat.Lit f = new monosat.Lit(s, "Name With \n NewLine");
+            fail("Expected a bad name exception");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+        try {
+            monosat.Lit g = new monosat.Lit(s, "Name With \t tab");
+            fail("Expected a bad name exception");
+        } catch (IllegalArgumentException except) {
+            // ok
+        }
+
+        assertTrue(s.solve());
+
+        monosat.Solver s2 = new monosat.Solver();
+        assertTrue(s2.solve());
+        Lit n2 = new Lit(s2, "MyLiteral2");
+
+        s2.loadConstraints(filename);
+        assertTrue(s2.solve());
+        Lit c2 = s2.getLiteral("MyLiteral");
+        Lit c2neg = s2.getLiteral("~MyLiteral");
+        Lit e2 = s2.getLiteral(tricky_name);
+        Lit e2neg = s2.getLiteral("~"+tricky_name);
+        Lit m2neg = new Lit(s2, "MyLiteral3");
+
+        assertEquals(s2.getLiteral("True"), Lit.True); // "True" is always named in the solver
+        assertEquals(s2.getLiteral("False"), Lit.False); // "False" is always named in the solver
+        assertEquals(s2.getLiteral("MyLiteral"), c2);
+        assertEquals(s2.getLiteral(tricky_name), e2);
+
+        assertEquals(c2.not(),c2neg);
+        assertEquals(e2.not(),e2neg);
+
+    }
 
     @Test
     public void testLitIterator() {

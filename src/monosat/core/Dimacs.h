@@ -117,7 +117,6 @@ public:
 template<class B, class Solver>
 class SymbolParser: public Parser<B, Solver> {
 	using Parser<B, Solver>::mapVar;
-	std::set<std::string> used_symbols; //symbols previously read out of this particular GNF file
 	std::stringstream ss;
 
 public:
@@ -133,20 +132,18 @@ public:
 
 				//this is a variable symbol map
 				skipWhitespace(in);
+				bool sign = false;
 				int externalVar = parseInt(in);
 				if (externalVar <= 0) {
-					//parse_errorf("Variables must be positive: %c\n", *in);
 					externalVar = -externalVar;
+					sign = true;
 				}
 
 				externalVar--; //subtract one to get the variable id
 
 				ss.str(std::string());
 				skipWhitespace(in);
-			/*	while (*in != '\n' && !isWhitespace(*in)) {
-					symbol.push_back(*in);
-					++in;
-				}*/
+
 				while (!isEof(in) && *in != '\n' && !isWhitespace(*in)) {
 					ss<<((char)*in);
 					++in;
@@ -158,15 +155,9 @@ public:
 					parse_errorf("Empty symbol: %c\n", *in);
 				}
 
-				//It is ok for multiple variables in _different_ GNF files to share a symbol.
-				//it is only a problem for a single GNF file to declare multiple variables with the same name.
-				if(used_symbols.count(name_str)!=0){
-					parse_errorf("Multiple variables declared with same symbol: %s\n", name_str.c_str());
-				}
-				used_symbols.insert(name_str);
 				Var internalVar = mapVar(S,externalVar);
-
-				S.addVariableName(internalVar,name_str);
+				Lit internalLit = mkLit(internalVar, sign);
+				S.addLiteralName(internalLit,name_str);
 
 				return true;
 			} else {

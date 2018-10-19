@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
 
 public class GraphTest {
   static final String tricky_name =
-      "~`Name-with/\"\'//<>printable_\\characters?!@#$%^&*()-+{}[]|1234567890";
+      "`Name-with/\"\'//<>printable_\\characters?!@#$%^&*()-+{}[]|1234567890";
 
   @Test
   public void nNodes() {

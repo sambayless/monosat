@@ -3255,17 +3255,16 @@ void Solver::garbageCollect() {
 	to.moveTo(ca);
 }
 
-void Solver::addVariableName(Var v, const std::string & name){
-	if(v<0 || v>=nVars()){
+void Solver::addLiteralName(Lit l, const std::string & name){
+	if(var(l)<0 || var(l)>=nVars()){
 		throw std::invalid_argument("No such variable");
 	}
-	assert(v>=0);
-	assert(v<nVars());
+
 	if(name.size()>0){
 
-		if (hasVariable(name)){
-		    if(getVariable(name)!=v) {
-                throw std::invalid_argument("All variable names must be unique: " + name);
+		if (hasLiteral(name)){
+		    if(getLiteral(name)!=l) {
+                throw std::invalid_argument("All literal names must be unique: " + name);
             }else{
 		        //this variable already has this name, do nothing
 		        return;
@@ -3273,18 +3272,27 @@ void Solver::addVariableName(Var v, const std::string & name){
 		}else{
 			//check if any chars of name are illegal
 			for(char c:name){
-				if(!isascii(c) || !isprint(c) || isspace(c)){
-					throw std::invalid_argument(std::string("Variable names must consist only of printable, non-whitespace ASCII. Invalid character in variable name: ") + name);
+				if(!isascii(c) || !isprint(c) || isspace(c) || (c=='~')){
+					throw std::invalid_argument(std::string("Variable names must consist only of printable, non-whitespace ASCII, and may not include '~'. Invalid character in variable name: ") + name);
 				}
 			}
 		}
 
-        if(variableNameCount(v)==0){
-            named_variables.push(v);
-            varnames.insert({v,std::vector<std::string>()});
+        if(literalNameCount(l)==0){
+            named_literals.push(l);
+            litnames.insert({toInt(l),std::vector<std::string>()});
         }
-        varnames[v].push_back(name);
-		assert(!namemap.count(name) || namemap[name]==var_Undef);
-		namemap[name] = v;
+		if(literalNameCount(~l)==0){
+			litnames.insert({toInt(~l),std::vector<std::string>()});
+		}
+
+        litnames[toInt(l)].push_back(name);
+		assert(!namemap.count(name) || namemap[name]==lit_Undef);
+		namemap[name] = l;
+
+		std::string neg_name = "~" + name;
+		litnames[toInt(~l)].push_back(neg_name);
+		assert(!namemap.count(neg_name) || namemap[neg_name]==lit_Undef);
+		namemap[neg_name] = ~l;
 	}
 }

@@ -164,10 +164,34 @@ typedef int64_t Weight;
   //If the name is not empty, and is non-unique or invalid, an exception will be thrown and no variable will be created at all.
   int newNamedVar(SolverPtr S,const char  * varname);
 
+
+
+  //Associate a unique name with this literal. Literals may have multiple names.
+  //litname must consist of printable ascii characters, and may not contain a newline or '~'.
+  //If litname is null or length-0, or equal to an existing name of this literal, this will have no effect.
+  //If litname is non-unique throw an excpetion
+  //When a literal is given a name, its negated polarity is given the same name prefixed with '~'
+  //
+  void addLiteralName(SolverPtr S, int literal, const char  * litname);
+  //True iff this literal's names include litname
+  bool literalHasName(SolverPtr S, int literal, const char  * litname);
+  //The number of names associated with this literal.
+  int literalNameCount(SolverPtr S, int literal);
+  bool hasLiteralWithName(SolverPtr S, const char * name);
+  const char * getLiteralName(SolverPtr S, int literal, int nameIndex);
+  int getLiteral(SolverPtr S, const char * litname);
+
+  //Get the nth named literal (in the order that the named literals were assigned names)
+  int getNamedLiteralN(SolverPtr S, int n);
+  //Get the number of named literals in the solver
+  int nNamedLiterals(SolverPtr S);
+
   //Associate a unique name with this variable. Variables may have multiple names.
-  //varname must consist of printable ascii characters, and may not contain a newline.
+  //varname must consist of printable ascii characters, and may not contain a newline or '~'.
   //If varname is null or length-0, or equal to an existing name of this variable, this will have no effect.
-  //If varname is non-unique throw an excpetion
+  //If varname is non-unique throw an excpetion.
+  //When a variable is given a name, the negated polarity literal of that variable
+  //is assigned the same name prefixed with '~'
   void addVariableName(SolverPtr S, int variable, const char  * varname);
   //True iff this variable's names include varname
   bool variableHasName(SolverPtr S, int variable, const char  * varname);
@@ -234,6 +258,9 @@ typedef int64_t Weight;
 
   void setBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID, const char * name);
   const char * getBitvectorName(SolverPtr S, BVTheoryPtr bv, int bvID, int nameIndex);
+
+  int getBitvectorNameCount(SolverPtr S, BVTheoryPtr bv, int bvID);
+
   int getBitvector(SolverPtr S, BVTheoryPtr bv, const char * name);
 
   //True if this bit vector has a non-empty name.

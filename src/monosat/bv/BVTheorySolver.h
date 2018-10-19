@@ -7910,6 +7910,17 @@ public:
 		}
 	}
 
+	/**
+	 * Return the number of names associated with this bitvector
+	 */
+	int getNameCount(int bvID){
+        if(bvID>=0 && bvID<symbols.size() ) {
+            return symbols[bvID].size();
+        }else{
+            return 0;
+        }
+	}
+
 	int getBitvector(const std::string & name){
         if(symbol_map.count(name)>0){
             int bvID = symbol_map[name];

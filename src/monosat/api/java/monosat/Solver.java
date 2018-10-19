@@ -1572,12 +1572,17 @@ public final class Solver implements Closeable {
      */
     public void addName(Lit l, String name) {
         validate(l);
+        if(name.contains("~")){
+            throw new IllegalArgumentException("Literal IDs may not include \"~\":" + name + "\" is not a valid name.");
+        }
         if(name!=null && name.length()>0) {
             String proposedName = MonosatJNI.validID(name);
-            MonosatJNI.addVariableName(getSolverPtr(), l.toVar(), proposedName);
+            MonosatJNI.addLiteralName(getSolverPtr(), l.l, proposedName);
             if (l._name == null || l._name.length() == 0) {
                 l._name = proposedName;
-                l.not()._name = proposedName;
+            }
+            if (l.not()._name == null || l.not()._name.length() == 0) {
+                l.not()._name = "~" + proposedName;
             }
         }
     }
@@ -1636,7 +1641,7 @@ public final class Solver implements Closeable {
     @Override
     public boolean hasNext() {
       if (named) {
-        return index < MonosatJNI.nNamedVariables(Solver.this.getSolverPtr());
+        return index < MonosatJNI.nNamedLiterals(Solver.this.getSolverPtr());
       } else {
         return index < Solver.this.nVars();
       }
@@ -1648,7 +1653,7 @@ public final class Solver implements Closeable {
         throw new IndexOutOfBoundsException();
       }
       if (named) {
-        return toLit(2 * MonosatJNI.getNamedVariableN(Solver.this.getSolverPtr(), index++));
+        return toLit(MonosatJNI.getNamedLiteralN(Solver.this.getSolverPtr(), index++));
       } else {
         return toLit((index++) * 2);
       }
@@ -1740,16 +1745,17 @@ public final class Solver implements Closeable {
     if (name == null || name.length() == 0) {
       throw new IllegalArgumentException("Name must not be empty");
     }
-    int variable = MonosatJNI.getVariable(getSolverPtr(), MonosatJNI.validID(name));
     if (name == "True") {
       return Lit.True;
     } else if (name == "False") {
       return Lit.False;
     }
-    if (variable >= 0) {
-      Lit lit = toLit(variable * 2);
+
+    int literal = MonosatJNI.getLiteral(getSolverPtr(), MonosatJNI.validID(name));
+
+    if (literal >= 0) {
+      Lit lit = toLit(literal);
       validate(lit);
-      assert (!lit.sign());
       return lit;
     } else {
       throw new IllegalArgumentException("No variable with name " + name);
@@ -1769,7 +1775,7 @@ public final class Solver implements Closeable {
       if (name == null || name.length() == 0) {
           return false;
       }
-      return MonosatJNI.hasVariableWithName(getSolverPtr(), MonosatJNI.validID(name));
+      return MonosatJNI.hasLiteralWithName(getSolverPtr(), MonosatJNI.validID(name));
   }
 
   /**

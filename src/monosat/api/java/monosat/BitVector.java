@@ -282,7 +282,7 @@ public final class BitVector {
       int l = MonosatJNI.getBitvectorBit(solver.getSolverPtr(), solver.bvPtr, bvID, i);
       bits.add(solver.getLiteral(l));
     }
-    _name = MonosatJNI.getBitvectorName(solver.getSolverPtr(), solver.bvPtr, id);
+    _name = MonosatJNI.getBitvectorName(solver.getSolverPtr(), solver.bvPtr, id,0);
     solver.registerBitVector(this);
   }
 

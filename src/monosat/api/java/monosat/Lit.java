@@ -110,7 +110,7 @@ public final class Lit {
     assert (literal >= 0);
     this.l = literal;
     this.solver = solver;
-    this._name = MonosatJNI.getVariableName(solver.getSolverPtr(), toVar(),0);
+    this._name = MonosatJNI.getLiteralName(solver.getSolverPtr(), l,0);
   }
 
   /**
@@ -318,13 +318,13 @@ public final class Lit {
   }
 
   public boolean hasName(String name) {
-      if (this == Lit.True || this==Lit.False || this==Lit.Undef || this==Lit.Error) {
-          return _name.equals(name);
+      if(_name.equals(name)){
+          return true;
       }
 
       if(name!=null && name.length()>0) {
             String proposedName = MonosatJNI.validID(name);
-            return MonosatJNI.variableHasName(solver.getSolverPtr(), toVar(), proposedName);
+            return MonosatJNI.literalHasName(solver.getSolverPtr(),l, proposedName);
         }else{
             return false;
         }
@@ -341,7 +341,7 @@ public final class Lit {
     } else if (l == 1) {
       return "False";
     } else if (!_name.isEmpty()) {
-      return (sign()?"~":"") + _name + "(" + "Lit" + l + ")";
+      return  _name + "(" + "Lit" + l + ")";
     }
     return "Lit" + l;
   }
@@ -563,7 +563,7 @@ public final class Lit {
             if(Lit.this == Lit.True || Lit.this==Lit.False || Lit.this==Lit.Undef || Lit.this==Lit.False){
                 return index==0;
             }else {
-                return index < MonosatJNI.variableNameCount(Lit.this.getSolver().getSolverPtr(), Lit.this.toVar());
+                return index < MonosatJNI.literalNameCount(Lit.this.getSolver().getSolverPtr(), Lit.this.l);
             }
         }
 
@@ -576,7 +576,7 @@ public final class Lit {
                 index=1;
                 return Lit.this._name;
             }else {
-                return MonosatJNI.getVariableName(Lit.this.getSolver().getSolverPtr(), Lit.this.toVar(), index++);
+                return MonosatJNI.getLiteralName(Lit.this.getSolver().getSolverPtr(), Lit.this.l, index++);
             }
         }
 
