@@ -67,7 +67,7 @@ matrix:
 
 before_install:
   - echo "os is ${TRAVIS_OS_NAME}"
-  - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew update; brew install python3 || brew outdated python3 || brew upgrade python3 ; fi
+  - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew update; brew install python3 || brew outdated python3 || brew upgrade python3 || true ; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
   - eval "${MATRIX_EVAL}"
