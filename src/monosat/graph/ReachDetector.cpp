@@ -770,6 +770,15 @@ public:
 			}
 
 		}
+		if(opt_print_theory_decisions){
+			printf("Decide path: ");
+			for(Lit l:to_decide){
+				Edge e = outer->getEdge(l);
+				std::cout<< outer->getNodeName(e.from,true) << "->" << outer->getNodeName(e.to,true);
+				std::cout << " (" << outer->getEdgeName(var(l),true)  << "), ";
+			}
+			std::cout<<std::endl;
+		}
 
 	}
 

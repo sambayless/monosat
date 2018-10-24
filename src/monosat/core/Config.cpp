@@ -425,6 +425,10 @@ BoolOption Monosat::opt_fsm_chokepoint_prop(_cat_fsm, "fsm-chokepoint",
 BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
                                             "", false);
 
+BoolOption Monosat::opt_print_theory_decisions(_cat_theory, "print-decisions",
+											"Print theory decisions to stdout (for debugging purposes)", false);
+
+
 IntOption Monosat::opt_min_edgeset(_cat_graph,"min-edge-set","set to 0 to accept all edge sets, or -1 to disable all edge sets",10,IntRange(-1,INT32_MAX));
 BoolOption Monosat::opt_only_prop_edgeset(_cat_graph,"only-prop-edgesets","",false);
 

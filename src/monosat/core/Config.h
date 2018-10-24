@@ -254,7 +254,7 @@ extern IntOption opt_graph_use_cache_for_decisions;
 extern OptionSet opt_route;
 extern OptionSet opt_route2;
 
-
+extern BoolOption opt_print_theory_decisions;
 
 enum class ReachAlg {
 	ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_RAMAL_REPS, ALG_RAMAL_REPS_BATCHED,ALG_RAMAL_REPS_BATCHED2

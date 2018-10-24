@@ -1361,11 +1361,17 @@ public:
 	bool nodeHasName(int node){
 		return node>=0 && node<node_symbols.size() && node_symbols[node].size()>0;
 	}
-	const std::string & getNodeName(int node){
-		if(node>=node_symbols.size())
-			return empty_name;
-		else
+	const std::string & getNodeName(int node, bool forceName=false) {
+		if (node >= node_symbols.size() || node_symbols[node].empty()){
+			if (!forceName) {
+				return empty_name;
+			}else {
+				setNodeName(node,"n" + std::to_string(node));
+				return node_symbols[node];
+			}
+		}else{
 			return node_symbols[node];
+		}
 	}
 
 	void setEdgeName(Var edgeVar,const std::string & symbol){
@@ -1392,12 +1398,18 @@ public:
 		int edgeID = getEdgeID(edgeVar);
 		return edgeID>=0 && edgeID<edge_symbols.size() && edge_symbols[edgeID].size()>0;
 	}
-	const std::string & getEdgeName(Var edgeVar) {
+	const std::string & getEdgeName(Var edgeVar, bool forceName = false) {
 		int edgeID = getEdgeID(edgeVar);
-		if (edgeID >= edge_symbols.size())
-			return empty_name;
-		else
+		if (edgeID >= edge_symbols.size() || edge_symbols[edgeID].empty()) {
+			if (!forceName) {
+				return empty_name;
+			}else{
+				setEdgeName(edgeVar,"e" + std::to_string(edgeVar));
+				return edge_symbols[edgeID];
+			}
+		}else {
 			return edge_symbols[edgeID];
+		}
 	}
 
 	int newNode() {
