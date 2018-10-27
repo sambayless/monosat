@@ -680,6 +680,8 @@ public:
 	LSet       conflict;          // If problem is unsatisfiable (possibly under assumptions),
 	// this vector represent the final conflict clause expressed in the assumptions.
 
+	vec<Lit> committed_decisions; //Decisions that are 'committed to' by the solver. Cleared after restarts.
+
 	vec<vec<Lit> > interpolant; //This vector represents an interpolant between this module and its super solver ('S'), if it is attached to such a solver and the instance is UNSAT.
 	// Variables in each clause in the interpolant vector are in the super solver's variable space, not the subsolver's.
 
@@ -1093,6 +1095,7 @@ protected:
 
 	void analyzeHeuristicDecisions(CRef confl, IntSet<int> & conflicting_heuristics, int max_involved_heuristics,int minimimum_involved_decision_priority);
 	bool litRedundant(Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
+	Lit  getNextCommitment(); //If decision commitments are used, retrieve the next committed decision
 	lbool search(int nof_conflicts);                                     // Search for a given number of conflicts.
 	lbool solve_();                                           // Main solve method (assumptions given in 'assumptions').
 	void reduceDB();                                                      // Reduce the set of learnt clauses.
@@ -1575,8 +1578,8 @@ inline bool Solver::okay() const {
 	return ok;
 }
 
-inline ClauseIterator Solver::clausesBegin() const { return ClauseIterator(ca, &clauses[0]); }
-inline ClauseIterator Solver::clausesEnd  () const { return ClauseIterator(ca, &clauses[clauses.size()]); }
+inline ClauseIterator Solver::clausesBegin() const { return ClauseIterator(ca, clauses.begin()); }
+inline ClauseIterator Solver::clausesEnd  () const { return ClauseIterator(ca, clauses.end()); }
 inline TrailIterator  Solver::trailBegin  () const { return TrailIterator(&trail[0]); }
 inline TrailIterator  Solver::trailEnd    () const {
 	return TrailIterator(&trail[decisionLevel() == 0 ? trail.size() : trail_lim[0]]); }

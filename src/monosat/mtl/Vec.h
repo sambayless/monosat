@@ -26,7 +26,7 @@
 #include <algorithm>
 #include "monosat/mtl/IntTypes.h"
 #include "monosat/mtl/XAlloc.h"
-
+#include <stdexcept>
 namespace Monosat {
 
 //=================================================================================================
@@ -130,17 +130,37 @@ public:
 	// even, but INT_MAX is odd.
 
 	const T& last(void) const {
+#ifndef NDEBUG
+        if (!data || sz<=0){
+            throw std::runtime_error("Bad derefernce in Vec.h");
+        }
+#endif
 		return data[sz - 1];
 	}
 	T& last(void) {
+#ifndef NDEBUG
+        if (!data || sz<=0){
+            throw std::runtime_error("Bad derefernce in Vec.h");
+        }
+#endif
 		return data[sz - 1];
 	}
 
 	// Vector interface:
 	const T& operator [](int index) const {
+#ifndef NDEBUG
+	  if (!data || index>=sz || index<0){
+	      throw std::runtime_error("Bad derefernce in Vec.h");
+	  }
+#endif
 		return data[index];
 	}
 	T& operator [](int index) {
+#ifndef NDEBUG
+        if (!data || index>=sz || index<0){
+            throw std::runtime_error("Bad derefernce in Vec.h");
+        }
+#endif
 		return data[index];
 	}
 
@@ -169,10 +189,26 @@ public:
 
 	//stl-style begin and end, to support C++11 range-based for loops
 	T* begin() const {
+	    if(sz==0){
+	        return nullptr;
+	    }
+#ifndef NDEBUG
+        if (!data || sz<1){
+            throw std::runtime_error("Bad derefernce in Vec.h");
+        }
+#endif
 		return &data[0];
 	}
 
 	T* end() const {
+        if(sz==0){
+            return nullptr;
+        }
+#ifndef NDEBUG
+        if (!data || sz==0){
+            throw std::runtime_error("Bad derefernce in Vec.h");
+        }
+#endif
 		return &data[sz];
 	}
 

@@ -1546,12 +1546,16 @@ struct reduceDB_lt {
 	}
 };
 void Solver::reduceDB() {
-	int i, j;
+	if (learnts.size()==0){
+	    return;
+	}
+
 	double extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
 	sort(learnts, reduceDB_lt(ca));
 	// Don't delete binary or locked clauses. From the rest, delete clauses from the first half
 	// and clauses with activity smaller than 'extra_lim':
+    int i, j;
 	for (i = j = 0; i < learnts.size(); i++) {
 		Clause& c = ca[learnts[i]];
 		if (c.size() > 2 && !locked(c) && (i < learnts.size() / 2 || c.activity() < extra_lim)) {
@@ -2083,6 +2087,33 @@ bool Solver::addDelayedClauses(CRef & conflict_out) {
 	return true;
 }
 
+
+Lit Solver::getNextCommitment(){
+    //this can be made more efficient
+    //int nextDecisionN = decisionLevel() - assumptions.size()-1;
+    //while(nextDecisionN<committed_decisions.size()){
+    for(int nextDecisionN = 0;nextDecisionN<committed_decisions.size();nextDecisionN++){
+        Lit l = committed_decisions[nextDecisionN];
+        assert(l!=lit_Undef);
+        if(value(l)==l_False){
+        	committed_decisions.shrink(committed_decisions.size() - nextDecisionN);
+        	return lit_Undef;
+        }else if (value(l)==l_True){
+            //newDecisionLevel();//dummy decision level
+            //nextDecisionN++;
+        }else {
+            return l;
+        }
+    }
+#ifndef NDEBUG
+	for(Lit l:committed_decisions){
+    	assert(value(l)==l_True);
+    	//assert(level(var(l))<=committed_decisions.size()+assumptions.size());
+    }
+#endif
+    return lit_Undef;
+}
+
 /*_________________________________________________________________________________________________
  |
  |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -2100,6 +2131,7 @@ lbool Solver::search(int nof_conflicts) {
 	assert(ok);
 	int backtrack_level;
 	int conflictC = 0;
+    committed_decisions.clear();
 	vec<Lit> learnt_clause;
 	Heuristic* previous_conflict_heuristic=nullptr;
 
@@ -2120,7 +2152,7 @@ lbool Solver::search(int nof_conflicts) {
 	n_theory_decision_rounds+=using_theory_decisions;
 	for (;;) {
 		static int iter = 0;
-		if (++iter == 33) {//3150 //3144
+		if (++iter == 16237) {//3150 //3144
 			int a = 1;
 		}
 
@@ -2189,6 +2221,9 @@ lbool Solver::search(int nof_conflicts) {
 				if(opt_theory_conflict_max && consecutive_theory_conflicts>=opt_theory_conflict_max){
 					next_theory_decision=conflicts+consecutive_theory_conflicts;
 					consecutive_theory_conflicts=0;
+					if(opt_print_theory_decisions){
+					    printf("Disabling theory decisions\n");
+					}
 				}
 			}else{
 				consecutive_theory_conflicts=0;
@@ -2629,14 +2664,18 @@ lbool Solver::search(int nof_conflicts) {
 				continue;
 			}
 
+
 			//Note: decision level is now added before theories make their decisions, to allow them to decide multiple literals at once.
 			newDecisionLevel();
+
+            if(next ==lit_Undef && opt_commit_to_decisions>0){
+                next = getNextCommitment();
+            }
 
 			/**
              * Give the theory solvers a chance to make decisions
              */
 			if (opt_decide_theories && !disable_theories && using_theory_decisions && next == lit_Undef && (opt_theory_conflict_max==0 || conflicts>=next_theory_decision) ) {
-
 				int next_var_priority=INT_MIN;
 
 				//remove decided vars from order heap
@@ -2757,6 +2796,9 @@ lbool Solver::search(int nof_conflicts) {
 				}else{
 					next_decision_heuristic=nullptr;
 				}
+                if(next!=lit_Undef && committed_decisions.size()<opt_commit_to_decisions){
+                    committed_decisions.push(next);
+                }
 			}
 			{
 
@@ -2770,6 +2812,7 @@ lbool Solver::search(int nof_conflicts) {
 					//update the last decision heuristic only if the above condition was not triggered
 					last_decision_heuristic = next_decision_heuristic;
 				}
+
 			}
 			if (next == lit_Undef) {
 				// New variable decision:

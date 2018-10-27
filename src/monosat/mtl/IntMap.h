@@ -126,6 +126,10 @@ public:
         return xs.end();
     }
 
+    vec<K> & elements(){
+        return xs;
+    }
+
 };
 
 #if 0

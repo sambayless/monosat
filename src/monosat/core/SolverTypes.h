@@ -171,6 +171,16 @@ inline lbool toLbool(int v) {
 	return lbool((uint8_t) v);
 }
 
+inline const char * toStr(lbool l){
+    if(l==l_True){
+        return "T";
+    }else if(l==l_False){
+        return "F";
+    }else{
+        return "U";
+    }
+}
+
 //=================================================================================================
 // Clause -- a simple class for representing a clause:
 
