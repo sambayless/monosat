@@ -68,7 +68,7 @@ public:
 	Reach * overapprox_path_detector = nullptr;
 	Reach * cutgraph_detector = nullptr;
 	Reach * underapprox_fast_detector = nullptr;
-	Distance<int> * negative_distance_detector = nullptr;
+
 	vec<bool> original_reach_lits;
 	vec<Lit> reach_lits;
 	vec<Lit> cnf_reach_lits;
@@ -353,9 +353,6 @@ public:
 		if (underapprox_fast_detector && underapprox_fast_detector != underapprox_path_detector){
 			delete underapprox_fast_detector;
 		}
-
-		if (negative_distance_detector && negative_distance_detector != overapprox_path_detector)
-			delete negative_distance_detector;
 
 		if (underapprox_detector)
 			delete underapprox_detector;

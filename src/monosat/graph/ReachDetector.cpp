@@ -93,7 +93,7 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 
 		underapprox_path_detector = underapprox_detector;
 		overapprox_path_detector = overapprox_reach_detector;
-		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+
 	} else if (reachalg == ReachAlg::ALG_DFS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
 			underapprox_detector = new DFSReachability<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
@@ -111,7 +111,7 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 		else
 			underapprox_path_detector = underapprox_detector;
 
-		negative_distance_detector = new UnweightedBFS<Weight,Graph,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
+
 		overapprox_path_detector = overapprox_reach_detector;
 	} else if (reachalg == ReachAlg::ALG_DISTANCE) {
 		if (!opt_encode_reach_underapprox_as_sat) {
@@ -127,7 +127,7 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 																								 *(negativeReachStatus), -1);
 		underapprox_path_detector = underapprox_detector;
 		overapprox_path_detector = overapprox_reach_detector;
-		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+
 	} else if (reachalg == ReachAlg::ALG_RAMAL_REPS) {
 		if (!opt_encode_reach_underapprox_as_sat) {
 			underapprox_detector = new UnweightedRamalReps<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
@@ -156,7 +156,7 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 		//RamalReps now supports finding paths
 		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 1);
 		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
-		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+
 	}else if (reachalg == ReachAlg::ALG_RAMAL_REPS_BATCHED) {
 		if (!opt_encode_reach_underapprox_as_sat) {
 			underapprox_detector = new UnweightedRamalRepsBatched<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
@@ -185,7 +185,7 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 		//RamalReps now supports finding paths
 		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 1);
 		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
-		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+
 	}else if (reachalg == ReachAlg::ALG_RAMAL_REPS_BATCHED2) {
 		if (!opt_encode_reach_underapprox_as_sat) {
 			underapprox_detector = new UnweightedRamalRepsBatchedUnified<Weight,Graph,ReachDetector<Weight,Graph>::ReachStatus>(from, g_under,
@@ -214,7 +214,7 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 		//RamalReps now supports finding paths
 		//underapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 1);
 		//overapprox_path_detector = new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_over, Distance<int>::nullStatus, -1);
-		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+
 	}/*else if (reachalg==ReachAlg::ALG_THORUP){
 
 
@@ -245,7 +245,7 @@ ReachDetector<Weight,Graph>::ReachDetector(int _detectorID, GraphTheorySolver<We
 		}
 
 		overapprox_path_detector = overapprox_reach_detector;
-		negative_distance_detector = (Distance<int> *) overapprox_path_detector;
+
 		//reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
 	}
 	if (underapprox_detector && !underapprox_fast_detector)
@@ -658,6 +658,9 @@ public:
 
 						 }
 						 }else*/{
+						    if(opt_print_theory_decisions){
+                                printf("Decide path: ");
+                            }
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
 							over_path->update();
@@ -688,11 +691,19 @@ public:
 
 									to_decide.push(mkLit(edge_var, false));
 								}
+								if(opt_print_theory_decisions){
+								    Edge e = outer->getEdge(mkLit(edge_var));
+                                    std::cout<< outer->getNodeName(e.from,true) << "->" << outer->getNodeName(e.to,true);
+                                    std::cout << " (" << outer->getEdgeName(var(l),true)  << ")"<< ":" <<toStr(outer->value(edge_var)) << ", ";
+								}
 								int prev = over_path->previous(p);
 								p = prev;
 
 							}
-							//printf("\n");
+                            if(opt_print_theory_decisions){
+                                printf("\n");
+                            }
+							//
 						}
 					} else {
 						//Randomly re-weight the graph sometimes
@@ -770,7 +781,11 @@ public:
 			}
 
 		}
-		if(opt_print_theory_decisions){
+		if(opt_decide_reach_reverse){
+			reverse(to_decide.elements());
+			reverse(path_edges.elements());
+		}
+		/*if(opt_print_theory_decisions){
 			printf("Decide path: ");
 			for(Lit l:to_decide){
 				Edge e = outer->getEdge(l);
@@ -778,7 +793,7 @@ public:
 				std::cout << " (" << outer->getEdgeName(var(l),true)  << "), ";
 			}
 			std::cout<<std::endl;
-		}
+		}*/
 
 	}
 
