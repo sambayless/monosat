@@ -2692,6 +2692,14 @@ lbool Solver::search(int nof_conflicts) {
 					while (next==lit_Undef && !theory_order_heap.empty() && theory_order_heap.peekMin()->getPriority()>=next_var_priority) {
 						Heuristic * h = theory_order_heap.peekMin();
 						++decision_iter;
+						if(h->getTheoryIndex()>=0 && !theory_decisions_enabled[h->getTheoryIndex()]){
+							theory_order_heap.removeMin();
+							if(decisionLevel()>0) {
+								theory_decision_trail.push({h, decisionLevel()});
+							}
+							continue;
+						}
+
 						//int theoryID = h->getTheoryIndex();
 						if(!heuristicSatisfied(h)) {
 							if (opt_vsids_both &&

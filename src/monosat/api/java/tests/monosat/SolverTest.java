@@ -43,6 +43,13 @@ public class SolverTest {
   }
 
   @Test
+  public void testVersion() {
+    String version =monosat.Solver.getVersion();
+    assertTrue(version!=null);
+    assertTrue(version.length()>1);
+  }
+
+  @Test
   public void testConstraints() {
     monosat.Solver s = new monosat.Solver();
     Constraints.nqueens(s,4);

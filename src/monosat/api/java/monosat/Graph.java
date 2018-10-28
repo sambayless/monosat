@@ -267,6 +267,10 @@ public final class Graph {
     solver.allGraphs.put(graphPtr, this);
   }
 
+  public void setDecisionsEnabled(boolean enabled){
+     MonosatJNI.graphSetDecisionsEnabled(solver.getSolverPtr(), graphPtr,enabled);
+  }
+
   /**
    * Get the solver that this BitVector belongs to.
    *

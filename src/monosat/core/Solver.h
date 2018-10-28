@@ -145,6 +145,7 @@ public:
 		theory_reprop_trail_pos.push(-1);
 		theory_init_prop_trail_pos.push(-1);
 		t->setTheoryIndex(theories.size() - 1);
+        setTheoryDecisionsEnabled(t->getTheoryIndex(),true);
 		if(t->supportsDecisions()){
 			addHeuristic(t);
 		}
@@ -153,6 +154,13 @@ public:
 
 		cancelUntil(0);
 		resetInitialPropagation();
+	}
+    void setTheoryDecisionsEnabled(int theoryIndex, bool enabled){
+        theory_decisions_enabled.growTo(theoryIndex+1,true);
+        theory_decisions_enabled[theoryIndex]=enabled;
+    }
+	void setTheoryDecisionsEnabled(Theory * t, bool enabled){
+        setTheoryDecisionsEnabled(t->getTheoryIndex(),enabled);
 	}
 	void addHeuristic(Heuristic*t)override {
 		if(t->getHeuristicIndex()>=0) {
@@ -975,7 +983,7 @@ protected:
 	struct HeuristicToInt {
 		int operator()(Heuristic * h) const { return h->getHeuristicIndex(); }
 	};
-
+	vec<bool> theory_decisions_enabled;
 	Heap<Heuristic*,HeuristicOrderLt,HeuristicToInt> theory_order_heap;
 	vec<std::pair<Heuristic*,int>> theory_decision_trail;
 	//Heap<LazyLevelLt> lazy_heap;       // A priority queue of variables to be propagated at earlier levels, lazily.

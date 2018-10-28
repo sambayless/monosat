@@ -1065,6 +1065,14 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getNodeName
 
 /*
  * Class:     monosat_MonosatJNI
+ * Method:    graphSetDecisionsEnabled
+ * Signature: (JJZ)V
+ */
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_graphSetDecisionsEnabled
+  (JNIEnv *, jclass, jlong, jlong, jboolean);
+
+/*
+ * Class:     monosat_MonosatJNI
  * Method:    newEdge
  * Signature: (JJIIJ)I
  */

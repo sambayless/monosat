@@ -128,7 +128,12 @@ public:
 		if (*in == EOF)
 			return false;
 		else if (*in == 's') {
-			if (match(in, "symbol")) { //used to use "c var" for symbols
+			if (match(in,"setDecisionsEnabled")) {
+				int theoryIndex = parseInt(in);
+				skipWhitespace(in);
+				bool enabled = parseInt(in)>0;
+				S.setTheoryDecisionsEnabled(theoryIndex,enabled);
+			}else if (match(in, "symbol")) { //used to use "c var" for symbols
 
 				//this is a variable symbol map
 				skipWhitespace(in);

@@ -343,6 +343,7 @@ void bv_unary(SolverPtr S, BVTheoryPtr bv, int * args, int n_args, int resultID)
 
   const char * getGraphName(SolverPtr S, GraphTheorySolver_long G);
 
+  void graphSetDecisionsEnabled(SolverPtr S, GraphTheorySolver_long G, bool enabled);
 
   int getGraphWidth(SolverPtr S, GraphTheorySolver_long G);
   int newNode(SolverPtr S,GraphTheorySolver_long G);

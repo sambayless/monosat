@@ -659,7 +659,7 @@ public:
 						 }
 						 }else*/{
 						    if(opt_print_theory_decisions){
-                                printf("Decide path: ");
+                                printf("Graph %d Decide path: ", outer->getTheoryIndex());
                             }
 							//ok, read back the path from the over to find a candidate edge we can decide
 							//find the earliest unconnected node on this path
@@ -688,13 +688,12 @@ public:
 								path_edges.insert(last_edge);
 								Var edge_var = outer->getEdgeVar(last_edge);
 								if (outer->value(edge_var) == l_Undef) {
-
 									to_decide.push(mkLit(edge_var, false));
 								}
 								if(opt_print_theory_decisions){
 								    Edge e = outer->getEdge(mkLit(edge_var));
                                     std::cout<< outer->getNodeName(e.from,true) << "->" << outer->getNodeName(e.to,true);
-                                    std::cout << " (" << outer->getEdgeName(var(l),true)  << ")"<< ":" <<toStr(outer->value(edge_var)) << ", ";
+                                    std::cout << " (" << outer->getEdgeName(edge_var,true)  << ")"<< ":" <<toStr(outer->value(edge_var)) << ", ";
 								}
 								int prev = over_path->previous(p);
 								p = prev;

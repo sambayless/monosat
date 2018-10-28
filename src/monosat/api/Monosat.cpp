@@ -838,6 +838,11 @@ void readGNF(Monosat::SimpSolver * S, const char  * filename){
 	}
 }
 
+void graphSetDecisionsEnabled(Monosat::SimpSolver * S, Monosat::GraphTheorySolver<int64_t> * G, bool enabled){
+	S->setTheoryDecisionsEnabled(G,enabled);
+	write_out(S,"setDecisionsEnabled %d %d\n",G->getTheoryIndex(),enabled?1:0);
+}
+
 Monosat::GraphTheorySolver<int64_t> *  newGraph(Monosat::SimpSolver * S){
 	return newGraph_Named(S,"",-2);
 }

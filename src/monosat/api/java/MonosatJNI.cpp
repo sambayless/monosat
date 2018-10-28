@@ -1284,6 +1284,15 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushPB
 }
 
 
+JNIEXPORT void JNICALL Java_monosat_MonosatJNI_graphSetDecisionsEnabled
+        (JNIEnv *env, jclass monosat_class, jlong solverPtr, jlong graphPtr, jboolean enabled) try {
+    SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);
+    GraphTheorySolver_long graph = reinterpret_cast<GraphTheorySolver_long>(graphPtr);
+    graphSetDecisionsEnabled(solver,graph,enabled);
+}catch(...) {
+    javaThrow(env);
+}
+
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
         (JNIEnv *env, jclass monosat_class, jlong solverPtr) try {
     SolverPtr solver = reinterpret_cast<SolverPtr>(solverPtr);

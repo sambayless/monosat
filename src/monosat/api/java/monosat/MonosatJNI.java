@@ -461,6 +461,8 @@ final class MonosatJNI { // package level access specifier
 
   public static native String getNodeName(long solverPtr, long graphPtr, int node);
 
+  public static native void graphSetDecisionsEnabled(long solverPtr, long graphPtr, boolean enabled);
+
   public static native int newEdge(
       long solverPtr, long graphPtr, int from, int to, long constweight);
 
