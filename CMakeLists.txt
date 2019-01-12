@@ -67,6 +67,10 @@ MARK_AS_ADVANCED(
         CMAKE_EXE_LINKER_FLAGS_SANETIZE
         CMAKE_SHARED_LINKER_FLAGS_SANETIZE )
 
+if(UNIX)
+    include_directories("/usr/local/include")
+    link_directories("/usr/local/lib")
+endif(UNIX)
 
 include_directories(src/)
 
