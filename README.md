@@ -52,6 +52,21 @@ $DYLD_LIBRARY_PATH=/opt/local/lib LIBRARY_PATH=/opt/local/lib make
 $sudo make install
 ```
 
+#### Building on FreeBSD *(Only tested on FreeBSD 12)*
+
+You will need to first install GMP, which you can do via pkg or ports:
+
+```
+$pkg install gmp
+```
+
+If you intend to include the Java library (see below), you'll also need a JDK and you'll need to set your JAVA_HOME environment variable:
+
+```
+$pkg install openjdk8
+$export JAVA_HOME=/usr/local/openjdk8
+```
+
 ### Installing the Python library
 
 To install the Python library (system-wide) on your system's default Python version:

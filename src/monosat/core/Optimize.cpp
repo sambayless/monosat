@@ -43,7 +43,7 @@ static rlim_t system_mem_limit;
 
 static Solver * solver;
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 using sighandler_t = sig_t; //sighandler_t is a gnu extension
 #endif
 static sighandler_t system_sigxcpu_handler  = nullptr; //void (*system_sigxcpu_handler)(int) is also an option
