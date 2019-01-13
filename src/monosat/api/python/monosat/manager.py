@@ -1,5 +1,6 @@
 from monosat.monosat_c import Monosat
 
+
 # Like singleton, but one instance per _solver_, not per process
 class Manager(type):
 

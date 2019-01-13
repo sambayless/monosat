@@ -14,12 +14,12 @@ class SolveException(Exception):
 
 
 def Solve(
-    *assumptions,
-    preprocessing=True,
-    bvs_to_minimize=None,
-    time_limit_seconds=None,
+        *assumptions,
+        preprocessing=True,
+        bvs_to_minimize=None,
+        time_limit_seconds=None,
 
-    conflict_limit=None
+        conflict_limit=None
 ):
     WriteConstraints()
     if time_limit_seconds is None or time_limit_seconds <= 0:

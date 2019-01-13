@@ -48,7 +48,7 @@ enum FileMode {
 class File {
     int fd;         // Underlying file descriptor.
     FileMode mode;       // Reading or writing.
-    uchar *buf;        // Read or write buffer.
+    uchar* buf;        // Read or write buffer.
     int size;       // Size of buffer (at end of file, less than 'File_BufSize').
     int pos;        // Current position in buffer
     bool own_fd;     // Do we own the file descriptor? If so, will close file in destructor.
@@ -56,48 +56,48 @@ class File {
 public:
 #define DEFAULTS fd(-1), mode(READ), buf(NULL), size(-1), pos(0), own_fd(true)
 
-    File() : DEFAULTS { }
+    File() : DEFAULTS{}
 
-    File(int fd, FileMode mode, bool own_fd = true) : DEFAULTS {
+    File(int fd, FileMode mode, bool own_fd = true) : DEFAULTS{
         open(fd, mode, own_fd);
     }
 
-    File(cchar *name, cchar *mode) : DEFAULTS {
+    File(cchar* name, cchar* mode) : DEFAULTS{
         open(name, mode);
     }
 
 #undef DEFAULTS
 
-    ~File() {
+    ~File(){
         close();
     }
 
     void open(int fd, FileMode mode,
               bool own_fd = true);    // Low-level open. If 'own_fd' is FALSE, descriptor will not be closed by destructor.
-    void open(cchar *name, cchar *mode);                     // FILE* compatible interface.
+    void open(cchar* name, cchar* mode);                     // FILE* compatible interface.
     void close();
 
-    bool null() {               // TRUE if no file is opened.
+    bool null(){               // TRUE if no file is opened.
         return fd == -1;
     }
 
-    int releaseDescriptor() {   // Don't run UNIX function 'close()' on descriptor in 'File's 'close()'.
-        if (mode == READ)
+    int releaseDescriptor(){   // Don't run UNIX function 'close()' on descriptor in 'File's 'close()'.
+        if(mode == READ)
             lseek64(fd, pos - size, SEEK_CUR);
         own_fd = false;
         return fd;
     }
 
-    FileMode getMode() {
+    FileMode getMode(){
         return mode;
     }
 
-    void setMode(FileMode m) {
-        if (m == mode) return;
-        if (m == READ) {
+    void setMode(FileMode m){
+        if(m == mode) return;
+        if(m == READ){
             flush();
             size = read(fd, buf, File_BufSize);
-        } else {
+        }else{
             lseek64(fd, pos - size, SEEK_CUR);
             size = -1;
         }
@@ -105,25 +105,25 @@ public:
         pos = 0;
     }
 
-    int getCharQ() {            // Quick version with minimal overhead -- don't call this in the wrong mode!
+    int getCharQ(){            // Quick version with minimal overhead -- don't call this in the wrong mode!
 #ifdef PARANOID
         assert(mode == READ);
 #endif
-        if (pos < size) return (uchar) buf[pos++];
-        if (size < File_BufSize) return EOF;
+        if(pos < size) return (uchar) buf[pos++];
+        if(size < File_BufSize) return EOF;
         size = read(fd, buf, File_BufSize);
         pos = 0;
-        if (size == 0) return EOF;
+        if(size == 0) return EOF;
         return (uchar) buf[pos++];
     }
 
-    int putCharQ(int chr) {         // Quick version with minimal overhead -- don't call this in the wrong mode!
+    int putCharQ(int chr){         // Quick version with minimal overhead -- don't call this in the wrong mode!
 #ifdef PARANOID
         assert(mode == WRITE);
 #endif
-        if (pos == File_BufSize) {
+        if(pos == File_BufSize){
             ssize_t wrote = write(fd, buf, File_BufSize);
-            if (wrote != File_BufSize) {
+            if(wrote != File_BufSize){
                 throw std::ios_base::failure("Write failed.");
             }
             pos = 0;
@@ -131,30 +131,30 @@ public:
         return buf[pos++] = (uchar) chr;
     }
 
-    int getChar() {
-        if (mode == WRITE) setMode(READ);
+    int getChar(){
+        if(mode == WRITE) setMode(READ);
         return getCharQ();
     }
 
-    int putChar(int chr) {
-        if (mode == READ) setMode(WRITE);
+    int putChar(int chr){
+        if(mode == READ) setMode(WRITE);
         return putCharQ(chr);
     }
 
-    bool eof() {
+    bool eof(){
         assert(mode == READ);
-        if (pos < size) return false;
-        if (size < File_BufSize) return true;
+        if(pos < size) return false;
+        if(size < File_BufSize) return true;
         size = read(fd, buf, File_BufSize);
         pos = 0;
-        if (size == 0) return true;
+        if(size == 0) return true;
         return false;
     }
 
-    void flush() {
+    void flush(){
         assert(mode == WRITE);
         ssize_t wrote = write(fd, buf, pos);
-        if (wrote != pos){
+        if(wrote != pos){
             throw std::ios_base::failure("Write failed.");
         }
         pos = 0;
@@ -170,17 +170,17 @@ public:
 // Some nice helper functions:
 
 
-void putUInt(File &out, uint64 val);
+void putUInt(File& out, uint64 val);
 
-uint64 getUInt(File &in);
+uint64 getUInt(File& in);
 
-macro uint64 encode64(int64 val) { return (val >= 0) ? (uint64) val << 1 : (((uint64) (~val) << 1) | 1); }
+macro uint64 encode64(int64 val){return (val >= 0) ? (uint64) val << 1 : (((uint64) (~val) << 1) | 1);}
 
-macro int64 decode64(uint64 val) { return ((val & 1) == 0) ? (int64) (val >> 1) : ~(int64) (val >> 1); }
+macro int64 decode64(uint64 val){return ((val & 1) == 0) ? (int64) (val >> 1) : ~(int64) (val >> 1);}
 
-macro void putInt(File &out, int64 val) { putUInt(out, encode64(val)); }
+macro void putInt(File& out, int64 val){putUInt(out, encode64(val));}
 
-macro uint64 getInt(File &in) { return decode64(getUInt(in)); }
+macro uint64 getInt(File& in){return decode64(getUInt(in));}
 
 }
 }

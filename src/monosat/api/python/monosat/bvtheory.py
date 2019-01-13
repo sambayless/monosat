@@ -25,6 +25,8 @@ from monosat.manager import Manager
 from monosat.monosat_c import Monosat
 
 debug = False
+
+
 # Collects a set of graphs to encode together into a formula
 class BVManager(metaclass=Manager):
 

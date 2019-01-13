@@ -11,25 +11,25 @@ class VecAlloc {
 
     union Slot {
         char data[sizeof(T)];     // (would have liked type 'T' here)
-        Slot *next;
+        Slot* next;
     };
 
-    Slot *table;
+    Slot* table;
     int index;
-    Slot *recycle;
+    Slot* recycle;
 #ifdef DEBUG_PB
     int     nallocs;
 #endif
 
-    void newTable(void) {
-        Slot *t = xmalloc<Slot>(chunk_size);
+    void newTable(void){
+        Slot* t = xmalloc<Slot>(chunk_size);
         t[0].next = table;
         table = t;
         index = 1;
     }
 
 public:
-    VecAlloc(void) {
+    VecAlloc(void){
         recycle = nullptr;
         table = nullptr;
 #ifdef DEBUG_PB
@@ -38,40 +38,40 @@ public:
         newTable();
     }
 
-    ~VecAlloc(void) {
+    ~VecAlloc(void){
 #ifdef DEBUG_PB
         //if (nallocs != 0) fprintf(stderr, "WARNING! VecAlloc detected leak of %d unit(s) of type '%s'.\n", nallocs, typeid(T).name());
         if (nallocs != 0) fprintf(stderr, "WARNING! VecAlloc detected leak of %d unit(s) of size %lu.\n", nallocs, sizeof(T));
 #endif
-        Slot *curr, *next;
+        Slot* curr, * next;
         curr = table;
-        while (curr != nullptr)
+        while(curr != nullptr)
             next = curr[0].next,
                     xfree(curr),
             curr = next;
     }
 
-    T *alloc(void) {
+    T* alloc(void){
 #ifdef DEBUG_PB
         nallocs++;
 #endif
-        if (recycle == nullptr) {
-            if (index >= chunk_size)
+        if(recycle == nullptr){
+            if(index >= chunk_size)
                 newTable();
-            return (T *) &table[index++];
-        } else {
-            T *tmp = (T *) recycle;
+            return (T*) &table[index++];
+        }else{
+            T* tmp = (T*) recycle;
             recycle = (*recycle).next;
             return tmp;
         }
     }
 
-    void free(T *ptr) {
+    void free(T* ptr){
 #ifdef DEBUG_PB
         nallocs--;
 #endif
-        ((Slot *) ptr)->next = recycle;
-        recycle = (Slot *) ptr;
+        ((Slot*) ptr)->next = recycle;
+        recycle = (Slot*) ptr;
     }
 };
 }

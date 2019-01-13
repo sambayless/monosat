@@ -32,65 +32,66 @@
 #include <set>
 #include <string>
 #include <sstream>
+
 namespace Monosat {
 
 
 //=================================================================================================
 // GRAPH Parser:
 template<class B, class Solver>
-class AMOParser: public Parser<B, Solver> {
-	using Parser<B, Solver>::mapVar;
+class AMOParser : public Parser<B, Solver> {
+    using Parser<B, Solver>::mapVar;
 
-	vec<Lit> lits;
-	
+    vec<Lit> lits;
+
 public:
-	AMOParser():Parser<B, Solver> ("At-Most-One") {
-		
-	}
-	bool parseLine(B& in, Solver& S) {
-		
-		skipWhitespace(in);
-		if (*in == EOF)
-			return false;
-		if (match(in,"amo")){
-			//read in amo constraints the same way as clauses, except that all ints are interpreted as variables, not lits, for now:
-			lits.clear();
-			for (;;) {
-				int parsed_var = parseInt(in);
-				if (parsed_var == 0)
-					break;
-				bool sign = false;
-				if(parsed_var<0){
-					sign=true;
-					parsed_var = -parsed_var;
-				}
-				Var var = parsed_var-1;
-				var= mapVar(S,var);
-				Lit l = mkLit(var,sign);
-				lits.push(l);
-			}
-			if(lits.size()>1){
-				//else this constraint has no effect
-				AMOTheory * amo = new AMOTheory(&S);
-				for (Lit l : lits)
-					amo->addLit(l);
+    AMOParser() : Parser<B, Solver>("At-Most-One"){
 
-			}
-			return true;
-		}
+    }
 
-		return false;
-	}
-	
-	void implementConstraints(Solver & S) {
+    bool parseLine(B& in, Solver& S){
 
-	}
+        skipWhitespace(in);
+        if(*in == EOF)
+            return false;
+        if(match(in, "amo")){
+            //read in amo constraints the same way as clauses, except that all ints are interpreted as variables, not lits, for now:
+            lits.clear();
+            for(;;){
+                int parsed_var = parseInt(in);
+                if(parsed_var == 0)
+                    break;
+                bool sign = false;
+                if(parsed_var < 0){
+                    sign = true;
+                    parsed_var = -parsed_var;
+                }
+                Var var = parsed_var - 1;
+                var = mapVar(S, var);
+                Lit l = mkLit(var, sign);
+                lits.push(l);
+            }
+            if(lits.size() > 1){
+                //else this constraint has no effect
+                AMOTheory* amo = new AMOTheory(&S);
+                for(Lit l : lits)
+                    amo->addLit(l);
 
-	
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    void implementConstraints(Solver& S){
+
+    }
+
+
 };
 
 //=================================================================================================
-}
-;
+};
 
 #endif /* GRAPH_PARSER_H_ */

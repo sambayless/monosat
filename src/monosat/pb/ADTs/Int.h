@@ -19,15 +19,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #ifndef Int_h
 #define Int_h
+
 #include "Global.h"
 //=================================================================================================
 namespace Monosat {
 namespace PB {
 
-struct Exception_IntOverflow: public std::exception {
-    char *where;
+struct Exception_IntOverflow : public std::exception {
+    char* where;
 
-    Exception_IntOverflow(char *w) : where(w) { }    // (takes ownership of string)
+    Exception_IntOverflow(char* w) : where(w){}    // (takes ownership of string)
 };
 }
 }
@@ -52,40 +53,131 @@ namespace PB {
 // used in 'PbSolver'. It should be easy enough to add the missing operators on demand.
 //
 class Int {
-    int64   data;
+    int64 data;
 public:
-    Int() : data(Int_Undef__) {}
-    Int(int   x) : data(x) {}
-    Int(int64 x) : data(x) {}
+    Int() : data(Int_Undef__){}
+
+    Int(int x) : data(x){}
+
+    Int(int64 x) : data(x){}
 
     // "operator =" and copy-constructor "Int(const Int& src)" are default defined to the right thing.
 
-    uint hash() const {A1 return (uint)data ^ (uint)(data >> 32); }
+    uint hash() const{
+        A1
+        return (uint) data ^ (uint) (data >> 32);
+    }
 
-    bool operator == (Int other) const {A2 return data == other.data; }
-    bool operator != (Int other) const {A2 return data != other.data; }
-    bool operator <  (Int other) const {A2 return data <  other.data; }
-    bool operator >  (Int other) const {A2 return data >  other.data; }
-    bool operator <= (Int other) const {A2 return data <= other.data; }
-    bool operator >= (Int other) const {A2 return data >= other.data; }
+    bool operator==(Int other) const{
+        A2
+        return data == other.data;
+    }
 
-    Int  operator &  (Int other) const {A2 return Int(data & other.data); }
-    Int& operator >>= (int n) {A1 data >>= n; return *this; }
+    bool operator!=(Int other) const{
+        A2
+        return data != other.data;
+    }
 
-    Int  operator -  ()          const {A1 return Int(-data); }
-    Int& operator ++ ()                {A1 ++data; return *this; }
-    Int& operator -= (Int other)       {A2 data -= other.data; return *this; }
-    Int& operator += (Int other)       {A2 data += other.data; return *this; }
-    Int& operator *= (Int other)       {A2 data *= other.data; return *this; }
-    Int& operator /= (Int other)       {A2 data /= other.data; return *this; }
-    Int  operator +  (Int other) const {A2 return Int(data + other.data); }
-    Int  operator -  (Int other) const {A2 return Int(data - other.data); }
-    Int  operator *  (Int other) const {A2 return Int(data * other.data); }
-    Int  operator /  (Int other) const {A2 return Int(data / other.data); }
-    Int  operator %  (Int other) const {A2 return Int(data % other.data); }
+    bool operator<(Int other) const{
+        A2
+        return data < other.data;
+    }
 
-    friend char* toString(Int num) { char buf[32]; sprintf(buf, "%lld", num.data); return xstrdup(buf); }   // Caller must free string.
-    friend int   toint   (Int num) { if (num > INT_MAX || num < INT_MIN) throw Exception_IntOverflow(xstrdup("toint")); return (int)num.data; }
+    bool operator>(Int other) const{
+        A2
+        return data > other.data;
+    }
+
+    bool operator<=(Int other) const{
+        A2
+        return data <= other.data;
+    }
+
+    bool operator>=(Int other) const{
+        A2
+        return data >= other.data;
+    }
+
+    Int operator&(Int other) const{
+        A2
+        return Int(data & other.data);
+    }
+
+    Int& operator>>=(int n){
+        A1
+        data >>= n;
+        return *this;
+    }
+
+    Int operator-() const{
+        A1
+        return Int(-data);
+    }
+
+    Int& operator++(){
+        A1
+        ++data;
+        return *this;
+    }
+
+    Int& operator-=(Int other){
+        A2
+        data -= other.data;
+        return *this;
+    }
+
+    Int& operator+=(Int other){
+        A2
+        data += other.data;
+        return *this;
+    }
+
+    Int& operator*=(Int other){
+        A2
+        data *= other.data;
+        return *this;
+    }
+
+    Int& operator/=(Int other){
+        A2
+        data /= other.data;
+        return *this;
+    }
+
+    Int operator+(Int other) const{
+        A2
+        return Int(data + other.data);
+    }
+
+    Int operator-(Int other) const{
+        A2
+        return Int(data - other.data);
+    }
+
+    Int operator*(Int other) const{
+        A2
+        return Int(data * other.data);
+    }
+
+    Int operator/(Int other) const{
+        A2
+        return Int(data / other.data);
+    }
+
+    Int operator%(Int other) const{
+        A2
+        return Int(data % other.data);
+    }
+
+    friend char* toString(Int num){
+        char buf[32];
+        sprintf(buf, "%lld", num.data);
+        return xstrdup(buf);
+    }   // Caller must free string.
+    friend int toint(Int num){
+        if(num > INT_MAX || num < INT_MIN) throw Exception_IntOverflow(xstrdup("toint"));
+        return (int) num.data;
+    }
 };
 
 

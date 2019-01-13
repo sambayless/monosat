@@ -41,7 +41,6 @@ class GraphManager(metaclass=Manager):
 
 
 class Graph:
-
     class GraphType:
         int = 1
         float = 2
@@ -276,8 +275,8 @@ class Graph:
 
         if weight and isinstance(weight, float):
             assert (
-                self.graph_type == Graph.GraphType.float
-                or self.graph_type == Graph.GraphType.rational
+                    self.graph_type == Graph.GraphType.float
+                    or self.graph_type == Graph.GraphType.rational
             )
         elif weight and isinstance(weight, tuple):
             assert self.graph_type == Graph.GraphType.rational
@@ -315,8 +314,8 @@ class Graph:
             self.addNode()
         if weight and isinstance(weight, float):
             assert (
-                self.graph_type == Graph.GraphType.float
-                or self.graph_type == Graph.GraphType.rational
+                    self.graph_type == Graph.GraphType.float
+                    or self.graph_type == Graph.GraphType.rational
             )
         elif weight and isinstance(weight, tuple):
             assert self.graph_type == Graph.GraphType.rational

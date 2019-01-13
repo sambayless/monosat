@@ -21,6 +21,7 @@
 
 #ifndef ALLPAIRSDETECTOR_H_
 #define ALLPAIRSDETECTOR_H_
+
 #include "monosat/utils/System.h"
 #include "GraphTheoryTypes.h"
 #include "monosat/dgl/DynamicGraph.h"
@@ -37,148 +38,166 @@ using namespace dgl;
 namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
-template<typename Weight,typename Graph = DynamicGraph<Weight>>
-class AllPairsDetector: public Detector {
+
+template<typename Weight, typename Graph = DynamicGraph<Weight>>
+class AllPairsDetector : public Detector {
 public:
-	GraphTheorySolver<Weight> * outer;
-	Graph  &g_under;
-	Graph  &g_over;
-	Graph  &cutGraph;
-	int within = 0;
+    GraphTheorySolver<Weight>* outer;
+    Graph& g_under;
+    Graph& g_over;
+    Graph& cutGraph;
+    int within = 0;
 
-	double rnd_seed;
+    double rnd_seed;
 #ifdef DEBUG_ALLPAIRS
-	AllPairs * dbg_positive_reach_detector;
-	AllPairs * dbg_negative_reach_detector;
+    AllPairs * dbg_positive_reach_detector;
+    AllPairs * dbg_negative_reach_detector;
 #endif
-	
-	CRef underprop_marker;
-	CRef overprop_marker;
 
-	AllPairs * underapprox_reach_detector=nullptr;
-	AllPairs * overapprox_reach_detector=nullptr;
-	AllPairs * underapprox_path_detector=nullptr;
+    CRef underprop_marker;
+    CRef overprop_marker;
 
-	//vec<Lit>  reach_lits;
-	Var first_reach_var;
+    AllPairs* underapprox_reach_detector = nullptr;
+    AllPairs* overapprox_reach_detector = nullptr;
+    AllPairs* underapprox_path_detector = nullptr;
 
-	vec<int> force_reason;
+    //vec<Lit>  reach_lits;
+    Var first_reach_var;
 
-	struct DistLit {
-		Lit l;
-		int min_distance;
-		int source;
-		int node;
-	};
-	vec<bool> installed_sources;
-	vec<int> sources;
-	vec<vec<vec<DistLit> >> dist_lits;
-	vec<DistLit> reach_lit_map;
+    vec<int> force_reason;
 
-	std::vector<int> tmp_path;
+    struct DistLit {
+        Lit l;
+        int min_distance;
+        int source;
+        int node;
+    };
+    vec<bool> installed_sources;
+    vec<int> sources;
+    vec<vec<vec<DistLit> >> dist_lits;
+    vec<DistLit> reach_lit_map;
 
-	struct Change {
-		Lit l;
-		int u;
-		int source;
-	};
-	vec<Change> changed;
+    std::vector<int> tmp_path;
 
-	vec<int> to_visit;
-	vec<char> seen;
-	vec<Change> & getChanged() {
-		return changed;
-	}
-	struct IgnoreStatus {
-		
-		void setReachable(int from, int u, bool reachable) {
-			
-		}
-		bool isReachable(int from, int u) const {
-			return false;
-		}
-		
-		void setMininumDistance(int from, int u, bool reachable, int distance) {
-			
-		}
-		IgnoreStatus() {
-		}
-	} ignoreStatus;
-	struct ReachStatus {
-		AllPairsDetector & detector;
-		bool polarity;
-		void setReachable(int from, bool reachable) {
-			//for compatability with reach algs
-		}
-		void setReachable(int from, int u, bool reachable);
-		bool isReachable(int from, int u) const {
-			return false;
-		}
-		
-		void setMininumDistance(int from, int u, bool reachable, int distance);
+    struct Change {
+        Lit l;
+        int u;
+        int source;
+    };
+    vec<Change> changed;
 
-		ReachStatus(AllPairsDetector & _outer, bool _polarity) :
-				detector(_outer), polarity(_polarity) {
-		}
-	};
-	ReachStatus *positiveReachStatus;
-	ReachStatus *negativeReachStatus;
+    vec<int> to_visit;
+    vec<char> seen;
 
-	int getNode(Var reachVar) {
-		assert(reachVar >= first_reach_var);
-		int index = reachVar - first_reach_var;
-		assert(index < reach_lit_map.size());
-		assert(reach_lit_map[index].node >= 0);
-		return reach_lit_map[index].node;
-	}
-	int getSource(Var reachVar) {
-		assert(reachVar >= first_reach_var);
-		int index = reachVar - first_reach_var;
-		assert(index < reach_lit_map.size());
-		assert(reach_lit_map[index].source >= 0);
-		return reach_lit_map[index].source;
-	}
-	/*	Lit getLit(int node){
+    vec<Change>& getChanged(){
+        return changed;
+    }
 
-	 return reach_lits[node];
+    struct IgnoreStatus {
 
-	 }*/
-	bool propagate(vec<Lit> & conflict) override;
-	void buildReachReason(int from, int to, vec<Lit> & conflict);
-	void buildNonReachReason(int from, int to, vec<Lit> & conflict);
+        void setReachable(int from, int u, bool reachable){
 
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
-	bool checkSatisfied() override;
-	Lit decide(CRef &decision_reason) override;
-	void addLit(int from, int to, Var reach_var, int within_steps = -1);
-	AllPairsDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &_g, Graph  &_antig,Graph & cutGraph,
-			double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-    ~AllPairsDetector() override {
-		if (underapprox_path_detector && underapprox_path_detector!=overapprox_reach_detector){
-			delete underapprox_path_detector;
-		}
+        }
+
+        bool isReachable(int from, int u) const{
+            return false;
+        }
+
+        void setMininumDistance(int from, int u, bool reachable, int distance){
+
+        }
+
+        IgnoreStatus(){
+        }
+    } ignoreStatus;
+
+    struct ReachStatus {
+        AllPairsDetector& detector;
+        bool polarity;
+
+        void setReachable(int from, bool reachable){
+            //for compatability with reach algs
+        }
+
+        void setReachable(int from, int u, bool reachable);
+
+        bool isReachable(int from, int u) const{
+            return false;
+        }
+
+        void setMininumDistance(int from, int u, bool reachable, int distance);
+
+        ReachStatus(AllPairsDetector& _outer, bool _polarity) :
+                detector(_outer), polarity(_polarity){
+        }
+    };
+
+    ReachStatus* positiveReachStatus;
+    ReachStatus* negativeReachStatus;
+
+    int getNode(Var reachVar){
+        assert(reachVar >= first_reach_var);
+        int index = reachVar - first_reach_var;
+        assert(index < reach_lit_map.size());
+        assert(reach_lit_map[index].node >= 0);
+        return reach_lit_map[index].node;
+    }
+
+    int getSource(Var reachVar){
+        assert(reachVar >= first_reach_var);
+        int index = reachVar - first_reach_var;
+        assert(index < reach_lit_map.size());
+        assert(reach_lit_map[index].source >= 0);
+        return reach_lit_map[index].source;
+    }
+
+    /*	Lit getLit(int node){
+
+     return reach_lits[node];
+
+     }*/
+    bool propagate(vec<Lit>& conflict) override;
+
+    void buildReachReason(int from, int to, vec<Lit>& conflict);
+
+    void buildNonReachReason(int from, int to, vec<Lit>& conflict);
+
+    void buildReason(Lit p, vec<Lit>& reason, CRef marker) override;
+
+    bool checkSatisfied() override;
+
+    Lit decide(CRef& decision_reason) override;
+
+    void addLit(int from, int to, Var reach_var, int within_steps = -1);
+
+    AllPairsDetector(int _detectorID, GraphTheorySolver<Weight>* _outer, Graph& _g, Graph& _antig, Graph& cutGraph,
+                     double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+    ~AllPairsDetector() override{
+        if(underapprox_path_detector && underapprox_path_detector != overapprox_reach_detector){
+            delete underapprox_path_detector;
+        }
 
 
-		if(underapprox_reach_detector){
-			delete underapprox_reach_detector;
+        if(underapprox_reach_detector){
+            delete underapprox_reach_detector;
 
-		}
-		if (overapprox_reach_detector){
-			delete overapprox_reach_detector;
+        }
+        if(overapprox_reach_detector){
+            delete overapprox_reach_detector;
 
-		}
+        }
 
 #ifdef DEBUG_ALLPAIRS
-	{
-		delete dbg_positive_reach_detector;
-		delete dbg_negative_reach_detector;
-	}
+        {
+            delete dbg_positive_reach_detector;
+            delete dbg_negative_reach_detector;
+        }
 #endif
-	}
-	std::string getName() override {
-		return "All-pairs Reachability Detector";
-	}
+    }
+
+    std::string getName() override{
+        return "All-pairs Reachability Detector";
+    }
 };
-}
-;
+};
 #endif /* AllPairsDetector_H_ */

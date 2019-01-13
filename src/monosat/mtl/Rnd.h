@@ -24,50 +24,50 @@
 namespace Monosat {
 
 // Generate a random double:
-static inline double drand(double& seed) {
-	seed *= 1389796;
-	int q = (int) (seed / 2147483647);
-	seed -= (double) q * 2147483647;
-	return seed / 2147483647;
+static inline double drand(double& seed){
+    seed *= 1389796;
+    int q = (int) (seed / 2147483647);
+    seed -= (double) q * 2147483647;
+    return seed / 2147483647;
 }
 
 // Generate a random integer:
-static inline int irand(double& seed, int size) {
-	return (int) (drand(seed) * size);
+static inline int irand(double& seed, int size){
+    return (int) (drand(seed) * size);
 }
 
 // Randomly shuffle the contents of a vector:
 template<class V>
-static void randomShuffle(double& seed, V& xs) {
-	for (int i = 0; i < xs.size(); i++) {
-		int pick = i + irand(seed, xs.size() - i);
-		auto tmp = xs[i];
-		xs[i] = xs[pick];
-		xs[pick] = tmp;
-	}
+static void randomShuffle(double& seed, V& xs){
+    for(int i = 0; i < xs.size(); i++){
+        int pick = i + irand(seed, xs.size() - i);
+        auto tmp = xs[i];
+        xs[i] = xs[pick];
+        xs[pick] = tmp;
+    }
 }
 
 // Randomly shuffle the contents of a vector:
 template<class T>
-static void randomShuffle(double& seed, vec<T>& xs) {
-	for (int i = 0; i < xs.size(); i++) {
-		int pick = i + irand(seed, xs.size() - i);
-		T tmp = xs[i];
-		xs[i] = xs[pick];
-		xs[pick] = tmp;
-	}
+static void randomShuffle(double& seed, vec <T>& xs){
+    for(int i = 0; i < xs.size(); i++){
+        int pick = i + irand(seed, xs.size() - i);
+        T tmp = xs[i];
+        xs[i] = xs[pick];
+        xs[pick] = tmp;
+    }
 }
 
 // Randomly shuffle a vector of a vector (ugly)
 template<class T>
-static void randomShuffle(double& seed, vec<vec<T> >& xs) {
-	for (int i = 0; i < xs.size(); i++) {
-		int pick = i + irand(seed, xs.size() - i);
-		vec<T> tmp;
-		xs[i].moveTo(tmp);
-		xs[pick].moveTo(xs[i]);
-		tmp.moveTo(xs[pick]);
-	}
+static void randomShuffle(double& seed, vec <vec<T>>& xs){
+    for(int i = 0; i < xs.size(); i++){
+        int pick = i + irand(seed, xs.size() - i);
+        vec<T> tmp;
+        xs[i].moveTo(tmp);
+        xs[pick].moveTo(xs[i]);
+        tmp.moveTo(xs[pick]);
+    }
 }
 
 //=================================================================================================

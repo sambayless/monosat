@@ -21,73 +21,87 @@
 
 #ifndef REACH_H_
 #define REACH_H_
+
 #include <cstdio>
 #include <vector>
+
 namespace dgl {
 
 class Reach {
 public:
 
-	struct NullStatus {
-		void setReachable(int u, bool reachable) {
+    struct NullStatus {
+        void setReachable(int u, bool reachable){
 
-		}
-		bool isReachable(int u) const {
-			return false;
-		}
+        }
 
-		void setMininumDistance(int u, bool reachable, int distance) {
+        bool isReachable(int u) const{
+            return false;
+        }
 
-		}
+        void setMininumDistance(int u, bool reachable, int distance){
 
-	};
-	static NullStatus nullStatus;
+        }
 
-	virtual int numUpdates() const=0;
-	virtual ~Reach() {
-	}
-	;
+    };
 
-	virtual void setSource(int s)=0;
-	virtual int getSource()=0;
-	//virtual addSource(int s)=0;
+    static NullStatus nullStatus;
 
-	virtual void update()=0;
+    virtual int numUpdates() const =0;
 
-	virtual bool connected_unsafe(int t)=0;
-	virtual bool connected_unchecked(int t)=0;
-	virtual bool connected(int t)=0;
-	//virtual int distance( int t)=0;
-	//virtual int distance_unsafe(int t)=0;
-	virtual int previous(int node)=0;
-	virtual int incomingEdge(int node)=0;
-	//Select a randomly chosen, but still shortest path, previous node or edge (falling back on selecting a deterministic edge if this functionality is not supported)
-	virtual int randomPrevious(int node,double & seed){
-		return previous(node);
-	}
-	virtual int randomIncomingEdge(int node,double & seed){
-		return incomingEdge(node);
-	}
-	//The maximum distance to compute up to.
-	/*	virtual void setMaxDistance(int maxDistance){
+    virtual ~Reach(){
+    };
 
-	 }*/
-	virtual void addDestination(int node){
+    virtual void setSource(int s)=0;
 
-	}
-	virtual void removeDestination(int node){
+    virtual int getSource()=0;
+    //virtual addSource(int s)=0;
 
-	}
-	virtual void clearCache(){
+    virtual void update()=0;
 
-	}
-	virtual bool dbg_manual_uptodate(){
-		return true;
-	}
-	virtual void printStats(){
-		std::printf("\n");
-	}
+    virtual bool connected_unsafe(int t)=0;
+
+    virtual bool connected_unchecked(int t)=0;
+
+    virtual bool connected(int t)=0;
+
+    //virtual int distance( int t)=0;
+    //virtual int distance_unsafe(int t)=0;
+    virtual int previous(int node)=0;
+
+    virtual int incomingEdge(int node)=0;
+
+    //Select a randomly chosen, but still shortest path, previous node or edge (falling back on selecting a deterministic edge if this functionality is not supported)
+    virtual int randomPrevious(int node, double& seed){
+        return previous(node);
+    }
+
+    virtual int randomIncomingEdge(int node, double& seed){
+        return incomingEdge(node);
+    }
+    //The maximum distance to compute up to.
+    /*	virtual void setMaxDistance(int maxDistance){
+
+     }*/
+    virtual void addDestination(int node){
+
+    }
+
+    virtual void removeDestination(int node){
+
+    }
+
+    virtual void clearCache(){
+
+    }
+
+    virtual bool dbg_manual_uptodate(){
+        return true;
+    }
+
+    virtual void printStats(){
+        std::printf("\n");
+    }
 };
-}
-;
+};
 #endif /* REACH_H_ */

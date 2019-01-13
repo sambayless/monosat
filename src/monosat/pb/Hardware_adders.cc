@@ -19,22 +19,23 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "Hardware.h"
 #include "Debug.h"
+
 namespace Monosat {
 namespace PB {
-int estimatedAdderCost(const Linear &c) {
+int estimatedAdderCost(const Linear& c){
     // (sorry about strange implementation -- copy/paste programming)
     vec<Int> Cs(c.size);
     Int max_C = -1;
-    for (int i = 0; i < c.size; i++) {
+    for(int i = 0; i < c.size; i++){
         Cs[i] = c(i);
-        if (Cs[i] > max_C)
+        if(Cs[i] > max_C)
             max_C = Cs[i];
     }
 
     int cost = 0;
-    for (; max_C > 0; max_C >>= 1) {
-        for (int i = 0; i < Cs.size(); i++) {
-            if ((Cs[i] & 1) != 0)
+    for(; max_C > 0; max_C >>= 1){
+        for(int i = 0; i < Cs.size(); i++){
+            if((Cs[i] & 1) != 0)
                 cost++;
             Cs[i] >>= 1;
         }
@@ -44,11 +45,11 @@ int estimatedAdderCost(const Linear &c) {
 }
 
 
-void rippleAdder(const vec<Formula> &xs, const vec<Formula> &ys, vec<Formula> &out) {
+void rippleAdder(const vec<Formula>& xs, const vec<Formula>& ys, vec<Formula>& out){
     Formula c = _0_;
     out.clear();
 
-    for (int i = 0; i < max(xs.size(), ys.size()); i++) {
+    for(int i = 0; i < max(xs.size(), ys.size()); i++){
         Formula x = i < xs.size() ? xs[i] : _0_;
         Formula y = i < ys.size() ? ys[i] : _0_;
         out.push(FAs(x, y, c));
@@ -56,7 +57,7 @@ void rippleAdder(const vec<Formula> &xs, const vec<Formula> &ys, vec<Formula> &o
     }
     out.push(c);
 
-    while (out.last() == _0_)
+    while(out.last() == _0_)
         out.pop();
 }
 
@@ -72,47 +73,47 @@ void rippleAdder(const vec<Formula> &xs, const vec<Formula> &ys, vec<Formula> &o
 |    "overflow" bit, so "out.size() <= bits + 1".
 |________________________________________________________________________________________________@*/
 
-void addPb(const vec<Formula> &ps, const vec<Int> &Cs_, vec<Formula> &out, int bits) {
+void addPb(const vec<Formula>& ps, const vec<Int>& Cs_, vec<Formula>& out, int bits){
     assert(ps.size() == Cs_.size());
-    vec<vec<Formula> > pools;
+    vec<vec<Formula>> pools;
     vec<Int> Cs(Cs_.size());
     Int max_C = -1;
-    for (int i = 0; i < Cs_.size(); i++) {
+    for(int i = 0; i < Cs_.size(); i++){
         Cs[i] = Cs_[i];
-        if (Cs[i] > max_C)
+        if(Cs[i] > max_C)
             max_C = Cs[i];
     }
 
-    for (; max_C > 0; max_C >>= 1) {
+    for(; max_C > 0; max_C >>= 1){
         pools.push();
-        for (int i = 0; i < Cs.size(); i++) {
-            if ((Cs[i] & 1) != 0)
+        for(int i = 0; i < Cs.size(); i++){
+            if((Cs[i] & 1) != 0)
                 pools.last().push(ps[i]);
             Cs[i] >>= 1;
         }
     }
 
     vec<Formula> carry;
-    for (int p = 0; p < pools.size(); p++) {
-        vec<Formula> &pool = pools[p];
+    for(int p = 0; p < pools.size(); p++){
+        vec<Formula>& pool = pools[p];
         carry.clear();
 
-        if (p == bits) {
+        if(p == bits){
             Formula overflow = _0_;
-            for (; p < pools.size(); p++)
-                for (int i = 0; i < pools[p].size(); i++)
+            for(; p < pools.size(); p++)
+                for(int i = 0; i < pools[p].size(); i++)
                     overflow |= pools[p][i];
             out.push(overflow);
-        } else if (pool.size() == 0)
+        }else if(pool.size() == 0)
             out.push(_0_);
-        else {
+        else{
             int head = 0;
-            while (pool.size() - head >= 3) {
+            while(pool.size() - head >= 3){
                 pool.push(FAs(pool[head], pool[head + 1], pool[head + 2]));
                 carry.push(FAc(pool[head], pool[head + 1], pool[head + 2]));
                 head += 3;
             }
-            if (pool.size() - head == 2) {
+            if(pool.size() - head == 2){
                 pool.push(FAs(pool[head], pool[head + 1], _0_));
                 carry.push(FAc(pool[head], pool[head + 1], _0_));
                 head += 2;
@@ -121,10 +122,10 @@ void addPb(const vec<Formula> &ps, const vec<Int> &Cs_, vec<Formula> &out, int b
             out.push(pool[head]);
         }
 
-        if (carry.size() > 0) {
-            if (p + 1 == pools.size())
+        if(carry.size() > 0){
+            if(p + 1 == pools.size())
                 pools.push();
-            for (int i = 0; i < carry.size(); i++)
+            for(int i = 0; i < carry.size(); i++)
                 pools[p + 1].push(carry[i]);
         }
     }

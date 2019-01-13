@@ -21,11 +21,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define __PB_HEAP__
 namespace Monosat {
 namespace PB {
-static inline int left(int i) { return i * 2; }
+static inline int left(int i){return i * 2;}
 
-static inline int right(int i) { return i * 2 + 1; }
+static inline int right(int i){return i * 2 + 1;}
 
-static inline int parent(int i) { return i / 2; }
+static inline int parent(int i){return i / 2;}
 
 template<class C>
 class Heap {
@@ -34,9 +34,9 @@ public:
     vec<int> heap;     // heap of ints
     vec<int> indices;  // int -> index in heap
 
-    inline void percolateUp(int i) {
+    inline void percolateUp(int i){
         int x = heap[i];
-        while (parent(i) != 0 && comp(x, heap[parent(i)])) {
+        while(parent(i) != 0 && comp(x, heap[parent(i)])){
             heap[i] = heap[parent(i)];
             indices[heap[i]] = i;
             i = parent(i);
@@ -45,11 +45,11 @@ public:
         indices[x] = i;
     }
 
-    inline void percolateDown(int i) {
+    inline void percolateDown(int i){
         int x = heap[i];
-        while (left(i) < heap.size()) {
+        while(left(i) < heap.size()){
             int child = right(i) < heap.size() && comp(heap[right(i)], heap[left(i)]) ? right(i) : left(i);
-            if (!comp(heap[child], x)) break;
+            if(!comp(heap[child], x)) break;
             heap[i] = heap[child];
             indices[heap[i]] = i;
             i = child;
@@ -58,52 +58,52 @@ public:
         indices[x] = i;
     }
 
-    bool ok(int n) { return n >= 0 && n < (int) indices.size(); }
+    bool ok(int n){return n >= 0 && n < (int) indices.size();}
 
 public:
-    Heap(C c) : comp(c) { heap.push(-1); }
+    Heap(C c) : comp(c){heap.push(-1);}
 
-    void setBounds(int size) {
+    void setBounds(int size){
         assert(size >= 0);
         indices.growTo(size, 0);
     }
 
-    bool inHeap(int n) {
+    bool inHeap(int n){
         assert(ok(n));
         return indices[n] != 0;
     }
 
-    void increase(int n) {
+    void increase(int n){
         assert(ok(n));
         assert(inHeap(n));
         percolateUp(indices[n]);
     }
 
-    bool empty(void) { return heap.size() == 1; }
+    bool empty(void){return heap.size() == 1;}
 
-    void insert(int n) {
+    void insert(int n){
         assert(ok(n));
         indices[n] = heap.size();
         heap.push(n);
         percolateUp(indices[n]);
     }
 
-    int getmin(void) {
+    int getmin(void){
         int r = heap[1];
         heap[1] = heap.last();
         indices[heap[1]] = 1;
         indices[r] = 0;
         heap.pop();
-        if (heap.size() > 1)
+        if(heap.size() > 1)
             percolateDown(1);
         return r;
     }
 
-    int peekmin(void) { return heap[1]; }
+    int peekmin(void){return heap[1];}
 
-    bool heapProperty(void) { return heapProperty(1); }
+    bool heapProperty(void){return heapProperty(1);}
 
-    bool heapProperty(int i) {
+    bool heapProperty(int i){
         return (size_t) i >= heap.size() ||
                ((parent(i) == 0 || !comp(heap[i], heap[parent(i)])) &&
                 heapProperty(left(i)) && heapProperty(right(i)));

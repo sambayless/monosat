@@ -85,7 +85,7 @@ class PBManager(metaclass=Manager):
         return self.pb.conditionalPB(clause, val, constraint, weights, condition)
 
     def conditionalRangePB(
-        self, clause, lowerBound, upperBound, weights=None, condition=None
+            self, clause, lowerBound, upperBound, weights=None, condition=None
     ):
         return self.pb.conditionalRangePB(
             clause, lowerBound, upperBound, weights, condition
@@ -360,10 +360,10 @@ class MonosatPB:
             nclause.append(v)
 
         if (
-            constraint == ">"
-            or constraint == ">="
-            or constraint == "="
-            or constraint == "=="
+                constraint == ">"
+                or constraint == ">="
+                or constraint == "="
+                or constraint == "=="
         ):
             negWeightSum = 0
             for w in weights:
@@ -384,10 +384,10 @@ class MonosatPB:
             nclause.pop()
             weights.pop()
         if (
-            constraint == "<"
-            or constraint == "<="
-            or constraint == "="
-            or constraint == "=="
+                constraint == "<"
+                or constraint == "<="
+                or constraint == "="
+                or constraint == "=="
         ):
             posWeightSum = 0
             for w in weights:
@@ -411,7 +411,7 @@ class MonosatPB:
         )  # The property is enforced if the condition variable is false
 
     def conditionalRangePB(
-        self, clause, lowerBound, upperBound, weights=None, condition=None
+            self, clause, lowerBound, upperBound, weights=None, condition=None
     ):
 
         if lowerBound == upperBound:
@@ -507,7 +507,7 @@ class MonosatTheoryPB:
         )
 
     def twoSidedRangePB(
-        self, clause, lowerBound, upperBound, weights=None, condition=None
+            self, clause, lowerBound, upperBound, weights=None, condition=None
     ):
         if condition is None:
             condition = Var()
@@ -587,7 +587,7 @@ class MonosatTheoryPB:
         return condition
 
     def conditionalRangePB(
-        self, clause, lowerBound, upperBound, weights=None, condition=None
+            self, clause, lowerBound, upperBound, weights=None, condition=None
     ):
         if lowerBound == upperBound:
             return self.conditionalPB(clause, lowerBound, "=", weights, condition)
@@ -623,18 +623,17 @@ class MonosatTheoryPB:
     def write(self, filename):
         f = open(filename, "a")
         for (
-            clause,
-            val,
-            constraint,
-            weights,
-            conditionVar,
-            oneSided,
+                clause,
+                val,
+                constraint,
+                weights,
+                conditionVar,
+                oneSided,
         ) in self.constraints:
             assert len(clause) == len(weights) or len(weights) == 0
             assert len(clause) > 0
             f.write("pb_lt " + str(len(clause)) + " ")
             for v in clause:
-
                 f.write(str(v.getInputLiteral()) + " ")
             f.write(str(len(weights)) + " ")
             for w in weights:
@@ -898,10 +897,10 @@ class MinisatPlus:
             nclause.append(v)
 
         if (
-            constraint == ">"
-            or constraint == ">="
-            or constraint == "="
-            or constraint == "=="
+                constraint == ">"
+                or constraint == ">="
+                or constraint == "="
+                or constraint == "=="
         ):
             negWeightSum = 0
             for w in weights:
@@ -922,10 +921,10 @@ class MinisatPlus:
             nclause.pop()
             weights.pop()
         if (
-            constraint == "<"
-            or constraint == "<="
-            or constraint == "="
-            or constraint == "=="
+                constraint == "<"
+                or constraint == "<="
+                or constraint == "="
+                or constraint == "=="
         ):
             posWeightSum = 0
             for w in weights:
@@ -949,7 +948,7 @@ class MinisatPlus:
         )  # The property is enforced if the condition variable is false
 
     def conditionalRangePB(
-        self, clause, lowerBound, upperBound, weights=None, condition=None
+            self, clause, lowerBound, upperBound, weights=None, condition=None
     ):
 
         if lowerBound == upperBound:
@@ -1311,10 +1310,10 @@ class PBSugar:
             nclause.append(v)
 
         if (
-            constraint == ">"
-            or constraint == ">="
-            or constraint == "="
-            or constraint == "=="
+                constraint == ">"
+                or constraint == ">="
+                or constraint == "="
+                or constraint == "=="
         ):
             negWeightSum = 0
             for w in weights:
@@ -1335,10 +1334,10 @@ class PBSugar:
             nclause.pop()
             weights.pop()
         if (
-            constraint == "<"
-            or constraint == "<="
-            or constraint == "="
-            or constraint == "=="
+                constraint == "<"
+                or constraint == "<="
+                or constraint == "="
+                or constraint == "=="
         ):
             posWeightSum = 0
             for w in weights:
@@ -1362,7 +1361,7 @@ class PBSugar:
         )  # The property is enforced if the condition variable is false
 
     def conditionalRangePB(
-        self, clause, lowerBound, upperBound, weights=None, condition=None
+            self, clause, lowerBound, upperBound, weights=None, condition=None
     ):
 
         if lowerBound == upperBound:
@@ -1472,7 +1471,6 @@ class PBSugar:
 
                 for l in clause:
                     if l == 0:
-
                         continue
                     v = abs(l)
                     if v not in varmap:
@@ -1578,6 +1576,7 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
     path.
 
     """
+
     # Check that a given file can be accessed with the correct mode.
     # Additionally check that `file` is not a directory, as on Windows
     # directories pass the os.access check.

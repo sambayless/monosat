@@ -37,7 +37,7 @@ namespace PB {
 
 template<class T>
 struct LessThan_default {
-    bool operator()(T x, T y) { return x < y; }
+    bool operator()(T x, T y){return x < y;}
 };
 
 
@@ -45,14 +45,14 @@ struct LessThan_default {
 
 
 template<class T, class LessThan>
-void selectionSort(T *array, int size, LessThan lt) {
+void selectionSort(T* array, int size, LessThan lt){
     int i, j, best_i;
     T tmp;
 
-    for (i = 0; i < size - 1; i++) {
+    for(i = 0; i < size - 1; i++){
         best_i = i;
-        for (j = i + 1; j < size; j++) {
-            if (lt(array[j], array[best_i]))
+        for(j = i + 1; j < size; j++){
+            if(lt(array[j], array[best_i]))
                 best_i = j;
         }
         tmp = array[i];
@@ -62,27 +62,27 @@ void selectionSort(T *array, int size, LessThan lt) {
 }
 
 template<class T>
-static inline void selectionSort(T *array, int size) {
+static inline void selectionSort(T* array, int size){
     PB::selectionSort(array, size, LessThan_default<T>());
 }
 
 
 template<class T, class LessThan>
-void sort(T *array, int size, LessThan lt, double &seed) {
-    if (size <= 15)
+void sort(T* array, int size, LessThan lt, double& seed){
+    if(size <= 15)
         PB::selectionSort(array, size, lt);
 
-    else {
+    else{
         T pivot = array[Monosat::irand(seed, size)];
         T tmp;
         int i = -1;
         int j = size;
 
-        for (; ;) {
-            do i++; while (lt(array[i], pivot));
-            do j--; while (lt(pivot, array[j]));
+        for(;;){
+            do i++;while(lt(array[i], pivot));
+            do j--;while(lt(pivot, array[j]));
 
-            if (i >= j) break;
+            if(i >= j) break;
 
             tmp = array[i];
             array[i] = array[j];
@@ -95,30 +95,30 @@ void sort(T *array, int size, LessThan lt, double &seed) {
 }
 
 template<class T, class LessThan>
-void sort(T *array, int size, LessThan lt) {
+void sort(T* array, int size, LessThan lt){
     double seed = 91648253;
     PB::sort(array, size, lt, seed);
 }
 
 template<class T>
-static inline void sort(T *array, int size) {
+static inline void sort(T* array, int size){
     PB::sort(array, size, LessThan_default<T>());
 }
 
 
 template<class T, class LessThan>
-void sortUnique(T *array, int &size, LessThan lt) {
+void sortUnique(T* array, int& size, LessThan lt){
     int i, j;
     T last;
 
-    if (size == 0) return;
+    if(size == 0) return;
 
     PB::sort(array, size, lt);
 
     i = 1;
     last = array[0];
-    for (j = 1; j < size; j++) {
-        if (lt(last, array[j])) {
+    for(j = 1; j < size; j++){
+        if(lt(last, array[j])){
             last = array[i] = array[j];
             i++;
         }
@@ -128,7 +128,7 @@ void sortUnique(T *array, int &size, LessThan lt) {
 }
 
 template<class T>
-static inline void sortUnique(T *array, int &size) {
+static inline void sortUnique(T* array, int& size){
     sortUnique(array, size, LessThan_default<T>());
 }
 
@@ -138,27 +138,27 @@ static inline void sortUnique(T *array, int &size) {
 
 
 template<class T, class LessThan>
-void sort(Monosat::vec<T> &v, LessThan lt) {
-    PB::sort((T *) v, v.size(), lt);
+void sort(Monosat::vec<T>& v, LessThan lt){
+    PB::sort((T*) v, v.size(), lt);
 }
 
 template<class T>
-void sort(Monosat::vec<T> &v) {
+void sort(Monosat::vec<T>& v){
     PB::sort(v, LessThan_default<T>());
 }
 
 
 template<class T, class LessThan>
-void sortUnique(Monosat::vec<T> &v, LessThan lt) {
+void sortUnique(Monosat::vec<T>& v, LessThan lt){
     int size = v.size();
-    T *data = v.release();
+    T* data = v.release();
     sortUnique(data, size, lt);
     v.~vec();
     new(&v) Monosat::vec<T>(data, size);
 }
 
 template<class T>
-void sortUnique(Monosat::vec<T> &v) {
+void sortUnique(Monosat::vec<T>& v){
     sortUnique(v, LessThan_default<T>());
 }
 

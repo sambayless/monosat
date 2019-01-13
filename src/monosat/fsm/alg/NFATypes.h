@@ -9,21 +9,25 @@
 #define NFATYPES_H_
 
 
-struct NFATransition{
-	int edgeID;
-	int input;
-	int output;
+struct NFATransition {
+    int edgeID;
+    int input;
+    int output;
 };
+
 struct FSMNullStatus {
-	void accepts(int string, int state,int edgeID,int label) {
+    void accepts(int string, int state, int edgeID, int label){
 
-	}
-	void accepts(int string, int state,int edgeID,int label, bool accepts) {
+    }
 
-	}
-	void generates(int string, bool generates){
+    void accepts(int string, int state, int edgeID, int label, bool accepts){
 
-	}
+    }
+
+    void generates(int string, bool generates){
+
+    }
 };
+
 static FSMNullStatus fsmNullStatus;
 #endif /* NFATYPES_H_ */

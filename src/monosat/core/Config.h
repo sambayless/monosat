@@ -23,6 +23,7 @@
 
 #include "monosat/utils/Options.h"
 #include "monosat/utils/System.h"
+
 namespace Monosat {
 extern BoolOption opt_show_version_and_quit;
 extern IntOption opt_verb;
@@ -255,72 +256,78 @@ extern OptionSet opt_route;
 extern OptionSet opt_route2;
 
 
-
 enum class ReachAlg {
-	ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_RAMAL_REPS, ALG_RAMAL_REPS_BATCHED,ALG_RAMAL_REPS_BATCHED2
+    ALG_SAT,
+    ALG_DFS,
+    ALG_DIJKSTRA,
+    ALG_DISTANCE,
+    ALG_BFS,
+    ALG_RAMAL_REPS,
+    ALG_RAMAL_REPS_BATCHED,
+    ALG_RAMAL_REPS_BATCHED2
 };
 
 //For undirected reachability
 enum class ConnectivityAlg {
-	ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_THORUP
+    ALG_SAT, ALG_DFS, ALG_DIJKSTRA, ALG_DISTANCE, ALG_BFS, ALG_THORUP
 };
 extern ConnectivityAlg undirectedalg;
 extern ReachAlg reachalg;
 
 enum class AllPairsAlg {
-	ALG_FLOYDWARSHALL, ALG_DIJKSTRA_ALLPAIRS
+    ALG_FLOYDWARSHALL, ALG_DIJKSTRA_ALLPAIRS
 };
 extern AllPairsAlg allpairsalg;
 enum class AllPairsConnectivityAlg {
-	ALG_FLOYDWARSHALL, ALG_DIJKSTRA_ALLPAIRS, ALG_THORUP
+    ALG_FLOYDWARSHALL, ALG_DIJKSTRA_ALLPAIRS, ALG_THORUP
 };
 extern AllPairsConnectivityAlg undirected_allpairsalg;
 enum class MinCutAlg {
-	ALG_EDMONSKARP, ALG_EDKARP_ADJ,
-	// ALG_IBFS, //omitted for licensing reasons
-			ALG_EDKARP_DYN,
-	ALG_DINITZ,
-	ALG_DINITZ_LINKCUT,
-	ALG_KOHLI_TORR
+    ALG_EDMONSKARP, ALG_EDKARP_ADJ,
+    // ALG_IBFS, //omitted for licensing reasons
+            ALG_EDKARP_DYN,
+    ALG_DINITZ,
+    ALG_DINITZ_LINKCUT,
+    ALG_KOHLI_TORR
 };
 extern MinCutAlg mincutalg;
 enum class MinSpanAlg {
-	ALG_KRUSKAL, ALG_PRIM, ALG_SPIRA_PAN
+    ALG_KRUSKAL, ALG_PRIM, ALG_SPIRA_PAN
 };
 extern MinSpanAlg mstalg;
 enum class ComponentsAlg {
-	ALG_DISJOINT_SETS
+    ALG_DISJOINT_SETS
 
 };
 extern ComponentsAlg componentsalg;
 
 enum class CycleAlg {
-	ALG_DFS_CYCLE,
-	ALG_PK_CYCLE
+    ALG_DFS_CYCLE,
+    ALG_PK_CYCLE
 };
 extern CycleAlg cyclealg;
 
 
 enum class ConvexHullAlg {
-	ALG_MONOTONE_HULL, ALG_QUICKHULL
+    ALG_MONOTONE_HULL, ALG_QUICKHULL
 
 };
 extern ConvexHullAlg hullAlg;
 
 enum class DistAlg {
-	ALG_SAT, ALG_DIJKSTRA, ALG_DISTANCE, ALG_RAMAL_REPS, ALG_RAMAL_REPS_BATCHED,ALG_RAMAL_REPS_BATCHED2
+    ALG_SAT, ALG_DIJKSTRA, ALG_DISTANCE, ALG_RAMAL_REPS, ALG_RAMAL_REPS_BATCHED, ALG_RAMAL_REPS_BATCHED2
 };
 
 extern DistAlg distalg;
 
 extern IntOption opt_time;
 
-static inline double rtime(int level = 1) {
-	if (level <= opt_time) {
-		return fastTime();
-	} else {
-		return 0;
-	}
+static inline double rtime(int level = 1){
+    if(level <= opt_time){
+        return fastTime();
+    }else{
+        return 0;
+    }
 }
 
 }

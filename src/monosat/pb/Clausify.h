@@ -22,14 +22,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "monosat/core/SolverTypes.h"
 #include "monosat/pb/ADTs/FEnv.h"
+
 namespace Monosat {
 namespace PB {
 
 struct ClausifyContext {
     CMap<int> occ;
-    CMap <Var> vmap;
+    CMap<Var> vmap;
     CMap<Lit, true> vmapp;
-    ClausifyContext():occ(0),vmap(var_Undef),vmapp(lit_Undef){
+
+    ClausifyContext() : occ(0), vmap(var_Undef), vmapp(lit_Undef){
 
     }
     /*CMap<int>      Clausifier::occ(0);

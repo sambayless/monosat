@@ -26,75 +26,89 @@
 #include <vector>
 #include "monosat/dgl/Graph.h"
 #include "monosat/dgl/alg/IntMap.h"
+
 namespace dgl {
 struct MaxFlowEdge {
-	int u;
-	int v;
-	int id;
+    int u;
+    int v;
+    int id;
 };
 
 template<typename Weight = int>
 class MaxFlow {
 public:
-	
-	virtual ~MaxFlow() {
-	}
-	;
+
+    virtual ~MaxFlow(){
+    };
 
 /*	virtual void setCapacity(int u, int w, Weight c)=0;
 
 	virtual void setAllEdgeCapacities(Weight c)=0;*/
-	const Weight maxFlow() {
-		return update();
-	}
-	virtual const Weight maxFlow(int from, int to) {
-		setSource(from);
-		setSink(to);
-		return maxFlow();
-	}
-	virtual const Weight update()=0;
-	virtual int numUpdates() const=0;
-	virtual void setSource(int s)=0;
-	virtual void setSink(int t)=0;
+    const Weight maxFlow(){
+        return update();
+    }
 
-	virtual std::vector<int> & getChangedEdges()=0;
-	virtual void clearChangedEdges() {
-		
-	}
-	virtual std::vector<int> & getChangedPartition(){
-		throw std::runtime_error("Not implemented");
-	}
-	virtual void clearChangedPartition() {
+    virtual const Weight maxFlow(int from, int to){
+        setSource(from);
+        setSink(to);
+        return maxFlow();
+    }
 
-	}
+    virtual const Weight update()=0;
 
-	virtual Graph<Weight> * getFlowGraph(){
-		return nullptr;
-	}
-	virtual void printStats() {
-		
-	}
-	virtual int getSource() const=0;
-	virtual int getSink() const=0;
-	virtual const Weight minCut(std::vector<MaxFlowEdge> & cut)=0;
-	//Return a valid cut that may or may not be the mincut.
-	virtual const Weight approxMinCut(std::vector<MaxFlowEdge> & cut) {
-		return minCut(cut);
-	}
-	
-	virtual const Weight getEdgeFlow(int edgeID)=0;
-	virtual const Weight getEdgeCapacity(int id)=0;
+    virtual int numUpdates() const =0;
 
-	virtual const Weight getEdgeResidualCapacity(int id)=0;
+    virtual void setSource(int s)=0;
 
-	virtual const bool isOnCut(int edgeID){
-		throw std::runtime_error("Not implemented");
-	}
-	virtual const bool inSourcePartition(int node){
-		throw std::runtime_error("Not implemented");
-	}
+    virtual void setSink(int t)=0;
+
+    virtual std::vector<int>& getChangedEdges()=0;
+
+    virtual void clearChangedEdges(){
+
+    }
+
+    virtual std::vector<int>& getChangedPartition(){
+        throw std::runtime_error("Not implemented");
+    }
+
+    virtual void clearChangedPartition(){
+
+    }
+
+    virtual Graph<Weight>* getFlowGraph(){
+        return nullptr;
+    }
+
+    virtual void printStats(){
+
+    }
+
+    virtual int getSource() const =0;
+
+    virtual int getSink() const =0;
+
+    virtual const Weight minCut(std::vector<MaxFlowEdge>& cut)=0;
+
+    //Return a valid cut that may or may not be the mincut.
+    virtual const Weight approxMinCut(std::vector<MaxFlowEdge>& cut){
+        return minCut(cut);
+    }
+
+    virtual const Weight getEdgeFlow(int edgeID)=0;
+
+    virtual const Weight getEdgeCapacity(int id)=0;
+
+    virtual const Weight getEdgeResidualCapacity(int id)=0;
+
+    virtual const bool isOnCut(int edgeID){
+        throw std::runtime_error("Not implemented");
+    }
+
+    virtual const bool inSourcePartition(int node){
+        throw std::runtime_error("Not implemented");
+    }
 };
-}
-;
+};
 #endif
 

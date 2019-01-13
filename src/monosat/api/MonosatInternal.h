@@ -54,29 +54,32 @@ typedef timer_t posix_timer;
 typedef void* posix_timer;
 #endif
 
-struct MonosatData{
+struct MonosatData {
     Monosat::Circuit<Monosat::SimpSolver> circuit;
-    Monosat::BVTheorySolver<int64_t> * bv_theory=nullptr;
-    Monosat::FSMTheorySolver * fsm_theory=nullptr;
-    PB::PbSolver * pbsolver=nullptr;
+    Monosat::BVTheorySolver<int64_t>* bv_theory = nullptr;
+    Monosat::FSMTheorySolver* fsm_theory = nullptr;
+    PB::PbSolver* pbsolver = nullptr;
     int time_limit = -1;
     bool has_timer = false;
     posix_timer solver_timer;
-    vec< Monosat::GraphTheorySolver<int64_t> *> graphs;
-    bool last_solution_optimal=true;
-    bool has_conflict_clause_from_last_solution=false;
+    vec<Monosat::GraphTheorySolver<int64_t>*> graphs;
+    bool last_solution_optimal = true;
+    bool has_conflict_clause_from_last_solution = false;
     vec<Objective> optimization_objectives;
-    Dimacs<StreamBuffer, SimpSolver> * parser=nullptr;
-    FILE * outfile =nullptr;
+    Dimacs<StreamBuffer, SimpSolver>* parser = nullptr;
+    FILE* outfile = nullptr;
     std::string args = "";
-    MonosatData(SimpSolver * solver):circuit(*solver){
+
+    MonosatData(SimpSolver* solver) : circuit(*solver){
 
     }
+
     ~MonosatData(){
-        for(auto * p:parser->getParsers()){
-            delete(p);
+        for(auto* p:parser->getParsers()){
+            delete (p);
         }
-        delete(parser);
+        delete (parser);
     }
 };
+
 #endif //MONOSAT_MONOSATINTERNAL_H

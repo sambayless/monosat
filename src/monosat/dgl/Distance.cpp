@@ -21,9 +21,8 @@
 
 #include "Distance.h"
 #include <cstdint>
+
 using namespace dgl;
-
-
 
 
 template<>

@@ -20,6 +20,7 @@
  **************************************************************************************************/
 #ifndef MST_DETECTOR_H_
 #define MST_DETECTOR_H_
+
 #include "monosat/utils/System.h"
 
 #include "GraphTheoryTypes.h"
@@ -37,140 +38,165 @@ using namespace dgl;
 namespace Monosat {
 template<typename Weight>
 class GraphTheorySolver;
-template<typename Weight = int,typename Graph = DynamicGraph<Weight>>
-class MSTDetector: public Detector {
+
+template<typename Weight = int, typename Graph = DynamicGraph<Weight>>
+class MSTDetector : public Detector {
 public:
-	GraphTheorySolver<Weight> * outer;
+    GraphTheorySolver<Weight>* outer;
 
-	Graph & g_under;
-	Graph & g_over;
+    Graph& g_under;
+    Graph& g_over;
 
-	double rnd_seed;
-	CRef underprop_marker;
-	CRef overprop_marker;
-	CRef underprop_edge_marker;
-	CRef overprop_edge_marker;
+    double rnd_seed;
+    CRef underprop_marker;
+    CRef overprop_marker;
+    CRef underprop_edge_marker;
+    CRef overprop_edge_marker;
 
-	MinimumSpanningTree<Weight> * underapprox_detector = nullptr;
-	MinimumSpanningTree<Weight> * overapprox_detector = nullptr;
-	MinimumSpanningTree<Weight> * underapprox_conflict_detector = nullptr;
-	MinimumSpanningTree<Weight> * overapprox_conflict_detector = nullptr;
+    MinimumSpanningTree<Weight>* underapprox_detector = nullptr;
+    MinimumSpanningTree<Weight>* overapprox_detector = nullptr;
+    MinimumSpanningTree<Weight>* underapprox_conflict_detector = nullptr;
+    MinimumSpanningTree<Weight>* overapprox_conflict_detector = nullptr;
 
-	Weight lowest_weight_lit = -1;
-	Weight highest_weight_lit = -1;
+    Weight lowest_weight_lit = -1;
+    Weight highest_weight_lit = -1;
 
-	vec<int> force_reason;
+    vec<int> force_reason;
 
-	struct MSTWeightLit {
-		Lit l;
-		bool inclusive;
-		Weight min_weight;
-		MSTWeightLit() :
-				l(lit_Undef),inclusive(false), min_weight(-1) {
-		}
-	};
-	bool checked_unique;
-	bool all_unique;
-	vec<MSTWeightLit> weight_lits;
-	struct MSTEdgeLit {
-		Lit l;
-		int edgeID;
-		MSTEdgeLit() :
-				l(lit_Undef), edgeID(-1) {
-		}
-	};
-	vec<int> tree_edge_lits_map;
-	vec<MSTEdgeLit> tree_edge_lits;
-	Var first_reach_var;
+    struct MSTWeightLit {
+        Lit l;
+        bool inclusive;
+        Weight min_weight;
 
-	struct ChangedEdge {
-		Var v;
-		int edgeID;
-	};
-	vec<bool> is_edge_changed;
-	vec<ChangedEdge> changed_edges;
+        MSTWeightLit() :
+                l(lit_Undef), inclusive(false), min_weight(-1){
+        }
+    };
 
-	vec<Var> tmp_nodes;
-	vec<bool> seen;
-	vec<bool> black;
-	vec<int> ancestors;
+    bool checked_unique;
+    bool all_unique;
+    vec<MSTWeightLit> weight_lits;
 
-	vec<Lit> tmp_conflict;
-	vec<int> visit;
-	DisjointSets sets;
+    struct MSTEdgeLit {
+        Lit l;
+        int edgeID;
 
-	struct MSTStatus {
-		MSTDetector & detector;
-		bool polarity;
+        MSTEdgeLit() :
+                l(lit_Undef), edgeID(-1){
+        }
+    };
 
-		void setMinimumSpanningTree(Weight& weight, bool connected);
-		void inMinimumSpanningTree(int edgeID, bool in_tree);
+    vec<int> tree_edge_lits_map;
+    vec<MSTEdgeLit> tree_edge_lits;
+    Var first_reach_var;
 
-		MSTStatus(MSTDetector & _outer, bool _polarity) :
-				detector(_outer), polarity(_polarity) {
-		}
-	};
-	MSTStatus *positiveReachStatus;
-	MSTStatus *negativeReachStatus;
+    struct ChangedEdge {
+        Var v;
+        int edgeID;
+    };
+    vec<bool> is_edge_changed;
+    vec<ChangedEdge> changed_edges;
 
-	void unassign(Lit l) override {
-		Detector::unassign(l);
-		int index = var(l) - first_reach_var;
-		if (index >= 0 && index < tree_edge_lits_map.size() && tree_edge_lits_map[index] != -1) {
-			int edgeID = tree_edge_lits_map[index];
-			if (!is_edge_changed[edgeID]) {
-				changed_edges.push( { var(l), edgeID });
-				is_edge_changed[edgeID] = true;
-			}
-		}
-	}
-	void preprocess() override;
-	bool propagate(vec<Lit> & conflict) override;
-	void buildMinWeightTooSmallReason(Weight & weight, vec<Lit> & conflict);
-	void buildMinWeightTooLargeReason(Weight & weight, vec<Lit> & conflict);
-	void buildEdgeInTreeReason(int edge, vec<Lit> & conflict);
-	void buildEdgeNotInTreeReason(int edge, vec<Lit> & conflict);
+    vec<Var> tmp_nodes;
+    vec<bool> seen;
+    vec<bool> black;
+    vec<int> ancestors;
 
-	void buildReason(Lit p, vec<Lit> & reason, CRef marker) override;
-	bool checkSatisfied() override;
-	Lit decide(CRef &decision_reason) override;
-	void addTreeEdgeLit(int edge_id, Var reach_var);
-	void addWeightLit(Var weight_var, Weight & min_weight, bool inclusive);
-	void printSolution(std::ostream & write_to) override;
-	MSTDetector(int _detectorID, GraphTheorySolver<Weight> * _outer, Graph  &_g, Graph  &_antig,
-				double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
-	~MSTDetector() override {
-		if (positiveReachStatus)
-			delete positiveReachStatus;
-		if (negativeReachStatus)
-			delete negativeReachStatus;
+    vec<Lit> tmp_conflict;
+    vec<int> visit;
+    DisjointSets sets;
 
-		if (underapprox_conflict_detector && underapprox_conflict_detector != underapprox_detector)
-			delete underapprox_conflict_detector;
+    struct MSTStatus {
+        MSTDetector& detector;
+        bool polarity;
 
-		if (overapprox_conflict_detector && overapprox_conflict_detector != overapprox_detector)
-			delete overapprox_conflict_detector;
+        void setMinimumSpanningTree(Weight& weight, bool connected);
 
-		if (underapprox_detector)
-			delete underapprox_detector;
-		if (overapprox_detector)
-			delete overapprox_detector;
+        void inMinimumSpanningTree(int edgeID, bool in_tree);
+
+        MSTStatus(MSTDetector& _outer, bool _polarity) :
+                detector(_outer), polarity(_polarity){
+        }
+    };
+
+    MSTStatus* positiveReachStatus;
+    MSTStatus* negativeReachStatus;
+
+    void unassign(Lit l) override{
+        Detector::unassign(l);
+        int index = var(l) - first_reach_var;
+        if(index >= 0 && index < tree_edge_lits_map.size() && tree_edge_lits_map[index] != -1){
+            int edgeID = tree_edge_lits_map[index];
+            if(!is_edge_changed[edgeID]){
+                changed_edges.push({var(l), edgeID});
+                is_edge_changed[edgeID] = true;
+            }
+        }
+    }
+
+    void preprocess() override;
+
+    bool propagate(vec<Lit>& conflict) override;
+
+    void buildMinWeightTooSmallReason(Weight& weight, vec<Lit>& conflict);
+
+    void buildMinWeightTooLargeReason(Weight& weight, vec<Lit>& conflict);
+
+    void buildEdgeInTreeReason(int edge, vec<Lit>& conflict);
+
+    void buildEdgeNotInTreeReason(int edge, vec<Lit>& conflict);
+
+    void buildReason(Lit p, vec<Lit>& reason, CRef marker) override;
+
+    bool checkSatisfied() override;
+
+    Lit decide(CRef& decision_reason) override;
+
+    void addTreeEdgeLit(int edge_id, Var reach_var);
+
+    void addWeightLit(Var weight_var, Weight& min_weight, bool inclusive);
+
+    void printSolution(std::ostream& write_to) override;
+
+    MSTDetector(int _detectorID, GraphTheorySolver<Weight>* _outer, Graph& _g, Graph& _antig,
+                double seed = 1); //:Detector(_detectorID),outer(_outer),within(-1),source(_source),rnd_seed(seed),positive_reach_detector(NULL),negative_reach_detector(NULL),positive_path_detector(NULL),positiveReachStatus(NULL),negativeReachStatus(NULL){}
+    ~MSTDetector() override{
+        if(positiveReachStatus)
+            delete positiveReachStatus;
+        if(negativeReachStatus)
+            delete negativeReachStatus;
+
+        if(underapprox_conflict_detector && underapprox_conflict_detector != underapprox_detector)
+            delete underapprox_conflict_detector;
+
+        if(overapprox_conflict_detector && overapprox_conflict_detector != overapprox_detector)
+            delete overapprox_conflict_detector;
+
+        if(underapprox_detector)
+            delete underapprox_detector;
+        if(overapprox_detector)
+            delete overapprox_detector;
 
 
-	}
-	std::string getName() override {
-		return "MST Detector";
-	}
-	Weight getModel_SpanningTreeWeight(){
-		return underapprox_detector->weight();
-	}
+    }
+
+    std::string getName() override{
+        return "MST Detector";
+    }
+
+    Weight getModel_SpanningTreeWeight(){
+        return underapprox_detector->weight();
+    }
+
 private:
-	void TarjanOLCA(int node, vec<Lit> & conflict);
-	bool walkback(Weight & weight, int from, int to);
-	void TarjanOLCA_edge(int node, int edgeid, int lowest_endpoint, vec<Lit> & conflict);
-	Weight walkback_edge(Weight &weight, int edgeid, int from, int to, bool &found);
+    void TarjanOLCA(int node, vec<Lit>& conflict);
+
+    bool walkback(Weight& weight, int from, int to);
+
+    void TarjanOLCA_edge(int node, int edgeid, int lowest_endpoint, vec<Lit>& conflict);
+
+    Weight walkback_edge(Weight& weight, int edgeid, int from, int to, bool& found);
 };
-}
-;
+};
 
 #endif /* DistanceDetector_H_ */

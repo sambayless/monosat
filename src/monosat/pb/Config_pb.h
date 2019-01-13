@@ -4,6 +4,7 @@
 
 #ifndef MONOSAT_CONFIG_PB_H
 #define MONOSAT_CONFIG_PB_H
+
 #include "monosat/pb/ADTs/Int.h"
 #include "monosat/pb/ADTs/Global.h"
 #include "monosat/utils/Options.h"

@@ -402,7 +402,6 @@ def If(condition, thn, els=None):
 
 
 def And(*args):
-
     if len(args) == 0:
         return false()
     elif len(args) == 1:
@@ -614,7 +613,6 @@ def AssertClause(clause):
 
 
 def Assert(a):
-
     if a is False or a is True:
         raise Exception(
             "Error: asserted python Boolean literal (not symbolic variable)"
@@ -626,7 +624,7 @@ def Assert(a):
             "Asserted a trivial contradiction",
             UserWarning,
         )
-        #print("Warning: asserted constant false variable")
+        # print("Warning: asserted constant false variable")
     _checkLits((a,))
     _monosat.addUnitClause(a.getLit())
 
@@ -814,7 +812,7 @@ def _Max(array1, array2):
 # True IFF num1 is < num2, <= num2
 def _LessOrEqual(num1, num2):
     if isinstance(num1, (int, float, complex)) and isinstance(
-        num2, (int, float, complex)
+            num2, (int, float, complex)
     ):
         return (num1 < num2, num1 <= num2)
 
@@ -952,9 +950,8 @@ def Equal(*args):
 
 
 def Equal2_(num1, num2):
-
     if isinstance(num1, (bool, int, float, complex)) and isinstance(
-        num2, (bool, int, float, complex)
+            num2, (bool, int, float, complex)
     ):
         return num1 == num2
     elif isinstance(num1, Var) and isinstance(num2, Var):

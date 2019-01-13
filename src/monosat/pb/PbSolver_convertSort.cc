@@ -20,12 +20,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "PbSolver.h"
 #include "Hardware.h"
 #include "Debug.h"
-namespace Monosat{
+
+namespace Monosat {
 namespace PB {
 //#define pf(format, args...) (reportf(format, ## args), fflush(stdout))
 #define pf(format, args...) nothing()
 
-void nothing(void) { }
+void nothing(void){}
 
 
 //=================================================================================================
@@ -41,15 +42,15 @@ int primes[] = {2, 3, 5, 7, 11, 13, 17};
 
 
 static
-void optimizeBase(vec<Int> &seq, int carry_ins, vec<Int> &rhs, int cost, vec<int> &base, int &cost_bestfound,
-                  vec<int> &base_bestfound) {
-    if (cost >= cost_bestfound)
+void optimizeBase(vec<Int>& seq, int carry_ins, vec<Int>& rhs, int cost, vec<int>& base, int& cost_bestfound,
+                  vec<int>& base_bestfound){
+    if(cost >= cost_bestfound)
         return;
 
     // "Base case" -- don't split further, build sorting network for current sequence:
     int final_cost = 0;
-    for (int i = 0; i < seq.size(); i++) {
-        if (seq[i] > INT_MAX)
+    for(int i = 0; i < seq.size(); i++){
+        if(seq[i] > INT_MAX)
             goto TooBig;
 #ifdef ExpensiveBigConstants
         final_cost += toint(seq[i]);
@@ -57,10 +58,10 @@ void optimizeBase(vec<Int> &seq, int carry_ins, vec<Int> &rhs, int cost, vec<int
         int c; for (c = 1; c*c < seq[i]; c++);
         final_cost += c;
 #endif
-        if (final_cost < 0)
+        if(final_cost < 0)
             goto TooBig;
     }
-    if (cost + final_cost < cost_bestfound) {
+    if(cost + final_cost < cost_bestfound){
         base.copyTo(base_bestfound);
         cost_bestfound = cost + final_cost;
     }
@@ -80,41 +81,41 @@ void optimizeBase(vec<Int> &seq, int carry_ins, vec<Int> &rhs, int cost, vec<int
 #else
     //int upper_lim = (seq.size() == 0) ? 1 : seq.last(); // <<== Check that sqRoot is an 'int' (no truncation of 'Int')
     //for (int i = 0; i < (int)elemsof(primes) && primes[i] <= upper_lim; i++){
-    for (int i = 0; i < (int) elemsof(primes); i++) {
+    for(int i = 0; i < (int) elemsof(primes); i++){
         int p = primes[i];
 #endif
         int rest = carry_ins;   // Sum of all the remainders.
         Int div, rem;
 
-        /**/for (int n = depth; n != 0; n--) pf("  ");
+        /**/for(int n = depth; n != 0; n--) pf("  ");
         pf("prime=%d   carry_ins=%d\n", p, carry_ins);
-        /**/for (int n = depth; n != 0; n--) pf("  ");
+        /**/for(int n = depth; n != 0; n--) pf("  ");
         pf("New seq:");
-        for (int j = 0; j < seq.size(); j++) {
+        for(int j = 0; j < seq.size(); j++){
             rest += toint(seq[j] % Int(p));
             div = seq[j] / Int(p);
-            if (div > 0)
+            if(div > 0)
                 //**/pf(" %d", div),
                 new_seq.push(div);
         }
         /**/pf("\n");
-        /**/for (int n = depth; n != 0; n--) pf("  ");
+        /**/for(int n = depth; n != 0; n--) pf("  ");
         pf("rest=%d\n", rest);
 
-        /**/for (int n = depth; n != 0; n--) pf("  ");
+        /**/for(int n = depth; n != 0; n--) pf("  ");
         pf("New rhs:");
 #ifdef AllDigitsImportant
         bool digit_important = true;
 #else
         bool    digit_important = false;
 #endif
-        for (int j = 0; j < rhs.size(); j++) {
+        for(int j = 0; j < rhs.size(); j++){
             div = rhs[j] / p;
-            if (new_rhs.size() == 0 || div > new_rhs.last()) {
+            if(new_rhs.size() == 0 || div > new_rhs.last()){
                 rem = rhs[j] % p;
                 /**/pf(" %d:%d", div, rem),
                         new_rhs.push(div);
-                if (!(rem == 0 && rest < p) && !(rem > rest))
+                if(!(rem == 0 && rest < p) && !(rem > rest))
                     digit_important = true;
             }
         }
@@ -134,7 +135,7 @@ void optimizeBase(vec<Int> &seq, int carry_ins, vec<Int> &rhs, int cost, vec<int
 
 
 static
-void optimizeBase(vec<Int> &seq, vec<Int> &rhs, int &cost_bestfound, vec<int> &base_bestfound) {
+void optimizeBase(vec<Int>& seq, vec<Int>& rhs, int& cost_bestfound, vec<int>& base_bestfound){
     vec<int> base;
     cost_bestfound = INT_MAX;
     base_bestfound.clear();
@@ -148,32 +149,32 @@ void optimizeBase(vec<Int> &seq, vec<Int> &rhs, int &cost_bestfound, vec<int> &b
 
 
 static
-void buildSorter(vec<Formula> &ps, vec<int> &Cs, vec<Formula> &out_sorter) {
+void buildSorter(vec<Formula>& ps, vec<int>& Cs, vec<Formula>& out_sorter){
     out_sorter.clear();
-    for (int i = 0; i < ps.size(); i++)
-        for (int j = 0; j < Cs[i]; j++)
+    for(int i = 0; i < ps.size(); i++)
+        for(int j = 0; j < Cs[i]; j++)
             out_sorter.push(ps[i]);
     oddEvenSort(out_sorter); // (overwrites inputs)
 }
 
 static
-void buildSorter(vec<Formula> &ps, vec<Int> &Cs, vec<Formula> &out_sorter) {
+void buildSorter(vec<Formula>& ps, vec<Int>& Cs, vec<Formula>& out_sorter){
     vec<int> Cs_copy;
-    for (int i = 0; i < Cs.size(); i++)
+    for(int i = 0; i < Cs.size(); i++)
         Cs_copy.push(toint(Cs[i]));
     buildSorter(ps, Cs_copy, out_sorter);
 }
 
 
-class Exception_TooBig:public std::exception {
+class Exception_TooBig : public std::exception {
 };
 
 static
-void buildConstraint(vec<Formula> &ps, vec<Int> &Cs, vec<Formula> &carry, vec<int> &base, int digit_no,
-                     vec<vec<Formula> > &out_digits, int max_cost) {
+void buildConstraint(vec<Formula>& ps, vec<Int>& Cs, vec<Formula>& carry, vec<int>& base, int digit_no,
+                     vec<vec<Formula>>& out_digits, int max_cost){
     assert(ps.size() == Cs.size());
 
-    if (FEnv::topSize() > max_cost) throw Exception_TooBig();
+    if(FEnv::topSize() > max_cost) throw Exception_TooBig();
     /**
     pf("buildConstraint(");
     for (int i = 0; i < ps.size(); i++)
@@ -181,16 +182,16 @@ void buildConstraint(vec<Formula> &ps, vec<Int> &Cs, vec<Formula> &carry, vec<in
     pf("+ %d carry)\n", carry.size());
     **/
 
-    if (digit_no == base.size()) {
+    if(digit_no == base.size()){
         // Final digit, build sorter for rest:
         // -- add carry bits:
-        for (int i = 0; i < carry.size(); i++)
+        for(int i = 0; i < carry.size(); i++)
             ps.push(carry[i]),
                     Cs.push(1);
         out_digits.push();
         buildSorter(ps, Cs, out_digits.last());
 
-    } else {
+    }else{
         vec<Formula> ps_rem;
         vec<int> Cs_rem;
         vec<Formula> ps_div;
@@ -198,21 +199,21 @@ void buildConstraint(vec<Formula> &ps, vec<Int> &Cs, vec<Formula> &carry, vec<in
 
         // Split sum according to base:
         int B = base[digit_no];
-        for (int i = 0; i < Cs.size(); i++) {
+        for(int i = 0; i < Cs.size(); i++){
             Int div = Cs[i] / Int(B);
             int rem = toint(Cs[i] % Int(B));
-            if (div > 0) {
+            if(div > 0){
                 ps_div.push(ps[i]);
                 Cs_div.push(div);
             }
-            if (rem > 0) {
+            if(rem > 0){
                 ps_rem.push(ps[i]);
                 Cs_rem.push(rem);
             }
         }
 
         // Add carry bits:
-        for (int i = 0; i < carry.size(); i++)
+        for(int i = 0; i < carry.size(); i++)
             ps_rem.push(carry[i]),
                     Cs_rem.push(1);
 
@@ -222,15 +223,15 @@ void buildConstraint(vec<Formula> &ps, vec<Int> &Cs, vec<Formula> &carry, vec<in
 
         // Get carry bits:
         carry.clear();
-        for (int i = B - 1; i < result.size(); i += B)
+        for(int i = B - 1; i < result.size(); i += B)
             carry.push(result[i]);
 
         out_digits.push();
-        for (int i = 0; i < B - 1; i++) {
+        for(int i = 0; i < B - 1; i++){
             Formula out = _0_;
-            for (int j = 0; j < result.size(); j += B) {
+            for(int j = 0; j < result.size(); j += B){
                 int n = j + B - 1;
-                if (j + i < result.size())
+                if(j + i < result.size())
                     out |= result[j + i] & ((n >= result.size()) ? _1_ : ~result[n]);
             }
             out_digits.last().push(out);
@@ -249,8 +250,8 @@ Naming:
 
 
 static
-void convert(Int num, vec<int> &base, vec<int> &out_digs) {
-    for (int i = 0; i < base.size(); i++) {
+void convert(Int num, vec<int>& base, vec<int>& out_digs){
+    for(int i = 0; i < base.size(); i++){
         out_digs.push(toint(num % Int(base[i])));
         num /= Int(base[i]);
     }
@@ -262,20 +263,20 @@ void convert(Int num, vec<int> &base, vec<int> &out_digs) {
 // Formula is TRUE when 'sorter-digits >= num'.
 //
 static
-Formula lexComp(int sz, vec<int> &num, vec<vec<Formula> > &digits) {
-    if (sz == 0)
+Formula lexComp(int sz, vec<int>& num, vec<vec<Formula>>& digits){
+    if(sz == 0)
         return _1_;
-    else {
+    else{
 /**/
         pf("num    :");
-        for (int i = 0; i < sz; i++) pf(" %d", num[i]);
+        for(int i = 0; i < sz; i++) pf(" %d", num[i]);
         pf("\n");
         pf("#digits:");
-        for (int i = 0; i < sz; i++) pf(" %d", digits[i].size());
+        for(int i = 0; i < sz; i++) pf(" %d", digits[i].size());
         pf("\n");
 /**/
         sz--;
-        vec<Formula> &digit = digits[sz];
+        vec<Formula>& digit = digits[sz];
         int dig = num[sz];
 
         Formula gt = (digit.size() > dig) ? digit[dig] : _0_;       // This digit is greater than the "dig" of 'num'.
@@ -283,30 +284,30 @@ Formula lexComp(int sz, vec<int> &num, vec<vec<Formula> > &digits) {
                      (digit.size() > dig - 1) ? digit[dig - 1]
                                               : _0_;   // This digit is greater than or equal to the "dig" of 'num'.
 
-        /**/if (sz == 0) return ge;
+        /**/if(sz == 0) return ge;
         return gt | (ge & lexComp(sz, num, digits));
     }
 }
 
 static
-Formula lexComp(vec<int> &num, vec<vec<Formula> > &digits) {
+Formula lexComp(vec<int>& num, vec<vec<Formula>>& digits){
     assert(num.size() == digits.size());
     return lexComp(num.size(), num, digits);
 }
 
 
 static
-Formula buildConstraint(vec<Formula> &ps, vec<Int> &Cs, vec<int> &base, Int lo, Int hi, int max_cost) {
+Formula buildConstraint(vec<Formula>& ps, vec<Int>& Cs, vec<int>& base, Int lo, Int hi, int max_cost){
     vec<Formula> carry;
-    vec<vec<Formula> > digits;
+    vec<vec<Formula>> digits;
     buildConstraint(ps, Cs, carry, base, 0, digits, max_cost);
-    if (FEnv::topSize() > max_cost) throw Exception_TooBig();
+    if(FEnv::topSize() > max_cost) throw Exception_TooBig();
 
     vec<int> lo_digs;
     vec<int> hi_digs;
-    if (lo != Int_MIN)
+    if(lo != Int_MIN)
         convert(lo, base, lo_digs);
-    if (hi != Int_MAX)
+    if(hi != Int_MAX)
         convert(hi + 1, base, hi_digs);   // (+1 because we will change '<= x' to '!(... >= x+1)'
 
 
@@ -330,7 +331,7 @@ Num:    2    0     5     6
 
     Formula ret = ((lo == Int_MIN) ? _1_ : lexComp(lo_digs, digits))
                   & ((hi == Int_MAX) ? _1_ : ~lexComp(hi_digs, digits));
-    if (FEnv::topSize() > max_cost) throw Exception_TooBig();
+    if(FEnv::topSize() > max_cost) throw Exception_TooBig();
     return ret;
 }
 
@@ -354,11 +355,11 @@ a4
 
 // Will return '_undef_' if 'cost_limit' is exceeded.
 //
-Formula buildConstraint(const Linear &c, int max_cost) {
+Formula buildConstraint(const Linear& c, int max_cost){
     vec<Formula> ps;
     vec<Int> Cs;
 
-    for (int j = 0; j < c.size; j++)
+    for(int j = 0; j < c.size; j++)
         ps.push(lit2fml(c[j])),
                 Cs.push(c(j));
 
@@ -369,17 +370,17 @@ Formula buildConstraint(const Linear &c, int max_cost) {
     FEnv::push();
 
     Formula ret;
-    try {
+    try{
         ret = buildConstraint(ps, Cs, base, c.lo, c.hi, max_cost);
-    } catch (Exception_TooBig) {
+    }catch(Exception_TooBig){
         FEnv::pop();
         return _undef_;
     }
 
-    if (opt_verbosity >= 1) {
+    if(opt_verbosity >= 1){
         reportf("Sorter-cost:%5d     ", FEnv::topSize());
         reportf("Base:");
-        for (int i = 0; i < base.size(); i++) reportf(" %d", base[i]);
+        for(int i = 0; i < base.size(); i++) reportf(" %d", base[i]);
         reportf("\n");
     }
     FEnv::keep();

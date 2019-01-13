@@ -44,60 +44,80 @@ try:
     import monosat.monosat_p
 
     print("Using cython interface")
+
+
     # cython doesn't use these conversion functions, but ctypes does, so define them as passthroughs if cython is used
     def c_int(x):
         return x
 
-    def c_int64(x):
-        return x
 
     def c_int64(x):
         return x
+
+
+    def c_int64(x):
+        return x
+
 
     def c_bvID(x):
         return x
 
+
     def c_bvID_p(x):
         return x
+
 
     def c_solver_p(x):
         return x
 
+
     def c_uintp(x):
         return x
+
 
     def c_intp(x):
         return x
 
+
     def c_var(x):
         return x
+
 
     def c_var_p(x):
         return x
 
+
     def c_bool(x):
         return x
+
 
     def c_bv_p(x):
         return x
 
+
     def c_fsm_theory_p(x):
         return x
+
 
     def c_fsm_p(x):
         return x
 
+
     def c_graph_p(x):
         return x
+
 
     def c_literal(x):
         return x
 
+
     def c_literal_p(x):
         return x
 
+
     def c_var(x):
         return x
+
 
     def c_var_p(x):
         return x
@@ -994,8 +1014,6 @@ class Monosat(metaclass=Singleton):
         else:
             self.monosat_c.setTimeLimit(self.solver._ptr, seconds)
 
-
-
     def setConflictLimit(self, conflicts):
         if conflicts is None or conflicts < 0:
             self.monosat_c.setConflictLimit(self.solver._ptr, -1)
@@ -1577,14 +1595,14 @@ class Monosat(metaclass=Singleton):
         )
 
     def fsmCompositionAccepts(
-        self,
-        fsm_generator_id,
-        fsm_acceptor_id,
-        gen_starting_state,
-        gen_accepting_state,
-        accept_starting_state,
-        accept_accepting_state,
-        strID,
+            self,
+            fsm_generator_id,
+            fsm_acceptor_id,
+            gen_starting_state,
+            gen_accepting_state,
+            accept_starting_state,
+            accept_accepting_state,
+            strID,
     ):
         return self.monosat_c.fsmCompositionAccepts(
             self.solver._ptr,

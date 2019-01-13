@@ -21,6 +21,7 @@
 
 #ifndef DISTANCE_H_
 #define DISTANCE_H_
+
 #include "Reach.h"
 #include <limits>
 #include <vector>
@@ -30,59 +31,66 @@
 namespace dgl {
 
 template<typename Weight>
-class Distance: public Reach {
+class Distance : public Reach {
 public:
 
-	struct NullStatus {
-		void setReachable(int u, bool reachable) {
+    struct NullStatus {
+        void setReachable(int u, bool reachable){
 
-		}
-		bool isReachable(int u) const {
-			return false;
-		}
+        }
 
-		void setMininumDistance(int u, bool reachable, Weight distance) {
+        bool isReachable(int u) const{
+            return false;
+        }
 
-		}
-	};
-	static NullStatus nullStatus;
-	static Weight weight_unreach;
-	static Weight INF;
+        void setMininumDistance(int u, bool reachable, Weight distance){
 
-	~Distance() override {
-	}
-	;
+        }
+    };
 
-	void setSource(int s) override =0;
+    static NullStatus nullStatus;
+    static Weight weight_unreach;
+    static Weight INF;
 
-	int getSource() override =0;
-	//virtual addSource(int s)=0;
+    ~Distance() override{
+    };
 
-	void update() override =0;
+    void setSource(int s) override =0;
 
-	bool connected_unsafe(int t) override =0;
+    int getSource() override =0;
+    //virtual addSource(int s)=0;
 
-	bool connected_unchecked(int t) override =0;
+    void update() override =0;
 
-	bool connected(int t) override =0;
-	virtual Weight & unreachable() {
-		return weight_unreach;
-	}
-	virtual Weight & inf() {
-		return INF;
-	}
-	virtual Weight & distance(int t)=0;
-	virtual Weight & distance_unsafe(int t)=0;
+    bool connected_unsafe(int t) override =0;
 
-	int previous(int node) override =0;
+    bool connected_unchecked(int t) override =0;
 
-	int incomingEdge(int node) override =0;
-	//The maximum distance to compute up to.
-	virtual void setMaxDistance(Weight & maxDistance) {
+    bool connected(int t) override =0;
 
-	}
+    virtual Weight& unreachable(){
+        return weight_unreach;
+    }
+
+    virtual Weight& inf(){
+        return INF;
+    }
+
+    virtual Weight& distance(int t)=0;
+
+    virtual Weight& distance_unsafe(int t)=0;
+
+    int previous(int node) override =0;
+
+    int incomingEdge(int node) override =0;
+
+    //The maximum distance to compute up to.
+    virtual void setMaxDistance(Weight& maxDistance){
+
+    }
 
 };
+
 template<typename Weight>
 typename Distance<Weight>::NullStatus Distance<Weight>::nullStatus;
 
@@ -90,7 +98,7 @@ template<typename Weight>
 Weight Distance<Weight>::weight_unreach = -1;
 
 template<typename Weight>
-Weight Distance<Weight>::INF = std::numeric_limits<Weight>::max()/2;
+Weight Distance<Weight>::INF = std::numeric_limits<Weight>::max() / 2;
 
 template<>
 double Distance<double>::INF;
@@ -101,7 +109,6 @@ template<>
 mpq_class Distance<mpq_class>::INF;
 template<>
 mpz_class Distance<mpz_class>::INF;
-}
-;
+};
 
 #endif /* REACH_H_ */

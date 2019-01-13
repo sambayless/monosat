@@ -24,16 +24,19 @@
  */
 #ifndef MONOSAT_JNIEXCEPT_H
 #define MONOSAT_JNIEXCEPT_H
+
 #include <jni.h>
 #include <monosat/mtl/XAlloc.h>
 #include <monosat/utils/ParseUtils.h> //for parse_error
 
 struct ThrownJavaException : std::runtime_error {
-    ThrownJavaException() :std::runtime_error("") {}
-    ThrownJavaException(const std::string& msg ) :std::runtime_error(msg) {}
+    ThrownJavaException() : std::runtime_error(""){}
+
+    ThrownJavaException(const std::string& msg) : std::runtime_error(msg){}
 };
-inline void assert_no_exception(JNIEnv * env) {
-    if (env->ExceptionCheck()==JNI_TRUE)
+
+inline void assert_no_exception(JNIEnv* env){
+    if(env->ExceptionCheck() == JNI_TRUE)
         throw ThrownJavaException("assert_no_exception");
 }
 
@@ -41,54 +44,53 @@ inline void assert_no_exception(JNIEnv * env) {
 //"java/lang/NoSuchFieldException"
 //"java/lang/NullPointerException"
 //"java/security/InvalidParameterException"
-struct NewJavaException : public ThrownJavaException{
-    NewJavaException(JNIEnv * env, const char* type="", const char* message="")
-            :ThrownJavaException(type+std::string(" ")+message)
-    {
+struct NewJavaException : public ThrownJavaException {
+    NewJavaException(JNIEnv* env, const char* type = "", const char* message = "")
+            : ThrownJavaException(type + std::string(" ") + message){
         jclass newExcCls = env->FindClass(type);
-        if (newExcCls != NULL)
+        if(newExcCls != NULL)
             env->ThrowNew(newExcCls, message);
         //if it is null, a NoClassDefFoundError was already thrown
     }
 };
+
 /**
  * Catches any C++ exception, and throws a Java exception
  * @param env The JVM environment
  */
-void javaThrow(JNIEnv * env) {
-    try {
+void javaThrow(JNIEnv* env){
+    try{
         throw;
-    } catch(const ThrownJavaException&) {
+    }catch(const ThrownJavaException&){
         //already reported to Java, ignore
-    } catch(const std::bad_alloc& rhs) {
+    }catch(const std::bad_alloc& rhs){
         //translate OOM C++ exception to a Java exception
         NewJavaException(env, "java/lang/OutOfMemoryError", rhs.what());
-    } catch(const Monosat::OutOfMemoryException& rhs) {
+    }catch(const Monosat::OutOfMemoryException& rhs){
         //translate OOM C++ exception to a Java exception
         NewJavaException(env, "java/lang/OutOfMemoryError", "Out of memory error");
-    } catch(const std::ios_base::failure& rhs) { //sample translation
+    }catch(const std::ios_base::failure& rhs){ //sample translation
         //translate IO C++ exception to a Java exception
         NewJavaException(env, "java/io/IOException", rhs.what());
-    }catch(const std::invalid_argument& e) {
+    }catch(const std::invalid_argument& e){
         NewJavaException(env, "java/lang/IllegalArgumentException", e.what());
-    }catch (const Monosat::parse_error& e) {
+    }catch(const Monosat::parse_error& e){
         // the natural thing to do would be to translate this into a java parse exception,
         // but that is a checked exception, which would need better handling in the JNI to properly support.
         //NewJavaException(env, "java/text/ParseException", e.what());
         // so instead, we will throw an illegal state exception
         NewJavaException(env, "java/lang/IllegalStateException", e.what());
-    }catch(const std::runtime_error& e) {
+    }catch(const std::runtime_error& e){
         //translate C++ runtime exception to a Java runtime exception
         NewJavaException(env, "java/lang/RuntimeException", e.what());
-    }catch(const std::exception& e) {
+    }catch(const std::exception& e){
         //translate unknown C++ exception to a Java exception
         NewJavaException(env, "java/lang/Exception", e.what());
-    } catch(...) {
+    }catch(...){
         //translate unknown C++ exception to a Java exception
         NewJavaException(env, "java/lang/Error", "Unknown exception type");
     }
 }
-
 
 
 #endif //MONOSAT_JNIEXCEPT_H

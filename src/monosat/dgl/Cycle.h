@@ -23,37 +23,42 @@
 #define CYCLE_H_
 
 #include <vector>
+
 namespace dgl {
 class Cycle {
 public:
-	
-	bool marked;
 
-	int stats_full_updates=0;
-	int stats_fast_updates=0;
-	int stats_fast_failed_updates=0;
-	int stats_skip_deletes=0;
-	int stats_skipped_updates=0;
-	int stats_num_skipable_deletions=0;
-	int64_t stats_history_clears=0;
-	double mod_percentage;
+    bool marked;
 
-	double stats_full_update_time;
-	double stats_fast_update_time;
+    int stats_full_updates = 0;
+    int stats_fast_updates = 0;
+    int stats_fast_failed_updates = 0;
+    int stats_skip_deletes = 0;
+    int stats_skipped_updates = 0;
+    int stats_num_skipable_deletions = 0;
+    int64_t stats_history_clears = 0;
+    double mod_percentage;
 
-	virtual ~Cycle() {
-	}
+    double stats_full_update_time;
+    double stats_fast_update_time;
 
-	//hint to the algorithm that any discovered cycles will be removed.
-	virtual void forceDAG(){
+    virtual ~Cycle(){
+    }
 
-	}
-	virtual bool hasDirectedCycle()=0;
-	virtual bool hasUndirectedCycle()=0;
-	virtual void update()=0;
-	virtual std::vector<int> & getUndirectedCycle()=0;
-	virtual std::vector<int> & getDirectedCycle()=0;
+    //hint to the algorithm that any discovered cycles will be removed.
+    virtual void forceDAG(){
+
+    }
+
+    virtual bool hasDirectedCycle()=0;
+
+    virtual bool hasUndirectedCycle()=0;
+
+    virtual void update()=0;
+
+    virtual std::vector<int>& getUndirectedCycle()=0;
+
+    virtual std::vector<int>& getDirectedCycle()=0;
 };
-}
-;
+};
 #endif /* REACH_H_ */

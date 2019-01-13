@@ -23,6 +23,7 @@
 
 #include "monosat/mtl/Vec.h"
 #include <cmath>
+
 namespace Monosat {
 
 /*
@@ -37,23 +38,23 @@ namespace Monosat {
 
  */
 
-static double luby(double y, int x) {
-	assert(x>=0);
-	// Find the finite subsequence that contains index 'x', and the
-	// size of that subsequence:
-	int size, seq;
-	for (size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1);
+static double luby(double y, int x){
+    assert(x >= 0);
+    // Find the finite subsequence that contains index 'x', and the
+    // size of that subsequence:
+    int size, seq;
+    for(size = 1, seq = 0; size < x + 1; seq++, size = 2 * size + 1);
 
-	assert(size>x);
-	while (size - 1 != x) {
-		size = (size - 1) >> 1;
-		seq--;
-		//According to Coverity: size can be zero at this line, leading to a mod by zero...
-		//However, since size must be >= x+1 above, and always > x in this loop, and x is positive, this is safe.
-		x = x % size;
-	}
+    assert(size > x);
+    while(size - 1 != x){
+        size = (size - 1) >> 1;
+        seq--;
+        //According to Coverity: size can be zero at this line, leading to a mod by zero...
+        //However, since size must be >= x+1 above, and always > x in this loop, and x is positive, this is safe.
+        x = x % size;
+    }
 
-	return pow(y, seq);
+    return pow(y, seq);
 }
 //=================================================================================================
 // Useful functions on vector-like types:
@@ -63,22 +64,20 @@ static double luby(double y, int x) {
 //
 
 template<class V, class T>
-static inline void remove(V& ts, const T& t) {
-	int j = 0;
-	for (; j < ts.size() && ts[j] != t; j++)
-		;
-	assert(j < ts.size());
-	for (; j < ts.size() - 1; j++)
-		ts[j] = ts[j + 1];
-	ts.pop();
+static inline void remove(V& ts, const T& t){
+    int j = 0;
+    for(; j < ts.size() && ts[j] != t; j++);
+    assert(j < ts.size());
+    for(; j < ts.size() - 1; j++)
+        ts[j] = ts[j + 1];
+    ts.pop();
 }
 
 template<class V, class T>
-static inline bool find(V& ts, const T& t) {
-	int j = 0;
-	for (; j < ts.size() && ts[j] != t; j++)
-		;
-	return j < ts.size();
+static inline bool find(V& ts, const T& t){
+    int j = 0;
+    for(; j < ts.size() && ts[j] != t; j++);
+    return j < ts.size();
 }
 
 //=================================================================================================
@@ -87,35 +86,35 @@ static inline bool find(V& ts, const T& t) {
 
 // Base case:
 template<class T>
-static inline void copy(const T& from, T& to) {
-	to = from;
+static inline void copy(const T& from, T& to){
+    to = from;
 }
 
 // Recursive case:
 template<class T>
-static inline void copy(const vec<T>& from, vec<T>& to, bool append = false) {
-	if (!append)
-		to.clear();
-	for (int i = 0; i < from.size(); i++) {
-		to.push();
-		copy(from[i], to.last());
-	}
+static inline void copy(const vec<T>& from, vec<T>& to, bool append = false){
+    if(!append)
+        to.clear();
+    for(int i = 0; i < from.size(); i++){
+        to.push();
+        copy(from[i], to.last());
+    }
 }
 
 template<class T>
-static inline void append(const vec<T>& from, vec<T>& to) {
-	copy(from, to, true);
+static inline void append(const vec<T>& from, vec<T>& to){
+    copy(from, to, true);
 }
 
 template<class T>
-static inline vec<T>&  reverse(vec<T>& from) {
-	int i =0;
-	int j = from.size();
-	while ((i!=j)&&(i!=--j)) {
-		std::swap (from[i],from[j]);
-		++i;
-	}
-	return from;
+static inline vec<T>& reverse(vec<T>& from){
+    int i = 0;
+    int j = from.size();
+    while((i != j) && (i != --j)){
+        std::swap(from[i], from[j]);
+        ++i;
+    }
+    return from;
 }
 
 //=================================================================================================

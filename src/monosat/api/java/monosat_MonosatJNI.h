@@ -13,7 +13,7 @@ extern "C" {
  * Signature: ()Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVersion
-  (JNIEnv *, jclass);
+        (JNIEnv*, jclass);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -21,7 +21,7 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVersion
  * Signature: (IZ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_varToLit
-  (JNIEnv *, jclass, jint, jboolean);
+        (JNIEnv*, jclass, jint, jboolean);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -29,7 +29,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_varToLit
  * Signature: (I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_litToVar
-  (JNIEnv *, jclass, jint);
+        (JNIEnv*, jclass, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -37,7 +37,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_litToVar
  * Signature: ()J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__
-  (JNIEnv *, jclass);
+        (JNIEnv*, jclass);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -45,7 +45,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__
  * Signature: (Ljava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__Ljava_lang_String_2
-  (JNIEnv *, jclass, jstring);
+        (JNIEnv*, jclass, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -53,7 +53,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newSolver__Ljava_lang_String_2
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_deleteSolver
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -61,7 +61,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_deleteSolver
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_ok
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -69,7 +69,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_ok
  * Signature: (JLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setOutputFile
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -77,7 +77,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setOutputFile
  * Signature: (JLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -85,7 +85,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_readGNF
  * Signature: (JLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_loadGNF
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -93,7 +93,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_loadGNF
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushFile
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -101,7 +101,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushFile
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_closeFile
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -109,7 +109,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_closeFile
  * Signature: (JILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addLiteralName
-  (JNIEnv *, jclass, jlong, jint, jstring);
+        (JNIEnv*, jclass, jlong, jint, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -117,7 +117,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addLiteralName
  * Signature: (JILjava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_literalHasName
-  (JNIEnv *, jclass, jlong, jint, jstring);
+        (JNIEnv*, jclass, jlong, jint, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -125,7 +125,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_literalHasName
  * Signature: (JII)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getLiteralName
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -133,7 +133,7 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getLiteralName
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_literalNameCount
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -141,7 +141,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_literalNameCount
  * Signature: (JLjava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasLiteralWithName
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -149,7 +149,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasLiteralWithName
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedLiterals
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -157,7 +157,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedLiterals
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedLiteralN
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -165,7 +165,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedLiteralN
  * Signature: (JLjava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getLiteral
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -173,7 +173,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getLiteral
  * Signature: (JILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addVariableName
-  (JNIEnv *, jclass, jlong, jint, jstring);
+        (JNIEnv*, jclass, jlong, jint, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -181,7 +181,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addVariableName
  * Signature: (JILjava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_variableHasName
-  (JNIEnv *, jclass, jlong, jint, jstring);
+        (JNIEnv*, jclass, jlong, jint, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -189,7 +189,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_variableHasName
  * Signature: (JII)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -197,7 +197,7 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getVariableName
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_variableNameCount
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -205,7 +205,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_variableNameCount
  * Signature: (JLjava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableWithName
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -213,7 +213,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasVariableWithName
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedVariables
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -221,7 +221,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedVariables
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedVariableN
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -229,7 +229,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedVariableN
  * Signature: (JLjava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getVariable
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -237,7 +237,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getVariable
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -245,7 +245,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solve
  * Signature: (JLjava/nio/IntBuffer;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -253,7 +253,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_solveAssumptions
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setTimeLimit
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -261,7 +261,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setTimeLimit
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setConflictLimit
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -269,7 +269,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setConflictLimit
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_nConflicts
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -277,7 +277,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_nConflicts
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setPropagationLimit
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -285,7 +285,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setPropagationLimit
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_nPropagations
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -293,7 +293,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_nPropagations
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveLimited
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -301,7 +301,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveLimited
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveAssumptionsLimited
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -309,7 +309,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_solveAssumptionsLimited
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_lastSolutionWasOptimal
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -317,7 +317,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_lastSolutionWasOptimal
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConflictClause
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -325,7 +325,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConflictClause
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimizeUnsatCore
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -333,7 +333,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimizeUnsatCore
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeConflictClause
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -341,7 +341,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeConflictClause
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_backtrack
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -349,7 +349,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_backtrack
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newVar
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -357,7 +357,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newVar
  * Signature: (JLjava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNamedVar
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -365,7 +365,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNamedVar
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_releaseLiteral
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -373,7 +373,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_releaseLiteral
  * Signature: (JIZ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionVar
-  (JNIEnv *, jclass, jlong, jint, jboolean);
+        (JNIEnv*, jclass, jlong, jint, jboolean);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -381,7 +381,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionVar
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_isDecisionVar
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -389,7 +389,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_isDecisionVar
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionPriority
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -397,7 +397,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionPriority
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getDecisionPriority
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -405,7 +405,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getDecisionPriority
  * Signature: (JIZ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionPolarity
-  (JNIEnv *, jclass, jlong, jint, jboolean);
+        (JNIEnv*, jclass, jlong, jint, jboolean);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -413,7 +413,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setDecisionPolarity
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_getDecisionPolarity
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -421,7 +421,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_getDecisionPolarity
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_true_1lit
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -429,7 +429,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_true_1lit
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_disallowLiteralSimplification
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -437,7 +437,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_disallowLiteralSimplification
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_disablePreprocessing
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -445,7 +445,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_disablePreprocessing
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nVars
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -453,7 +453,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nVars
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nClauses
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -461,7 +461,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nClauses
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nLearnedClauses
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -469,7 +469,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nLearnedClauses
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectors
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -477,7 +477,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectors
  * Signature: (JLjava/nio/IntBuffer;I)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addClause
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -485,7 +485,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addClause
  * Signature: (JI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addUnitClause
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -493,7 +493,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addUnitClause
  * Signature: (JII)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addBinaryClause
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -501,7 +501,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addBinaryClause
  * Signature: (JIII)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addTertiaryClause
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -509,7 +509,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_addTertiaryClause
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_clearOptimizationObjectives
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -517,7 +517,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_clearOptimizationObjectives
  * Signature: (JJI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeBV
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -525,7 +525,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeBV
  * Signature: (JJI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeBV
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -533,7 +533,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeBV
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeLits
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -541,7 +541,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeLits
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeLits
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -549,7 +549,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeLits
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeWeightedLits
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -557,7 +557,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_maximizeWeightedLits
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeWeightedLits
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -565,7 +565,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_minimizeWeightedLits
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_initBVTheory
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -573,7 +573,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_initBVTheory
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1const
-  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -581,7 +581,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1const
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1anon
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -589,7 +589,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1anon
  * Signature: (JJLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1lazy
-  (JNIEnv *, jclass, jlong, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -597,7 +597,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector_1lazy
  * Signature: (JJLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
-  (JNIEnv *, jclass, jlong, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -605,7 +605,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBitvector
  * Signature: (JJILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setBitvectorName
-  (JNIEnv *, jclass, jlong, jlong, jint, jstring);
+        (JNIEnv*, jclass, jlong, jlong, jint, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -613,7 +613,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_setBitvectorName
  * Signature: (JJI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_bitvectorHasName
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -621,7 +621,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_bitvectorHasName
  * Signature: (JJLjava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasBitvectorWithName
-  (JNIEnv *, jclass, jlong, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -629,7 +629,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasBitvectorWithName
  * Signature: (JJII)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getBitvectorName
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -637,7 +637,7 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getBitvectorName
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorNameCount
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -645,7 +645,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorNameCount
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorWidth
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -653,7 +653,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorWidth
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectorBits
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -661,7 +661,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nBitvectorBits
  * Signature: (JJLjava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvector
-  (JNIEnv *, jclass, jlong, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -669,7 +669,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvector
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedBitvectors
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -677,7 +677,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNamedBitvectors
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedBitvectorN
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -685,7 +685,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getNamedBitvectorN
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorBit
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -693,7 +693,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getBitvectorBit
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1lt
-  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -701,7 +701,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1lt
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1lt
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -709,7 +709,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1lt
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1leq
-  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -717,7 +717,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1leq
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1leq
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -725,7 +725,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1leq
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1gt
-  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -733,7 +733,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1gt
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1gt
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -741,7 +741,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1gt
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1geq
-  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -749,7 +749,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1geq
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1geq
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -757,7 +757,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1geq
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1eq
-  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -765,7 +765,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1eq
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1eq
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -773,7 +773,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1eq
  * Signature: (JJIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1neq
-  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -781,7 +781,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1const_1neq
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1neq
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -789,7 +789,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newBVComparison_1bv_1neq
  * Signature: (JJI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1bitblast
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -797,7 +797,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1bitblast
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1concat
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -805,7 +805,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1concat
  * Signature: (JJIIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1slice
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -813,7 +813,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1slice
  * Signature: (JJII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1not
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -821,7 +821,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1not
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1and
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -829,7 +829,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1and
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1nand
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -837,7 +837,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1nand
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1or
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -845,7 +845,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1or
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1nor
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -853,7 +853,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1nor
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1xor
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -861,7 +861,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1xor
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1xnor
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -869,7 +869,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1xnor
  * Signature: (JJIIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1ite
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -877,7 +877,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1ite
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1addition
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -885,7 +885,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1addition
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1subtraction
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -893,7 +893,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1subtraction
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1multiply
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -901,7 +901,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1multiply
  * Signature: (JJIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1divide
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -909,7 +909,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1divide
  * Signature: (JJLjava/nio/IntBuffer;II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1min
-  (JNIEnv *, jclass, jlong, jlong, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -917,7 +917,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1min
  * Signature: (JJLjava/nio/IntBuffer;II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1max
-  (JNIEnv *, jclass, jlong, jlong, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -925,7 +925,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1max
  * Signature: (JJLjava/nio/IntBuffer;II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1popcount
-  (JNIEnv *, jclass, jlong, jlong, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -933,7 +933,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1popcount
  * Signature: (JJLjava/nio/IntBuffer;II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1unary
-  (JNIEnv *, jclass, jlong, jlong, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -941,7 +941,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_bv_1unary
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one_1lit
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -949,7 +949,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_at_1most_1one_1lit
  * Signature: (JIILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1lt
-  (JNIEnv *, jclass, jlong, jint, jint, jobject, jobject);
+        (JNIEnv*, jclass, jlong, jint, jint, jobject, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -957,7 +957,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1lt
  * Signature: (JIILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1leq
-  (JNIEnv *, jclass, jlong, jint, jint, jobject, jobject);
+        (JNIEnv*, jclass, jlong, jint, jint, jobject, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -965,7 +965,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1leq
  * Signature: (JIILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1eq
-  (JNIEnv *, jclass, jlong, jint, jint, jobject, jobject);
+        (JNIEnv*, jclass, jlong, jint, jint, jobject, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -973,7 +973,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1eq
  * Signature: (JIILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1geq
-  (JNIEnv *, jclass, jlong, jint, jint, jobject, jobject);
+        (JNIEnv*, jclass, jlong, jint, jint, jobject, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -981,7 +981,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1geq
  * Signature: (JIILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1gt
-  (JNIEnv *, jclass, jlong, jint, jint, jobject, jobject);
+        (JNIEnv*, jclass, jlong, jint, jint, jobject, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -989,7 +989,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_assertPB_1gt
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushPB
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -997,7 +997,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_flushPB
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1005,7 +1005,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph
  * Signature: (JLjava/lang/String;I)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph_1Named
-  (JNIEnv *, jclass, jlong, jstring, jint);
+        (JNIEnv*, jclass, jlong, jstring, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1013,7 +1013,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_newGraph_1Named
  * Signature: (JJ)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getGraphName
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1021,7 +1021,7 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getGraphName
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getGraphWidth
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1029,7 +1029,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getGraphWidth
  * Signature: (JLjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getGraph
-  (JNIEnv *, jclass, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1037,7 +1037,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getGraph
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1045,7 +1045,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode
  * Signature: (JJLjava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode_1Named
-  (JNIEnv *, jclass, jlong, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1053,7 +1053,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newNode_1Named
  * Signature: (JJLjava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasNamedNode
-  (JNIEnv *, jclass, jlong, jlong, jstring);
+        (JNIEnv*, jclass, jlong, jlong, jstring);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1061,7 +1061,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasNamedNode
  * Signature: (JJI)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getNodeName
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1069,7 +1069,7 @@ JNIEXPORT jstring JNICALL Java_monosat_MonosatJNI_getNodeName
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1077,7 +1077,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge_1bv
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1085,7 +1085,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_newEdge_1bv
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNodes
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1093,7 +1093,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nNodes
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1101,7 +1101,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_nEdges
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdgeLiteralN
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1109,7 +1109,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdgeLiteralN
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1to
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1117,7 +1117,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1to
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1from
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1125,7 +1125,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1from
  * Signature: (JJI)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getEdge_1weight_1const
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1133,7 +1133,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getEdge_1weight_1const
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1weight_1bv
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1141,7 +1141,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getEdge_1weight_1bv
  * Signature: (JJI)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_edgeHasBVWeight
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1149,7 +1149,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_edgeHasBVWeight
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1157,7 +1157,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reaches
  * Signature: (JJII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reachesBackward
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1165,7 +1165,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_reachesBackward
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_onPath
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1173,7 +1173,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_onPath
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1lt_1const
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1181,7 +1181,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1lt_1const
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1leq_1const
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1189,7 +1189,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPathUnweighted_1leq_1cons
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1const
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1197,7 +1197,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1const
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1const
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1205,7 +1205,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1const
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1bv
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1213,7 +1213,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1lt_1bv
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1bv
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1221,7 +1221,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_shortestPath_1leq_1bv
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1229,7 +1229,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1237,7 +1237,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq_1bv
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1245,7 +1245,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1geq_1bv
  * Signature: (JJIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt_1bv
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1253,7 +1253,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_maximumFlow_1gt_1bv
  * Signature: (JJJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1leq
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1261,7 +1261,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1leq
  * Signature: (JJIIJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1lt
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1269,7 +1269,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_minimumSpanningTree_1lt
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1undirected
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1277,7 +1277,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1undirected
  * Signature: (JJ)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1directed
-  (JNIEnv *, jclass, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1285,7 +1285,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_acyclic_1directed
  * Signature: (JJLjava/nio/IntBuffer;IZ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_newEdgeSet
-  (JNIEnv *, jclass, jlong, jlong, jobject, jint, jboolean);
+        (JNIEnv*, jclass, jlong, jlong, jobject, jint, jboolean);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1293,7 +1293,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_newEdgeSet
  * Signature: (JJJ)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_graph_1setAssignEdgesToWeight
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+        (JNIEnv*, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1301,7 +1301,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_graph_1setAssignEdgesToWeight
  * Signature: (JJIII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_createFlowRouting
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1309,7 +1309,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_createFlowRouting
  * Signature: (JJJIILjava/nio/IntBuffer;Ljava/nio/IntBuffer;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addRoutingNet
-  (JNIEnv *, jclass, jlong, jlong, jlong, jint, jint, jobject, jobject);
+        (JNIEnv*, jclass, jlong, jlong, jlong, jint, jint, jobject, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1317,7 +1317,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_addRoutingNet
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasModel
-  (JNIEnv *, jclass, jlong);
+        (JNIEnv*, jclass, jlong);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1325,7 +1325,7 @@ JNIEXPORT jboolean JNICALL Java_monosat_MonosatJNI_hasModel
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1333,7 +1333,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Literal
  * Signature: (JI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConstantModel_1Literal
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1341,7 +1341,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getConstantModel_1Literal
  * Signature: (JJIZ)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
-  (JNIEnv *, jclass, jlong, jlong, jint, jboolean);
+        (JNIEnv*, jclass, jlong, jlong, jint, jboolean);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1349,7 +1349,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1BV
  * Signature: (JJI)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MaxFlow
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1357,7 +1357,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MaxFlow
  * Signature: (JJII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1EdgeFlow
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1365,7 +1365,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1EdgeFlow
  * Signature: (JJII)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1AcyclicEdgeFlow
-  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1373,7 +1373,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1AcyclicEdgeFlow
  * Signature: (JJI)J
  */
 JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MinimumSpanningTreeWeight
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1381,7 +1381,7 @@ JNIEXPORT jlong JNICALL Java_monosat_MonosatJNI_getModel_1MinimumSpanningTreeWei
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes_1Length
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1389,7 +1389,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes_1Length
  * Signature: (JJIILjava/nio/IntBuffer;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jobject);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1397,7 +1397,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1Nodes
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits_1Length
-  (JNIEnv *, jclass, jlong, jlong, jint);
+        (JNIEnv*, jclass, jlong, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1405,7 +1405,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits_1Length
  * Signature: (JJIILjava/nio/IntBuffer;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jobject);
+        (JNIEnv*, jclass, jlong, jlong, jint, jint, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1413,7 +1413,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_getModel_1Path_1EdgeLits
  * Signature: (JIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_And_1
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1421,7 +1421,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_And_1
  * Signature: (JLjava/nio/IntBuffer;II)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands_1
-  (JNIEnv *, jclass, jlong, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1429,7 +1429,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands_1
  * Signature: (JILjava/nio/IntBuffer;II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd_1
-  (JNIEnv *, jclass, jlong, jint, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1437,7 +1437,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd_1
  * Signature: (JILjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd
-  (JNIEnv *, jclass, jlong, jint, jobject, jint);
+        (JNIEnv*, jclass, jlong, jint, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1445,7 +1445,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesAnd
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1453,7 +1453,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ands
  * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_And
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1461,7 +1461,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_And
  * Signature: (JIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Or_1
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1469,7 +1469,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Or_1
  * Signature: (JLjava/nio/IntBuffer;II)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors_1
-  (JNIEnv *, jclass, jlong, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1477,7 +1477,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors_1
  * Signature: (JLjava/nio/IntBuffer;II)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesAnd
-  (JNIEnv *, jclass, jlong, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1485,7 +1485,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesAnd
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1493,7 +1493,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr
  * Signature: (JLjava/nio/IntBuffer;II)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr_1
-  (JNIEnv *, jclass, jlong, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1501,7 +1501,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_ImpliesOr_1
  * Signature: (JILjava/nio/IntBuffer;II)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr_1
-  (JNIEnv *, jclass, jlong, jint, jobject, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jobject, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1509,7 +1509,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr_1
  * Signature: (JILjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr
-  (JNIEnv *, jclass, jlong, jint, jobject, jint);
+        (JNIEnv*, jclass, jlong, jint, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1517,7 +1517,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImpliesOr
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1525,7 +1525,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ors
  * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Or
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1533,7 +1533,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Or
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nors
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1541,7 +1541,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nors
  * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nor
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1549,7 +1549,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nor
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nands
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1557,7 +1557,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nands
  * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nand
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1565,7 +1565,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Nand
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xors
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1573,7 +1573,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xors
  * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xor
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1581,7 +1581,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xor
  * Signature: (JLjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xnors
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1589,7 +1589,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xnors
  * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xnor
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1597,7 +1597,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Xnor
  * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Implies
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1605,7 +1605,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Implies
  * Signature: (JIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Implies_1
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1613,7 +1613,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Implies_1
  * Signature: (JIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ite
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1621,7 +1621,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ite
  * Signature: (JIIII)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ite_1
-  (JNIEnv *, jclass, jlong, jint, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1629,7 +1629,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Ite_1
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;ILjava/nio/IntBuffer;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Add
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint, jobject);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1637,7 +1637,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Add
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;ILjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Add_1
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1645,7 +1645,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Add_1
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;ILjava/nio/IntBuffer;)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Subtract
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint, jobject);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1653,7 +1653,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Subtract
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;ILjava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Subtract_1
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1661,7 +1661,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Subtract_1
  * Signature: (JLjava/nio/IntBuffer;ILjava/nio/IntBuffer;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Negate
-  (JNIEnv *, jclass, jlong, jobject, jint, jobject);
+        (JNIEnv*, jclass, jlong, jobject, jint, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1669,7 +1669,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Negate
  * Signature: (JLjava/nio/IntBuffer;ILjava/nio/IntBuffer;)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Negate_1
-  (JNIEnv *, jclass, jlong, jobject, jint, jobject);
+        (JNIEnv*, jclass, jlong, jobject, jint, jobject);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1677,7 +1677,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Negate_1
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Assert
-  (JNIEnv *, jclass, jlong, jint);
+        (JNIEnv*, jclass, jlong, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1685,7 +1685,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_Assert
  * Signature: (JIII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOrTertiary
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1693,7 +1693,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOrTertiary
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOrs
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1701,7 +1701,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOrs
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOr
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1709,7 +1709,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertOr
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNands
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1717,7 +1717,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNands
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNand
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1725,7 +1725,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNand
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAnds
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1733,7 +1733,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAnds
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAnd
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1741,7 +1741,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAnd
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNors
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1749,7 +1749,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNors
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNor
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1757,7 +1757,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertNor
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXor
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1765,7 +1765,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXor
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXors
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1773,7 +1773,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXors
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXnors
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1781,7 +1781,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXnors
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXnor
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1789,7 +1789,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertXnor
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImplies
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1797,7 +1797,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertImplies
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertEqual
-  (JNIEnv *, jclass, jlong, jint, jint);
+        (JNIEnv*, jclass, jlong, jint, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1805,7 +1805,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertEqual
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAllSame
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1813,7 +1813,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAllSame
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Equals
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1821,7 +1821,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_Equals
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_LEQ
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1829,7 +1829,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_LEQ
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_LT
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1837,7 +1837,7 @@ JNIEXPORT jint JNICALL Java_monosat_MonosatJNI_LT
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertEquals
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1845,7 +1845,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertEquals
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertLEQ
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1853,7 +1853,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertLEQ
  * Signature: (JLjava/nio/IntBuffer;Ljava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertLT
-  (JNIEnv *, jclass, jlong, jobject, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1861,7 +1861,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertLT
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAMO
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 /*
  * Class:     monosat_MonosatJNI
@@ -1869,7 +1869,7 @@ JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertAMO
  * Signature: (JLjava/nio/IntBuffer;I)V
  */
 JNIEXPORT void JNICALL Java_monosat_MonosatJNI_AssertExactlyOne
-  (JNIEnv *, jclass, jlong, jobject, jint);
+        (JNIEnv*, jclass, jlong, jobject, jint);
 
 #ifdef __cplusplus
 }

@@ -33,27 +33,28 @@
 #include <set>
 #include <string>
 #include <sstream>
+
 namespace Monosat {
 
 
 //=================================================================================================
 
 template<class B, class Solver>
-class FlowRouterParser: public Parser<B, Solver> {
-	using Parser<B, Solver>::mapVar;
-    GraphParser<B, Solver>  * graph_parser;
-    vec<FlowRouter<int64_t>  *> flow_routers;
+class FlowRouterParser : public Parser<B, Solver> {
+    using Parser<B, Solver>::mapVar;
+    GraphParser<B, Solver>* graph_parser;
+    vec<FlowRouter<int64_t>*> flow_routers;
     vec<Var> vars;
-    struct RouterStruct{
+    struct RouterStruct {
         int graphID;
         int routerID;
         int sourceNode;
         int destNode;
         Lit maxflowLit;
     };
-	vec<RouterStruct> routers;
+    vec<RouterStruct> routers;
 
-    struct Nets{
+    struct Nets {
         int graphID;
         int routerID;
         Lit disabledEdgeLit;
@@ -63,15 +64,17 @@ class FlowRouterParser: public Parser<B, Solver> {
     vec<Nets> nets;
 
 public:
-    FlowRouterParser(GraphParser<B, Solver> * graph_parser):Parser<B, Solver> ("Flow-Router"),graph_parser(graph_parser) {
-		assert(graph_parser);
-	}
-	bool parseLine(B& in, Solver& S) {
-		
-		skipWhitespace(in);
-		if (*in == EOF)
-			return false;
-        if (match(in,"f_router_net")){
+    FlowRouterParser(GraphParser<B, Solver>* graph_parser) : Parser<B, Solver>("Flow-Router"),
+                                                             graph_parser(graph_parser){
+        assert(graph_parser);
+    }
+
+    bool parseLine(B& in, Solver& S){
+
+        skipWhitespace(in);
+        if(*in == EOF)
+            return false;
+        if(match(in, "f_router_net")){
             int graphID = parseInt(in);
             int routerID = parseInt(in);
             Lit disabledEdgeLit = lit_Undef;
@@ -82,12 +85,12 @@ public:
                 disabledEdgeLit = ((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
             }
             int n_members = parseInt(in);
-            assert(n_members>0);
+            assert(n_members > 0);
 
             vec<Lit> dest_edge_lits;
             vec<Lit> net_reach_lits;
 
-            for(int i = 0;i<n_members;i++){
+            for(int i = 0; i < n_members; i++){
                 {
                     int parsed_lit1 = parseInt(in);
                     Var var1 = abs(parsed_lit1) - 1;
@@ -104,57 +107,56 @@ public:
                 }
             }
             nets.push();
-            nets.last().graphID=graphID;
-            nets.last().routerID=routerID;
+            nets.last().graphID = graphID;
+            nets.last().routerID = routerID;
             nets.last().disabledEdgeLit = disabledEdgeLit;
             dest_edge_lits.copyTo(nets.last().dest_edge_lits);
             net_reach_lits.copyTo(nets.last().net_reach_lits);
 
             return true;
-        }else if (match(in,"f_router")){
+        }else if(match(in, "f_router")){
             int graphID = parseInt(in);
             int routerID = parseInt(in);
             int sourceNode = parseInt(in);
             int destNode = parseInt(in);
-            assert(graphID>=0);
-            assert(routerID>=0);
+            assert(graphID >= 0);
+            assert(routerID >= 0);
 
             int parsed_lit = parseInt(in);
             assert (parsed_lit != 0);
 
             Var var = abs(parsed_lit) - 1;
-            var = mapVar(S,var);
+            var = mapVar(S, var);
             Lit maxflowLit = ((parsed_lit > 0) ? mkLit(var) : ~mkLit(var));
-            routers.push({graphID,routerID,sourceNode,destNode,maxflowLit});
-			return true;
-		}
+            routers.push({graphID, routerID, sourceNode, destNode, maxflowLit});
+            return true;
+        }
 
-		return false;
-	}
-	
-	void implementConstraints(Solver & S) {
-        for(auto & r:routers){
-            GraphTheorySolver<int64_t> * G = graph_parser->getGraphTheory(r.graphID);
+        return false;
+    }
+
+    void implementConstraints(Solver& S){
+        for(auto& r:routers){
+            GraphTheorySolver<int64_t>* G = graph_parser->getGraphTheory(r.graphID);
             assert(G);
-            FlowRouter<int64_t>  * router = new FlowRouter<int64_t>(&S,G,r.sourceNode,r.destNode,r.maxflowLit);
-            flow_routers.growTo(r.routerID+1);
-            flow_routers[r.routerID]=router;
+            FlowRouter<int64_t>* router = new FlowRouter<int64_t>(&S, G, r.sourceNode, r.destNode, r.maxflowLit);
+            flow_routers.growTo(r.routerID + 1);
+            flow_routers[r.routerID] = router;
         }
         routers.clear();
-        for(auto & n:nets){
+        for(auto& n:nets){
             int routerID = n.routerID;
-            auto * router = flow_routers[routerID];
+            auto* router = flow_routers[routerID];
             assert(router);
-            router->addNet(n.disabledEdgeLit,n.dest_edge_lits,n.net_reach_lits);
+            router->addNet(n.disabledEdgeLit, n.dest_edge_lits, n.net_reach_lits);
         }
         nets.clear();
-	}
+    }
 
-	
+
 };
 
 //=================================================================================================
-}
-;
+};
 
 #endif /* GRAPH_PARSER_H_ */

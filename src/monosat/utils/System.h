@@ -20,9 +20,13 @@
 
 #ifndef Minisat_System_h
 #define Minisat_System_h
+
 #include <cstdint>
+
 #if defined(__linux__)
+
 #include <fpu_control.h>
+
 #endif
 
 #include "monosat/mtl/IntTypes.h"
@@ -47,23 +51,26 @@ static inline double Monosat::cpuTime(void) {return (double)clock() / CLOCKS_PER
 static inline double Monosat::fastTime(void) {return (double)clock() / CLOCKS_PER_SEC;}
 
 #else
+
 #include <ctime>
 #include <sys/resource.h>
 #include <unistd.h>
-static inline double Monosat::fastTime(void) {
 
-	 struct timespec ts;
+static inline double Monosat::fastTime(void){
+
+    struct timespec ts;
 #ifdef CLOCK_MONOTONIC_RAW
-	 clock_gettime(CLOCK_MONOTONIC_RAW,&ts);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
 #else
-	 clock_gettime(CLOCK_MONOTONIC,&ts);
+    clock_gettime(CLOCK_MONOTONIC,&ts);
 #endif
-	 return (double) ts.tv_sec + (double) ts.tv_nsec / 1000000000.0;
+    return (double) ts.tv_sec + (double) ts.tv_nsec / 1000000000.0;
 }
-static inline double Monosat::cpuTime(void) {
-	struct rusage ru;
-	getrusage(RUSAGE_SELF, &ru);
-	return (double) ru.ru_utime.tv_sec + (double) ru.ru_utime.tv_usec / 1000000;
+
+static inline double Monosat::cpuTime(void){
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &ru);
+    return (double) ru.ru_utime.tv_sec + (double) ru.ru_utime.tv_usec / 1000000;
 }
 
 #endif

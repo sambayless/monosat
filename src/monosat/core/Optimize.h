@@ -31,36 +31,38 @@
 #include "monosat/mtl/Vec.h"
 
 
-namespace Monosat{
+namespace Monosat {
 
 //An individual goal during optimization. If there are multiple goals, they will be optimized in lexicographic order.
-struct Objective{
-    enum class Type{
-        BV,PB
+struct Objective {
+    enum class Type {
+        BV, PB
     };
-    bool maximize=false;//else, minimize
+    bool maximize = false;//else, minimize
     Type type;
-    int bvID=-1;//used if type is BV
+    int bvID = -1;//used if type is BV
     //Used if type is PB
     vec<Lit> pb_lits;
     vec<int> pb_weights; //if empty, weights are treated as '1'
-    bool isPB()const{
+    bool isPB() const{
         return type == Type::PB;
     }
-    bool isBV()const{
+
+    bool isBV() const{
         return type == Type::BV;
     }
-    Objective(const Objective & from):maximize(from.maximize), type(from.type),bvID(from.bvID){
+
+    Objective(const Objective& from) : maximize(from.maximize), type(from.type), bvID(from.bvID){
         from.pb_lits.copyTo(pb_lits);
         from.pb_weights.copyTo(pb_weights);
     }
 
-    Objective(Objective && from):maximize(from.maximize), type(from.type),bvID(from.bvID){
+    Objective(Objective&& from) : maximize(from.maximize), type(from.type), bvID(from.bvID){
         from.pb_lits.copyTo(pb_lits);
         from.pb_weights.copyTo(pb_weights);
         from.pb_lits.clear();
         from.pb_weights.clear();
-        from.bvID=-1;
+        from.bvID = -1;
     }
 
     Objective& operator=(Objective&& from){
@@ -72,33 +74,43 @@ struct Objective{
             from.pb_weights.copyTo(pb_weights);
             from.pb_lits.clear();
             from.pb_weights.clear();
-            from.bvID=-1;
+            from.bvID = -1;
         }
         return *this;
     }
-    Objective():maximize(false),type(Type::BV),bvID(-1){
+
+    Objective() : maximize(false), type(Type::BV), bvID(-1){
     }
-    Objective(int bvID, bool maximize):maximize(maximize),type(Type::BV),bvID(bvID){
+
+    Objective(int bvID, bool maximize) : maximize(maximize), type(Type::BV), bvID(bvID){
     }
-    Objective(const vec<Lit> & lits, bool maximize):maximize(maximize),type(Type::PB),bvID(-1){
+
+    Objective(const vec<Lit>& lits, bool maximize) : maximize(maximize), type(Type::PB), bvID(-1){
         lits.copyTo(pb_lits);
-        pb_weights.growTo(pb_lits.size(),1);
+        pb_weights.growTo(pb_lits.size(), 1);
     }
-    Objective(const vec<Lit> & lits,const vec<int> & weights, bool maximize):maximize(maximize),type(Type::PB),bvID(-1){
+
+    Objective(const vec<Lit>& lits, const vec<int>& weights, bool maximize) : maximize(maximize), type(Type::PB),
+                                                                              bvID(-1){
         lits.copyTo(pb_lits);
         weights.copyTo(pb_weights);
-        if(pb_weights.size()>pb_lits.size())
-            pb_weights.shrink(pb_weights.size()-pb_lits.size());
-        pb_weights.growTo(pb_lits.size(),1);
+        if(pb_weights.size() > pb_lits.size())
+            pb_weights.shrink(pb_weights.size() - pb_lits.size());
+        pb_weights.growTo(pb_lits.size(), 1);
     }
 
 };
 
-int64_t optimize_linear(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, int64_t & n_solves);
+int64_t
+optimize_linear(Monosat::SimpSolver* S, Monosat::BVTheorySolver<int64_t>* bvTheory, const vec<Lit>& assume, int bvID,
+                bool& hit_cutoff, int64_t& n_solves);
 
-int64_t optimize_binary(Monosat::SimpSolver * S, Monosat::BVTheorySolver<int64_t> * bvTheory,const vec<Lit> & assume,int bvID, bool & hit_cutoff, int64_t & n_solves);
+int64_t
+optimize_binary(Monosat::SimpSolver* S, Monosat::BVTheorySolver<int64_t>* bvTheory, const vec<Lit>& assume, int bvID,
+                bool& hit_cutoff, int64_t& n_solves);
 
-lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const vec<Objective> & objectives, bool do_simp, bool & found_optimal);
+lbool optimize_and_solve(Monosat::SimpSolver& S, const vec<Lit>& assume, const vec<Objective>& objectives, bool do_simp,
+                         bool& found_optimal);
 
 
 //Reduce the given assumptions to a (locally) minimal unsat core, if they are mutually unsat.
@@ -106,6 +118,6 @@ lbool optimize_and_solve(Monosat::SimpSolver & S,const vec<Lit> & assume,const v
 // be stored in the supplied assumptions vector).
 //Returns l_True if the assumptions are satisfiable.
 //Returns l_Undef if solve time constraints prevent the assumptions from being reduced to a provably locally minimal unsat core
-lbool minimizeCore(SimpSolver & S,vec<Lit> & assumptions,bool do_simp=false);
+lbool minimizeCore(SimpSolver& S, vec<Lit>& assumptions, bool do_simp = false);
 };
 #endif /* OPTIMIZE_H_ */

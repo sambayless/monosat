@@ -23,7 +23,7 @@
 #define MONOSAT_VERSION_H
 namespace Monosat {
 
-extern const char * MONOSAT_VERSION_STR;
+extern const char* MONOSAT_VERSION_STR;
 
 }
 #endif //MONOSAT_VERSION_H

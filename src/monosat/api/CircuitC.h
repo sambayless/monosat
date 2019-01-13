@@ -50,110 +50,109 @@ extern "C"
 {
 #endif
 int newLit(SolverPtr S);
-int newLit_(SolverPtr S,bool decisionLit);
+int newLit_(SolverPtr S, bool decisionLit);
 int getTrue(SolverPtr S);
 int getFalse(SolverPtr S);
 
-int And_(SolverPtr S,int lit_a, int lit_b, int lit_out);
-int Ands_(SolverPtr S,int * lits, int n_lits, int lit_out);
-void AssertImpliesAnd_(SolverPtr S,int implies,int * lits, int n_lits, int lit_out);
+int And_(SolverPtr S, int lit_a, int lit_b, int lit_out);
+int Ands_(SolverPtr S, int* lits, int n_lits, int lit_out);
+void AssertImpliesAnd_(SolverPtr S, int implies, int* lits, int n_lits, int lit_out);
 
-int Ands(SolverPtr S,int * lits, int n_lits);
-int And(SolverPtr S,int lit_a, int lit_b);
+int Ands(SolverPtr S, int* lits, int n_lits);
+int And(SolverPtr S, int lit_a, int lit_b);
 
-int Or_(SolverPtr S,int lit_a, int lit_b, int lit_out);
-int Ors_(SolverPtr S,int * lits, int n_lits, int lit_out);
+int Or_(SolverPtr S, int lit_a, int lit_b, int lit_out);
+int Ors_(SolverPtr S, int* lits, int n_lits, int lit_out);
 
 //If this gate is true, then all of vals must be true.
 //But if this gate is false, vals may be true or false.
-int ImpliesAnd_(SolverPtr S,int * lits, int n_lits, int lit_out);
+int ImpliesAnd_(SolverPtr S, int* lits, int n_lits, int lit_out);
 //If this gate is true, then at least one of vals must be true.
 //But if this gate is false, vals may be true or false.
-int ImpliesOr(SolverPtr S,int * lits, int n_lits);
-int ImpliesOr_(SolverPtr S,int * lits, int n_lits,int lit_out);
+int ImpliesOr(SolverPtr S, int* lits, int n_lits);
+int ImpliesOr_(SolverPtr S, int* lits, int n_lits, int lit_out);
 //This is an OR condition that holds only if implies is true
-void AssertImpliesOr_(SolverPtr S,int implies,int * lits, int n_lits, int lit_out);
+void AssertImpliesOr_(SolverPtr S, int implies, int* lits, int n_lits, int lit_out);
 
-void AssertImpliesOr(SolverPtr S,int implies,int * lits, int n_lits);
-void AssertImpliesAnd(SolverPtr S,int implies,int * lits, int n_lits);
-void AssertImpliesAnd_(SolverPtr S,int implies,int * lits, int n_lits, int lit_out);
+void AssertImpliesOr(SolverPtr S, int implies, int* lits, int n_lits);
+void AssertImpliesAnd(SolverPtr S, int implies, int* lits, int n_lits);
+void AssertImpliesAnd_(SolverPtr S, int implies, int* lits, int n_lits, int lit_out);
 
-int Ors(SolverPtr S,int * lits, int n_lits);
-int Or(SolverPtr S,int lit_a, int lit_b);
+int Ors(SolverPtr S, int* lits, int n_lits);
+int Or(SolverPtr S, int lit_a, int lit_b);
 
-int Nors(SolverPtr S,int * lits, int n_lits);
-int Nor(SolverPtr S,int lit_a, int lit_b);
+int Nors(SolverPtr S, int* lits, int n_lits);
+int Nor(SolverPtr S, int lit_a, int lit_b);
 
-int Nands(SolverPtr S,int * lits, int n_lits);
+int Nands(SolverPtr S, int* lits, int n_lits);
 
-int Nand(SolverPtr S,int lit_a, int lit_b);
+int Nand(SolverPtr S, int lit_a, int lit_b);
 
-int Xors(SolverPtr S,int * lits, int n_lits);
-int Xor(SolverPtr S,int lit_a, int lit_b);
+int Xors(SolverPtr S, int* lits, int n_lits);
+int Xor(SolverPtr S, int lit_a, int lit_b);
 
 
-int Xnors(SolverPtr S,int * lits, int n_lits);
-int Xnor(SolverPtr S,int lit_a, int lit_b);
+int Xnors(SolverPtr S, int* lits, int n_lits);
+int Xnor(SolverPtr S, int lit_a, int lit_b);
 
-int Implies(SolverPtr S,int lit_a, int lit_b);
-int Implies_(SolverPtr S,int lit_a, int lit_b, int lit_out);
+int Implies(SolverPtr S, int lit_a, int lit_b);
+int Implies_(SolverPtr S, int lit_a, int lit_b, int lit_out);
 
-int Ite(SolverPtr S,int lit_cond, int lit_thn, int lit_els);
-int Ite_(SolverPtr S,int lit_cond, int lit_thn, int lit_els,int lit_out);
+int Ite(SolverPtr S, int lit_cond, int lit_thn, int lit_els);
+int Ite_(SolverPtr S, int lit_cond, int lit_thn, int lit_els, int lit_out);
 
-int Add(SolverPtr S,int * lits_a, int * lits_b, int n_lits, int * lits_out);
-int Add_(SolverPtr S,int * lits_a, int * lits_b, int n_lits,int * lits_out, int carry_lit);
-int Subtract(SolverPtr S,int * lits_a, int * lits_b, int n_lits,int * lits_out);
-int Subtract_(SolverPtr S,int * lits_a, int * lits_b, int n_lits,int * lits_out, int borrow_lit);
+int Add(SolverPtr S, int* lits_a, int* lits_b, int n_lits, int* lits_out);
+int Add_(SolverPtr S, int* lits_a, int* lits_b, int n_lits, int* lits_out, int carry_lit);
+int Subtract(SolverPtr S, int* lits_a, int* lits_b, int n_lits, int* lits_out);
+int Subtract_(SolverPtr S, int* lits_a, int* lits_b, int n_lits, int* lits_out, int borrow_lit);
 
 //perform two's complement negation (SolverPtr S,invert bits and add 1)
 //int * lits_out must have enough room to hold n_lits
-void Negate(SolverPtr S,int * lits, int n_lits, int * lits_out);
+void Negate(SolverPtr S, int* lits, int n_lits, int* lits_out);
 //perform two's complement negation (SolverPtr S,invert bits and add 1)
-void Negate_(SolverPtr S,int * lits, int n_lits, int * lits_out);
+void Negate_(SolverPtr S, int* lits, int n_lits, int* lits_out);
 
-void Assert(SolverPtr S,int lit);
-void AssertOrTertiary(SolverPtr S,int lit_a, int lit_b, int lit_c);
-void AssertOrs(SolverPtr S,int * lits, int n_lits);
-void AssertOr(SolverPtr S,int lit_a, int lit_b);
+void Assert(SolverPtr S, int lit);
+void AssertOrTertiary(SolverPtr S, int lit_a, int lit_b, int lit_c);
+void AssertOrs(SolverPtr S, int* lits, int n_lits);
+void AssertOr(SolverPtr S, int lit_a, int lit_b);
 
-void AssertNands(SolverPtr S,int * lits, int n_lits);
-void AssertNand(SolverPtr S,int lit_a, int lit_b);
+void AssertNands(SolverPtr S, int* lits, int n_lits);
+void AssertNand(SolverPtr S, int lit_a, int lit_b);
 
-void AssertAnds(SolverPtr S,int * lits, int n_lits);
-void AssertAnd(SolverPtr S,int lit_a, int lit_b);
+void AssertAnds(SolverPtr S, int* lits, int n_lits);
+void AssertAnd(SolverPtr S, int lit_a, int lit_b);
 
-void AssertNors(SolverPtr S,int * lits, int n_lits);
-void AssertNor(SolverPtr S,int lit_a, int lit_b);
+void AssertNors(SolverPtr S, int* lits, int n_lits);
+void AssertNor(SolverPtr S, int lit_a, int lit_b);
 
-void AssertXor(SolverPtr S,int lit_a, int lit_b);
-void AssertXors(SolverPtr S,int * lits, int n_lits);
+void AssertXor(SolverPtr S, int lit_a, int lit_b);
+void AssertXors(SolverPtr S, int* lits, int n_lits);
 
-void AssertXnors(SolverPtr S,int * lits, int n_lits);
-void AssertXnor(SolverPtr S,int lit_a, int lit_b);
+void AssertXnors(SolverPtr S, int* lits, int n_lits);
+void AssertXnor(SolverPtr S, int lit_a, int lit_b);
 
-void AssertImplies(SolverPtr S,int lit_a, int lit_b);
-void AssertEqual(SolverPtr S,int lit_a, int lit_b);
+void AssertImplies(SolverPtr S, int lit_a, int lit_b);
+void AssertEqual(SolverPtr S, int lit_a, int lit_b);
 
-void AssertAllSame(SolverPtr S,int * lits, int n_lits);
+void AssertAllSame(SolverPtr S, int* lits, int n_lits);
 
 int Equal(SolverPtr S, int a_lit, int b_lit);
-int Equals(SolverPtr S,int * A_lits, int * B_lits, int n_lits);
+int Equals(SolverPtr S, int* A_lits, int* B_lits, int n_lits);
 
-int LEQ(SolverPtr S,int * A_lits, int * B_lits, int n_lits);
-int LT(SolverPtr S,int * A_lits, int * B_lits, int n_lits);
+int LEQ(SolverPtr S, int* A_lits, int* B_lits, int n_lits);
+int LT(SolverPtr S, int* A_lits, int* B_lits, int n_lits);
 
-void AssertEquals(SolverPtr S,int * A_lits, int * B_lits, int n_lits);
-void AssertLEQ(SolverPtr S,int * A_lits,  int * B_lits, int n_lits);
-void AssertLT(SolverPtr S,int * A_lits, int * B_lits, int n_lits);
+void AssertEquals(SolverPtr S, int* A_lits, int* B_lits, int n_lits);
+void AssertLEQ(SolverPtr S, int* A_lits, int* B_lits, int n_lits);
+void AssertLT(SolverPtr S, int* A_lits, int* B_lits, int n_lits);
 
 //uses n^2 binary clauses to create a simple at-most-one constraint.
 //if you have more than 20 or so literals, strongly consider using a pseudo-Boolean constraint solver instead
-void AssertAMO(SolverPtr S,int * lits, int n_lits) ;
+void AssertAMO(SolverPtr S, int* lits, int n_lits);
 //uses n^2 binary clauses to create a simple exactly-one-constraint.
 //if you have more than 20 or so literals, strongly consider using a pseudo-Boolean constraint solver instead
-void AssertExactlyOne(SolverPtr S,int * lits, int n_lits);
-
+void AssertExactlyOne(SolverPtr S, int* lits, int n_lits);
 
 
 #ifdef __cplusplus
