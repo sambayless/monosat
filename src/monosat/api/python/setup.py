@@ -5,11 +5,11 @@ import os.path
 import platform
 import shutil
 import sys
-
 try:
     from setuptools import setup
 except ImportError as e:
     from distutils.core import setup
+
 
 if sys.version_info[0] < 3:
     sys.exit('Sorry, Python < 3 is not supported')
