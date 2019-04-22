@@ -846,7 +846,7 @@ public final class Graph {
    * @return The literal that controls whether this edge is included in the graph.
    */
   public Lit addUndirectedEdge(int from, int to, long constantWeight) {
-    return addUndirectedEdge(from,to,constantWeight);
+    return addUndirectedEdge(from,to,constantWeight,"");
   }
   /**
    * Add a new undirected edge to the graph, from node 'from' to node 'to', with a constant weight.
@@ -873,7 +873,8 @@ public final class Graph {
       Lit l2 = addEdge(to, from, constantWeight);
       solver.assertEqual(l, l2);
       getSolver().addName(l,name);
-      getSolver().addName(l2,name+"_back");
+      //getSolver().addName(l2,name+"_back");
+      getSolver().addName(l2,name);
       return l;
     }
   }
@@ -918,7 +919,8 @@ public final class Graph {
     Lit l2 = addEdge(to, from, weight);
     solver.assertEqual(l, l2);
     getSolver().addName(l,name);
-    getSolver().addName(l2,name+"_back");
+    //getSolver().addName(l2,name+"_back");
+    getSolver().addName(l2,name);
     return l;
   }
 
