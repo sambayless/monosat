@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -696,5 +697,18 @@ public class LitTest {
         assertTrue(a2.hasName("MyLiteral2"));
         assertTrue(a2.hasName("MyLiteral1"));
 
+    }
+
+
+    @Test
+    public void testComparable() {
+        try(monosat.Solver s = new monosat.Solver()) {
+            List<Lit> lits = new ArrayList<>();
+            for(int i = 0;i<10;i++){
+                lits.add(new Lit(s));
+            }
+            Collections.shuffle(lits);
+            Collections.sort(lits);
+        }
     }
 }

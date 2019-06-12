@@ -56,7 +56,7 @@ import java.util.Optional;
  *
  * </blockquote>
  */
-public final class Lit {
+public final class Lit implements Comparable<Lit>{
   /** This constant value represents an undefined literal. */
   public static final Lit Undef = new Lit(-1, "Undef");
   /** This constant value represents an invalid literal. */
@@ -549,8 +549,12 @@ public final class Lit {
     return !getConstantValue().orElse(true);
   }
 
+  @Override
+  public int compareTo(Lit o) {
+    return toInt() - o.toInt();
+  }
 
-    /** An iterator over names of a literal. */
+  /** An iterator over names of a literal. */
     public class NameIterator implements java.util.Iterator<String>,java.lang.Iterable<String> {
         private int index = 0;
 
