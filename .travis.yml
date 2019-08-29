@@ -68,7 +68,8 @@ matrix:
 before_install:
   - echo "os is ${TRAVIS_OS_NAME}"
   - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then brew update; brew install python3 || brew outdated python3 || brew upgrade python3 || true ; fi
-  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get -qq update; fi
+  # see https://github.com/travis-ci/travis-ci/issues/8581
+  - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6B05F25D762E3157 || sudo apt-get -qq update; fi
   - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then sudo apt-get install -y --force-yes cmake libgmp-dev zlib1g-dev; fi
   - eval "${MATRIX_EVAL}"
   - echo "Selected Java ${JDK_VERSION}"  || true
