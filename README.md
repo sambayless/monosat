@@ -1,6 +1,5 @@
 # MonoSAT
 [![Build Status](https://travis-ci.org/sambayless/monosat.svg?branch=master)](https://travis-ci.org/sambayless/monosat)
-[![Coverity Scan](https://scan.coverity.com/projects/6062/badge.svg)](https://scan.coverity.com/projects/sambayless-monosat)
 
 
 MonoSAT is a SAT Modulo Theory solver for *[monotonic theories]*, over Booleans and bitvectors. It supports a wide set of graph predicates (including reachability, shortest paths, maximum *s-t* flow, minimum spanning tree, and acyclicity constraints). 
