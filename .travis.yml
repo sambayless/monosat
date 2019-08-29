@@ -5,6 +5,7 @@ branches:
     - master
     - dev
     - travis # specifically for experimenting with travis builds
+    - coverity_scan
 
 os :
   - linux
