@@ -95,7 +95,7 @@ before_install:
   - java -version  || true
   - echo "Selected Python ${PYTHON_VERSION}"
   - python3 --version || true
-  - if [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]; then echo -n | openssl s_client -connect 'https://scan.coverity.com:443' | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca- ; fi
+  - if [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]; then echo -n | openssl s_client -connect 'scan.coverity.com:443' | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca- ; fi
 
 install:
   - cmake ${BUILD_ARGS} .
