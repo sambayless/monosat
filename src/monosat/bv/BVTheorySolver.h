@@ -552,7 +552,7 @@ public:
             Weight overApprox = over_approx[bvID];
 
 
-            assert(under_approx >= 0);
+            assert(underApprox >= 0);
             assert(overApprox >= 0);
             vec<Lit>& bv = theory.bitvectors[bvID];
 
@@ -945,7 +945,7 @@ public:
             Weight overApprox = over_approx[bvID];
 
 
-            assert(under_approx >= 0);
+            assert(underApprox >= 0);
             assert(overApprox >= 0);
             vec<Lit>& bv = theory.bitvectors[bvID];
 
