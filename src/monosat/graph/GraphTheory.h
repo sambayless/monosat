@@ -143,13 +143,91 @@ public:
 
     Map<std::tuple<int, int, Weight, bool>, Lit> existing_maxflow_constraints;
 
+    //A set of edges of which exactly one will be in the final graph.
+    struct EdgeSet{
+        GraphTheorySolver & outer;
+        vec<int> edges;
+        int assigned_edge=-1;//-1 if no edge is assigned
+        bool clauses_constructed=false;
+
+        EdgeSet(GraphTheorySolver & outer):outer(outer){}
+
+        void buildReasonForEdge(int edgeID,vec<Lit> & conflict){
+            if(edgeID==assigned_edge){
+                assert(outer.g_under.edgeEnabled(edgeID));
+                Var v = outer.getEdgeVar(edgeID);
+                Lit l = mkLit(v,false);
+                assert(outer.value(l)==l_True);
+                conflict.push(~l);
+            }else{
+                assert(!outer.g_under.edgeEnabled(edgeID));
+                Var v = outer.getEdgeVar(edgeID);
+                Lit l = mkLit(v,false);
+                assert(outer.value(l)==l_False);
+                conflict.push(l);
+            }
+        }
+        bool isAssigned()const{
+            return assigned_edge>-1;
+        }
+        void assignEdge(int edgeID){
+            assert(assigned_edge==-1);
+            if(assigned_edge!= -1){
+                throw std::runtime_error("Bad edge set assignment!");
+            }
+            assigned_edge=edgeID;
+            outer.n_assigned_edge_sets++;
+            if(outer.n_assigned_edge_sets>outer.edge_sets.size()){
+                throw std::runtime_error("Bad edge set assignment!");
+            }
+        }
+        int assignedEdge()const{
+            assert(isAssigned());
+            return assigned_edge;
+        }
+        void unassignEdge(int edgeID){
+            assert(assigned_edge==edgeID);
+            if(assigned_edge== -1){
+                throw std::runtime_error("Bad edge set unassignment!");
+            }
+            assigned_edge=-1;
+            outer.n_assigned_edge_sets--;
+            if(outer.n_assigned_edge_sets<0){
+                throw std::runtime_error("Bad edge set unassignment!");
+            }
+        }
+        void init(){
+            if(!clauses_constructed){
+                clauses_constructed=true;
+                //build clauses enforcing atleast-one and at-most-one relationship for the edge set...
+            }
+        }
+
+    };
+
     CRef graph_decision_reason = CRef_Undef;
 private:
+
+    Lit invalid_edgeset_lit=lit_Undef;
+    vec<EdgeSet*> edge_sets;
+
+    vec<int> edge_set_map;//mapping from edgeID's to the edge set they belong to (if there is such a set)
+    int n_assigned_edge_sets=0;
+
     DynamicGraph<Weight> g_under;
     DynamicGraph<Weight> g_over;
+    DynamicGraph<Weight> g_over_edgeset;//extra over approximation graph for when edge sets are unassigned
     //Graphs with reversed edges
     DynamicBackGraph<Weight> g_under_back;
     DynamicBackGraph<Weight> g_over_back;
+    DynamicGraph<Weight> g_over_weights_under_edgeset;
+
+    bool allEdgeSetsAssigned(){
+        return n_assigned_edge_sets==edge_sets.size();
+    }
+    bool hasEdgeSets(){
+        return edge_sets.size();
+    }
     bool using_neg_weights = false;
     DynamicGraph<Weight> g_under_weights_over;
     DynamicGraph<Weight> g_over_weights_under;
@@ -178,29 +256,6 @@ public:
         return g_under;
     }
 
-    /*struct ComparisonStatus{//:public BVTheorySolver<int64_t>::CallBack{
-		GraphTheorySolver & outer;
-
-		void comparisonAltered(int bvID, int comparisonID){
-
-		}
-		void operator()(int bvID){
-			if(!outer.bv_needs_update[bvID]){
-				outer.bv_needs_update[bvID]=true;
-				outer.bvs_to_update.push(bvID);
-			}
-			int edgeID = outer.getBVEdge(bvID);
-			outer.g_under.setEdgeWeight(edgeID,outer.edge_bv_weights[bvID].getUnder());
-			outer.g_over.setEdgeWeight(edgeID, outer.edge_bv_weights[bvID].getOver());
-			if(outer.using_neg_weights){
-				outer.g_under_weights_over.setEdgeWeight(edgeID,outer.edge_bv_weights[bvID].getOver());
-				outer.g_over_weights_under.setEdgeWeight(edgeID, outer.edge_bv_weights[bvID].getUnder());
-			}
-		}
-		ComparisonStatus(GraphTheorySolver & outer):outer(outer){}
-	} bvcallback;*/
-
-    //typedef BVTheorySolver<Weight,ComparisonStatus>::BitVector BitVector;
     //if bitvectors weights are supplied, then this manages the resulting weights.
     BVTheorySolver<Weight>* bvTheory = nullptr;
 
@@ -220,19 +275,6 @@ public:
     Var lazy_trail_head = var_Undef;//only used when lazy backtracking; this is the tail of the trail matching the SAT solver's trail.
     Var getPrev(Var v){
         return trail[v].prev_var;
-        /*int lev = trail[v].level;
-		if(lev>=0){
-			Var dec = decisions[lev];
-			if(dec==v){
-				//return getBack(lev-1);
-				return var_Undef;
-			}else{
-				return trail[v].prev_var;
-			}
-		}else if (lev==-2){
-
-		}
-		return var_Undef;*/
     }
 
     Var inline _getPrev(Var v){
@@ -247,18 +289,6 @@ public:
 
     Var getNext(Var v){
         return trail[v].next_var;
-        /*	int lev = trail[v].level;
-		if(lev>=0){
-			Var dec = decisions[lev];
-			if(trail[v].next_var==dec){
-				//return getDecision(lev+1);
-				return var_Undef;
-			}else{
-				return trail[v].next_var;
-			}
-
-		}
-		return var_Undef;*/
     }
 
     Var getDecision(int lev){
@@ -278,9 +308,6 @@ public:
         }else{
             return trail[decisions[lev]].prev_var;
         }
-        /*	}else{
-			return var_Undef;
-		}*/
     }
 
     bool onLazyTrail(Var v){
@@ -317,8 +344,6 @@ public:
             trail[v].level = -2;
             lazy_trail_head = v;
         }
-
-        //dbg_check_trails();
     }
 
     //move a literal from the 'real' trail (which is in sync with the SAT solver) to the lazy trail (if lazy backtracking is enabled).
@@ -346,7 +371,6 @@ public:
             trail[v].prev_var = back;
             trail[v].level = -2;
         }
-        //dbg_check_trails();
     }
 
     void insertIntoTrail(Lit l, Var insertAfter){
@@ -360,7 +384,6 @@ public:
         trail[v].next_var = n;
         trail[v].prev_var = insertAfter;
         trail[v].level = trail[insertAfter].level;
-        //dbg_check_trails();
     }
 
     void appendToTrail(Lit l, int lev){
@@ -575,12 +598,17 @@ public:
     vec<Theory*> theories;
     vec<bool> satisfied_detectors;
     vec<Detector*> detectors;
+
+    vec<Detector*> edge_set_detectors;
+    vec<Detector*> paired_edge_set_detectors;
+    vec<Detector*> normal_detectors;
     vec<ReachDetector<Weight>*> reach_detectors;
     vec<ReachDetector<Weight, DynamicBackGraph<Weight>>*> reach_back_detectors;
     vec<DistanceDetector<Weight>*> distance_detectors;
     vec<DistanceDetector<Weight, DynamicBackGraph<Weight>>*> distance_back_detectors;
     vec<WeightedDistanceDetector<Weight>*> weighted_distance_detectors;
     vec<MaxflowDetector<Weight>*> flow_detectors;
+    vec<MaxflowDetector<Weight>*> edgeset_flow_detectors;
     ConnectedComponentsDetector<Weight>* component_detector = nullptr;
     CycleDetector<Weight>* cycle_detector = nullptr;
     vec<SteinerDetector<Weight>*> steiner_detectors;
@@ -878,6 +906,9 @@ public:
         printf("Propagations: %" PRId64 " (%f s, avg: %f s, %" PRId64 " skipped)\n", stats_propagations,
                propagationtime,
                (propagationtime) / ((double) stats_propagations + 1), stats_propagations_skipped);
+        if(opt_only_prop_edgeset){
+            printf("Skipped proapgations due to unassigned edgesets %ld\n", stats_num_skipped_edgeset_props);
+        }
         printf("Decisions: %" PRId64 " (%f s, avg: %f s), lazy decisions: %" PRId64 "\n", stats_decisions,
                stats_decision_time,
                (stats_decision_time) / ((double) stats_decisions + 1), stats_lazy_decisions);
@@ -946,7 +977,9 @@ public:
         assert(isEdgeVar(v));
         return vars[v].detector_edge;
     }
-
+	inline int getEdgeSetID(int edgeID){
+		return edge_set_map[edgeID];
+	}
     inline int getDetector(Var v){
         assert(!isEdgeVar(v));
         return vars[v].detector_edge;
@@ -1495,6 +1528,11 @@ public:
         cutGraph.addNode();
         g_under_weights_over.addNode();
         g_over_weights_under.addNode();
+
+		if(hasEdgeSets()){
+			g_over_edgeset.addNode();
+			g_over_weights_under_edgeset.addNode();
+		}
         seen.growTo(nNodes());
         return g_under.addNode();
     }
@@ -1591,11 +1629,16 @@ public:
     void backtrackAssign(Lit l){
         stats_backtrack_assigns++;
         assert(l != lit_Undef);
+		if(l==invalid_edgeset_lit){
+			invalid_edgeset_lit=lit_Undef;
+		}
+
         Var v = var(l);
         assert(value(l) == l_True);
         lbool assign = sign(l) ? l_False : l_True;
         if(isEdgeVar(v)){
             int edge_num = getEdgeID(v); //e.var-min_edge_var;
+				int edgeSetID = getEdgeSetID(edge_num);
             assert(assigns[v] != l_Undef);
 
             if(assign == l_True){
@@ -1603,9 +1646,49 @@ public:
                 if(assignEdgesToWeight()){
                     g_over.setEdgeWeight(edge_num, g_under.getEdgeWeight(edge_num));
                 }
+                if(edgeSetID>-1){
+                    g_over_edgeset.disableEdge(edge_num);
+                    g_over_edgeset.setEdgeWeight(edge_num,0);
+                    assert(g_over.edgeEnabled(edge_num));
+                    EdgeSet & edge_set = *edge_sets[edgeSetID];
+                    if(edge_set.assigned_edge==edge_num){
+                        edge_set.unassignEdge(edge_num);
+                        for(int i =0;i<edge_set_detectors.size();i++){
+                            if(edge_set_detectors[i]){
+                                Detector * e =edge_set_detectors[i];
+                                e->activateHeuristic();
+                                if(e->default_heuristic){
+                                    activateHeuristic(e->default_heuristic);
+                                }
+                                if(paired_edge_set_detectors[e->getID()]){
+                                    Detector * p = paired_edge_set_detectors[e->getID()];
+                                    p->activateHeuristic();
+                                    if(p->default_heuristic){
+                                        activateHeuristic(p->default_heuristic);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 assert(!cutGraph.edgeEnabled(edge_num * 2));
             }else{
-                g_over.enableEdge(edge_num);
+                if(edgeSetID>-1){
+                    EdgeSet & edge_set = *edge_sets[edgeSetID];
+                    if(edge_set.isAssigned()){
+                        assert(g_over.edgeEnabled(edge_num));
+                    }else{
+                        g_over.enableEdge(edge_num);
+                    }
+                    assert(!g_over_edgeset.edgeEnabled(edge_num));
+                    assert(g_over_edgeset.getEdgeWeight(edge_num)==0);
+                }else{
+                    g_over.enableEdge(edge_num);
+                    if(hasEdgeSets()){
+                        g_over_edgeset.enableEdge(edge_num);
+                        assert(g_over_edgeset.getEdgeWeight(edge_num)==g_over.getEdgeWeight(edge_num));
+                    }
+                }
                 if(opt_conflict_min_cut){
                     assert(cutGraph.edgeEnabled(edge_num * 2));
                     cutGraph.disableEdge(edge_num * 2);
@@ -1616,8 +1699,17 @@ public:
             if(using_neg_weights){
                 if(assign == l_True){
                     g_under_weights_over.disableEdge(edge_num);
+                    if(edgeSetID>-1){
+                        g_over_weights_under_edgeset.disableEdge(edge_num);
+                        assert(g_over_weights_under.edgeEnabled(edge_num));
+                    }
                 }else{
-                    g_over_weights_under.enableEdge(edge_num);
+                    if(edgeSetID>-1){
+                        assert(g_over_weights_under_edgeset.edgeEnabled(edge_num));
+                        assert(!g_over_weights_under.edgeEnabled(edge_num));
+                    }else{
+                        g_over_weights_under.enableEdge(edge_num);
+                    }
                 }
             }
         }else{
@@ -1626,7 +1718,6 @@ public:
         assigns[v] = l_Undef;
     }
 
-    //vec<Lit> to_reenqueue;
     void backtrackUntil(int untilLevel) override{
         static int it = 0;
         ++it;
@@ -1652,6 +1743,13 @@ public:
                     satisfied_detectors[detector] = false;
                     n_satisfied_detectors--;
                     assert(n_satisfied_detectors >= 0);
+
+					if(paired_edge_set_detectors[detector]){
+						int d =paired_edge_set_detectors[detector]->getID();
+						satisfied_detectors[d]=false;
+						n_satisfied_detectors--;
+						assert(n_satisfied_detectors>=0);
+					}
                 }
             }
 
@@ -1772,6 +1870,13 @@ public:
                     satisfied_detectors[detector] = false;
                     n_satisfied_detectors--;
                     assert(n_satisfied_detectors >= 0);
+
+					if(paired_edge_set_detectors[detector]){
+						int d =paired_edge_set_detectors[detector]->getID();
+						satisfied_detectors[d]=false;
+						n_satisfied_detectors--;
+						assert(n_satisfied_detectors>=0);
+					}
                 }
             }
 
@@ -1941,6 +2046,7 @@ public:
         if(!opt_monolothic_theory_decisions)
             return lit_Undef;
 
+        vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
         for(int i = 0; i < detectors.size(); i++){
             Detector* r = detectors[i];
             if(satisfied_detectors[r->getID()])
@@ -1991,8 +2097,6 @@ public:
                             r->undecide(l);
                             stats_decision_time += rtime(1) - start;
                             if(S->value(bv_decision) != l_Undef){
-
-
                                 throw std::runtime_error("error in decision heuristic");
                             }
                             return bv_decision;
@@ -2017,7 +2121,7 @@ public:
 
 
     void newDecisionLevel() override{
-        //trail_lim.push(trail.size());
+		assert(invalid_edgeset_lit==lit_Undef);
         decisions.push(var_Undef);
         assert(decisionLevel() <= S->decisionLevel());
     }
@@ -2243,9 +2347,21 @@ public:
 			}*/
             g_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
             g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+			if(edge_sets.size()){
+				int edge_set_id = getEdgeSetID(edgeID);
+				if(edge_set_id>-1 && !g_under.edgeEnabled(edgeID)){
+					assert(!g_over_edgeset.edgeEnabled(edgeID));
+					assert(g_over_edgeset.getEdgeWeight(edgeID)==0);
+				}else{
+					g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+				}
+			}
             if(using_neg_weights){
                 g_under_weights_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
                 g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+				if(edge_sets.size()){
+                    g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+                }
             }
 
         }else if(bvHasDetector(bvID)){
@@ -2266,9 +2382,21 @@ public:
             }
             g_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
             g_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+            if(edge_sets.size()){
+                int edge_set_id = getEdgeSetID(edgeID);
+                if(edge_set_id>-1 && !g_under.edgeEnabled(edgeID)){
+                    assert(!g_over_edgeset.edgeEnabled(edgeID));
+                    assert(g_over_edgeset.getEdgeWeight(edgeID)==0);
+                }else{
+                    g_over_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
+                }
+            }
             if(using_neg_weights){
                 g_under_weights_over.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getOver());
                 g_over_weights_under.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+                if(edge_sets.size()){
+                    g_over_weights_under_edgeset.setEdgeWeight(edgeID, edge_bv_weights[edgeID].getUnder());
+                }
             }
 
         }else if(bvHasDetector(bvID)){
@@ -2301,6 +2429,12 @@ public:
                     n_satisfied_detectors++;
                     assert(n_satisfied_detectors <= detectors.size());
                     satisfied_detectors[d] = true;
+					if(paired_edge_set_detectors[d]){
+						int paired_detector =paired_edge_set_detectors[d]->getID();
+						n_satisfied_detectors++;
+						assert(n_satisfied_detectors<=detectors.size());
+						satisfied_detectors[paired_detector]=true;
+					}
                 }
 
             }
@@ -2320,6 +2454,9 @@ public:
 
 
     void enqueueTheory(Lit l) override{
+        if(invalid_edgeset_lit!=lit_Undef){
+            return;
+        }
         Var v = var(l);
         stats_enqueues++;
         int lev = level(v);//level from the SAT solver.
@@ -2360,6 +2497,8 @@ public:
             //on_trail=true;
             if(isEdgeVar(v)){
                 int edge_num = getEdgeID(v); //e.var-min_edge_var;
+                int edgeSetID = getEdgeSetID(edge_num);
+                assert(edgeSetID==-1);//not supporting edge sets here yet!
                 if(assign){
                     g_under.disableEdge(edge_num);
                     assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -2429,6 +2568,7 @@ public:
             //this is an edge assignment
             int edge_num = getEdgeID(var(l)); //v-min_edge_var;
             assert(edge_list[edge_num].v == var(l));
+			int edgeSetID = getEdgeSetID(edge_num);
 
             int from = edge_list[edge_num].from;
             int to = edge_list[edge_num].to;
@@ -2437,8 +2577,49 @@ public:
                 if(assignEdgesToWeight()){
                     g_over.setEdgeWeight(edge_num, assign_edges_to);
                 }
+                if(edgeSetID>-1){
+                    EdgeSet & set = *edge_sets[edgeSetID];
+                    if (set.isAssigned()){
+                        invalid_edgeset_lit=l;
+                        return;
+                    }
+
+                    set.assignEdge(edge_num);
+
+                    g_over_edgeset.enableEdge(edge_num);
+                    g_over_edgeset.setEdgeWeight(edge_num,g_over.getEdgeWeight(edge_num));
+
+                    for(int i =0;i<edge_set_detectors.size();i++){
+                        if(edge_set_detectors[i]){
+                            Detector * e =edge_set_detectors[i];
+                            e->activateHeuristic();
+                            if(e->default_heuristic){
+                                activateHeuristic(e->default_heuristic);
+                            }
+                            if(paired_edge_set_detectors[e->getID()]){
+                                Detector * p = paired_edge_set_detectors[e->getID()];
+                                p->activateHeuristic();
+                                if(p->default_heuristic){
+                                    activateHeuristic(p->default_heuristic);
+                                }
+                            }
+                        }
+                    }
+                }
             }else{
-                g_over.disableEdge(edge_num);
+                if(edgeSetID>-1){
+                    EdgeSet & set =* edge_sets[edgeSetID];
+                    assert(!g_over_edgeset.edgeEnabled(edge_num));
+                    assert(g_over_edgeset.getEdgeWeight(edge_num)==0);
+                    if (!set.isAssigned()){
+                        g_over.disableEdge(edge_num);
+                    }
+                }else{
+                    g_over.disableEdge(edge_num);
+                    if(hasEdgeSets()){
+                        g_over_edgeset.disableEdge(edge_num);
+                    }
+                }
                 if(opt_conflict_min_cut){//can optimize this by also checking if any installed detectors are actually using the cutgraph!
                     assert(cutGraph.edgeEnabled(edge_num * 2 + 1));
                     assert(!cutGraph.edgeEnabled(edge_num * 2));
@@ -2550,11 +2731,10 @@ public:
 		}
 #endif*/
 
+		if(invalid_edgeset_lit!=lit_Undef){
+			return true;
+		}
 
-        static int itp = 0;
-        if(++itp == 33){
-            int a = 1;
-        }
         dbg_graphsUpToDate();
         stats_propagations++;
 
@@ -2633,125 +2813,131 @@ public:
 
         //dbg_sync();
         assert(dbg_graphsUpToDate());
+        if (opt_only_prop_edgeset && hasEdgeSets() && !allEdgeSetsAssigned()){
+            stats_num_skipped_edgeset_props++;
+        }else{
+            bool using_edgesets = hasEdgeSets() && allEdgeSetsAssigned();
 
-        for(int d = 0; d < detectors.size(); d++){
-            if(satisfied_detectors[d])
-                continue;
-            assert(conflict.size() == 0);
-            Lit l = lit_Undef;
-            bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts == 3) && lazy_trail_head != var_Undef;
-            bool r = detectors[d]->propagate(conflict, backtrackOnly, l);
-            if(!r && backtrackOnly && conflict.size() == 0){
-                backtrackUntil(decisionLevel());
-                stats_num_lazy_conflicts++;
-                d = -1;
-                continue;
-            }
+            vec<Detector*> & detectors = using_edgesets ? edge_set_detectors:normal_detectors;
+            for(int d = 0; d < detectors.size(); d++){
+                if(satisfied_detectors[d])
+                    continue;
+                assert(conflict.size() == 0);
+                Lit l = lit_Undef;
+                bool backtrackOnly = lazy_backtracking_enabled && (opt_lazy_conflicts == 3) && lazy_trail_head != var_Undef;
+                bool r = detectors[d]->propagate(conflict, backtrackOnly, l);
+                if(!r && backtrackOnly && conflict.size() == 0){
+                    backtrackUntil(decisionLevel());
+                    stats_num_lazy_conflicts++;
+                    d = -1;
+                    continue;
+                }
 
-            if(!r){
-                //if we learn a conflict from a graph detector, then
-                //no further edges can be added to the graph
-                freezeGraph();
+                if(!r){
+                    //if we learn a conflict from a graph detector, then
+                    //no further edges can be added to the graph
+                    freezeGraph();
 
-                if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head != var_Undef){
-                    //find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
+                    if(conflict.size() && lazy_backtracking_enabled && lazy_trail_head != var_Undef){
+                        //find the highest level lit in the conflict; if it is a higher level than the SAT solver, then this isn't a conflict in the SAT solver (though the learnt clause is a valid one)
 
-                    //There are several options for how to deal with this:
+                        //There are several options for how to deal with this:
 
-                    //0) Completely sync up the theory solver with the SAT solver at this point, and re-propagate
-                    //1) add the clause to the SAT solver, and simply unassign the lit in the theory solver.
-                    //2) Unassign _all_ lazy lits from the conflict, and repropagate.
-                    //3) flip the assignment of one of the lits _in the theory solver_; propagate again.
-                    //(it might also be a good idea to add that assignment as a decision in the SAT solver.)
+                        //0) Completely sync up the theory solver with the SAT solver at this point, and re-propagate
+                        //1) add the clause to the SAT solver, and simply unassign the lit in the theory solver.
+                        //2) Unassign _all_ lazy lits from the conflict, and repropagate.
+                        //3) flip the assignment of one of the lits _in the theory solver_; propagate again.
+                        //(it might also be a good idea to add that assignment as a decision in the SAT solver.)
 
-                    //if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
+                        //if lits are unassigned, we may also want to put those at the head of the decision heuristic (to make the sat solver revisit them).
 
 
 
-                    //assert(!seen.contains(true));
-                    //seen.growTo(vars.size());
+                        //assert(!seen.contains(true));
+                        //seen.growTo(vars.size());
 
-                    bool any_seen = false;
-                    if(opt_lazy_conflicts == 0){
-                        for(Lit l:conflict){
-                            if(S->value(toSolver(l)) != value(l)){
-                                any_seen = true;
-                                assert(onLazyTrail(var(l)));
-                                break;
+                        bool any_seen = false;
+                        if(opt_lazy_conflicts == 0){
+                            for(Lit l:conflict){
+                                if(S->value(toSolver(l)) != value(l)){
+                                    any_seen = true;
+                                    assert(onLazyTrail(var(l)));
+                                    break;
+                                }
                             }
-                        }
-                        if(any_seen){
-                            //sync the solver:
-                            backtrackUntil(decisionLevel());
-                            assert(lazy_trail_head == var_Undef);
-                            if(opt_lazy_backtrack_redecide){
-                                //redecide the lits of the conflict
-                                for(Lit l:conflict){
-                                    if(isEdgeVar(var(l)) && S->value(var(toSolver(l))) == l_Undef){
+                            if(any_seen){
+                                //sync the solver:
+                                backtrackUntil(decisionLevel());
+                                assert(lazy_trail_head == var_Undef);
+                                if(opt_lazy_backtrack_redecide){
+                                    //redecide the lits of the conflict
+                                    for(Lit l:conflict){
+                                        if(isEdgeVar(var(l)) && S->value(var(toSolver(l))) == l_Undef){
+                                            for(int i = 0; i < detectors.size(); i++){
+                                                Detector* r = detectors[i];
+                                                r->suggestDecision(l);
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                        }else if(opt_lazy_conflicts == 1){
+                            for(Lit l:conflict){
+                                if(S->value(toSolver(l)) != value(l)){
+                                    any_seen = true;
+                                    assert(onLazyTrail(var(l)));
+
+                                    removeFromTrail(var(l));
+                                    backtrackAssign(~l);
+                                    if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
                                         for(int i = 0; i < detectors.size(); i++){
                                             Detector* r = detectors[i];
                                             r->suggestDecision(l);
                                         }
                                     }
+
                                 }
                             }
+                        }else if(opt_lazy_conflicts == 2){
+                            for(Lit l:conflict){
+                                if(S->value(toSolver(l)) != value(l)){
 
-                        }
-                    }else if(opt_lazy_conflicts == 1){
-                        for(Lit l:conflict){
-                            if(S->value(toSolver(l)) != value(l)){
-                                any_seen = true;
-                                assert(onLazyTrail(var(l)));
+                                    any_seen = true;
+                                    assert(onLazyTrail(var(l)));
 
-                                removeFromTrail(var(l));
-                                backtrackAssign(~l);
-                                if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
-                                    for(int i = 0; i < detectors.size(); i++){
-                                        Detector* r = detectors[i];
-                                        r->suggestDecision(l);
+                                    removeFromTrail(var(l));
+                                    backtrackAssign(~l);
+                                    if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
+                                        for(int i = 0; i < detectors.size(); i++){
+                                            Detector* r = detectors[i];
+                                            r->suggestDecision(l);
+                                        }
                                     }
+                                    break;
                                 }
-
                             }
                         }
-                    }else if(opt_lazy_conflicts == 2){
-                        for(Lit l:conflict){
-                            if(S->value(toSolver(l)) != value(l)){
+                        if(any_seen){
 
-                                any_seen = true;
-                                assert(onLazyTrail(var(l)));
+                            //the conflict should now be eliminated.
+                            if(opt_keep_lazy_conflicts){
 
-                                removeFromTrail(var(l));
-                                backtrackAssign(~l);
-                                if(opt_lazy_backtrack_redecide && isEdgeVar(var(l))){
-                                    for(int i = 0; i < detectors.size(); i++){
-                                        Detector* r = detectors[i];
-                                        r->suggestDecision(l);
-                                    }
-                                }
-                                break;
+                                S->addClauseSafely(conflict);
                             }
+                            stats_num_lazy_conflicts++;
+                            conflict.clear();
+                            //restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
+                            //as we have not backtracked past the current level in the SAT solver.
+                            d = -1;
+                            continue;
                         }
                     }
-                    if(any_seen){
-
-                        //the conflict should now be eliminated.
-                        if(opt_keep_lazy_conflicts){
-
-                            S->addClauseSafely(conflict);
-                        }
-                        stats_num_lazy_conflicts++;
-                        conflict.clear();
-                        //restart the loop, as assignments have changed... actually, this shouldn't be neccesary (only the current propagation should be re-started)
-                        //as we have not backtracked past the current level in the SAT solver.
-                        d = -1;
-                        continue;
-                    }
+                    stats_num_conflicts++;
+                    conflictingHeuristic = detectors[d]->getConflictingHeuristic();
+                    propagationtime += rtime(1) - startproptime;
+                    return false;
                 }
-                stats_num_conflicts++;
-                conflictingHeuristic = detectors[d]->getConflictingHeuristic();
-                propagationtime += rtime(1) - startproptime;
-                return false;
             }
         }
 
@@ -2761,15 +2947,22 @@ public:
         g_under.clearChanged();
         g_over.clearChanged();
         cutGraph.clearChanged();
+		g_over_edgeset.clearChanged();
 
         g_under.clearHistory();
         g_over.clearHistory();
         cutGraph.clearHistory();
+		g_over_edgeset.clearHistory();
 
         g_under_weights_over.clearChanged();
         g_over_weights_under.clearChanged();
+		g_over_weights_under_edgeset.clearChanged();
+
         g_under_weights_over.clearHistory();
         g_over_weights_under.clearHistory();
+		g_over_weights_under_edgeset.clearHistory();
+
+
         dbg_graphsUpToDate();
         double elapsed = rtime(1) - startproptime;
         propagationtime += elapsed;
@@ -2873,75 +3066,76 @@ public:
             drawFull();
         }
         dbg_graphsUpToDate();
+		if(invalid_edgeset_lit!=lit_Undef){
+			throw std::runtime_error("BAD SOLUTION: Invalid edge set in solution!");
+		}
         for(int i = 0; i < edge_list.size(); i++){
             if(edge_list[i].v < 0)
                 continue;
             Edge& e = edge_list[i];
             lbool val = value(e.v);
-            //this can be allowed
-            /*if (val == l_Undef) {
-				throw std::runtime_error("BAD SOLUTION: Unassigned edge!");
-				return false;
-			}*/
 
             if(val == l_True){
-                /*	if(!g.hasEdge(e.from,e.to)){
-				 return false;
-				 }
-				 if(!antig.hasEdge(e.from,e.to)){
-				 return false;
-				 }*/
                 if(!g_under.edgeEnabled(e.edgeID)){
                     throw std::runtime_error("BAD SOLUTION: missing true edge in g_under");
-                    return false;
                 }
                 if(!g_over.edgeEnabled(e.edgeID)){
                     throw std::runtime_error("BAD SOLUTION: missing true edge in g_over");
-                    return false;
                 }
+				if(hasEdgeSets()){
+					if (!g_over_edgeset.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: missing true edge in g_over_edgeset");
+					}
+				}
                 if(edge_bv_weights.size()){
                     BitVector<Weight>& bv = edge_bv_weights[e.edgeID];
                     if(g_under.getWeight(e.edgeID) != bv.getUnder()){
                         throw std::runtime_error("BAD SOLUTION: bad edge weight in g_under");
-                        return false;
                     }
                     if(g_over.getWeight(e.edgeID) != bv.getOver()){
                         throw std::runtime_error("BAD SOLUTION: bad edge weight in g_over");
-                        return false;
+					}
+					if(hasEdgeSets()){
+						if (g_over_edgeset.getWeight(e.edgeID)!=bv.getOver()) {
+							throw std::runtime_error("BAD SOLUTION: bad edge weight in g_over_edgeset");
+						}
                     }
                 }
             }else if(val == l_False){
-                /*if(g.hasEdge(e.from,e.to)){
-				 return false;
-				 }*/
                 if(g_under.edgeEnabled(e.edgeID)){
                     throw std::runtime_error("BAD SOLUTION: included false edge in g_under");
-                    return false;
                 }
+				int edge_set_id = edge_set_map[e.edgeID];
+				if(edge_set_id<0){
                 if(g_over.edgeEnabled(e.edgeID)){
                     throw std::runtime_error("BAD SOLUTION: included false edge in g_over");
-                    return false;
                 }
-                /*if(antig.hasEdge(e.from,e.to)){
-				 return false;
-				 }*/
+					if(hasEdgeSets()){
+						if (g_over_edgeset.edgeEnabled(e.edgeID)) {
+							throw std::runtime_error("BAD SOLUTION: included false edge in g_over_edgeset");
+						}
+					}
+				}else{
+					if (g_over_edgeset.edgeEnabled(e.edgeID)) {
+						throw std::runtime_error("BAD SOLUTION: included false edge set edge in g_over_edgeset");
+					}
+				}
 
             }
             if(using_neg_weights){
 
                 if(val == l_True){
-                    /*	if(!g.hasEdge(e.from,e.to)){
-					 return false;
-					 }
-					 if(!antig.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
                     if(!g_under_weights_over.edgeEnabled(e.edgeID)){
                         return false;
                     }
                     if(!g_over_weights_under.edgeEnabled(e.edgeID)){
                         return false;
                     }
+					if(hasEdgeSets()){
+						if (!g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+							return false;
+						}
+					}
                     if(edge_bv_weights.size()){
                         BitVector<Weight>& bv = edge_bv_weights[e.edgeID];
                         if(g_under_weights_over.getWeight(e.edgeID) != bv.getOver()){
@@ -2952,29 +3146,53 @@ public:
                         }
                     }
                 }else{
-                    /*if(g.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
                     if(g_under_weights_over.edgeEnabled(e.edgeID)){
                         return false;
                     }
+					int edge_set_id = edge_set_map[e.edgeID];
+					if(edge_set_id<0){
                     if(g_over_weights_under.edgeEnabled(e.edgeID)){
                         return false;
                     }
-                    /*if(antig.hasEdge(e.from,e.to)){
-					 return false;
-					 }*/
+                    if(hasEdgeSets()){
+                        if (g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+                            return false;
+                        }
+                    }
+					}else{
+						if (g_over_weights_under_edgeset.edgeEnabled(e.edgeID)) {
+							return false;
+						}
+					}
+				}
 
-                }
+			}
+		}
 
-            }
-        }
+		if(hasEdgeSets() && !allEdgeSetsAssigned()){
+			throw std::runtime_error("BAD SOLUTION: not all edge sets assigned");
+		}
+		for(EdgeSet * edge_set:edge_sets){
+			int assignedID = edge_set->assigned_edge;
+			if(value(getEdgeVar(assignedID))!=l_True){
+				throw std::runtime_error("BAD SOLUTION: edge set is incorrectly assigned");
+			}
+			int n_assigned = 0;
+			for(int edgeID:edge_set->edges){
+				Var v = getEdgeVar(edgeID);
+				if(value(v)!=l_False){
+					n_assigned++;
+				}
+			}
+			if (n_assigned!=1){
+				throw std::runtime_error("BAD SOLUTION: edge set has the too many non-false edges");
+			}
+         }
+
+		vec<Detector*> & detectors = (hasEdgeSets() && allEdgeSetsAssigned()) ? edge_set_detectors:normal_detectors;
         for(int i = 0; i < detectors.size(); i++){
             if(!detectors[i]->checkSatisfied()){
-                printf("Error in solution of graph theory %d, in detector %d (%s)\n", this->getTheoryIndex(), i,
-                       detectors[i]->getName().c_str());
                 throw std::runtime_error("BAD SOLUTION: failure in graph theory detector");
-                return false;
             }
         }
         return true;
@@ -3267,6 +3485,120 @@ public:
         return bv;
     }
 
+	void newEdgeSet(vec<int> & edges, bool enforceEdgeAssignment=true){
+		if(opt_min_edgeset>=0 && opt_min_edgeset<=edges.size()){
+			if(detectors.size()){
+				throw std::runtime_error("All edge sets must be instantiated before any graph predicates.");
+			}
+			assert(S->decisionLevel()==0);
+            if(g_over_edgeset.nodes()==0) {
+                //initialize the edgset graphs
+                while (g_over_edgeset.nodes() < g_over.nodes()) {
+                    g_over_edgeset.addNode();
+                    g_over_weights_under_edgeset.addNode();
+                }
+                while (g_over.edges() > g_over_edgeset.edges()) {
+                    int edgeID = g_over_edgeset.edges();
+					if(edgeID==764){
+						int a=1;
+					}
+                    int c = g_over_edgeset.addEdge(g_over.getEdge(edgeID).from, g_over.getEdge(edgeID).to, edgeID,
+                                           g_over.getWeight(edgeID));
+					assert(c==edgeID);
+                    g_over_weights_under_edgeset.addEdge(g_over.getEdge(edgeID).from, g_over.getEdge(edgeID).to, edgeID,
+														 g_under.getWeight(edgeID));
+
+                }
+                //for(auto & assign:trail){
+                //    Lit l =assign.
+                for(int dlev = 0;dlev<=decisionLevel();dlev++){
+                    //as we backtrack, we need to remove and add edges in the two graphs accordingly.
+                    Var v = getDecision(dlev);
+					Var start = v;
+                    //for (int i = trail.size() - 1; i >= trail_lim[untilLevel]; i--) {
+                    while(v!=var_Undef){
+                        Lit l = mkLit(v, value(v)==l_False);
+                        assert(assigns[v]!=l_Undef);
+                        int edge_num = getEdgeID(var(l));
+
+                        assert(edge_list[edge_num].v == var(l));
+                        int edgeSetID = getEdgeSetID(edge_num);
+
+                        int from = edge_list[edge_num].from;
+                        int to = edge_list[edge_num].to;
+                        if (!sign(l)) {
+                            if(edgeSetID>-1){
+                                EdgeSet & set = *edge_sets[edgeSetID];
+                                if (set.isAssigned() && invalid_edgeset_lit==lit_Undef){
+                                    invalid_edgeset_lit=l;
+                                }
+                                set.assignEdge(edge_num);
+                                g_over_edgeset.enableEdge(edge_num);
+                                g_over_edgeset.setEdgeWeight(edge_num,g_over.getEdgeWeight(edge_num));
+                            }
+                        } else {
+                            if(edgeSetID>-1){
+                                EdgeSet & set =* edge_sets[edgeSetID];
+                                assert(!g_over_edgeset.edgeEnabled(edge_num));
+                                assert(g_over_edgeset.getEdgeWeight(edge_num)==0);
+                                if (!set.isAssigned()){
+                                    g_over.disableEdge(edge_num);
+                                }
+                            }else{
+
+                               g_over_edgeset.disableEdge(edge_num);
+                            }
+                        }
+
+
+                        Var p = _getNext(v);
+						if (p==start)
+							break;
+                        v=p;
+                    }
+
+                }
+
+
+
+            }
+            assert(g_over_edgeset.nodes()==g_over.nodes());
+			int edge_setID=edge_sets.size();
+			edge_sets.push(new EdgeSet(*this));
+			assert(edge_setID<edge_sets.size());
+
+			for(int edgeID:edges){
+				assert(g_over.hasEdge(edgeID));
+				assert(edge_set_map[edgeID]==-1);
+				edge_set_map[edgeID]=edge_setID;
+				EdgeSet & set= *edge_sets[edge_setID];
+				set.edges.push(edgeID);
+				g_over_edgeset.disableEdge(edgeID);
+				g_over_edgeset.setEdgeWeight(edgeID,0);
+
+			}
+			assert(dbg_graphsUpToDate());
+		}
+		vec<Lit> edge_lits;
+		for(int edgeID:edges){
+			edge_lits.push(mkLit(toSolver(getEdgeVar(edgeID))));
+		}
+		//enforce that _exactly_ one edge from this edge set is assigned in the SAT solver
+		if(enforceEdgeAssignment) {
+			S->addClause(edge_lits);
+			AMOTheory *amo = new AMOTheory(S);
+			propagation_required_theories.push(amo);
+			for (Lit l:edge_lits) {
+				Var v = S->newVar();
+				makeEqualInSolver(mkLit(v), l);
+				amo->addVar(v);
+			}
+		}
+		;
+	}
+
+
+
     Lit newEdgeBV(int from, int to, Var outerVar, vec<Var>& bitVector){
         checkFrozen();
         if(!bvTheory){
@@ -3301,6 +3633,7 @@ public:
         all_edges_unit &= (bv.getUnder() == 1 && bv.getOver() == 1);
         all_edges_positive &= bv.getUnder() > 0;
         edge_list.push();
+        edge_set_map.push(-1);
         Var v = newVar(outerVar, index, true);
         comparisons_lt.growTo(bv.getID() + 1);
         comparisons_gt.growTo(bv.getID() + 1);
@@ -3331,6 +3664,10 @@ public:
         g_under_weights_over.disableEdge(from, to, index);
         g_over_weights_under.addEdge(from, to, index, bv.getUnder());
 
+        if(hasEdgeSets()){
+            g_over_edgeset.addEdge(from, to, index,bv.getOver());
+            g_over_weights_under_edgeset.addEdge(from, to, index,bv.getOver());
+        }
 
         cutGraph.addEdge(from, to, index * 2, 1);
         cutGraph.addEdge(from, to, index * 2 + 1, 0xFFFF);
@@ -3395,6 +3732,7 @@ public:
         all_edges_unit &= (bv.getUnder() == 1 && bv.getOver() == 1);
         all_edges_positive &= bv.getUnder() > 0;
         edge_list.push();
+		edge_set_map.push(-1);
         Var v = newVar(outerVar, index, true);
         //bv_needs_update.growTo(bv.getID()+1);
 
@@ -3422,6 +3760,10 @@ public:
         g_under_weights_over.disableEdge(from, to, index);
         g_over_weights_under.addEdge(from, to, index, bv.getUnder());
 
+		if(hasEdgeSets()){
+			g_over_edgeset.addEdge(from, to, index,bv.getOver());
+			g_over_weights_under_edgeset.addEdge(from, to, index,bv.getOver());
+		}
 
         cutGraph.addEdge(from, to, index * 2, 1);
         cutGraph.addEdge(from, to, index * 2 + 1, 0xFFFF);
@@ -3443,6 +3785,7 @@ public:
         all_edges_positive &= weight > 0;
         int index = edge_list.size();
         edge_list.push();
+		edge_set_map.push(-1);
         Var v = newVar(outerVar, index, true);
 
         /*
@@ -3479,6 +3822,10 @@ public:
         g_under_weights_over.disableEdge(from, to, index);
         g_over_weights_under.addEdge(from, to, index, weight);
 
+		if(hasEdgeSets()){
+			g_over_edgeset.addEdge(from, to, index,weight);
+			g_over_weights_under_edgeset.addEdge(from, to, index,weight);
+		}
 
         cutGraph.addEdge(from, to, index * 2, 1);
         cutGraph.addEdge(from, to, index * 2 + 1, 0xFFFF);
@@ -3558,6 +3905,9 @@ public:
                 g_over_weights_under.setEdgeEnabled(i, (g_over.edgeEnabled(i)));
                 g_under_weights_over.setEdgeWeight(i, g_over.getWeight(i));
                 g_over_weights_under.setEdgeWeight(i, g_under.getWeight(i));
+				if(edge_sets.size()){
+                    g_over_weights_under_edgeset.setEdgeWeight(i, g_under.getWeight(i));
+                }
             }
         }
     }
@@ -3667,6 +4017,9 @@ public:
         for(int i = 0; i < flow_detectors.size(); i++){
             if(flow_detectors[i]->source == from && flow_detectors[i]->target == to){
                 flow_detectors[i]->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v, !strictComparison);
+				if(hasEdgeSets() && edgeset_flow_detectors[i]){
+                    edgeset_flow_detectors[i]->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v, !strictComparison);
+                }
                 return;
             }
         }
@@ -3678,6 +4031,17 @@ public:
         //setBVDetectorID(bvID, detectorID);
         f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), v, !strictComparison);
 
+		if(hasEdgeSets()){
+			MaxflowDetector<Weight> *original_detector =f;
+			edgeset_flow_detectors.growTo(flow_detectors.size());
+			f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
+			edgeset_flow_detectors.last() =f;
+			addDetector(f,original_detector);
+
+			Var outer = S->newVar();
+			makeEqualInSolver(mkLit(outer),mkLit(v));
+			f->addMaxFlowGEQ_BV(bvTheory->getBV(bvID), outer, !strictComparison);
+		}
     }
 
     void implementConstraints(){
@@ -4112,6 +4476,18 @@ public:
 
         Lit l = toSolver(f->addFlowLit(max_flow, v, inclusive));
         existing_maxflow_constraints.insert(constraint_set, l);
+
+        if(hasEdgeSets()){
+            edgeset_flow_detectors.growTo(flow_detectors.size());
+            MaxflowDetector<Weight> * original_detector = f;
+            f = new MaxflowDetector<Weight>(detectors.size(), this,  g_under, g_over_edgeset, from,to, drand(rnd_seed),true);
+            edgeset_flow_detectors.last() =f;
+            addDetector(f,original_detector);
+
+            Var outer = S->newVar();
+            makeEqualInSolver(mkLit(outer),mkLit(v));
+            f->addFlowLit(max_flow, outer,inclusive);
+        }
         return l;
     }
 
@@ -4126,9 +4502,19 @@ public:
         component_detector->addConnectedComponentsLit(v, min_components);
     }
 
-    void addDetector(Detector* detector){
+    void addDetector(Detector* detector, Detector * non_edgeset_detector=nullptr){
         detectors.push(detector);
+        paired_edge_set_detectors.growTo(detector->getID()+1,nullptr);
         satisfied_detectors.push(false);
+        if(non_edgeset_detector){
+            edge_set_detectors.push(detector);
+            paired_edge_set_detectors[non_edgeset_detector->getID()] = detector;
+            paired_edge_set_detectors[detector->getID()] = non_edgeset_detector;
+            detector->is_edge_set_detector=true;
+            non_edgeset_detector->setEdgeSetDetector(detector);
+        }else{
+            normal_detectors.push(detector);
+        }
     }
 
     bool hasAcyclic(bool directed = false){

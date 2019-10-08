@@ -2063,27 +2063,15 @@ void newEdgeSet(Monosat::SimpSolver* S, Monosat::GraphTheorySolver<int64_t>* G, 
     }
     write_out(S, "\n");
 
-    static vec<Lit> edge_lits;
-    edge_lits.clear();
-    for(int edgeID:edge_set){
-        edge_lits.push(mkLit(G->toSolver(G->getEdgeVar(edgeID))));
-    }
-    //enforce that _exactly_ one edge from this edge set is assigned in the SAT solver
-    if(enforceEdgeAssignment){
-        S->addClause(edge_lits);
-        AMOTheory* amo = new AMOTheory(S);
-        for(Lit l:edge_lits){
-            Var v = S->newVar();
-            G->makeEqualInSolver(mkLit(v), l);
-            amo->addVar(v);
-        }
-    }
+    G->newEdgeSet(edge_set,enforceEdgeAssignment);
 }
 
 void graph_setAssignEdgesToWeight(Monosat::SimpSolver* S, Monosat::GraphTheorySolver<int64_t>* G, int64_t weight){
     write_out(S, "graph_assign_edges_to_weight %d %" PRId64 "\n", G->getGraphID(), weight);
     G->setAssignEdgesToWeight(weight);
 }
+
+
 
 //flow routing interface
 

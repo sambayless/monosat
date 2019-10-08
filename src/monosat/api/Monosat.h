@@ -103,6 +103,11 @@ bool solveAssumptions(SolverPtr S, int* assumptions, int n_assumptions);
 // Set to <=0 to disable time limit.
 // Note that setTimeLimit has no effect on OSX.
 void setTimeLimit(SolverPtr S, int seconds);
+//Sets the (approximate) memory limit in megabytes before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable memory limit.
+void setMemoryLimit(SolverPtr S,int mb);
+
+//Stop the given solver at the next opportunity
+void stop(SolverPtr S);
 
 //Sets the maximum number of (additional) conflicts allowed in the solver before returning l_Undef from solveLimited; ignored by solve(). Set to <0 to disable conflict limit.
 void setConflictLimit(SolverPtr S, int num_conflicts);
