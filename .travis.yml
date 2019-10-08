@@ -47,7 +47,7 @@ matrix:
       env: TEST_PYTHON=1 BUILD_TARGET="monosat" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6" BUILD_ARGS="-DPYTHON=ON -DJAVA=ON -DGPL=OFF -DBUILD_STATIC=OFF"
     - java: openjdk8
       python: "3.4"
-      env: TEST_PYTHON=1 BUILD_TARGET="monosat_static" BUILD_ARGS="-DPYTHON=OFF -DJAVA=OFF -DGPL=OFF -DBUILD_STATIC=ON -DBUILD_DYNAMIC=OFF"
+      env: TEST_PYTHON=0 TEST_JAVA=0 BUILD_TARGET="monosat_static" BUILD_ARGS="-DPYTHON=OFF -DJAVA=OFF -DGPL=OFF -DBUILD_STATIC=ON -DBUILD_DYNAMIC=OFF"
   allow_failures:
     - java: openjdk8
       python: "3.4"
