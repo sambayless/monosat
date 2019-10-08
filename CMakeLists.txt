@@ -280,7 +280,6 @@ if (PB_SUPPORT)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_FILES_PB})
 endif (PB_SUPPORT)
 
-
 if (JAVA)
     find_package(Java 1.8 REQUIRED)
     find_package(JNI 1.8 REQUIRED)
@@ -298,7 +297,7 @@ if (JAVA)
             src/monosat/api/java/monosat/TrivialContradictionException.java
             )
 
-    message(STATUS "Compiling shared library with support for JNI")
+    message(STATUS "Compiling shared library with support for JNI (disable with -DJAVA=OFF)")
     set_source_files_properties(src/monosat/api/java/MonosatJNI.cpp OBJECT_DEPENDS ${CMAKE_SOURCE_DIR}/src/monosat/api/java/monosat_MonosatJNI.h)
     #set_source_files_properties(src/monosat/api/java/monosat_MonosatJNI.h OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/__MonosatJNI.h)
     set_source_files_properties(src/monosat/api/java/monosat_MonosatJNI.h OBJECT_DEPENDS "${JAVA_SOURCE_FILES}")
@@ -329,7 +328,7 @@ if (JAVA)
 
 
 else()
-    message(STATUS "Compiling wihtout library support for Java. To enable Java support, set -DJAVA=ON")
+    message(STATUS "Compiling wihtout library support for Java. To enable Java support, set -DJAVA=ON and -DBUILD_DYNAMIC=ON")
 endif (JAVA)
 
 if (GPL)
@@ -356,10 +355,8 @@ if (SHOW_GIT_VERSION)
     endif()
 endif (SHOW_GIT_VERSION)
 
-
-
-
 if (BUILD_STATIC)
+    message(STATUS "Compiling static library and binary (disable with -DBUILD_STATIC=OFF)")
     add_library(libmonosat_static STATIC ${SOURCE_FILES})
     set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
     target_link_libraries(libmonosat_static z.a)
@@ -408,6 +405,7 @@ endif (BUILD_STATIC)
 
 
 if (BUILD_DYNAMIC)
+    message(STATUS "Compiling shared library and binary (disable with -DBUILD_DYNAMIC=OFF)")
     add_library(libmonosat SHARED ${SOURCE_FILES} ${JAVA_NATIVE_SOURCE_FILES})
     set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
     target_link_libraries(libmonosat z)
@@ -565,7 +563,7 @@ if (JAVA)
 endif(JAVA)
 
 if (PYTHON)
-    message(STATUS "Including Python library support")
+    message(STATUS "Including Python library support (disable with -DPYTHON=OFF)")
     set(Python_ADDITIONAL_VERSIONS 3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8)
     # following https://bloerg.net/2012/11/10/cmake-and-distutils.html
     find_package(PythonInterp 3 REQUIRED)
@@ -589,5 +587,5 @@ if (PYTHON)
 
     install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install -f --prefix=${CMAKE_INSTALL_PREFIX})")
 else()
-    message(STATUS "Not including Python library support. To enable Python support, set -DPYTHON=ON.")
+    message(STATUS "Not including Python library support. To enable Python support, set -DPYTHON=ON and -DBUILD_DYNAMIC=ON.")
 endif()
