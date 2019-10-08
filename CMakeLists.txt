@@ -1,14 +1,22 @@
 cmake_minimum_required(VERSION 3.02)
 project(monosat)
 include(GNUInstallDirs)
+include(CMakeDependentOption)
+
 #enable to include built-in support for Pseudo-Boolean constraints (recommended)
 option (PB_SUPPORT "Combile with Pseudo-Boolean support (using Minisat+)" ON)
+
+option(BUILD_DYNAMIC "Build dynamically linked library and executable" ON)
+option(BUILD_STATIC "Build statically linked library and executable" ON)
+
+## These options only take effect if BUILD_DYNAMIC is set to on
 #set to compile Java JNI support into the shared library (requires a JDK)
-option(JAVA "Build the Java library" OFF)
+cmake_dependent_option(JAVA "Build the Java library" OFF "BUILD_DYNAMIC" OFF)
 #set to install python support (requires python 3+)
-option(PYTHON "Install the Python3 library" OFF)
+cmake_dependent_option(PYTHON "Install the Python3 library" OFF "BUILD_DYNAMIC" OFF)
 #set to install python using the cython bindings (only takes effect if PYTHON is set to ON)
-option(CYTHON "Use Cython for Python bindings (requires Cython)" OFF)
+cmake_dependent_option(CYTHON "Use Cython for Python bindings (requires Cython)" OFF "BUILD_DYNAMIC" OFF)
+
 #set to OFF to disable linking GPL sources
 option(GPL "Link GPLv2 sources, so that the compiled binary is licensed under the terms of the GPLv2, rather than MIT (greatly improves the performance of maximum flow predicates significantly)." ON)
 option(SHOW_GIT_VERSION "Include git --describe in the build version" ON)
@@ -351,93 +359,102 @@ endif (SHOW_GIT_VERSION)
 
 
 
-add_library(libmonosat_static STATIC ${SOURCE_FILES})
-set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
-target_link_libraries(libmonosat_static z.a)
-#target_link_libraries(libmonosat_static m.a) # c++ doesn't require libm to be explicitly linked
-target_link_libraries(libmonosat_static gmpxx.a)
-target_link_libraries(libmonosat_static gmp.a)
+if (BUILD_STATIC)
+    add_library(libmonosat_static STATIC ${SOURCE_FILES})
+    set_target_properties(libmonosat_static PROPERTIES OUTPUT_NAME monosat)
+    target_link_libraries(libmonosat_static z.a)
+    #target_link_libraries(libmonosat_static m.a) # c++ doesn't require libm to be explicitly linked
+    target_link_libraries(libmonosat_static gmpxx.a)
+    target_link_libraries(libmonosat_static gmp.a)
 
-if (UNIX)
-    #librt is needed for clock_gettime, which is enabled for linux only
-    #(clock_gettime is used for capturing detailed timing statistics only)
+    if (UNIX)
+        #librt is needed for clock_gettime, which is enabled for linux only
+        #(clock_gettime is used for capturing detailed timing statistics only)
+        if (NOT APPLE)
+            target_link_libraries(libmonosat_static rt)
+        else()
+            target_link_libraries(libmonosat_static)
+        endif()
+    endif (UNIX)
+
+
+    #add_executable(monosat_static ${SOURCE_FILES})
+    add_executable(monosat_static src/monosat/Main.cc)
+
+    set_target_properties(monosat_static PROPERTIES OUTPUT_NAME monosat)
     if (NOT APPLE)
-        target_link_libraries(libmonosat_static rt)
-    else()
-        target_link_libraries(libmonosat_static)
+        target_link_libraries (monosat_static "-static-libgcc -static-libstdc++")
     endif()
-endif (UNIX)
-
-
-#add_executable(monosat_static ${SOURCE_FILES})
-add_executable(monosat_static src/monosat/Main.cc)
-
-set_target_properties(monosat_static PROPERTIES OUTPUT_NAME monosat)
-if (NOT APPLE)
-    target_link_libraries (monosat_static "-static-libgcc -static-libstdc++")
-endif()
-target_link_libraries(monosat_static libmonosat_static)
-target_link_libraries(monosat_static z.a)
-#target_link_libraries(monosat_static m.a)  # c++ doesn't require libm to be explicitly linked
-target_link_libraries(monosat_static gmpxx.a)
-target_link_libraries(monosat_static gmp.a)
+    target_link_libraries(monosat_static libmonosat_static)
+    target_link_libraries(monosat_static z.a)
+    #target_link_libraries(monosat_static m.a)  # c++ doesn't require libm to be explicitly linked
+    target_link_libraries(monosat_static gmpxx.a)
+    target_link_libraries(monosat_static gmp.a)
 
 
 
-if (UNIX)
-    #librt is needed for clock_gettime, which is enabled for linux only
-    #(clock_gettime is used for capturing detailed timing statistics only)
+    if (UNIX)
+        #librt is needed for clock_gettime, which is enabled for linux only
+        #(clock_gettime is used for capturing detailed timing statistics only)
+        if (NOT APPLE)
+            target_link_libraries(monosat_static rt)
+        else()
+            target_link_libraries(monosat_static)
+        endif()
+    endif (UNIX)
+else()
+    message(STATUS "Not compiling statically linked library/executable because BUILD_STATIC was set to OFF.")
+endif (BUILD_STATIC)
+
+
+if (BUILD_DYNAMIC)
+    add_library(libmonosat SHARED ${SOURCE_FILES} ${JAVA_NATIVE_SOURCE_FILES})
+    set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
+    target_link_libraries(libmonosat z)
     if (NOT APPLE)
-        target_link_libraries(monosat_static rt)
-    else()
-        target_link_libraries(monosat_static)
+        #target_link_libraries(libmonosat m)  # c++ doesn't require libm to be explicitly linked
     endif()
-endif (UNIX)
+    target_link_libraries(libmonosat gmpxx)
+    target_link_libraries(libmonosat gmp)
+    if (JAVA)
+        target_link_libraries(libmonosat ${JNI_LIBRARIES})
+    endif (JAVA)
+    if (UNIX)
+        #librt is needed for clock_gettime, which is enabled for linux only
+        #(clock_gettime is used for capturing detailed timing statistics only)
+        if (NOT APPLE)
+            target_link_libraries(libmonosat rt)
+        else()
+            target_link_libraries(libmonosat)
+        endif()
+    endif (UNIX)
 
 
-
-add_library(libmonosat SHARED ${SOURCE_FILES} ${JAVA_NATIVE_SOURCE_FILES})
-set_target_properties(libmonosat PROPERTIES OUTPUT_NAME monosat)
-target_link_libraries(libmonosat z)
-if (NOT APPLE)
-    #target_link_libraries(libmonosat m)  # c++ doesn't require libm to be explicitly linked
-endif()
-target_link_libraries(libmonosat gmpxx)
-target_link_libraries(libmonosat gmp)
-if (JAVA)
-    target_link_libraries(libmonosat ${JNI_LIBRARIES})
-endif (JAVA)
-if (UNIX)
-    #librt is needed for clock_gettime, which is enabled for linux only
-    #(clock_gettime is used for capturing detailed timing statistics only)
+    add_executable(monosat  src/monosat/Main.cc)
+    #By default, build the staticly linked version of monosat rather than this dynamically linked one.
+    if (BUILD_STATIC)
+        set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
+    endif()
+    target_link_libraries(monosat libmonosat)
+    target_link_libraries(monosat z)
     if (NOT APPLE)
-        target_link_libraries(libmonosat rt)
-    else()
-        target_link_libraries(libmonosat)
+       # target_link_libraries(monosat m) # c++ doesn't require libm to be explicitly linked
     endif()
-endif (UNIX)
+    target_link_libraries(monosat gmpxx)
+    target_link_libraries(monosat gmp)
 
-
-add_executable(monosat  src/monosat/Main.cc)
-#By default, build the staticly linked version of monosat rather than this dynamically linked one.
-set_target_properties(monosat PROPERTIES EXCLUDE_FROM_ALL 1)
-target_link_libraries(monosat libmonosat)
-target_link_libraries(monosat z)
-if (NOT APPLE)
-   # target_link_libraries(monosat m) # c++ doesn't require libm to be explicitly linked
-endif()
-target_link_libraries(monosat gmpxx)
-target_link_libraries(monosat gmp)
-
-if (UNIX)
-    #librt is needed for clock_gettime, which is enabled for linux only
-    #(clock_gettime is used for capturing detailed timing statistics only)
-    if (NOT APPLE)
-        target_link_libraries(monosat rt)
-    else()
-        target_link_libraries(monosat)
-    endif()
-endif (UNIX)
+    if (UNIX)
+        #librt is needed for clock_gettime, which is enabled for linux only
+        #(clock_gettime is used for capturing detailed timing statistics only)
+        if (NOT APPLE)
+            target_link_libraries(monosat rt)
+        else()
+            target_link_libraries(monosat)
+        endif()
+    endif (UNIX)
+else()
+    message(STATUS "Not compiling dynamically linked library/executable because BUILD_DYNAMIC was set to OFF.")
+endif (BUILD_DYNAMIC)
 
 if (JAVA)
     target_link_libraries(libmonosat ${JNI_LIBRARIES}) #Not clear if this is required
@@ -496,12 +513,20 @@ if (JAVA)
 endif (JAVA)
 
 
-install(TARGETS monosat_static libmonosat libmonosat_static
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        #INCLUDES DESTINATION include/monosat
-        )
+if (BUILD_DYNAMIC)
+    install(TARGETS libmonosat LIBRARY DESTINATION lib)
+    # Only install the dynamically linked executable if the statically linked executable isn't being built.
+    if (NOT BUILD_STATIC)
+        install(TARGETS monosat RUNTIME DESTINATION bin)
+    endif ()
+endif ()
+
+if (BUILD_STATIC)
+    install(TARGETS monosat_static libmonosat_static
+            RUNTIME DESTINATION bin
+            ARCHIVE DESTINATION lib
+            )
+endif ()
 
 install(DIRECTORY src/monosat DESTINATION include
         FILES_MATCHING PATTERN "*.h"
