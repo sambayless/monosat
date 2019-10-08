@@ -44,10 +44,10 @@ matrix:
       env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DPYTHON=ON -DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
     - java: openjdk8
       python: "3.6"
-      env: TEST_PYTHON=1 BUILD_TARGET="libmonosat" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6" BUILD_ARGS="-DPYTHON=ON -DJAVA=ON -DGPL=OFF -DBUILD_STATIC=OFF"
+      env: TEST_PYTHON=1 BUILD_TARGET="monosat" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6" BUILD_ARGS="-DPYTHON=ON -DJAVA=ON -DGPL=OFF -DBUILD_STATIC=OFF"
     - java: openjdk8
       python: "3.4"
-      env: TEST_PYTHON=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DPYTHON=OFF -DJAVA=OFF -DGPL=OFF -DBUILD_STATIC=ON -DBUILD_DYNAMIC=OFF"
+      env: TEST_PYTHON=1 BUILD_TARGET="monosat_static" BUILD_ARGS="-DPYTHON=OFF -DJAVA=OFF -DGPL=OFF -DBUILD_STATIC=ON -DBUILD_DYNAMIC=OFF"
   allow_failures:
     - java: openjdk8
       python: "3.4"
