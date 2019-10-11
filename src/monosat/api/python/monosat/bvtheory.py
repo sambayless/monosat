@@ -76,11 +76,7 @@ class BVManager(metaclass=Manager):
         assert isinstance(e, BitVector)
         assert t.width() == e.width()
         result = self.Bv(t.width())
-        # introduce a fresh Var to avoid re-using the same var for multiple atoms
-        v = Var()
-        AssertEq(v, i)
-        self._monosat.bv_ite(v.getLit(), t.getID(), e.getID(), result.getID())
-        # self.ites.append((i,t,e,result))
+        self._monosat.bv_ite(i.getLit(), t.getID(), e.getID(), result.getID())
         return result
 
     def Max(self, *bvs):

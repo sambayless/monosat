@@ -3187,7 +3187,7 @@ bool Solver::solveTheory(vec<Lit>& conflict_out){
 
 Var Solver::unmap(Var v){
     if(v >= nVars()){
-        throw std::runtime_error("Cannot unmap non-existant variable");
+        throw std::runtime_error("Cannot unmap non-existant variable: " + std::to_string(v));
     }
     if(varRemap){
         return varRemap->unmap(v);
@@ -3198,7 +3198,7 @@ Var Solver::unmap(Var v){
 
 Lit Solver::unmap(Lit l){
     if(var(l) >= nVars()){
-        throw std::runtime_error("Cannot unmap non-existant variable");
+        throw std::runtime_error("Cannot unmap non-existant variable: " + std::to_string(var(l)));
     }
     if(varRemap){
         return varRemap->unmap(l);

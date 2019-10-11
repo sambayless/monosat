@@ -1559,7 +1559,7 @@ void bv_ite(Monosat::SimpSolver* S, Monosat::BVTheorySolver<int64_t>* bv, int co
             int bvResultID){
     Lit l = internalLit(S, condition_lit);
 
-    write_out(S, "bv_ite %d %d %d %d\n", dimacs(S, mkLit(condition_lit)), bvThenID, bvElseID, bvResultID);
+    write_out(S, "bv_ite %d %d %d %d\n", dimacs(S, toLit(condition_lit)), bvThenID, bvElseID, bvResultID);
     bv->newConditionalBV(l, internalBV(bv, bvThenID), internalBV(bv, bvElseID), internalBV(bv, bvResultID));
 }
 
