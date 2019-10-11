@@ -89,6 +89,16 @@ public:
         return frozen[v];
     }
 
+    Lit True() override{
+
+        if(const_true == lit_Undef){
+            Lit t = Solver::True();
+            //ensure that 'true' is not eliminated.
+            setFrozen(var(t), true);
+        }
+
+        return const_true;
+    }
 
     // Solving:
     //
