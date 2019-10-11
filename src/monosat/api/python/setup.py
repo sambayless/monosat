@@ -80,7 +80,7 @@ if use_cython:
     cmdclass = {}
     cmdclass.update({'build_ext': build_ext})
     setup(
-        version='1.6',
+        version='1.8',
         python_requires='>3.0.0',
         description='MonoSAT Cython Interface',
         author='Sam Bayless',
@@ -101,7 +101,7 @@ if use_cython:
     )
 else:
     setup(name='monosat',
-          version='1.6',
+          version='1.8',
           python_requires='>3.0.0',
           description='MonoSAT Python Interface',
           author='Sam Bayless',
