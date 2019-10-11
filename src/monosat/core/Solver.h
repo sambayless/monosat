@@ -612,9 +612,11 @@ public:
                 }
             }else{*/
             const_true = mkLit(newVar(false, false));
-            addClause(const_true);
-            assert(isConstantTrue(const_true));
-            addLiteralName(const_true, "True");
+            if(ok){
+                addClause(const_true);
+                assert(isConstantTrue(const_true));
+                addLiteralName(const_true, "True");
+            }
         }
 
         return const_true;
