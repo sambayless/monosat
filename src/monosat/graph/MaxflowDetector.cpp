@@ -1836,7 +1836,7 @@ Lit MaxflowDetector<Weight, Graph>::decide(CRef& decision_reason){
                 }else{
                     potential_decisions_q.popBack();
                     in_decision_q[edgeID] = false;
-                    assert(over->getEdgeFlow(edgeID) == 0);
+                    //assert(over->getEdgeFlow(edgeID) == 0);
                     is_potential_decision[edgeID] = false;
                     //printf("skip decision remove edge %d\n", edgeID);
                 }
