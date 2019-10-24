@@ -35,7 +35,7 @@ import itertools
 #
 #Bayless, Sam, Holger H. Hoos, and Alan J. Hu. "Scalable, high-quality, SAT-based multi-layer escape routing."
 #Computer-Aided Design (ICCAD), 2016 IEEE/ACM International Conference on. IEEE, 2016.
-def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
+def route(filename, monosat_args,use_maxflow=False, draw_solution=True, outputFile = None):
     (width, height),diagonals,nets,constraints,disabled = pcrt.read(filename)
     print(filename)
     print("Width = %d, Height = %d, %d nets, %d constraints, %d disabled"%(width,height,len(nets),len(constraints), len(disabled)))
@@ -52,6 +52,10 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
         args = " ".join(monosat_args)
         print("MonoSAT args: " + args)
         Monosat().newSolver(args)
+
+    if outputFile is not None:
+        print("Writing output to " + outputFile)
+        Monosat().setOutputFile(outputFile)
 
     g = Graph()
 
@@ -249,6 +253,9 @@ def route(filename, monosat_args,use_maxflow=False, draw_solution=True):
         Assert(m)
         m.setDecisionPriority(-1);  # never make decisions on the maxflow predicate.
 
+    if outputFile is not None:
+        print("Wrote constraints to " + outputFile + ", exiting without solving")
+        sys.exit(0)
 
     print("Solving...")
     if Solve():
@@ -338,7 +345,16 @@ if __name__ == '__main__':
             del(sys.argv[i])
             break
 
+    outputFile = None
+    for i,arg in enumerate(sys.argv):
+        if sys.argv[i].startswith("--output"):
+            outputFile = sys.argv[i+1]
+            del(sys.argv[i])
+            del(sys.argv[i])
+            break
+
+
     if len(sys.argv) > 2:
         monosat_args = sys.argv[1:-1]
-    route(sys.argv[-1], monosat_args,use_maxflow,True)
+    route(sys.argv[-1], monosat_args,use_maxflow,True, outputFile)
 
