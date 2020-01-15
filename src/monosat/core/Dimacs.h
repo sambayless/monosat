@@ -293,10 +293,6 @@ private:
 				S.addClause_(lits);
 				continue;
 			}
-			if(*in=='c'){
-				skipLine(in);
-				continue;//comment
-			}
 			readLine(linebuf, in);
 			char * b = linebuf.begin();
 			if (match(b,"solve")){
@@ -448,7 +444,10 @@ private:
 				} else {
 					parse_errorf("Unexpected char: %c\n", *in);
 				}
-			}  else {
+			} else if(*in=='c'){
+				skipLine(in);
+				continue;//comment
+			} else {
 				//if nothing else works, attempt to parse this line as a clause.
 				parse_errorf("Bad line at %d: %s",line_num,linebuf.begin());
 			}
