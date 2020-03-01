@@ -42,7 +42,7 @@ def print_matrix():
             print_cell(row, col)
     print()
 
-time_start_gen = time.clock()
+time_start_gen = time.process_time()
 
 # a matrix storing variables
 QMATRIX = [[Var() for x in range(nb_queens)] for x in range(nb_queens)]
@@ -93,13 +93,13 @@ for row in range(nb_queens):
                 print('~({0}, {1}), ~({2}, {3})'.format(row, col, row-x, col-x))
             AssertClause([Not(QMATRIX[row][col]), Not(QMATRIX[row+x][col-x])])
 
-time_end_gen = time.clock()
+time_end_gen = time.process_time()
 
-time_start_solve = time.clock()
+time_start_solve = time.process_time()
 
 result = Solve()
 
-time_end_solve = time.clock()
+time_end_solve = time.process_time()
 
 if result:
     print_matrix()

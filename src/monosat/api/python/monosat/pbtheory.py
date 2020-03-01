@@ -1092,7 +1092,7 @@ class MinisatPlus:
             )
 
         print("Importing %d pseudoboolean constraints into Monosat..." % (n_pbs))
-        t = time.clock()
+        t = time.process_time()
 
         Monosat().comment("pseudoboolean constraints")
         n_cls = 0
@@ -1131,7 +1131,7 @@ class MinisatPlus:
 
         os.remove(tmpopb)
         os.remove(tmpcnf)
-        PBManager().import_time += time.clock() - t
+        PBManager().import_time += time.process_time() - t
         print("Imported pseudoboolean constraints into Monosat (%d clauses)" % (n_cls))
 
 
