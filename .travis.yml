@@ -38,10 +38,11 @@ matrix:
       dist: trusty
       compiler: clang
     - java: openjdk9
-      python: "3.6"
-      os: osx
+      python: "3.8"
+      os: linux
+      dist: bionic
       compiler: clang
-      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DPYTHON=ON -DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.6"
+      env: TEST_PYTHON=1 TEST_JAVA=1 BUILD_TARGET="libmonosat" BUILD_ARGS="-DPYTHON=ON -DJAVA=ON -DGPL=OFF" JDK_VERSION="openjdk9" PYTHON_VERSION="python3.8"
     - java: openjdk8
       python: "3.6"
       env: TEST_PYTHON=1 BUILD_TARGET="monosat" JDK_VERSION="openjdk8" PYTHON_VERSION="python3.6" BUILD_ARGS="-DPYTHON=ON -DJAVA=ON -DGPL=OFF -DBUILD_STATIC=OFF"
