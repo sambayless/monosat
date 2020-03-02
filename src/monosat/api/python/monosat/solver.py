@@ -35,7 +35,7 @@ def Solve(
     # if preprocessing:
     #    Monosat().preprocess();
     # print("Solving in Monosat...")
-    t = time.clock()
+    t = time.process_time()
 
     if isinstance(assumptions, Var):
         assumptions = [assumptions]
@@ -62,7 +62,7 @@ def Solve(
         raise SolveException(
             "MonoSAT aborted before solving (possibly do to a time or memory limit)"
         )
-    Monosat().elapsed_time += time.clock() - t
+    Monosat().elapsed_time += time.process_time() - t
     found_optimal = Monosat().lastSolutionWasOptimal()
     if r is None:
         raise SolveException(
@@ -148,8 +148,8 @@ def _writePBCosntraints():
     if not PBManager().hasConstraints():
         return
 
-    t = time.clock()
+    t = time.process_time()
     pbmgr = PBManager()
     pbmgr.flush()
-    d = time.clock()
+    d = time.process_time()
     PBManager().elapsed_time += d - t
