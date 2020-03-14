@@ -810,7 +810,18 @@ def _Max(array1, array2):
 
 
 # True IFF num1 is < num2, <= num2
+# Note: This method operates on lists of Boolean literals. It does not support BitVector arguments.
+# Use BitVector.geq/leq/gt/lt to compare BitVectors.
 def _LessOrEqual(num1, num2):
+    from monosat.bvtheory import BitVector
+    if isinstance(num1, BitVector) or isinstance(num2, BitVector):
+        warnings.warn(
+            "Logic.LessEq/GreaterEq/LessThan/GreaterThan "
+            "do not apply to bitvectors, use BitVector.geq/leq/gt/lt instead",
+            UserWarning,
+        )
+        raise Exception("Logic._LessOrEqual does not apply to bitvector arguments (use BitVector.geq/leq/gt/lt instead)")
+
     if isinstance(num1, (int, float, complex)) and isinstance(
             num2, (int, float, complex)
     ):
