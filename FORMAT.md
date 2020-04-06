@@ -72,7 +72,7 @@ reach 0 0 2 5
 
 By instead adding the unit clause '-5 0', you could have forced the graph to *not* have a path from node 0 to node 2. (This would be UNSAT in this example).
 
-Finally, you can combine multiple graph properties, and combine them togehter with arbitrary Boolean logic. For example, you could assert that assert that *either* node 2 must not be reachable from node 0, *or* the weighted shortest path from node 0 to node 2 must be <= 3:
+Finally, you can combine multiple graph properties, and combine them together with arbitrary Boolean logic. For example, you could assert that *either* node 2 must not be reachable from node 0, *or* the weighted shortest path from node 0 to node 2 must be <= 3:
 
 ```
 p cnf 5 3
