@@ -2133,7 +2133,7 @@ int newFSM(Monosat::SimpSolver* S, Monosat::FSMTheorySolver* fsmTheory, int inpu
 
     int fsmID = fsmTheory->newFSM();
     fsmTheory->setAlphabets(fsmID, inputAlphabet, outputAlphabet);
-    write_out(S, "fsm %d 0 0\n", fsmID);
+    write_out(S, "fsm %d %d %d %d\n", fsmID, inputAlphabet, outputAlphabet, 0);
 
     return fsmID;
 }

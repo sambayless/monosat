@@ -395,9 +395,12 @@ FSMTheorySolverPtr initFSMTheory(SolverPtr S);
 int newFSM(SolverPtr S, FSMTheorySolverPtr fsmTheory, int inputAlphabet, int outputAlphabet);
 int newState(SolverPtr S, FSMTheorySolverPtr fsmTheory, int fsmID);
 
+// Note: label 0 is the non-consuming epsilon label
 int newTransition(SolverPtr S, FSMTheorySolverPtr fsmTheory, int fsmID, int fromNode, int toNode, int inputLabel,
                   int outputLabel);
+// String constant. str is an array of len non-negative integers, representing the characters in the string.
 int newString(SolverPtr S, FSMTheorySolverPtr fsmTheory, int* str, int len);
+
 int fsmAcceptsString(SolverPtr S, FSMTheorySolverPtr fsmTheory, int fsmID, int startNode, int acceptNode, int stringID);
 int fsmCompositionAccepts(SolverPtr S, FSMTheorySolverPtr fsmTheory, int fsmGeneratorID, int fsmAcceptorID,
                           int gen_startNode, int gen_acceptNode, int acceptor_startNode, int acceptor_acceptNode,

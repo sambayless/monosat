@@ -117,13 +117,18 @@ class FSMParser : public Parser<B, Solver> {
         }
 
         int fsmID = parseInt(in);  //id of the fsm
-        int n_labels = parseInt(in); //not using this anymore
+        int in_labels = parseInt(in);
+        int out_labels = parseInt(in);
+
         bool hasEpsilon = parseInt(in) > 0;
         if(fsmID < 0){
             parse_errorf("FSM id must be >=0, was %d\n", fsmID);
         }
-        if(n_labels < 0){
-            parse_errorf("Number of transition labels must be >=0, was %d\n", n_labels);
+        if(in_labels < 0){
+            parse_errorf("Number of incoming transition labels must be >=0, was %d\n", in_labels);
+        }
+        if(out_labels < 0){
+            parse_errorf("Number of outgoin transition labels must be >=0, was %d\n", out_labels);
         }
 
         fsmIDs.growTo(fsmID + 1, -1);
@@ -138,8 +143,8 @@ class FSMParser : public Parser<B, Solver> {
         generates.growTo(fsmID + 1);
         transduces.growTo(fsmID + 1);
         hasEpsilonTransitions.growTo(fsmID + 1);
-        inAlphabets.growTo(fsmID + 1, 0);
-        outAlphabets.growTo(fsmID + 1, 0);
+        inAlphabets.growTo(fsmID + 1, in_labels);
+        outAlphabets.growTo(fsmID + 1, out_labels);
         hasEpsilonTransitions[fsmID] = false;
     }
 
@@ -428,8 +433,8 @@ public:
         }else if(match(in, "str")){
             readString(in, S);
             return true;
-        }else if(match(in,
-                       "accepts_composition")){//previously, was 'composition_accepts'; changed to avoid conflicting with comments
+        }else if(match(in, "accepts_composition")){
+            //previously, was 'composition_accepts'; changed to avoid conflicting with comments
             readCompositionAccepts(in, S);
             return true;
         }else if(match(in, "accepts")){
@@ -475,13 +480,6 @@ public:
 
                 if(a.strID < 0 || a.strID >= created_strings.size() || !created_strings[a.strID]){
                     parse_errorf("String ID must be a non-negative integer, was %d\n", a.strID);
-                }
-
-                if(a.from < 0 || a.from >= theory->nNodes(fsmID)){
-                    parse_errorf("%d is not a valid state\n", a.from);
-                }
-                if(a.to < 0 || a.to >= theory->nNodes(fsmID)){
-                    parse_errorf("%d is not a valid state\n", a.to);
                 }
 
                 theory->addAcceptLit(fsmID, a.from, a.to, a.strID, a.reachVar);
@@ -534,14 +532,7 @@ public:
                 parse_errorf("No fsms declared!\n");
 
             }
-            if(c.strID < 0){
-                parse_errorf("String ID must be a non-negative integer, was %d\n", c.strID);
-            }
-            stringIDMap.growTo(c.strID + 1, -1);
-            c.strID = stringIDMap[c.strID];
-            if(c.strID < 0 || c.strID >= created_strings.size() || !created_strings[c.strID]){
-                parse_errorf("String ID must be a non-negative integer, was %d\n", c.strID);
-            }
+
             theory->addComposeAcceptLit(c.fsmID1, c.fsmID2, c.from1, c.to1, c.from2, c.to2, c.strID, c.reachVar);
         }
         compose_accepts.clear();
@@ -554,4 +545,4 @@ public:
 //=================================================================================================
 };
 
-#endif /* GRAPH_PARSER_H_ */
+#endif

@@ -492,14 +492,9 @@ public:
         }
     }
 
-/*	void remapTheoryVar(Var solverVar, Var newTheoryVar) {
-		assert(hasTheory(solverVar));
-		theory_vars[solverVar].theory_var = newTheoryVar;
-	}*/
-
     void preprocess() override{
-        for(Theory* t:theories){
-            t->preprocess();
+        for(int i = 0;i<theories.size();i++){
+            theories[i]->preprocess();
         }
     }
 

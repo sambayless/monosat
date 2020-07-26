@@ -66,11 +66,9 @@ void FSMTransducesDetector::addTransducesLit(int state, int strID1, int strID2, 
     }
     int index = accept_var - first_var;
 
-    //is_changed.growTo(index+1);
     Lit acceptLit = mkLit(accept_var, false);
     all_lits.push(acceptLit);
 
-    //if(reach_lits[to]==lit_Undef){
     transduce_lits.insert(std::tuple<int, int, int>(strID1, strID2, state), acceptLit);
     all_transduce_lits.push(std::tuple<int, int, int, Lit>(strID1, strID2, state, acceptLit));
     while(accept_lit_map.size() <= accept_var - first_var){
@@ -83,7 +81,7 @@ void FSMTransducesDetector::addTransducesLit(int state, int strID1, int strID2, 
 void FSMTransducesDetector::TransducesStatus::transduces(int string1, int string2, int state, bool accepts){
     Lit l = detector.transduce_lits[std::tuple<int, int, int>(string1, string2, state)];
 
-    if(l != lit_Undef){// && !detector.is_changed[detector.indexOf(var(l))]) {
+    if(l != lit_Undef){
         if(!accepts){
             l = ~l;
         }
@@ -97,42 +95,6 @@ void FSMTransducesDetector::TransducesStatus::transduces(int string1, int string
 
 
 bool FSMTransducesDetector::propagate(vec<Lit>& conflict){
-    static int iter = 0;
-    if(++iter == 87){
-        int a = 1;
-    }
-/*
-	changed.clear();
-	bool skipped_positive = false;
-	if (underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)) {
-		double startdreachtime = rtime(2);
-		stats_under_updates++;
-		underapprox_detector->update();
-		double reachUpdateElapsed = rtime(2) - startdreachtime;
-		//outer->reachupdatetime+=reachUpdateElapsed;
-		stats_under_update_time += rtime(2) - startdreachtime;
-	} else {
-		skipped_positive = true;
-		//outer->stats_pure_skipped++;
-		stats_skipped_under_updates++;
-	}
-	bool skipped_negative = false;
-	if (overapprox_detector && (!opt_detect_pure_theory_lits || unassigned_negatives > 0)) {
-		double startunreachtime = rtime(2);
-		stats_over_updates++;
-		overapprox_detector->update();
-		double unreachUpdateElapsed = rtime(2) - startunreachtime;
-		stats_over_update_time += rtime(2) - startunreachtime;
-	} else {
-		skipped_negative = true;
-		stats_skipped_over_updates++;
-	}
-
-	if (opt_rnd_shuffle) {
-		randomShuffle(rnd_seed, changed);
-	}
-*/
-
 
     for(auto& t:all_transduce_lits){
 
@@ -192,8 +154,7 @@ void FSMTransducesDetector::buildReason(Lit p, vec<Lit>& reason, CRef marker){
 }
 
 void FSMTransducesDetector::buildTransducesReason(int node, int str1, int str2, vec<Lit>& conflict){
-    static int iter = 0;
-    ++iter;
+
     static vec<NFATransition> path;
     path.clear();
     bool hasPath = underapprox_detector->getPath(str1, str2, node, path);
@@ -310,12 +271,7 @@ FSMTransducesDetector::path_rec(int s, int dest, int string1, int string2, int s
 }
 
 void FSMTransducesDetector::buildNonTransducesReason(int node, int str1, int str2, vec<Lit>& conflict){
-    static int iter = 0;
 
-
-    if(++iter == 10189){
-        int a = 1;
-    }
     static vec<NFATransition> ignore;
     ignore.clear();
     path_rec(source, node, str1, str2, 0, 0, 0, ignore, conflict);

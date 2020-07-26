@@ -28,7 +28,7 @@ class DynamicFSM {
     bool is_changed = true;
     bool is_generator = true;
     bool is_acceptor = true;
-    bool is_linear = true;
+
     bool is_deterministic = false;
     bool must_be_deterministic = false;
     int n_total_input_emoves = 0;
@@ -75,8 +75,36 @@ public:
         return is_acceptor;
     }
 
-    bool isLinear() const{
-        return is_linear;
+    /**
+     * Return true iff this finite state machine is linear
+     * (starting from 'source').
+     * A finite state machine is linear if every transition from
+     * each state goes only to the next state, and if no state has a self loop
+     * @param source
+     * @return
+     */
+    bool isLinear(){
+        for(int n = 0; n < this->states(); n++){
+            int expectedTo = n + 1;
+            for(int i = 0; i < nIncident(n); i++){
+                int t = incident(n, i).node;
+                int edgeID = incident(n, i).id;
+                if(transitionEnabled(edgeID, -1, -1)){
+                    if(t == n){
+                        // no self loops
+                        return false;
+                    }
+                    if(expectedTo != -1 && expectedTo != t){
+                        // all edges out of state 'n' go to the same state (which is not equal to n)
+                        return false;
+                    }
+                    assert(t != n);
+                    expectedTo = t;
+                }
+            }
+
+        }
+        return true;
     }
 
     //True if every state _must_ have exactly one outgoing transition in the final solution
@@ -411,9 +439,10 @@ public:
             table[i].clear();
             table[i].growTo(this->states());
         }
-        if(string.size() == 0)
-            return startState ==
-                   finalState;//this isn't quite correct, because there may be emoves connecting start to final state...
+        //this isn't quite correct, because there may be emoves connecting start to final state...
+        if(string.size() == 0){
+            return startState == finalState;
+        }
         static vec<int> curStates;
         static vec<int> nextStates;
         nextStates.clear();
@@ -490,9 +519,10 @@ public:
             table[i].clear();
             table[i].growTo(this->states() + 1);
         }
-        if(string.size() == 0)
-            return startState ==
-                   finalState;//this isn't quite correct, because there may be emoves connecting start to final state...
+        if(string.size() == 0){
+            //this isn't quite correct, because there may be emoves connecting start to final state...
+            return startState == finalState;
+        }
         static vec<int> curStates;
         static vec<int> nextStates;
         nextStates.clear();
@@ -534,7 +564,6 @@ public:
                     }
 
                     if(pos > 0 && !table[pos - 1][to] && transitionEnabled(edgeID, l, -1)){
-                        //status.reaches(str,to,edgeID,l);
                         table[pos - 1].set(to);
                         nextStates.push(to);
                     }
@@ -577,7 +606,8 @@ private:
             return true;
         }
         if(emove_count >= states()){
-            return false;//this is not a great way to solve the problem of avoiding infinite e-move cycles...
+            //this is not a great way to solve the problem of avoiding infinite e-move cycles...
+            return false;
         }
 
 
@@ -589,7 +619,8 @@ private:
 
 
                 path.push({edgeID, 0, 0});
-                if(generates_path_rec(to, final, emove_count + 1, path)){//str_pos is NOT incremented!
+                if(generates_path_rec(to, final, emove_count + 1, path)){
+                    //str_pos is NOT incremented!
 
                     return true;
                 }else{

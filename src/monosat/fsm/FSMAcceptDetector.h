@@ -80,7 +80,6 @@ public:
         int str;
         bool polarity;
     };
-    //vec<bool> is_changed;
     vec<Change> changed;
 
     vec<vec<Lit>> accept_lits;
@@ -114,7 +113,6 @@ public:
 
 
     void printStats() override{
-        //printf("Reach detector\n");
         FSMDetector::printStats();
         if(opt_detect_pure_theory_lits)
             printf("\tPropagations skipped by pure literal detection: %" PRId64 "\n", stats_pure_skipped);
@@ -138,7 +136,7 @@ public:
             int node = accept_lit_map[index].to;
             int str = accept_lit_map[index].str;
 
-            changed.push({{var(l)}, node, str});
+            changed.push({l, node, str});
             if(opt_theory_internal_vsids_fsm && !order_heap.inHeap(var(l))){
                 order_heap.insert(var(l));
             }
@@ -151,10 +149,7 @@ public:
         if(index >= 0 && index < accept_lit_map.size() && accept_lit_map[index].to != -1){
             int node = accept_lit_map[index].to;
             int str = accept_lit_map[index].str;
-            //if (!is_changed[index]) {
-            changed.push({{var(l)}, node, str});
-            //	is_changed[index] = true;
-            //}
+            changed.push({l, node, str});
         }
     }
 
@@ -271,7 +266,6 @@ public:
                     edgeDecayActivity();
                     if(!order_heap.inHeap(var(l))){
                         order_heap.insert(var(l));
-                        //throw std::runtime_error("Internal error in fsm accept detector");
                     }
                 }
             }
@@ -311,4 +305,4 @@ public:
 
 };
 };
-#endif /* REACHDETECTOR_H_ */
+#endif

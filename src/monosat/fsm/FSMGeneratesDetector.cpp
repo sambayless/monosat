@@ -64,11 +64,10 @@ void FSMGeneratesDetector::addGeneratesLit(int strID, Var outer_reach_var){
     }
     int index = accept_var - first_var;
 
-    //is_changed.growTo(index+1);
     Lit acceptLit = mkLit(accept_var, false);
     all_lits.push(acceptLit);
     assert(generate_lits[strID] == lit_Undef);
-    //if(reach_lits[to]==lit_Undef){
+
     generate_lits[strID] = acceptLit;
     while(generate_lit_map.size() <= accept_var - first_var){
         generate_lit_map.push({-1});
@@ -80,13 +79,13 @@ void FSMGeneratesDetector::addGeneratesLit(int strID, Var outer_reach_var){
 void FSMGeneratesDetector::GenerateStatus::generates(int string, bool generates){
     Lit l = detector.generate_lits[string];
 
-    if(l != lit_Undef){// && !detector.is_changed[detector.indexOf(var(l))]) {
+    if(l != lit_Undef){
         if(!generates){
             l = ~l;
         }
         if(polarity == generates){
             lbool assign = detector.outer->value(l);
-            //detector.is_changed[detector.indexOf(var(l))] = true;
+
             detector.changed.push({l, string});
         }
     }
@@ -94,10 +93,6 @@ void FSMGeneratesDetector::GenerateStatus::generates(int string, bool generates)
 
 
 bool FSMGeneratesDetector::propagate(vec<Lit>& conflict){
-    static int iter = 0;
-    if(++iter == 87){
-        int a = 1;
-    }
     changed.clear();
     bool skipped_positive = false;
     if(underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)){
@@ -105,11 +100,11 @@ bool FSMGeneratesDetector::propagate(vec<Lit>& conflict){
         stats_under_updates++;
         underapprox_detector->update();
         double reachUpdateElapsed = rtime(2) - startdreachtime;
-        //outer->reachupdatetime+=reachUpdateElapsed;
+
         stats_under_update_time += rtime(2) - startdreachtime;
     }else{
         skipped_positive = true;
-        //outer->stats_pure_skipped++;
+
         stats_skipped_under_updates++;
     }
     bool skipped_negative = false;
@@ -135,7 +130,7 @@ bool FSMGeneratesDetector::propagate(vec<Lit>& conflict){
 
 
         int str = changed.last().str;
-        //assert(is_changed[indexOf(var(l))]);
+
         if(sign(l)){
             assert(!overapprox_detector->generatesString(str));
         }else{
@@ -149,7 +144,6 @@ bool FSMGeneratesDetector::propagate(vec<Lit>& conflict){
         }else{
             assert(sz == changed.size());
 
-            //is_changed[indexOf(var(l))] = false;
             changed.pop();
             //this can happen if the changed node's reachability status was reported before a backtrack in the solver.
             continue;
@@ -177,8 +171,10 @@ bool FSMGeneratesDetector::propagate(vec<Lit>& conflict){
             return false;
         }
 
-        assert(sz ==
-               changed.size());//This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list, which can cause the wrong item to be removed here.
+        //This can be really tricky - if you are not careful, an a reach detector's update phase was skipped at the
+        // beginning of propagate, then if the reach detector is called during propagate it can push a change onto the list,
+        // which can cause the wrong item to be removed here.
+        assert(sz == changed.size());
 
         changed.pop();
     }
@@ -207,14 +203,8 @@ void FSMGeneratesDetector::buildReason(Lit p, vec<Lit>& reason, CRef marker){
 void FSMGeneratesDetector::buildGeneratesReason(int str, vec<Lit>& conflict){
     static int iter = 0;
     ++iter;
-//find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
-/*	g_under.draw(source);
-	vec<int> & string = strings[str];
-	printf("Accepts: \"");
-	for(int s:string){
-		printf("%d ",s);
-	}
-	printf("\"\n");*/
+    //find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
+
     static vec<NFATransition> path;
     path.clear();
     bool hasPath = underapprox_detector->getPath(str, path);
@@ -315,17 +305,10 @@ FSMGeneratesDetector::unique_path_conflict(int s, int string, int str_pos, int e
 }
 
 void FSMGeneratesDetector::buildNonGeneratesReason(int str, vec<Lit>& conflict){
-
-    static int iter = 0;
-
-
     vec<int>& string = strings[str];
     used_transitions.clear();
     used_transitions.growTo(g_over.nodes());
 
-    if(++iter == 10189){
-        int a = 1;
-    }
     static vec<NFATransition> ignore;
     ignore.clear();
     unique_path_conflict(source, str, 0, 0, ignore, conflict);

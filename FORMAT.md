@@ -89,5 +89,7 @@ weighted_distance_leq 0 0 2 6 3
 
 These are the graph properties that are currently well-supported by MonoSAT; many other useful graph properties are Boolean monotonic with respect to the edges in a graph, and could be supported in the future. Interesting possibilities include planarity detection, connected components, global minimum cuts, and many variatons of network flow properties. 
 
+MonoSAT has experimental support for symbolic finite state machines;
+see 'FiniteStateMachines.md' for an explanation of the file format.
 
 [mpq_set_str]:https://gmplib.org/manual/Initializing-Rationals.html#Initializing-Rationals

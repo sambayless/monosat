@@ -86,7 +86,6 @@ public:
         int u;
         int str;
     };
-    //vec<bool> is_changed;
     vec<Change> changed;
 
     Var first_var = var_Undef;
@@ -100,7 +99,7 @@ public:
         SuffixLit(Lit l, Lit accept_l, int _suffix_from, int _suffix_to) : l(l), accept_l(accept_l),
                                                                            suffix_from(_suffix_from),
                                                                            suffix_to(_suffix_to){
-            int a = 1;
+
         }
     };
 
@@ -165,7 +164,7 @@ public:
     vec<vec<int>> nodes;
 
     void printStats() override{
-        //printf("Reach detector\n");
+
         if(graph){
             graph->printStats(1);
         }else{
@@ -198,7 +197,6 @@ public:
             forcedVars.remove(edgeVar);
         }
 
-        //	printf("Forced edge %d by %d, %d\n", edgeVar, var(forcedBy), sign(forcedBy)?-1:1);
         forcedVars.insert(edgeVar, forcedBy);
     }
 
@@ -234,31 +232,6 @@ public:
     Lit decide(int level) override;
 
     bool propagate(vec<Lit>& conflict) override;
-
-    /*void unassign(Lit l) override {
-        FSMDetector::unassign(l);
-
-    }
-    void assign(Lit l) override {
-        FSMDetector::assign(l);
-
-    }
-    void setOccurs(Lit l, bool occurs) override {
-        FSMDetector::setOccurs(l,occurs);
-        if (!occurs) {
-            if (sign(l))
-                unassigned_negatives--;
-            else
-                unassigned_positives--;
-        } else {
-            if (sign(l))
-                unassigned_negatives++;
-            else
-                unassigned_positives++;
-        }
-        assert(unassigned_positives >= 0);
-        assert(unassigned_negatives >= 0);
-    }*/
 
     void buildAcceptReason(int genFinal, int acceptFinal, vec<Lit>& conflict);
 
@@ -301,10 +274,6 @@ public:
     FSMGeneratorAcceptorDetector(int _detectorID, FSMTheorySolver* _outer, DynamicFSM& g_under, DynamicFSM& g_over,
                                  DynamicFSM& acceptor_under, DynamicFSM& acceptor_over,
                                  int gen_source, int acceptor_source, double seed = 1);
-
-    ~FSMGeneratorAcceptorDetector() override{
-
-    }
 
     const char* getName() override{
         return "NFA Generator Acceptor Detector";
@@ -405,4 +374,4 @@ private:
 
 };
 };
-#endif /* REACHDETECTOR_H_ */
+#endif

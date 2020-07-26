@@ -2873,6 +2873,15 @@ public:
             drawFull();
         }
         dbg_graphsUpToDate();
+
+        if (unimplemented_distance_constraints.size() > 0 ||
+            unimplemented_distance_constraints_bv.size() > 0||
+            unimplemented_maxflow_constraints_bv.size() > 0 ||
+            unimplemented_reachability_constraints.size() > 0){
+            // if any predicates are not implemented, then the theory is not be solved
+            return false;
+        }
+
         for(int i = 0; i < edge_list.size(); i++){
             if(edge_list[i].v < 0)
                 continue;
@@ -3680,7 +3689,7 @@ public:
 
     }
 
-    void implementConstraints(){
+    void implementConstraints() {
         if(!S->okay())
             return;
         if(opt_allpairs_percentage >= 1){

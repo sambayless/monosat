@@ -152,6 +152,7 @@ except:
 
     # Note: longs specified as 64bit on all platforms.
     c_long_p = POINTER(c_int64)
+    null_ptr64 = POINTER(c_int64)()
 
     c_solver_p = POINTER(c_int64)
     c_graph_p = POINTER(c_int64)
@@ -823,9 +824,7 @@ class Monosat(metaclass=Singleton):
                 c_int,
                 c_int,
                 c_int,
-                c_int,
-                c_int,
-                c_int,
+                c_int
             ]
             self.monosat_c.fsmCompositionAccepts.restype = c_int
 
@@ -1569,29 +1568,22 @@ class Monosat(metaclass=Singleton):
     # Monosat fsm interface
 
     def newFSM(self, in_labels, out_labels):
-        return self.monosat_c.newFSM.argtypes(
-            self.solver._ptr, null_ptr, in_labels, out_labels
-        )
+        return self.monosat_c.newFSM(self.solver._ptr, null_ptr64, in_labels, out_labels)
 
     def newState(self, fsm_id):
-        return self.monosat_c.newState(self.solver._ptr, null_ptr, fsm_id)
+        return self.monosat_c.newState(self.solver._ptr, null_ptr64, fsm_id)
 
     def newTransition(self, fsm_id, from_state, to_state, in_label, out_label):
-        return self.monosat_c.newTransition(self.solver._ptr, null_ptr, fsm_id)
-
-    def newTransition(self, fsm_id, from_state, to_state, in_label, out_label):
-        return self.monosat_c.newTransition(self.solver._ptr, null_ptr, fsm_id)
+        return self.monosat_c.newTransition(self.solver._ptr, null_ptr64, fsm_id, from_state, to_state, in_label, out_label)
 
     # A string is an array of positive integers
     def newString(self, string_int_array):
         lp = self.getIntArray(string_int_array)
-        return self.monosat_c.newString(
-            self.solver._ptr, null_ptr, lp, len(string_int_array)
-        )
+        return self.monosat_c.newString(self.solver._ptr, null_ptr64, lp, len(string_int_array))
 
     def fsmAcceptsString(self, fsm_id, starting_state, accepting_state, strID):
         return self.monosat_c.fsmAcceptsString(
-            self.solver._ptr, null_ptr, fsm_id, starting_state, accepting_state, strID
+            self.solver._ptr, null_ptr64, fsm_id, starting_state, accepting_state, strID
         )
 
     def fsmCompositionAccepts(
@@ -1606,7 +1598,7 @@ class Monosat(metaclass=Singleton):
     ):
         return self.monosat_c.fsmCompositionAccepts(
             self.solver._ptr,
-            null_ptr,
+            null_ptr64,
             fsm_generator_id,
             fsm_acceptor_id,
             gen_starting_state,

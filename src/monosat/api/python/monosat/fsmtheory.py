@@ -25,7 +25,7 @@ from monosat.manager import Manager
 debug = False
 
 
-# Collects a set of graphs to encode together into a formula
+# Collects a set of finite state machines and strings to encode together into a formula
 class FSMManager(metaclass=Manager):
 
     def __init__(self):
@@ -48,19 +48,19 @@ class FSM():
     def __init__(self, in_labels, out_labels=0, hasEpsilon=True):
         self._monosat = monosat.monosat_c.Monosat()
         self.pid = self._monosat.newFSM(in_labels, out_labels)
-        self.hasEpsilon = True
-        self._n_states = 0
+        self.hasEpsilon = hasEpsilon
+        self.n_states = 0
         self._transitions = []
 
     def getID(self):
         return self.pid
 
     def addState(self):
-        self._n_states += 1
+        self.n_states += 1
         return self._monosat.newState(self.getID())
 
     def nStates(self):
-        return self._monosat.numStates(self.getID());
+        return self.n_states;
 
     def addTransition(self, u, v, in_label, out_label=0):
         assert (u < self.n_states)
@@ -78,12 +78,13 @@ class FSM():
         return Var(self._monosat.fsmAcceptsString(self.getID(), starting_state, accepting_state, stringID))
 
     def acceptsFSM(self, generator, generator_source, generator_dest, starting_state, accepting_state):
-        return Var(self._monosat.fsmCompositionAccepts(generator, self.getID(), generator_source, generator_dest,
-                                                       starting_state, accepting_state, 0))
+        return Var(self._monosat.fsmCompositionAccepts(generator.getID(), self.getID(), generator_source, generator_dest,
+                                                       starting_state, accepting_state, -1))
 
     def draw(self):
         print("digraph{")
         for (u, v, label, output, var) in self._transitions:
-            print("n%d -> n%d [label=\"%d:%d\"]" % (u, v, label, output))
+            if var.value() is not False:
+                print("n%d -> n%d [label=\"%d:%d\"]" % (u, v, label, output))
 
         print("}")

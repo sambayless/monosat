@@ -80,7 +80,6 @@ public:
         int str1;
         int str2;
     };
-    //vec<bool> is_changed;
     vec<Change> changed;
     vec<std::tuple<int, int, int, Lit>> all_transduce_lits;
 
@@ -120,7 +119,7 @@ public:
 
 
     void printStats() override{
-        //printf("Reach detector\n");
+
         FSMDetector::printStats();
         if(opt_detect_pure_theory_lits)
             printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
@@ -140,10 +139,9 @@ public:
             int node = accept_lit_map[index].to;
             int str1 = accept_lit_map[index].str1;
             int str2 = accept_lit_map[index].str2;
-            //if (!is_changed[index]) {
+
             changed.push({{var(l)}, node, str1, str2});
-            //	is_changed[index] = true;
-            //}
+
         }
     }
 
@@ -210,4 +208,4 @@ private:
 
 };
 };
-#endif /* REACHDETECTOR_H_ */
+#endif

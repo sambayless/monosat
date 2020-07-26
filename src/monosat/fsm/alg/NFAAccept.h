@@ -80,14 +80,14 @@ private:
         states_to_track_negative.growTo(strings.size());
         n_trackingString.growTo(strings.size(), 0);//g.states()*2
         states_were_accepting.growTo(strings.size());
-        //states_were_rejecting.growTo(strings.size());
+
 
         for(int i = 0; i < strings.size(); i++){
             states_to_track_positive[i].growTo(g.states(), false);
             states_to_track_negative[i].growTo(g.states(), false);
 
             states_were_accepting[i].growTo(g.states());
-            //states_were_rejecting[i].growTo(f.states());
+
         }
 
         n_track_positive = strings.size();
@@ -281,8 +281,6 @@ public:
             return;
         }
 
-        static int iteration = 0;
-        int local_it = ++iteration;
         stats_full_updates++;
 
         if(last_deletion == g.deletions){
@@ -364,14 +362,10 @@ public:
         if(hasUsed){
             //clear used
             hasUsed = false;
-            /*	for(int i = 0;i<usedTransitions.size();i++){
-                    for(int l = 0;l<usedTransitions[i].size()){
-                        usedTransitions[i][l]=false;
-                    }
-                }*/
+
         }
 
-        //for(int i = 0;i<g.states();i++)
+
         for(int str = 0; str < strings.size(); str++){
             if(n_trackingString[str] == 0)
                 continue;

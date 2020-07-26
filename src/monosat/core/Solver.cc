@@ -524,7 +524,7 @@ void Solver::cancelUntil(int lev){
         if(decisionLevel() < track_min_level){
             track_min_level = decisionLevel();
         }
-        //you cannot necesarily remove a theory from the theory queue on backtracking; it should only be removed following a successful propagate.
+        //you cannot necessarily remove a theory from the theory queue on backtracking; it should only be removed following a successful propagate.
         /*for (int i : theory_queue) {
 			in_theory_queue[i] = false;
 		}

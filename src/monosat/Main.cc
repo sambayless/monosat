@@ -850,13 +850,15 @@ int main(int argc, char** argv){
         return (ret == l_True ? 10 : ret == l_False ? 20 : 0);
 
     }catch(parse_error& e){
-        std::cerr << "Parsing error:\n" << e.what();
-
+        std::cerr << "Parsing error:\n" << e.what() << std::endl;
         exit(1);
     }catch(OutOfMemoryException&){
         printf("===============================================================================\n");
         printf("Out of memory exception\n");
         printf("INDETERMINATE\n");
         exit(0);
+    }catch(std::runtime_error& e){
+        std::cerr <<"Unexpected error:\n" << e.what() << std::endl;
+        exit(2);
     }
 }

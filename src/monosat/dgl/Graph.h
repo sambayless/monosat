@@ -125,7 +125,7 @@ public:
 
     virtual int edges() const =0;
 
-    virtual int nIncident(int node, bool undirected = false) =0;
+    virtual int nIncident(int node, bool undirected = false)  =0;
 
     virtual int nDirectedEdges(int node, bool incoming) =0;
 

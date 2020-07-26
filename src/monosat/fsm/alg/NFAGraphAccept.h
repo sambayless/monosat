@@ -101,7 +101,6 @@ private:
 
     NFAReachStatus* positiveReachStatus = nullptr;
     vec<vec<vec<int>>> edge_map;
-    //vec<vec<int>> states;
 
     vec<NFATransition> reverse_edge_map;
 
@@ -112,7 +111,6 @@ private:
     vec<ToCheck> acceptancesToCheck;
     //graph states for each unrolled string fsm are held in a tree structure
 
-
     struct UnrolledStep {
         UnrolledStep* parent = nullptr;
         vec<UnrolledStep*> children;//alphabet size of these
@@ -122,7 +120,6 @@ private:
     };
     vec<UnrolledStep*> string_last_nodes;
     UnrolledStep* root = nullptr;
-    //int startNode =-1;
 
     void addStringAcceptanceCheck(int str, int acceptingState){
         string_last_nodes.growTo(strings.size(), nullptr);

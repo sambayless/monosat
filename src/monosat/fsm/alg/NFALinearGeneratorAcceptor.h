@@ -83,33 +83,18 @@ public:
     NFALinearGeneratorAcceptor(DynamicFSM& gen, DynamicFSM& accept, int gen_source, int accept_source,
                                Status& status = fsmNullStatus) : gen(gen), accept(accept), status(status),
                                                                  gen_source(gen_source), accept_source(accept_source){
-        //Generator must be _linear_ (but may be non-deterministic.)
+
+        if(!gen.isLinear()){
+            //Generator must be _linear_ (but may be non-deterministic.)
+            throw std::runtime_error("Generator must be linear (but may be non-deterministic)");
+        }
+
         cur_seen.growTo(accept.states());
         gen_cur_seen.growTo(gen.states());
-
         next_seen.growTo(accept.states());
         gen_next_seen.growTo(gen.states());
         seen_chars.growTo(gen.outAlphabet() + 1);
-        vec<int> stack;
-        stack.push(gen_source);
-        while(stack.size()){
-            int n = stack.last();
-            stack.pop();
-            int to = -1;
-            for(int i = 0; i < gen.nIncident(n); i++){
-                int t = gen.incident(n, i).node;
-                int edgeID = gen.incident(n, i).id;
-                if(gen.transitionEnabled(edgeID, -1, -1)){
-                    if(to != -1){
-                        throw std::runtime_error("Error! FSM generator is not linear!");
-                    }
-                    to = t;
-                }
-            }
-            if(to != -1){
-                stack.push(to);
-            }
-        }
+
     }
 
 private:
@@ -388,13 +373,7 @@ public:
             if(prev_accepting && cur_seen[accept_source]){
                 accepted = true;
             }
-            /*if(!invertAcceptance){
 
-            }else{
-                if(prev_accepting && any_non_acceptors){
-                    accepted=true;
-                }
-            }*/
             next.swap(cur);
             next_seen.swap(cur_seen);
 
@@ -565,13 +544,7 @@ public:
             if(prev_accepting && cur_seen[accept_source]){
                 accepted = true;
             }
-            /*if(!invertAcceptance){
 
-            }else{
-                if(prev_accepting && any_non_acceptors){
-                    accepted=true;
-                }
-            }*/
             next.swap(cur);
             next_seen.swap(cur_seen);
 
@@ -607,13 +580,13 @@ private:
         bool accepting_state_is_attractor = !invertAcceptance && isAttractor(accept_final);
         bool hasSuffix = false;
 
-        /*if(forced_edges || chokepoint_edges){
 
-            if(!buildSuffixTable(gen_final, accept_final, suffixTable,accepting_state_is_attractor,invertAcceptance)){
-                return false;
-            }
-            hasSuffix=true;
-        }*/
+
+
+
+
+
+
         cur_seen.growTo(accept.states());
         gen_cur_seen.growTo(gen.states());
         next_seen.growTo(accept.states());
@@ -699,9 +672,9 @@ private:
 
             bool accepting = stepGenerator(gen_final, chars, seen_chars, cur_gen_state,
                                            nullptr);//get set of next strings
-            if(accepting){
-                int a = 1;
-            }
+
+
+
             if(accepting_state_is_attractor){
                 accepting = true;
             }
@@ -1100,4 +1073,4 @@ public:
 };
 
 
-#endif /* NFAGENERATEACCEPT_H_ */
+#endif

@@ -31,8 +31,6 @@
 
 namespace Monosat {
 
-//Graph properties (such as shortest paths, minimum spanning tree weights) are computed by individual 'detectors',
-//atached to the central graph theory. This allows them to share their edge atoms and a lot of other infrastructure.
 class FSMDetector {
 public:
 
@@ -111,9 +109,7 @@ public:
     }
 
     virtual void setOccurs(Lit l, bool occurs){
-        if(this->detectorID == 1){
-            int a = 1;
-        }
+
         if(!occurs){
             if(sign(l))
                 unassigned_negatives--;
@@ -164,7 +160,6 @@ public:
         }
     }
 
-    //virtual vec<int> & getLitMap();
     FSMDetector(int detectorID) :
             detectorID(detectorID), unassigned_positives(0), unassigned_negatives(0){
     };
@@ -173,13 +168,8 @@ public:
 
     }
 
-    /*	virtual void addLit(Lit l){
-     unassigned_negatives++;
-     unassigned_positives++;
-     }*/
+
     virtual void addVar(Var v){
-        //unassigned_negatives++;
-        //unassigned_positives++;
     }
 };
 
@@ -220,4 +210,4 @@ public:
 
 };
 
-#endif /* DETECTOR_H_ */
+#endif /* FSM_DETECTOR_H_ */

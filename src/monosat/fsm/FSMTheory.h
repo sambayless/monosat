@@ -103,6 +103,10 @@ public:
     vec<FSMAcceptDetector*> accepts;
     vec<FSMGeneratesDetector*> generates;
     vec<FSMTransducesDetector*> transduces;
+
+    // If an fsm ID is frozen, no new nodes or transition can be added to it
+    vec<bool> frozenFSM;
+
     /**
      * The cutgraph is (optionally) used for conflict analysis by some graph theories.
      * It has two edges for every edge in the real graph (with indices edgeID*2 and edgeID*2+1).
@@ -111,7 +115,7 @@ public:
      * Otherwise, if edge ID is unassigned or true, then edge ID*2 is disabled in the cutgraph, and
      * edge ID*2+1 is enabled.
      */
-    //DynamicGraph cutGraph;
+
 
 
     vec<Assignment> trail;
@@ -119,12 +123,49 @@ public:
 
     vec<FSMGeneratorAcceptorDetector*> gen_accept_lit_map;
 
-    /*struct PairHash {
-        uint32_t operator()(const std::pair<int,int> & x) const {
-            return (uint32_t) std::hash<int>()(x.first) ^ std::hash<int>()(x.second);
-        }
-    };*/
+    struct StringAcceptConstraint {
+        int fsmID;
+        int strID;
+        int sourceState;
+        int acceptState;
+        Var outer_var;
+    };
 
+    vec<StringAcceptConstraint> unimplemented_string_accept_constraints;
+
+    struct GeneratorAcceptConstraint {
+        int generatorFsmID;
+        int acceptorFsmID;
+        int strID;// not currently used (must be -1)
+        int generatorSourceState;
+        int generatorAcceptState;
+        int acceptorSourceState;
+        int acceptorAcceptState;
+        bool generator_is_deterministic;
+        Var outer_var;
+    };
+
+    vec<GeneratorAcceptConstraint> unimplemented_generator_accept_constraints;
+
+    struct TransduceConstraint {
+        int fsmID;
+        int source;
+        int dest;
+        int strID;
+        int strID2;
+        Var outer_var;
+    };
+
+    vec<TransduceConstraint> unimplemented_transduce_constraints;
+
+    struct GenerateStringConstraint {
+        int fsmID;
+        int source;
+        int strID;
+        Var outer_var;
+    };
+
+    vec<GenerateStringConstraint> unimplemented_generate_string_constraints;
 
 
     template<typename... TTypes>
@@ -172,8 +213,8 @@ public:
         int occursPositive :1;
         int occursNegative :1;
         int isSatisfied:1;
-        int detector_edge
-                :28;    //the detector this variable beint64_ts to, or its edge number, if it is an edge variable
+        //the detector this variable belongs to, or its edge number, if it is an edge variable
+        int detector_edge:28;
         int input;
         int output;
         int fsmID;
@@ -307,24 +348,6 @@ public:
         return strings->size();
     }
 
-/*	void addInCharacter(){
-		n_in_alphabet++;
-		g_under.addInCharacter();
-		g_over.addInCharacter();
-		//this is not great...
-		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(inAlphabet()*outAlphabet());
-		}
-	}
-	void addOutCharacter(){
-		n_out_alphabet++;
-		g_under.addInCharacter();
-		g_over.addInCharacter();
-		//this is not great...
-		for(int i =0;i<edge_labels.size();i++){
-			edge_labels[i].growTo(inAlphabet()*outAlphabet());
-		}
-	}*/
     inline bool isEdgeVar(Var v) const{
         assert(v < vars.size());
         return vars[v].isEdge;
@@ -364,7 +387,6 @@ public:
         assert(outputChar >= 0);
         Var v = getTransition(fsmID, edgeID, inputChar, outputChar).v;
         assert(v < vars.size());
-        //assert(vars[v].isEdge);
         return v;
     }
 
@@ -453,24 +475,21 @@ public:
     }
 
     inline int decisionLevel(){
-        return trail_lim.size(); //S->decisionLevel();
+        return trail_lim.size();
     }
 
     inline int nVars() const{
-        return vars.size(); //S->nVars();
+        return vars.size();
     }
 
     inline Var toSolver(Var v){
-        //return v;
         assert(v < vars.size());
-        //assert(S->hasTheory(vars[v].solverVar));
-        //assert(S->getTheoryVar(vars[v].solverVar)==v);
+
         return vars[v].solverVar;
     }
 
     inline Lit toSolver(Lit l){
-        //assert(S->hasTheory(vars[var(l)].solverVar));
-        //assert(S->getTheoryVar(vars[var(l)].solverVar)==var(l));
+
         return mkLit(vars[var(l)].solverVar, sign(l));
     }
 
@@ -514,8 +533,22 @@ public:
         }
     }
 
+    bool isFrozen(int fsmID){
+        frozenFSM.growTo(fsmID + 1, false);
+        return frozenFSM[fsmID];
+    }
+
+    void freezeFSM(int fsmID){
+        frozenFSM.growTo(fsmID + 1, false);
+        frozenFSM[fsmID] = true;
+    }
 
     int newNode(int fsmID){
+        if(isFrozen(fsmID)){
+            throw std::runtime_error("Cannot add nodes to fsm "
+                                     + std::to_string(fsmID) +
+                                     " after constraints implemented");
+        }
         assert(g_overs[fsmID]);
         g_overs[fsmID]->addNode();
 
@@ -538,7 +571,6 @@ public:
     }
 
     void backtrackUntil(int level) override{
-        static int it = 0;
 
         bool changed = false;
         //need to remove and add edges in the two graphs accordingly.
@@ -582,9 +614,6 @@ public:
 
             if(changed){
                 requiresPropagation = true;
-                /*				g.markChanged();
-                 antig.markChanged();
-                 cutGraph.markChanged();*/
             }
 
             for(FSMDetector* d : detectors){
@@ -654,25 +683,13 @@ public:
         }
 
         trail.shrink(trail.size() - (i + 1));
-        //if(i>0){
+
         requiresPropagation = true;//is this really needed?
 
-        /*			g.markChanged();
-         antig.markChanged();
-         cutGraph.markChanged();*/
-        //}
         for(FSMDetector* d : detectors){
             d->backtrack(this->decisionLevel());
         }
-        //while(trail_lim.size() && trail_lim.last()>=trail.size())
-        //	trail_lim.pop();
 
-        /*		for(int i = 0;i<reach_detectors.size();i++){
-         if(reach_detectors[i]->positive_reach_detector)
-         reach_detectors[i]->positive_reach_detector->update();
-         if(reach_detectors[i]->negative_reach_detector)
-         reach_detectors[i]->negative_reach_detector->update();
-         }*/
     };
 
     void newDecisionLevel() override{
@@ -704,7 +721,73 @@ public:
         return true;
     }
 
+    bool isFsmDefined(int fsmID){
+        return fsmID >= 0 && fsmID < g_overs.size() && g_overs[fsmID] != nullptr;
+    }
+
+private:
+    void ensureStateDefined(int fsmId, int state){
+        if(!isFsmDefined(fsmId)){
+            throw std::runtime_error("Undefined FSM with ID " + std::to_string(fsmId));
+        }
+        while(nNodes(fsmId) <= state){
+            newNode(fsmId);
+        }
+    }
+
+public:
+    void implementConstraints(){
+        if(!S->okay())
+            return;
+
+        // before implementing any constraints, ensure all states are defined
+        for(auto& c:unimplemented_string_accept_constraints){
+            ensureStateDefined(c.fsmID, c.sourceState);
+            ensureStateDefined(c.fsmID, c.acceptState);
+        }
+
+        for(auto& c:unimplemented_generator_accept_constraints){
+            ensureStateDefined(c.generatorFsmID, c.generatorSourceState);
+            ensureStateDefined(c.generatorFsmID, c.generatorAcceptState);
+
+            ensureStateDefined(c.acceptorFsmID, c.acceptorSourceState);
+            ensureStateDefined(c.acceptorFsmID, c.acceptorAcceptState);
+        }
+
+        for(auto& c:unimplemented_transduce_constraints){
+            ensureStateDefined(c.fsmID, c.source);
+            ensureStateDefined(c.fsmID, c.dest);
+        }
+
+        for(auto& c:unimplemented_generate_string_constraints){
+            ensureStateDefined(c.fsmID, c.source);
+        }
+
+        // implement constraints
+
+        for(auto& c:unimplemented_string_accept_constraints){
+            implementStringAcceptPrivate(c);
+        }
+        unimplemented_string_accept_constraints.clear();
+
+        for(auto& c:unimplemented_generator_accept_constraints){
+            implementComposeAccept(c);
+        }
+        unimplemented_generator_accept_constraints.clear();
+
+        for(auto& c:unimplemented_transduce_constraints){
+            implementTransduce(c);
+        }
+        unimplemented_transduce_constraints.clear();
+
+        for(auto& c:unimplemented_generate_string_constraints){
+            implementGenerateLit(c);
+        }
+        unimplemented_generate_string_constraints.clear();
+    }
+
     void preprocess() override{
+        implementConstraints();
         for(int i = 0; i < detectors.size(); i++){
             detectors[i]->preprocess();
         }
@@ -720,10 +803,9 @@ public:
                 vars[var(l)].occursNegative = occurs;
             }
             //this is a graph property detector var
-            //if (!sign(l) && vars[var(l)].occursPositive != occurs)
+
             detectors[getDetector(var(l))]->setOccurs(l, occurs);
-            //else if (sign(l) && vars[var(l)].occursNegative != occurs)
-            //	detectors[getDetector(var(l))]->setOccurs(l, occurs);
+
         }
 
     }
@@ -745,17 +827,6 @@ public:
         assert(assigns[var(l)] == l_Undef);
         assigns[var(l)] = sign(l) ? l_False : l_True;
         requiresPropagation = true;
-        //printf("enqueue %d\n", dimacs(l));
-
-/*#ifdef DEBUG_FSM
-		{
-			for (int i = 0; i < trail.size(); i++) {
-				assert(trail[i].var != v);
-			}
-		}
-#endif
-		*/
-
 
         if(isEdgeVar(var(l))){
 
@@ -784,18 +855,27 @@ public:
 
     }
 
-    //mark an atom as satisfied in the theory, so it doens't need to be tracked in the future
+    //mark an atom as satisfied in the theory, so it doesn't need to be tracked in the future
     void enqueueSat(Lit l){
-        assert(assigns[var(l)] != l_Undef);//the literal must be assigned
-        trail.push(Assignment(false, !sign(l), true, -1, var(l)));
-        vars[var(l)].isSatisfied = 1;
-        detectors[getDetector(var(l))]->setSatisfied(l, false);
+        assert(value(l) == l_True);//the literal must be assigned true
+        if(opt_detect_satisfied_predicates){
+            if(!vars[var(l)].isSatisfied){
+
+                while(decisionLevel() < S->decisionLevel()){
+                    newDecisionLevel();
+                }
+
+                vars[var(l)].isSatisfied = 1;
+                int d = getDetector(var(l));
+                detectors[d]->setSatisfied(l, true);
+            }
+        }
     }
 
     bool isSatisfied(Lit l){
-        assert(!(vars[var(l)].isSatisfied &&
-                 value(l) != l_True));//if the var is marked satisfied, it SHOULD be the case
-        //that it is assigned true.
+        assert(!(vars[var(l)].isSatisfied && value(l) == l_Undef));
+        // if the var is marked satisfied, it SHOULD be the case
+        // that it is assigned true.
         return vars[var(l)].isSatisfied;
     }
 
@@ -816,10 +896,7 @@ public:
     }
 
     bool propagateTheory(vec<Lit>& conflict, bool force_propagation){
-        static int itp = 0;
-        if(++itp == 11673){
-            int a = 1;
-        }
+
         stats_propagations++;
 
         if(!requiresPropagation){
@@ -837,15 +914,13 @@ public:
 
         bool any_change = false;
         double startproptime = rtime(1);
-        //static vec<int> detectors_to_check;
+
 
         conflict.clear();
         //Can probably speed this up alot by a) constant propagating reaches that I care about at level 0, and b) Removing all detectors for nodes that appear only in the opposite polarity (or not at all) in the cnf.
         //That second one especially.
 
         //At level 0, need to propagate constant reaches/source nodes/edges...
-
-        //stats_initial_propagation_time += rtime(1) - startproptime;
 
         assert(dbg_graphsUpToDate());
 
@@ -857,6 +932,8 @@ public:
                 toSolver(conflict);
                 propagationtime += rtime(1) - startproptime;
                 return false;
+            }else{
+                assert(conflict.size()==0);
             }
         }
 
@@ -872,7 +949,6 @@ public:
             }
         }
 
-        //detectors_to_check.clear();
 
         double elapsed = rtime(1) - startproptime;
         propagationtime += elapsed;
@@ -883,11 +959,8 @@ public:
     bool solveTheory(vec<Lit>& conflict) override{
         requiresPropagation = true;        //Just to be on the safe side... but this shouldn't really be required.
         bool ret = propagateTheory(conflict, true);
-/*		if(ret){
-			requiresPropagation = true;
-			assert(propagateTheory(conflict,true));
-		}*/
-        //Under normal conditions, this should _always_ hold (as propagateTheory should have been called and checked by the parent solver before getting to this point).
+        //Under normal conditions, this should _always_ hold
+        // (as propagateTheory should have been called and checked by the parent solver before getting to this point).
         assert(ret || opt_fsm_prop_skip > 1);
         return ret;
     };
@@ -905,6 +978,14 @@ public:
     }
 
     bool check_solved() override{
+
+        if(unimplemented_generate_string_constraints.size() > 0 ||
+           unimplemented_transduce_constraints.size() > 0 ||
+           unimplemented_generator_accept_constraints.size() > 0 ||
+           unimplemented_string_accept_constraints.size() > 0){
+            return false;
+        }
+
         for(int fsmID = 0; fsmID < nFsms(); fsmID++){
             if(!g_unders[fsmID])
                 continue;
@@ -924,12 +1005,6 @@ public:
                         }
 
                         if(val == l_True){
-                            /*	if(!g.hasEdge(e.from,e.to)){
-                             return false;
-                             }
-                             if(!antig.hasEdge(e.from,e.to)){
-                             return false;
-                             }*/
                             if(!g_under.transitionEnabled(edgeID, input, output)){
                                 return false;
                             }
@@ -937,18 +1012,12 @@ public:
                                 return false;
                             }
                         }else{
-                            /*if(g.hasEdge(e.from,e.to)){
-                             return false;
-                             }*/
                             if(g_under.transitionEnabled(edgeID, input, output)){
                                 return false;
                             }
                             if(g_over.transitionEnabled(edgeID, input, output)){
                                 return false;
                             }
-                            /*if(antig.hasEdge(e.from,e.to)){
-                             return false;
-                             }*/
                         }
                     }
                 }
@@ -1010,6 +1079,11 @@ public:
     }
 
     Lit newTransition(int fsmID, int from, int to, int input, int output, Var outerVar = var_Undef){
+        if(isFrozen(fsmID)){
+            throw std::runtime_error("Cannot add transition to fsm "
+                                     + std::to_string(fsmID) +
+                                     " after constraints implemented");
+        }
         assert(outerVar != var_Undef);
         assert(input >= 0);
         assert(outerVar != var_Undef);
@@ -1064,13 +1138,6 @@ public:
             assert(d);
             d->printSolution();
         }
-/*		std::string fsm_file = opt_fsm_model;
-		if(fsm_file.length()>0){
-			std::ofstream theory_out(fsm_file, std::ios::out);
-
-			writeTheoryWitness(write_to);
-		}*/
-
     }
 
     void setStrings(vec<vec<int>>* strings){
@@ -1081,95 +1148,161 @@ public:
     }
 
     void addAcceptLit(int fsmID, int source, int reach, int strID, Var outer_var){
-        assert(g_unders[fsmID]);
-        DynamicFSM& g_under = *g_unders[fsmID];
-        DynamicFSM& g_over = *g_overs[fsmID];
-        for(int i = 0; i < (*strings)[strID].size(); i++){
-            int l = (*strings)[strID][i];
-            if(l < 0 || l >= g_overs[fsmID]->inAlphabet()){
-                throw std::runtime_error(
-                        "String has letter " + std::to_string(l) + " out of range for fsm " + std::to_string(fsmID));
+        unimplemented_string_accept_constraints.push({fsmID, strID, source, reach, outer_var});
+    }
+
+private:
+    void implementStringAcceptPrivate(const StringAcceptConstraint& constraint){
+        assert(g_unders[constraint.fsmID]);
+        DynamicFSM& g_under = *g_unders[constraint.fsmID];
+        DynamicFSM& g_over = *g_overs[constraint.fsmID];
+        for(int i = 0; i < (*strings)[constraint.strID].size(); i++){
+            int l = (*strings)[constraint.strID][i];
+            if(l < 0 || l >= g_overs[constraint.fsmID]->inAlphabet()){
+                throw std::runtime_error("String has letter " + std::to_string(l) + " out of range for fsm " +
+                                         std::to_string(constraint.fsmID));
             }
         }
-        accepts.growTo(source + 1);
-        if(!accepts[source]){
-            accepts[source] = new FSMAcceptDetector(detectors.size(), this, g_under, g_over, source, *strings,
-                                                    drand(rnd_seed));
-            detectors.push(accepts[source]);
+        while(constraint.sourceState >= g_over.nodes() || constraint.acceptState >= g_over.nodes()){
+            g_over.addNode();
+            g_under.addNode();
         }
-        accepts[source]->addAcceptLit(reach, strID, outer_var);
+
+        accepts.growTo(constraint.sourceState + 1);
+        if(!accepts[constraint.sourceState]){
+            accepts[constraint.sourceState] = new FSMAcceptDetector(detectors.size(), this,
+                                                                    g_under, g_over, constraint.sourceState, *strings,
+                                                                    drand(rnd_seed));
+            detectors.push(accepts[constraint.sourceState]);
+        }
+        accepts[constraint.sourceState]->addAcceptLit(constraint.acceptState, constraint.strID, constraint.outer_var);
+        freezeFSM(constraint.fsmID);
     }
 
+public:
     void addGenerateLit(int fsmID, int source, int strID, Var outer_var){
-        assert(g_unders[fsmID]);
-        DynamicFSM& g_under = *g_unders[fsmID];
-        DynamicFSM& g_over = *g_overs[fsmID];
-        generates.growTo(source + 1);
-        if(!generates[source]){
-            generates[source] = new FSMGeneratesDetector(detectors.size(), this, g_under, g_over, source, *strings,
-                                                         drand(rnd_seed));
-            detectors.push(generates[source]);
-        }
-        generates[source]->addGeneratesLit(strID, outer_var);
+        unimplemented_generate_string_constraints.push({
+                                                               fsmID, source, strID, outer_var
+                                                       });
     }
+
+private:
+    void implementGenerateLit(const GenerateStringConstraint& constraint){
+        assert(g_unders[constraint.fsmID]);
+        DynamicFSM& g_under = *g_unders[constraint.fsmID];
+        DynamicFSM& g_over = *g_overs[constraint.fsmID];
+        generates.growTo(constraint.source + 1);
+        if(!generates[constraint.source]){
+            generates[constraint.source] = new FSMGeneratesDetector(detectors.size(), this, g_under, g_over,
+                                                                    constraint.source, *strings, drand(rnd_seed));
+            detectors.push(generates[constraint.source]);
+        }
+        generates[constraint.source]->addGeneratesLit(constraint.strID, constraint.outer_var);
+        freezeFSM(constraint.fsmID);
+    }
+
+public:
 
     void addTransduceLit(int fsmID, int source, int dest, int strID, int strID2, Var outer_var){
-        assert(g_unders[fsmID]);
-        DynamicFSM& g_under = *g_unders[fsmID];
-        DynamicFSM& g_over = *g_overs[fsmID];
-        transduces.growTo(source + 1);
-        if(!transduces[source]){
-            transduces[source] = new FSMTransducesDetector(detectors.size(), this, g_under, g_over, source, *strings,
-                                                           drand(rnd_seed));
-            detectors.push(transduces[source]);
-        }
-        transduces[source]->addTransducesLit(dest, strID, strID2, outer_var);
+        unimplemented_transduce_constraints.push({fsmID, source, dest, strID, strID2, outer_var});
     }
 
-    void addComposeAcceptLit(int fsmID1, int fsmID2, int from1, int to1, int from2, int to2, int strID, Var reachVar,
-                             bool generator_is_deterministic = false){
-        //for now, only linear generator/acceptor compositions are supported
-        if(strID >= 0){
-            throw std::invalid_argument("String inputs are not yet supported in compositions");
+private:
+    void implementTransduce(const TransduceConstraint& constraint){
+        assert(g_unders[constraint.fsmID]);
+        DynamicFSM& g_under = *g_unders[constraint.fsmID];
+        DynamicFSM& g_over = *g_overs[constraint.fsmID];
+        transduces.growTo(constraint.source + 1);
+        if(!transduces[constraint.source]){
+            transduces[constraint.source] =
+                    new FSMTransducesDetector(detectors.size(), this, g_under, g_over, constraint.source, *strings,
+                                              drand(rnd_seed));
+            detectors.push(transduces[constraint.source]);
+        }
+        transduces[constraint.source]->addTransducesLit(constraint.dest, constraint.strID, constraint.strID2,
+                                                        constraint.outer_var);
+        freezeFSM(constraint.fsmID);
+    }
 
+public:
+
+    void addComposeAcceptLit(int generatorFsmId, int acceptorFsmId, int generatorSourceState,
+                             int generatorAcceptState, int acceptorSourceState, int acceptorAcceptState, int strID,
+                             Var reachVar, bool generator_is_deterministic = false){
+        if(strID >= 0){
+            throw std::invalid_argument("String inputs are not yet supported in compositions (strId must be -1)");
+        }
+        unimplemented_generator_accept_constraints.push({generatorFsmId, acceptorFsmId, strID, generatorSourceState,
+                                                         generatorAcceptState, acceptorSourceState, acceptorAcceptState,
+                                                         generator_is_deterministic, reachVar});
+    }
+
+private:
+    void implementComposeAccept(const GeneratorAcceptConstraint& constraint){
+        //for now, only linear generator/acceptor compositions are supported
+        if(constraint.strID >= 0){
+            throw std::invalid_argument("String inputs are not yet supported in compositions (strId must be -1)");
         }
 
-        if(!g_overs[fsmID1] || !g_overs[fsmID2]){
+        if(!g_overs[constraint.generatorFsmID] || !g_overs[constraint.acceptorFsmID]){
             throw std::invalid_argument("Undefined FSM ID");
 
         }
-        if(from1 >= g_overs[fsmID1]->states() || from2 >= g_overs[fsmID2]->states() ||
-           to1 >= g_overs[fsmID1]->states() || to2 >= g_overs[fsmID2]->states()){
+        while(constraint.generatorSourceState >= g_overs[constraint.generatorFsmID]->nodes()
+              || constraint.generatorAcceptState >= g_overs[constraint.generatorFsmID]->nodes()){
+            g_overs[constraint.generatorFsmID]->addNode();
+            g_unders[constraint.generatorFsmID]->addNode();
+        }
+
+        while(constraint.acceptorSourceState >= g_overs[constraint.acceptorFsmID]->nodes()
+              || constraint.acceptorAcceptState >= g_overs[constraint.acceptorFsmID]->nodes()){
+            g_overs[constraint.acceptorFsmID]->addNode();
+            g_unders[constraint.acceptorFsmID]->addNode();
+        }
+
+        if(constraint.generatorSourceState >= g_overs[constraint.generatorFsmID]->states()
+           || constraint.acceptorSourceState >= g_overs[constraint.acceptorFsmID]->states() ||
+           constraint.generatorAcceptState >= g_overs[constraint.generatorFsmID]->states()
+           || constraint.acceptorAcceptState >= g_overs[constraint.acceptorFsmID]->states()){
             throw std::invalid_argument("Undefined fsm state in formula");
 
         }
-        if(!g_overs[fsmID1]->isGenerator()){
+        if(!g_overs[constraint.generatorFsmID]->isGenerator()){
             throw std::invalid_argument("Only compositions of linear generators with FSAs are supported");
 
         }
-        if(!g_overs[fsmID1]->isLinear()){
+        if(!g_overs[constraint.generatorFsmID]->isLinear()){
             throw std::invalid_argument("Only compositions of linear generators with FSAs are supported");
 
         }
-        if(!g_overs[fsmID2]->isAcceptor()){
+        if(!g_overs[constraint.acceptorFsmID]->isAcceptor()){
             throw std::invalid_argument("Only compositions of linear generators with FSAs are supported");
 
         }
-        if(g_overs[fsmID1]->out_alphabet != g_overs[fsmID2]->in_alphabet){
+        if(g_overs[constraint.generatorFsmID]->out_alphabet != g_overs[constraint.acceptorFsmID]->in_alphabet){
             throw std::invalid_argument(
-                    "Size of output alphabet of first fsm (was " + std::to_string(g_overs[fsmID1]->out_alphabet) +
+                    "Size of output alphabet of first fsm (was " +
+                    std::to_string(g_overs[constraint.generatorFsmID]->out_alphabet) +
                     ") must match size of input alphabet of second fsm (was " +
-                    std::to_string(g_overs[fsmID2]->in_alphabet) + ")");
+                    std::to_string(g_overs[constraint.acceptorFsmID]->in_alphabet) + ")");
         }
+
+        bool generator_is_deterministic = constraint.generator_is_deterministic;
 
         FSMGeneratorAcceptorDetector* d = nullptr;
-        auto key = std::tuple<int, int, int, int, bool>(fsmID1, fsmID2, from1, from2, generator_is_deterministic);
+        auto key = std::tuple<int, int, int, int, bool>(constraint.generatorFsmID, constraint.acceptorFsmID,
+                                                        constraint.generatorSourceState, constraint.acceptorSourceState,
+                                                        generator_is_deterministic);
         if(gen_accept_map.has(key)){
             d = gen_accept_map[key];
         }else{
 
-            d = new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[fsmID1], *g_overs[fsmID1],
-                                                 *g_unders[fsmID2], *g_overs[fsmID2], from1, from2, drand(rnd_seed));
+            d = new FSMGeneratorAcceptorDetector(detectors.size(), this, *g_unders[constraint.generatorFsmID],
+                                                 *g_overs[constraint.generatorFsmID],
+                                                 *g_unders[constraint.acceptorFsmID],
+                                                 *g_overs[constraint.acceptorFsmID], constraint.generatorSourceState,
+                                                 constraint.acceptorSourceState,
+                                                 drand(rnd_seed));
             detectors.push(d);
             if(generator_is_deterministic){
                 d->setGeneratorDeterministic(true);
@@ -1177,10 +1310,15 @@ public:
             gen_accept_map.insert(key, d);
         }
 
-        d->addAcceptLit(to1, to2, reachVar);
-        gen_accept_lit_map.growTo(reachVar + 1, nullptr);
-        gen_accept_lit_map[reachVar] = d;
+        d->addAcceptLit(constraint.generatorAcceptState, constraint.acceptorAcceptState, constraint.outer_var);
+        gen_accept_lit_map.growTo(constraint.outer_var + 1, nullptr);
+        gen_accept_lit_map[constraint.outer_var] = d;
+
+        freezeFSM(constraint.generatorFsmID);
+        freezeFSM(constraint.acceptorFsmID);
     }
+
+public:
 
     void addComposeAcceptSuffixFSM(Var composeAcceptVar, int suffix_fsmID){
         assert(composeAcceptVar < gen_accept_lit_map.size());

@@ -531,17 +531,12 @@ IntOption Monosat::opt_fsm_symmetry_breaking(_cat_fsm, "fsm-symmetry-breaking",
                                              "", 0, IntRange(0, 2));
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
                                                "", false);//this option appears to be broken
-BoolOption Monosat::opt_fsm_forced_edge_prop(_cat_fsm, "fsm-forced-edge-prop",
-                                             "", true);
-BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop",
-                                      "", true);
-BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph",
-                                     "", false);
-BoolOption Monosat::opt_fsm_chokepoint_prop(_cat_fsm, "fsm-chokepoint",
-                                            "", true);
+BoolOption Monosat::opt_fsm_forced_edge_prop(_cat_fsm, "fsm-forced-edge-prop","", false);
+BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop", "", false);
+BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph","", true);
+BoolOption Monosat::opt_fsm_chokepoint_prop(_cat_fsm, "fsm-chokepoint","", false);
 
-BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows",
-                                            "", false);
+BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows","", false);
 
 IntOption Monosat::opt_min_edgeset(_cat_graph, "min-edge-set",
                                    "set to 0 to accept all edge sets, or -1 to disable all edge sets", 10,

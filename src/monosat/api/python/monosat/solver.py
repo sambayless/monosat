@@ -18,7 +18,6 @@ def Solve(
         preprocessing=True,
         bvs_to_minimize=None,
         time_limit_seconds=None,
-
         conflict_limit=None
 ):
     WriteConstraints()

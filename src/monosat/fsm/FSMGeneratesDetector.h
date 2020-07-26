@@ -77,7 +77,6 @@ public:
 
         int str;
     };
-    //vec<bool> is_changed;
     vec<Change> changed;
 
     vec<Lit> generate_lits;
@@ -105,7 +104,6 @@ public:
 
 
     void printStats() override{
-        //printf("Reach detector\n");
         FSMDetector::printStats();
         if(opt_detect_pure_theory_lits)
             printf("\tPropagations skipped by pure literal detection: %d\n", stats_pure_skipped);
@@ -124,10 +122,7 @@ public:
         if(index >= 0 && index < generate_lit_map.size() && generate_lit_map[index].str != -1){
 
             int str = generate_lit_map[index].str;
-            //if (!is_changed[index]) {
             changed.push({{var(l)}, str});
-            //	is_changed[index] = true;
-            //}
         }
     }
 
@@ -187,4 +182,4 @@ private:
 
 };
 };
-#endif /* REACHDETECTOR_H_ */
+#endif
