@@ -133,9 +133,9 @@ c FSM 1 must accept the string produced by FSM 2:
 ### FSM Syntax Guide
 
 ```
-fsm ID IN_LANGUAGE_SIZE OUT_LANGUAGE_SIZE 0 // last value is not used
+fsm FSM_ID IN_LANGUAGE_SIZE OUT_LANGUAGE_SIZE 0 // last value is not used
 transition FSM_ID FROM_STATE TO_STATE CONSUME_CHAR PRODUCE_CHAR VAR
-str ID [0 or more positive integers] 0
+str STR_ID [0 or more positive integers] 0
 accepts FSM_ID START_STATE END_STATE STR_ID VAR
 accepts_composition GEN_FSM_ID ACC_FSM_ID GEN_START GEN_END ACC_START ACC_END 0 VAR
 ```
