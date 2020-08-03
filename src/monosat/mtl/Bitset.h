@@ -98,6 +98,16 @@ private:
         return (int) ((((i + (i >> 4)) & 0xF0F0F0F0F0F0F0FUL) * 0x101010101010101UL) >> 56);
     }
 
+    // Return index of lowest non-zero bit (or -1 if no bit is set)
+    static int bit_pos64(uint64_t value) {
+        // this can be done more quickly using intrinsics, etc
+        int p = -1;
+        while(value){
+            value>>=1;
+            p++;
+        }
+        return p;
+    }
 public:
 
     void swap(Bitset& b){
@@ -271,6 +281,26 @@ public:
         out.sz = sz;
     }
 
+    void Xor(const Bitset& with, Bitset& out){
+        out.clear();
+        out.growTo(size());
+        int max = size();
+        if(max > with.size()){
+            max = with.size();
+        }
+        int max_i = max / BITSET_ELEMENT_SIZE + 1;
+        for(int i = 0; i < max_i; i++){
+            uint64_t a = buf[i];
+            uint64_t b = with.buf[i];
+            out.buf[i] = a ^ b;
+        }
+        for(int i = max_i; i < buf.size(); i++){
+            uint64_t a = buf[i];
+            out.buf[i] = a;
+        }
+        out.sz = sz;
+    }
+
     bool GreaterThan(const Bitset& with){
         //Thanks to Tobias for this implementation
         int max = size();
@@ -290,6 +320,37 @@ public:
             }
         }
         return false;
+    }
+
+    // Return index of an arbitrary bit that is set in this bitset
+    int getIndexOfSetBit() const{
+        int max = size();
+        int max_i = max / BITSET_ELEMENT_SIZE + 1;
+        for(int i = 0; i < max_i; i++){
+            uint64_t a = buf[i];
+            if (a != 0){
+                return i*BITSET_ELEMENT_SIZE + bit_pos64(a);
+            }
+        }
+        return -1;
+    }
+    // Return index of a bit that is set in both bitsets, or -1 if there is no such bit
+    int getIndexOfMutualBit(const Bitset & with) const{
+        uint64_t tmp = 0;
+        int max = size();
+        if(max > with.size()){
+            max = with.size();
+        }
+        int max_i = max / BITSET_ELEMENT_SIZE + 1;
+        for(int i = 0; i < max_i; i++){
+            uint64_t a = buf[i];
+            uint64_t b = with.buf[i];
+            tmp = (a & b);
+            if (tmp != 0){
+                return i*BITSET_ELEMENT_SIZE + bit_pos64(tmp);
+            }
+        }
+        return -1;
     }
 };
 //=================================================================================================

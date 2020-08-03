@@ -1439,13 +1439,13 @@ CRef Solver::propagate(bool propagate_theories){
             }
             initialPropagate = false;
         }
-        static int iter = 0;
-        if(++iter == 36){
 
-            int a = 1;
-        }
-        //printf("iter %d\n",iter);
-        //printf("iter %d\n",iter);
+
+
+
+
+
+
         //propagate theories;
 
         while(qhead == trail.size() && confl == CRef_Undef &&
@@ -1927,14 +1927,14 @@ void Solver::addClauseSafely(vec<Lit>& ps){
 }
 
 bool Solver::addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent){
-    static int nlearnt = 0;
-    if(++nlearnt == 111){
-        int a = 1;
-    }
+
+
+
+
     if(opt_write_learnt_clauses){
-        if(++opt_n_learnts == 47){
-            int a = 1;
-        }
+
+
+
 
         fprintf(opt_write_learnt_clauses, "learnt ");
         for(Lit l:ps){
@@ -1943,14 +1943,14 @@ bool Solver::addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent){
         fprintf(opt_write_learnt_clauses, " 0\n");
         fflush(opt_write_learnt_clauses);
     }
-    //bool any_undef=false;
+
     sort(ps);
     Lit p;
     int i, j;
     for(i = j = 0, p = lit_Undef; i < ps.size(); i++){
         assert(var(ps[i]) != var(theoryDecision));
-        //if(decisionLevel()>0 && value(ps[i])==l_Undef)
-        //	any_undef=true;
+
+
         if(((value(ps[i]) == l_True && level(var(ps[i])) == 0)) || ps[i] == ~p)
             return true;
         else if((value(ps[i]) != l_False || level(var(ps[i])) != 0) && ps[i] != p)
@@ -1958,9 +1958,9 @@ bool Solver::addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent){
 
     }
     ps.shrink(i - j);
-/*	if(any_undef){
-		cancelUntil(0);//this is _not_ a conflict clause.
-	}*/
+
+
+
     confl_out = CRef_Undef;
     if(ps.size() == 0){
         ok = false;
@@ -2077,8 +2077,8 @@ bool Solver::addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent){
             attachClause(cr);
             confl_out = cr;
         }
-        //if (!satisfied )
-        //	cancelUntil(max_lev);
+
+
 
         if(!satisfied && nfalse == ps.size() - 1){
             cancelUntil(max_lev);

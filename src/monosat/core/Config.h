@@ -82,6 +82,7 @@ extern int64_t opt_n_learnts;
 extern BoolOption opt_write_bv_bounds;
 extern BoolOption opt_write_bv_analysis;
 extern FILE* opt_write_learnt_clauses;
+
 //extern StringOption opt_fsm_model;
 
 

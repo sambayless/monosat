@@ -696,6 +696,7 @@ bool FSMGeneratorAcceptorDetector::propagate(vec<Lit>& conflict){
                                     }else if(outer->value(f) == l_True){
                                         conflict.push(~f);
                                         buildDeterministicForcedEdgeReason(gen_to, accept_to, edgeID, label, conflict);
+                                        return false;
                                     }
                                 }
                             }
@@ -780,12 +781,13 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
 
     //find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
     if(!opt_fsm_negate_underapprox){
-        static vec<NFATransition> path;
-        path.clear();
-        underapprox_detector->getGeneratorPath(genFinal, acceptFinal, path);
+        static vec<NFATransition> generator_path;
+        static vec<NFATransition> acceptor_path;
+        generator_path.clear();
+        underapprox_detector->getGeneratorAceptorPath(genFinal, acceptFinal, generator_path, acceptor_path);
 
         assert(underapprox_detector->accepts(genFinal, acceptFinal));
-        for(auto& t:path){
+        for(auto& t:generator_path){
             int edgeID = t.edgeID;
             int input = t.input;
             assert(input == 0);
@@ -794,7 +796,15 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
             assert(outer->value(v) == l_True);
             conflict.push(mkLit(v, true));
         }
-
+        for(auto& t:acceptor_path){
+            int edgeID = t.edgeID;
+            int input = t.input;
+            int output = t.output;
+            assert(output ==0);
+            Var v = outer->getTransitionVar(acceptor_over.getID(), edgeID, input, 0);
+            assert(outer->value(v) == l_True);
+            conflict.push(mkLit(v, true));
+        }
     }else{
 
         forced_edges.clear();
@@ -803,11 +813,11 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
         //run an NFA to find all transitions that accepting prefixes use.
         //printf("conflict %d\n",iter);
         //g_over.draw(gen_source,genFinal);
-        static vec<NFATransition> path;
-        path.clear();
-        inverted_overapprox_detector->getGeneratorPath(genFinal, acceptFinal, path, false, true);
+        static vec<NFATransition> generator_path;
+        generator_path.clear();
+        inverted_overapprox_detector->getGeneratorPath(genFinal, acceptFinal, generator_path, false, true);
 
-        for(auto& t:path){
+        for(auto& t:generator_path){
             //printf("%d(c%d), ", t.edgeID, t.output);
             int edgeID = t.edgeID;
             int input = t.input;
@@ -820,7 +830,7 @@ void FSMGeneratorAcceptorDetector::buildAcceptReason(int genFinal, int acceptFin
                 conflict.push(mkLit(v, true));
             }
         }
-        //printf("\n");
+
 
     }
 
@@ -1415,15 +1425,14 @@ void FSMGeneratorAcceptorDetector::buildNonSuffixAcceptReason(int genFinal, int 
 
 void FSMGeneratorAcceptorDetector::buildNonAcceptReason(int genFinal, int acceptFinal, vec<Lit>& conflict){
 
-    static vec<NFATransition> path;
-    path.clear();
+    static vec<NFATransition> generatorPath;
+    generatorPath.clear();
+    static vec<NFATransition> acceptorPath;
+    acceptorPath.clear();
     assert(!overapprox_detector->accepts(genFinal, acceptFinal, false));
-    //run an NFA to find all transitions that accepting prefixes use.
-    overapprox_detector->getGeneratorPath(genFinal, acceptFinal, path, true, true);//why is this needed?
+
     static vec<bool> seen_states;
-
     buildSuffixCut(genFinal, acceptFinal, conflict, false, false);
-
 }
 
 void FSMGeneratorAcceptorDetector::updatePrefixTable(int gen_final, int accept_final){
@@ -1742,12 +1751,21 @@ Lit FSMGeneratorAcceptorDetector::decide(int level){
         if(outer->value(l) != l_False){
             int gen_to = t.gen_to;
             int accept_to = t.accept_to;
-            static vec<NFATransition> path;
-            path.clear();
-
-            if(overapprox_detector->getGeneratorPath(gen_to, accept_to, path, true, false)){
-                for(auto& t:path){
+            static vec<NFATransition> generatorPath;
+            generatorPath.clear();
+            static vec<NFATransition> acceptorPath;
+            acceptorPath.clear();
+            if(overapprox_detector->getGeneratorAceptorPath(gen_to, accept_to, generatorPath, acceptorPath)){
+                for(auto& t:generatorPath){
                     Var v = outer->getTransitionVar(g_over.getID(), t.edgeID, t.input, t.output);
+                    if(outer->value(v) == l_Undef){
+                        stats_decisions++;
+                        stats_decide_time += rtime(2) - startdecidetime;
+                        return mkLit(v, false);
+                    }
+                }
+                for(auto& t:acceptorPath){
+                    Var v = outer->getTransitionVar(acceptor_over.getID(), t.edgeID, t.input, t.output);
                     if(outer->value(v) == l_Undef){
                         stats_decisions++;
                         stats_decide_time += rtime(2) - startdecidetime;
@@ -1773,13 +1791,15 @@ void FSMGeneratorAcceptorDetector::printSolution(std::ostream& out){
         int accept_to = t.accept_to;
 
         if(outer->value(l) == l_True){
-            static vec<NFATransition> path;
-            path.clear();
+            static vec<NFATransition> generatorPath;
+            generatorPath.clear();
+            static vec<NFATransition> acceptorPath;
+            acceptorPath.clear();
             assert(underapprox_detector->accepts(gen_to, accept_to));
-            underapprox_detector->getGeneratorPath(gen_to, accept_to, path);
+            underapprox_detector->getGeneratorPath(gen_to, accept_to, generatorPath, acceptorPath);
 
             out << "Generated string: ";
-            for(auto& t:path){
+            for(auto& t:generatorPath){
                 int edgeID = t.edgeID;
                 int output = t.output;
                 Var v = outer->getTransitionVar(g_over.getID(), edgeID, 0, output);

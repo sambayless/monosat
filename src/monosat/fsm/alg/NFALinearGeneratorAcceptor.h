@@ -58,7 +58,13 @@ class NFALinearGeneratorAcceptor {
 
     vec<bool> next_seen;
     vec<bool> cur_seen;
+    vec<int> cur_from;
     vec<bool> pre_accept_state_seen;
+
+    vec<vec<bool>> all_acceptor_seen;
+    vec<Bitset> all_seen_chars;
+    vec<int> gen_used_chars;
+
     vec<int> gen_cur;
     vec<int> gen_next;
     vec<bool> gen_next_seen;
@@ -69,6 +75,8 @@ class NFALinearGeneratorAcceptor {
     vec<Bitset> suffixTable;
     vec<int> chars;
     vec<bool> seen_chars;
+
+
 
     struct Check {
         int gen_final;
@@ -851,10 +859,10 @@ private:
         return accepted;
     }
 
-    bool find_gen_path(int gen_final, int accept_final, vec<NFATransition>& path, bool invertAcceptance = false,
+    bool find_gen_path(int gen_final, int accept_final, vec<NFATransition>& generator_path, bool invertAcceptance = false,
                        bool all_paths = false){
         bool accepting_state_is_attractor = !invertAcceptance && isAttractor(accept_final);
-        path.clear();
+        generator_path.clear();
         for(int s:cur){
             assert(cur_seen);
             cur_seen[s] = false;
@@ -875,6 +883,7 @@ private:
         gen_cur.push(gen_source);
         chars.clear();
         DynamicFSM& g = accept;
+
         bool any_non_acceptors = accept_source != accept_final;
         bool any_non_acceptors_next = false;
         //initial emove pass:
@@ -896,7 +905,7 @@ private:
             }
         }
         //initial emove pass:
-        if(gen.emovesEnabled()){
+        if(gen.emovesEnabled(false)){
             for(int i = 0; i < gen_cur.size(); i++){
                 int s = gen_cur[i];
                 for(int j = 0; j < gen.nIncident(s); j++){
@@ -908,7 +917,7 @@ private:
                             gen_cur_seen[to] = true;
                             gen_cur.push(to);
                         }
-                        path.push({edgeID, 0, 0});
+                        generator_path.push({edgeID, 0, 0});
                     }
                 }
             }
@@ -918,9 +927,9 @@ private:
         bool accepted = false;
         //use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
         while(!accepted){
-            int prev_path_size = path.size();
+            int prev_path_size = generator_path.size();
             int cur_gen_state = 0;
-            bool accepting = stepGenerator(gen_final, chars, seen_chars, cur_gen_state, &path);//get set of next strings
+            bool accepting = stepGenerator(gen_final, chars, seen_chars, cur_gen_state, &generator_path);//get set of next strings
             if(accepting_state_is_attractor){
                 accepting = true;
             }
@@ -955,11 +964,11 @@ private:
                                 cur.push(to);
                                 if(to != accept_final)
                                     any_non_acceptors = true;
-                                //status.reaches(str,to,edgeID,0);
+
                             }
 
                             if(!next_seen[to] && g.transitionEnabled(edgeID, l, 0)){
-                                //status.reaches(str,to,edgeID,l);
+
                                 next_seen[to] = true;
                                 next.push(to);
                                 if(to != accept_final)
@@ -972,17 +981,17 @@ private:
             if(!invertAcceptance && !all_paths){
                 if(prev_accepting && cur_seen[accept_final]){
                     accepted = true;
-                    path.shrink(path.size() - prev_path_size);
+                    generator_path.shrink(generator_path.size() - prev_path_size);
                 }
             }else if(invertAcceptance && !all_paths){
                 if(prev_accepting && any_non_acceptors){
                     accepted = true;
-                    path.shrink(path.size() - prev_path_size);
+                    generator_path.shrink(generator_path.size() - prev_path_size);
                 }
             }else if(all_paths){
                 if(prev_accepting && !any_non_acceptors){
                     accepted = true;
-                    path.shrink(path.size() - prev_path_size);
+                    generator_path.shrink(generator_path.size() - prev_path_size);
                 }
             }
 
@@ -1011,6 +1020,319 @@ private:
 
         return accepted;
     }
+
+    // find an accepting path through both the generator and acceptor (if one exists)
+    // else, return false
+    bool find_generator_acceptor_path(int gen_final, int accept_final, vec<NFATransition>& generator_path,vec<NFATransition>& acceptor_path){
+        acceptor_path.clear();
+        generator_path.clear();
+        bool accepting_state_is_attractor = isAttractor(accept_final);
+        generator_path.clear();
+        for(int s:cur){
+            assert(cur_seen);
+            cur_seen[s] = false;
+        }
+        cur.clear();
+        assert(next.size() == 0);
+        cur_seen[accept_source] = true;
+        cur.push(accept_source);
+
+        for(vec<bool> & s :all_acceptor_seen ){
+            s.clear();
+        }
+        for(Bitset & seenChars:all_seen_chars){
+            seenChars.zero();
+        }
+        int acceptLength = 0;
+
+        for(int s:gen_cur){
+            assert(gen_cur_seen);
+            gen_cur_seen[s] = false;
+        }
+
+        gen_cur.clear();
+        assert(next.size() == 0);
+        gen_cur_seen[gen_source] = true;
+        gen_cur.push(gen_source);
+        chars.clear();
+        DynamicFSM& g = accept;
+
+        bool any_non_acceptors = accept_source != accept_final;
+        bool any_non_acceptors_next = false;
+        //initial emove pass:
+        if(g.emovesEnabled()){
+            for(int i = 0; i < cur.size(); i++){
+                int s = cur[i];
+                for(int j = 0; j < g.nIncident(s); j++){
+                    //now check if the label is active
+                    int edgeID = g.incident(s, j).id;
+                    int to = g.incident(s, j).node;
+                    if(!cur_seen[to] && g.transitionEnabled(edgeID, 0, 0)){
+                        cur_seen[to] = true;
+                        cur.push(to);
+                        if(to != accept_final)
+                            any_non_acceptors = true;
+                    }
+
+                }
+            }
+        }
+        //initial emove pass:
+        if(gen.emovesEnabled(false)){
+            for(int i = 0; i < gen_cur.size(); i++){
+                int s = gen_cur[i];
+                for(int j = 0; j < gen.nIncident(s); j++){
+                    //now check if the label is active
+                    int edgeID = gen.incident(s, j).id;
+                    int to = gen.incident(s, j).node;
+                    if(gen.transitionEnabled(edgeID, 0, 0)){
+                        if(!gen_cur_seen[to]){
+                            gen_cur_seen[to] = true;
+                            gen_cur.push(to);
+                        }
+                        generator_path.push({edgeID, 0, 0});
+                    }
+                }
+            }
+        }
+
+        bool prev_accepting = accepting_state_is_attractor ? true : gen_cur_seen[gen_final];
+        bool accepted = false;
+        //use the linear generator to produce a (set) of strings. Because the generator is linear, it is only ever in one state, which greatly simplifies the reasoning here...
+        while(!accepted){
+            int prev_path_size = generator_path.size();
+            int cur_gen_state = -1;
+            bool accepting = stepGenerator(gen_final, chars, seen_chars, cur_gen_state, &generator_path);//get set of next strings
+            if(accepting_state_is_attractor){
+                accepting = true;
+            }
+
+            if(chars.size() == 0){
+                for(int i = 0; i < cur.size(); i++){
+                    int s = cur[i];
+                    for(int j = 0; j < g.nIncident(s); j++){
+                        //now check if the label is active
+                        int edgeID = g.incident(s, j).id;
+                        int to = g.incident(s, j).node;
+                        if(!cur_seen[to] && g.transitionEnabled(edgeID, 0, 0)){
+                            cur_seen[to] = true;
+                            cur.push(to);
+                            if(to != accept_final)
+                                any_non_acceptors = true;
+
+                        }
+                    }
+                }
+            }else{
+
+                for(int l:chars){
+                    assert(l > 0);
+                    for(int i = 0; i < cur.size(); i++){
+                        int s = cur[i];
+                        for(int j = 0; j < g.nIncident(s); j++){
+                            //now check if the label is active
+                            int edgeID = g.incident(s, j).id;
+                            int to = g.incident(s, j).node;
+                            if(!cur_seen[to] && g.transitionEnabled(edgeID, 0, 0)){
+                                cur_seen[to] = true;
+                                cur.push(to);
+                                if(to != accept_final)
+                                    any_non_acceptors = true;
+
+                            }
+
+                            if(!next_seen[to] && g.transitionEnabled(edgeID, l, 0)){
+
+                                next_seen[to] = true;
+                                next.push(to);
+                                if(to != accept_final)
+                                    any_non_acceptors_next = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(prev_accepting && cur_seen[accept_final]){
+                accepted = true;
+                generator_path.shrink(generator_path.size() - prev_path_size);
+            }
+            acceptLength++;
+
+            all_acceptor_seen.growTo(acceptLength);
+            all_acceptor_seen[acceptLength-1].clear();
+            all_acceptor_seen[acceptLength-1].growTo(g.states());
+            all_acceptor_seen[acceptLength-1].swap(cur_seen);
+
+            cur.clear();
+            next.swap(cur);
+            next_seen.swap(cur_seen);
+
+            all_seen_chars.growTo(acceptLength);
+            all_seen_chars[acceptLength-1].clear();
+            all_seen_chars[acceptLength-1].growTo(g.inAlphabet());
+
+            if(chars.size() == 0){
+                //must eventually happen because the generator is linear.
+                break;
+            }
+
+
+            for(int l :chars){
+                assert(seen_chars[l]);
+                all_seen_chars[acceptLength-1].set(l);
+                seen_chars[l] = false;
+            }
+            chars.clear();
+            prev_accepting = accepting;
+            any_non_acceptors = any_non_acceptors_next;
+            any_non_acceptors_next = false;
+
+        }
+        for(int s:cur){
+            assert(cur_seen);
+            cur_seen[s] = false;
+        }
+        cur.clear();
+        if (accepted){
+            // walk back from the acceptor's accepting state, narrowing the seen states at each stage to only
+            // ones that actually reach the accepting state
+            assert(all_seen_chars.size()== all_acceptor_seen.size());
+            acceptor_path.clear();
+            gen_used_chars.clear();
+            int cur_generator_state = gen_final;
+
+            // there is room to improve this to find a guaranteed shortest path
+            assert(cur.size()==0);
+
+            cur.push(accept_final);
+            cur_seen[accept_final]=true;
+
+            cur_from.clear();
+            cur_from.growTo(accept.states(),-1);
+            bool foundAcceptingState = false;
+            for (int i = acceptLength-1;i>=0;i--){
+                // for states reached through emoves, records which state they came from
+
+                assert(i>=0);
+                bool foundTransitionToPrevious = false;
+                int previousAcceptorState = -1;
+                for(int c = 0;c<cur.size();c++){
+                    int acceptor_state = cur[c];
+                    // first see if there is a non-epsilon transition to an accepting previous state
+                    if (i>0){
+                        for(int j = 0; j < g.nIncoming(acceptor_state); j++){
+                            //now check if the label is active
+                            int edgeID = g.incoming(acceptor_state, j).id;
+                            int from = g.incoming(acceptor_state, j).node;
+                            if(i > 0 && all_acceptor_seen[i - 1][from]){
+                                assert(!all_seen_chars[i - 1][0]);
+                                int l = g.getAnyEnabledTransition(edgeID, all_seen_chars[i - 1]);
+                                if(l > 0){
+                                    foundTransitionToPrevious = true;
+                                    previousAcceptorState = from;
+                                    // this is a transition from a previous state
+                                    // add to the path
+                                    acceptor_path.push({edgeID, l, 0});
+                                    // also include any emoves that were traversed to get to this state
+                                    int fromEdge = cur_from[acceptor_state];
+                                    int prevAcceptorState = acceptor_state;
+                                    while(fromEdge != -1){
+                                        assert(prevAcceptorState != g.getEdge(fromEdge).to);
+                                        prevAcceptorState = g.getEdge(fromEdge).to;
+                                        acceptor_path.push({fromEdge, 0, 0});
+                                        fromEdge = cur_from[prevAcceptorState];
+                                    }
+                                    assert(l > 0);
+                                    // find corresponding edge in generator (this code is simplified by the assumption
+                                    // that the generator is linear
+                                    gen_used_chars.push(l);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (i==0 && acceptor_state==accept_source){
+                        foundAcceptingState = true;
+                        // initial emove pass
+                        int fromEdge = cur_from[acceptor_state];
+                        int prevAcceptorState = acceptor_state;
+                        while(fromEdge != -1){
+                            assert(prevAcceptorState != g.getEdge(fromEdge).to);
+                            prevAcceptorState = g.getEdge(fromEdge).to;
+                            acceptor_path.push({fromEdge, 0, 0});
+                            fromEdge = cur_from[prevAcceptorState];
+                        }
+                        break;
+                    }
+
+                    if(foundTransitionToPrevious){
+                        break;
+                    }
+
+                    assert(cur_seen[acceptor_state]);
+                    // then there must be an epsilon transition to another state in the acceptor
+                    for(int j = 0; j < g.nIncoming(acceptor_state); j++){
+                        int edgeID = g.incoming(acceptor_state, j).id;
+                        int from = g.incoming(acceptor_state, j).node;
+                        if(all_acceptor_seen[i][from] && !cur_seen[from] && g.transitionEnabled(edgeID, 0, 0)){
+                            cur.push(from);
+                            cur_seen[from] = true;
+                            assert(from!=acceptor_state);
+                            cur_from[from] = edgeID;
+                        }
+                    }
+                }
+                assert(foundTransitionToPrevious || (i==0 && foundAcceptingState));
+                assert(previousAcceptorState!=-1 || (i==0 && foundAcceptingState));
+
+
+                for(int s:cur){
+                    assert(cur_seen[s]);
+                    cur_seen[s] = false;
+                }
+                cur.clear();
+
+                cur_from.clear();
+                cur_from.growTo(accept.states(),-1);
+                cur.push(previousAcceptorState);
+                cur_seen[previousAcceptorState]=true;
+            }
+
+            for(int s:cur){
+                assert(cur_seen[s]);
+                cur_seen[s] = false;
+            }
+            cur.clear();
+            assert(foundAcceptingState);
+            // narrow generator path to only include transitions that are used by this acceptor path
+            // note: this logic is simplified by the assumption that the generator is linear
+            int j = 0;
+            int i = 0;
+            // generator used characters are recorded in reverse order above
+            int used_char_pos = gen_used_chars.size()-1;
+
+            for (;used_char_pos>0 && i<generator_path.size();i++){
+                assert(used_char_pos>=0);
+                int l = gen_used_chars[used_char_pos];
+                assert(l>0);
+                if (generator_path[i].output==l){
+                    generator_path[j++] = generator_path[i];
+                    used_char_pos--;
+                }
+            }
+            assert(used_char_pos<=0);
+
+            generator_path.shrink(i-j);
+
+        }
+        assert(cur.size()==0);
+        assert(next.size()==0);
+        return accepted;
+    }
+
+
 
 
 public:
@@ -1064,12 +1386,16 @@ public:
 
     }
 
-    bool getGeneratorPath(int genFinal, int acceptFinal, vec<NFATransition>& path, bool invert_acceptor = false,
-                          bool all_paths = false){
-        return find_gen_path(genFinal, acceptFinal, path, invert_acceptor, all_paths);
+    bool getGeneratorPath(int genFinal, int acceptFinal, vec<NFATransition>& generator_path,
+                        bool invert_acceptor = false, bool all_paths = false){
+        return find_gen_path(genFinal, acceptFinal, generator_path, invert_acceptor, all_paths);
     }
 
 
+    bool getGeneratorAceptorPath(int genFinal, int acceptFinal, vec<NFATransition>& generator_path,
+                          vec<NFATransition>& acceptor_path){
+        return find_generator_acceptor_path(genFinal, acceptFinal, generator_path, acceptor_path);
+    }
 };
 
 

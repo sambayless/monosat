@@ -28,6 +28,8 @@ class DynamicFSM {
     bool is_changed = true;
     bool is_generator = true;
     bool is_acceptor = true;
+    //If true, this FSM has non non-constant transitions
+    bool is_constant = false;
 
     bool is_deterministic = false;
     bool must_be_deterministic = false;
@@ -79,11 +81,14 @@ public:
      * Return true iff this finite state machine is linear
      * (starting from 'source').
      * A finite state machine is linear if every transition from
-     * each state goes only to the next state, and if no state has a self loop
+     * each state goes only to the next state, and if no state has a self loop or an epsilon transition.
      * @param source
      * @return
      */
-    bool isLinear(){
+    bool isLinear(bool generator=true){
+        if (emovesEnabled(!generator)) {
+            return false;
+        }
         for(int n = 0; n < this->states(); n++){
             int expectedTo = n + 1;
             for(int i = 0; i < nIncident(n); i++){
@@ -114,6 +119,14 @@ public:
 
     bool isDeterministic() const{
         return is_deterministic;
+    }
+
+    bool isConstant() const{
+        return is_constant;
+    }
+
+    void setIsConstant(bool isConstant){
+        is_constant = isConstant;
     }
 
     int getID(){
@@ -152,6 +165,17 @@ public:
 
     void addOutCharacter(){
         out_alphabet++;
+    }
+
+    // Get an arbitrary enabled input edge from among this set, if any
+    // return -1 if no transition among 'usingTransitions' is enabled
+    int getAnyEnabledTransition(int edgeID, const Bitset & usingTransitions) const{
+        assert(usingTransitions.size() == transitions[edgeID].size());
+        return transitions[edgeID].getIndexOfMutualBit(usingTransitions);
+    }
+
+    int getAnyEnabledTransition(int edgeID) const{
+        return transitions[edgeID].getIndexOfSetBit();
     }
 
 

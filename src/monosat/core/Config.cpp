@@ -100,8 +100,7 @@ BoolOption Monosat::opt_debug_model(_cat, "debug-model", "", false);
 
 
 StringOption Monosat::opt_debug_learnt_clauses(_cat, "debug-learnts",
-                                               "Write all learnt clauses to the following file (empty string (recommended) disables)",
-                                               "");
+                                               "Write all learned clauses to the following file (empty string (recommended) disables)", "");
 FILE* Monosat::opt_write_learnt_clauses = nullptr;
 
 //StringOption Monosat::StringOption opt_fsm_model(_cat_fsm,"File to write fsm model, if fsm theory is used","","");
