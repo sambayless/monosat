@@ -1902,6 +1902,16 @@ int shortestPathUnweighted_leq_const(Monosat::SimpSolver* S, Monosat::GraphTheor
     }
 }
 
+
+int connectedComponents_geq_const(Monosat::SimpSolver* S, Monosat::GraphTheorySolver<int64_t>* G, int components){
+    Var v = S->newVar();
+    Lit l = mkLit(v);
+    G->minConnectedComponents(components, v);
+    write_out(S, "graph_connected_component_count_geq %d %d %d\n", G->getGraphID(), dimacs(S, l), components);
+    return externalLit(S, l);
+}
+
+
 int
 shortestPath_lt_const(Monosat::SimpSolver* S, Monosat::GraphTheorySolver<int64_t>* G, int from, int to, int64_t dist){
     if(G->hasDistance(from, to, dist, false)){

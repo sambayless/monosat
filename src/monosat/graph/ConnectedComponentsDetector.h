@@ -150,7 +150,7 @@ public:
 
     void addTreeEdgeLit(int edge_id, Var reach_var);
 
-    void addConnectedComponentsLit(Var weight_var, int min_components);
+    void addMinimumConnectedComponentsLit(Var weight_var, int min_components);
 
     void addConnectedLit(Var outer_weight_var, int node1, int node2);
 

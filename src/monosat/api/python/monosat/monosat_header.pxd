@@ -230,6 +230,8 @@ cdef extern from "monosat/api/Monosat.h":
 
     int minimumSpanningTree_lt(SolverPtr S, GraphTheorySolver_long G, Weight weight)
 
+    int connectedComponents_geq_const(SolverPtr S, GraphTheorySolver_long G, int components)
+
     int acyclic_undirected(SolverPtr S, GraphTheorySolver_long G)
 
     int acyclic_directed(SolverPtr S, GraphTheorySolver_long G)

@@ -141,6 +141,8 @@ from monosat_header cimport shortestPath_leq_bv as _shortestPath_leq_bv_monosat
 from monosat_header cimport shortestPath_leq_const as _shortestPath_leq_const_monosat
 from monosat_header cimport shortestPath_lt_bv as _shortestPath_lt_bv_monosat
 from monosat_header cimport shortestPath_lt_const as _shortestPath_lt_const_monosat
+from monosat_header cimport connectedComponents_geq_const as _connectedComponents_geq_const_monosat
+
 from monosat_header cimport solve as _solve_monosat
 from monosat_header cimport solveAssumptions as _solveAssumptions_monosat
 from monosat_header cimport solveAssumptionsLimited as _solveAssumptionsLimited_monosat
@@ -1535,6 +1537,15 @@ def shortestPath_lt_const( S ,  G ,  _from ,  to ,  dist ):
 
 
     cdef int _r = _shortestPath_lt_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>_from), (<int>to), (<int64_t>dist))
+    py_result = <int>_r
+    return py_result
+
+def connectedComponents_geq_const( S ,  G , components):
+    """Cython signature: int connectedComponents_geq_const(void* S, void* G, int components)"""
+
+    assert isinstance(components, (int, long)), 'arg _from wrong type'
+
+    cdef int _r = _connectedComponents_geq_const_monosat((<void*>pycapsule.PyCapsule_GetPointer(S,NULL)), (<void*>pycapsule.PyCapsule_GetPointer(G,NULL)), (<int>components))
     py_result = <int>_r
     return py_result
 

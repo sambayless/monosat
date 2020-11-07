@@ -4132,7 +4132,7 @@ public:
             addDetector(component_detector);
 
         }
-        component_detector->addConnectedComponentsLit(v, min_components);
+        component_detector->addMinimumConnectedComponentsLit(v, min_components);
     }
 
     void addDetector(Detector* detector){

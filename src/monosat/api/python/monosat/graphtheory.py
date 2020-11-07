@@ -65,14 +65,7 @@ class Graph:
         self.in_edge_map = []
         self.queries = []
         self.queryLookup = dict()
-        # elf.fullqueries=[]
-        self.undirected_queries = []
         self.alledges = []
-        self.mstQueries = []
-        self.mstEdgeQueries = []
-        self.flowQueries = []
-        self.componentsQueries = []
-        self.steiners = []
         self.distance_rational_queries = []
         self.distance_float_queries = []
 
@@ -626,20 +619,24 @@ class Graph:
         v = self.maxFlowGreaterOrEqualTo(s, t, flow + 1)
         Assert(Not(v))
 
-    def connectedComponentsGreaterThan(self, min_components):
-        v = Var()
-        self.componentsQueries.append((min_components, v))
+
+    def connectedComponentsGreaterOrEqualTo(self, components):
+        v =  Var(self._monosat.connectedComponents_geq_const(self.graph, components))
         return v
 
-    def AssertConnectedComponentsGreaterThan(self, min_components):
-        Assert(self.connectedComponentsGreaterThan(min_components))
+    def connectedComponentsLessOrEqualTo(self, components):
+        v = Not(self.connectedComponentsGreaterOrEqualTo(components+1))
+        return v
 
-    def AssertConnectedComponentsEqual(self, min_components):
-        Assert(self.connectedComponentsGreaterThan(min_components - 1))
-        Assert(Not(self.connectedComponentsGreaterThan(min_components)))
+    def AssertConnectedComponentsGreaterOrEqualTo(self, min_components):
+        Assert(self.connectedComponentsGreaterOrEqualTo(min_components))
 
-    def AssertConnectedComponentsLessEq(self, min_components):
-        Assert(Not(self.connectedComponentsGreaterThan(min_components)))
+    def AssertConnectedComponentsEqualTo(self, min_components):
+        Assert(self.connectedComponentsGreaterOrEqualTo(min_components))
+        Assert(self.connectedComponentsLessOrEqualTo(min_components))
+
+    def AssertConnectedComponentsLessOrEqualto(self, min_components):
+        Assert(self.connectedComponentsLessOrEqualTo(min_components))
 
     def draw(self):
 
