@@ -321,6 +321,7 @@ BoolOption Monosat::opt_theory_order_conflict_luby(_cat_theory, "theory-order-co
 BoolOption Monosat::opt_check_solution(_cat_graph, "check-solution", "Double check solution", true);
 BoolOption Monosat::opt_print_reach(_cat_graph, "print-reach", "Print reachability graphs", false);
 BoolOption Monosat::opt_print_graph(_cat_graph, "print-graph", "Print digraph", false);
+BoolOption Monosat::opt_print_theory_debug(_cat_graph, "print-theory-debug", "Print internal theory solution assignments (intended for debugging only; output format is not stable)", false);
 
 BoolOption Monosat::opt_compute_max_distance(_cat_graph, "max-distance",
                                              "Optimize shortest path computation to abort when a path is longer than the longest path in the constraints.",

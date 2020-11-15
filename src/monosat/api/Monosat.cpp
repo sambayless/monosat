@@ -988,9 +988,11 @@ int _solve(Monosat::SimpSolver* S, int* assumptions, int n_assumptions){
     }
     if(opt_verb >= 1){
         printStats(S);
-
     }
-
+    if(opt_print_theory_debug){
+        for(int i = 0; i < S->theories.size(); i++)
+            S->theories[i]->printSolution();
+    }
 
     return toInt(r);
 }

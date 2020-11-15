@@ -984,7 +984,7 @@ MaxflowDetector<Weight, Graph>::FlowOp::analyzeReason(bool compareOver, Comparis
 
 template<typename Weight, typename Graph>
 bool MaxflowDetector<Weight, Graph>::checkSatisfied(){
-
+    //g_under.drawFull(true);
     EdmondsKarpAdj<Weight> underCheck(g_under, source, target);
     EdmondsKarpAdj<Weight> overCheck(g_over, source, target);
     for(int j = 0; j < flow_lits.size(); j++){
@@ -1105,39 +1105,6 @@ void MaxflowDetector<Weight, Graph>::printSolution(std::ostream& write_to){
     //and are usually not a useful thing (and also, can always be safely removed without affecting the logical correctness of the solution))
     //note: it _IS_ possible
     write_to << "Graph " << outer->getGraphID() << " maxflow " << source << " to " << target << " is " << f << "\n";
-
-    int maxw = log10(outer->nNodes()) + 1;
-    int width = sqrt(outer->nNodes());
-    if(opt_width > 0){
-        width = opt_width;
-    }
-    int height = width;
-    if(opt_height > 0){
-        height = opt_height;
-    }
-
-    int lasty = 0;
-    int extra = outer->nNodes() % width ? (width - outer->nNodes() % width) : 0;
-    for(int n = 0; n < outer->nNodes(); n++){
-        int x = n % width;
-
-        int y = (n) / width;
-        if(y > lasty)
-            write_to << "\n";
-        Weight total_flow = 0;
-        for(int e = 0; e < g_under.edges(); e++){
-            if(g_under.getEdge(e).to == n && g_under.edgeEnabled(e)){
-                total_flow += underapprox_conflict_detector->getEdgeFlow(e);
-
-            }
-        }
-
-        //printf("%*d ",maxw,total_flow);
-        write_to << total_flow << " ";
-        lasty = y;
-    }
-    write_to << "\n";
-
     for(int n = 0; n < outer->nNodes(); n++){
 
         int total_flow = 0;
@@ -1146,7 +1113,7 @@ void MaxflowDetector<Weight, Graph>::printSolution(std::ostream& write_to){
                 Weight flow = underapprox_conflict_detector->getEdgeFlow(e);
                 if(opt_maxflow_allow_cycles || r.connected(n)){
                     if(flow > 0){
-                        write_to << "Graph " << outer->getGraphID() << " maxflow " << source << " to " << target
+                        write_to << "\tGraph " << outer->getGraphID() << " maxflow " << source << " to " << target
                                  << " assigns edge " << g_under.getEdge(e).from << " -> " << g_under.getEdge(e).to
                                  << " flow " << flow
                                  << "\n";
