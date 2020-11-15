@@ -984,7 +984,7 @@ MaxflowDetector<Weight, Graph>::FlowOp::analyzeReason(bool compareOver, Comparis
 
 template<typename Weight, typename Graph>
 bool MaxflowDetector<Weight, Graph>::checkSatisfied(){
-    //g_under.drawFull(true);
+
     EdmondsKarpAdj<Weight> underCheck(g_under, source, target);
     EdmondsKarpAdj<Weight> overCheck(g_over, source, target);
     for(int j = 0; j < flow_lits.size(); j++){

@@ -2870,7 +2870,7 @@ public:
 
     bool check_solved() override{
         if(opt_print_graph){
-            drawFull();
+            drawFull(true);
         }
         dbg_graphsUpToDate();
 
