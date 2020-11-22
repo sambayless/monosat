@@ -291,7 +291,6 @@ bool FSMAcceptDetector::propagate(vec<Lit>& conflict){
         int str = changed.last().str;
 
 
-
         if(underapprox_detector && polarity && !sign(l) && underapprox_detector->acceptsString(str, u)){
 
         }else if(overapprox_detector && !polarity && sign(l) && !overapprox_detector->acceptsString(str, u)){

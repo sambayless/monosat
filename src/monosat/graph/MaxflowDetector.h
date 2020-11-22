@@ -165,7 +165,7 @@ public:
     vec<bool> seen_path;
 
     struct FlowListener {
-        virtual void edgeFlowChange(int edgeID, const Weight& flow)=0;
+        virtual void edgeFlowChange(int edgeID, const Weight& flow) = 0;
     } * flowListener = nullptr;
 
     void backtrack(int level) override{

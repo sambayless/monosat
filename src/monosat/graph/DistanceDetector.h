@@ -74,7 +74,7 @@ public:
         int within;
 
     };
-    vec <ReachLit> reach_lit_map;
+    vec<ReachLit> reach_lit_map;
     bool has_unweighted_shortest_paths_overapprox = false;
 
     vec<int> unweighted_over_approx_shortest_paths;
@@ -92,7 +92,7 @@ public:
     int64_t stats_gt_weighted_edges_skipped = 0;
 
 
-    vec <vec<Lit>> unweighted_sat_lits;
+    vec<vec<Lit>> unweighted_sat_lits;
 
     struct UnweightedDistLit {
         Lit l;
@@ -100,14 +100,14 @@ public:
 
     };
 
-    vec <vec<UnweightedDistLit>> unweighted_dist_lits;
+    vec<vec<UnweightedDistLit>> unweighted_dist_lits;
 
 
     struct Change {
         int u;
         bool polarity;
     };
-    vec <Change> changed;
+    vec<Change> changed;
     vec<bool> is_changed_under;
     vec<bool> is_changed_over;
     std::vector<double> rnd_weight;
@@ -212,13 +212,13 @@ public:
 
     void preprocess() override;
 
-    bool propagate(vec <Lit>& conflict) override;
+    bool propagate(vec<Lit>& conflict) override;
 
-    void buildUnweightedDistanceLEQReason(int node, vec <Lit>& conflict);
+    void buildUnweightedDistanceLEQReason(int node, vec<Lit>& conflict);
 
-    void buildUnweightedDistanceGTReason(int node, int within_steps, vec <Lit>& conflict);
+    void buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit>& conflict);
 
-    void buildReason(Lit p, vec <Lit>& reason, CRef marker) override;
+    void buildReason(Lit p, vec<Lit>& reason, CRef marker) override;
 
     bool checkSatisfied() override;
 

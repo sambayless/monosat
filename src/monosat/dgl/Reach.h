@@ -47,28 +47,28 @@ public:
 
     static NullStatus nullStatus;
 
-    virtual int numUpdates() const =0;
+    virtual int numUpdates() const = 0;
 
     virtual ~Reach(){
     };
 
-    virtual void setSource(int s)=0;
+    virtual void setSource(int s) = 0;
 
-    virtual int getSource()=0;
+    virtual int getSource() = 0;
 
-    virtual void update()=0;
+    virtual void update() = 0;
 
-    virtual bool connected_unsafe(int t)=0;
+    virtual bool connected_unsafe(int t) = 0;
 
-    virtual bool connected_unchecked(int t)=0;
+    virtual bool connected_unchecked(int t) = 0;
 
-    virtual bool connected(int t)=0;
+    virtual bool connected(int t) = 0;
 
     //virtual int distance( int t)=0;
     //virtual int distance_unsafe(int t)=0;
-    virtual int previous(int node)=0;
+    virtual int previous(int node) = 0;
 
-    virtual int incomingEdge(int node)=0;
+    virtual int incomingEdge(int node) = 0;
 
     //Select a randomly chosen, but still shortest path, previous node or edge (falling back on selecting a deterministic edge if this functionality is not supported)
     virtual int randomPrevious(int node, double& seed){
@@ -78,6 +78,7 @@ public:
     virtual int randomIncomingEdge(int node, double& seed){
         return incomingEdge(node);
     }
+
     //The maximum distance to compute up to.
     virtual void addDestination(int node){
 

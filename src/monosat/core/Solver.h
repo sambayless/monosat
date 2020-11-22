@@ -493,7 +493,7 @@ public:
     }
 
     void preprocess() override{
-        for(int i = 0;i<theories.size();i++){
+        for(int i = 0; i < theories.size(); i++){
             theories[i]->preprocess();
         }
     }

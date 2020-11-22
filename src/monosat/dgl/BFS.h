@@ -32,7 +32,7 @@
 
 namespace dgl {
 
-template<typename Weight, typename Graph = DynamicGraph <Weight>, class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status = Reach::NullStatus, bool undirected = false>
 class BFSReachability : public Reach {
 public:
 
@@ -556,7 +556,7 @@ public:
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<typename Weight, typename Graph = DynamicGraph <Weight>, class Status = Distance<int>::NullStatus, bool undirected = false>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status = Distance<int>::NullStatus, bool undirected = false>
 class UnweightedBFS : public Distance<int> {
     using Distance<int>::inf;
     using Distance<int>::unreachable;

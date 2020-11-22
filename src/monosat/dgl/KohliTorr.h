@@ -50,8 +50,8 @@ class KohliTorr : public MaxFlow<Weight>, public DynamicGraphAlgorithm {
     Weight static_maxflow = -1;//the maximum possible flow in the graph.
     Weight source_max = 0;
     Weight dest_max = 0;
-    Graph <Weight>& g;
-    DynamicGraph <Weight>* flow_graph = nullptr;//optional graph that can be used to record the edges in the actual flow
+    Graph<Weight>& g;
+    DynamicGraph<Weight>* flow_graph = nullptr;//optional graph that can be used to record the edges in the actual flow
     /**
      * Note: The Kohli Torr implementation does _not_ support multiple edges between the same nodes.
      */
@@ -135,7 +135,7 @@ public:
     int64_t stats_inits = 0;
     int64_t stats_reinits = 0;
     bool same_source_sink = false;//if the sink and source are the same node, flow is infinite, and lots of logic is bypassed to avoid putting KT in a bad state.
-    KohliTorr(Graph <Weight>& g, int source, int sink, bool kt_preserve_order = false) :
+    KohliTorr(Graph<Weight>& g, int source, int sink, bool kt_preserve_order = false) :
             g(g), source(source), sink(sink), kt_preserve_order(kt_preserve_order), INF(0xF0F0F0){
         curflow = 0;
         last_modification = -1;
@@ -168,7 +168,7 @@ public:
         return sink;
     }
 
-    Graph <Weight>* getFlowGraph() override{
+    Graph<Weight>* getFlowGraph() override{
         if(!flow_graph){
             flow_graph = new DynamicGraph<Weight>();
             while(flow_graph->nodes() < g.nodes()){

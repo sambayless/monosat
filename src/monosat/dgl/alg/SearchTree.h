@@ -36,19 +36,19 @@ public:
 
     }
 
-    virtual Node* findRoot(Node* of)=0;
+    virtual Node* findRoot(Node* of) = 0;
 
-    virtual Node* findMin(Node* root)=0;
+    virtual Node* findMin(Node* root) = 0;
 
-    virtual Node* findMax(Node* root)=0;
+    virtual Node* findMax(Node* root) = 0;
 
     //virtual void remove(Node * toRemove)=0;
-    virtual Node* splitAfter(Node* splitAt)=0;
+    virtual Node* splitAfter(Node* splitAt) = 0;
 
-    virtual Node* splitBefore(Node* splitAt)=0;
+    virtual Node* splitBefore(Node* splitAt) = 0;
 
     //All nodes in right must be (strictly) greater than all nodes in left
-    virtual Node* concat(Node* left, Node* right)=0;
+    virtual Node* concat(Node* left, Node* right) = 0;
 };
 
 template<typename Node>
@@ -65,26 +65,26 @@ public:
     }
 
     //Returns the number of nodes in the subtree rooted at n (including n)
-    virtual int size(Node* n)=0;
+    virtual int size(Node* n) = 0;
 
-    virtual Node* findRoot(Node* of)=0;
+    virtual Node* findRoot(Node* of) = 0;
 
-    virtual Node* findMin(Node* root)=0;
+    virtual Node* findMin(Node* root) = 0;
 
-    virtual Node* findMax(Node* root)=0;
+    virtual Node* findMax(Node* root) = 0;
 
-    virtual int depth(Node* a)=0;
+    virtual int depth(Node* a) = 0;
 
     //Return -1 if a< b, 1 if a>b, 0 if either they are the same node, or not in the same tree.
-    virtual int compare(Node* a, Node* b)=0;
+    virtual int compare(Node* a, Node* b) = 0;
 
     //virtual void remove(Node * toRemove)=0;
-    virtual Node* splitAfter(Node* splitAt)=0;
+    virtual Node* splitAfter(Node* splitAt) = 0;
 
-    virtual Node* splitBefore(Node* splitAt)=0;
+    virtual Node* splitBefore(Node* splitAt) = 0;
 
     //All nodes in right must be (strictly) greater than all nodes in left
-    virtual Node* concat(Node* left, Node* right)=0;
+    virtual Node* concat(Node* left, Node* right) = 0;
 };
 
 #endif

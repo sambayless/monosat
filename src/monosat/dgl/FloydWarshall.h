@@ -31,7 +31,7 @@
 
 namespace dgl {
 
-template<typename Weight, typename Graph = DynamicGraph <Weight>, class Status = AllPairs::NullStatus>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status = AllPairs::NullStatus>
 class FloydWarshall : public AllPairs {
 public:
 

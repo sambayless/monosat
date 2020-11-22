@@ -64,7 +64,7 @@ public:
 
 template<class T>
 class VecMap {
-    vec <T> v;
+    vec<T> v;
     T T_null;
 
 public:

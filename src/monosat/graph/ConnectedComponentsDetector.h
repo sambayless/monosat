@@ -77,7 +77,7 @@ public:
         }
     };
 
-    vec <ConnectedComponentsWeightLit> connected_components_lits;
+    vec<ConnectedComponentsWeightLit> connected_components_lits;
 
     struct ConnectedComponentsEdgeLit {
         Lit l;
@@ -88,21 +88,21 @@ public:
         }
     };
 
-    vec <ConnectedComponentsEdgeLit> tree_edge_lits;
+    vec<ConnectedComponentsEdgeLit> tree_edge_lits;
     struct ChangedWeight {
         Lit l;
         int min_components;
     };
-    vec <ChangedWeight> changed_weights;
+    vec<ChangedWeight> changed_weights;
 
     struct Change {
         Lit l;
         int u;
         int v;
     };
-    vec <Change> changed;
+    vec<Change> changed;
 
-    vec <Var> tmp_nodes;
+    vec<Var> tmp_nodes;
     vec<bool> seen;
     vec<bool> black;
     vec<int> ancestors;
@@ -112,7 +112,7 @@ public:
     vec<int> visit;
     //DisjointSets sets;
 
-    vec <vec<Lit>> reachLits;
+    vec<vec<Lit>> reachLits;
 
     struct ConnectedComponentsStatus {
         ConnectedComponentsDetector& detector;
@@ -130,17 +130,17 @@ public:
     ConnectedComponentsStatus* positiveReachStatus;
     ConnectedComponentsStatus* negativeReachStatus;
 
-    bool propagate(vec <Lit>& conflict) override;
+    bool propagate(vec<Lit>& conflict) override;
 
-    void buildMinComponentsTooLowReason(int min_components, vec <Lit>& conflict);
+    void buildMinComponentsTooLowReason(int min_components, vec<Lit>& conflict);
 
-    void buildMinComponentsTooHighReason(int min_components, vec <Lit>& conflict);
+    void buildMinComponentsTooHighReason(int min_components, vec<Lit>& conflict);
 
-    void buildNodesConnectedReason(int u, int v, vec <Lit>& conflict);
+    void buildNodesConnectedReason(int u, int v, vec<Lit>& conflict);
 
-    void buildNodesNotConnectedReason(int u, int v, vec <Lit>& conflict);
+    void buildNodesNotConnectedReason(int u, int v, vec<Lit>& conflict);
 
-    void buildReason(Lit p, vec <Lit>& reason, CRef marker) override;
+    void buildReason(Lit p, vec<Lit>& reason, CRef marker) override;
 
     bool checkSatisfied() override;
 

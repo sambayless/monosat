@@ -1241,7 +1241,7 @@ public:
         }
 
 
-        int getBV() override =0;
+        int getBV() override = 0;
 
         bool propagate(bool& changed, vec<Lit>& conflict) override{return true;}
 
@@ -2679,10 +2679,10 @@ public:
         }
         dbg_graphsUpToDate();
 
-        if (unimplemented_distance_constraints.size() > 0 ||
-            unimplemented_distance_constraints_bv.size() > 0||
-            unimplemented_maxflow_constraints_bv.size() > 0 ||
-            unimplemented_reachability_constraints.size() > 0){
+        if(unimplemented_distance_constraints.size() > 0 ||
+           unimplemented_distance_constraints_bv.size() > 0 ||
+           unimplemented_maxflow_constraints_bv.size() > 0 ||
+           unimplemented_reachability_constraints.size() > 0){
             // if any predicates are not implemented, then the theory is not be solved
             return false;
         }
@@ -3424,7 +3424,7 @@ public:
 
     }
 
-    void implementConstraints() {
+    void implementConstraints(){
         if(!S->okay())
             return;
         if(opt_allpairs_percentage >= 1){
@@ -3519,7 +3519,7 @@ public:
                         (new AllPairsDetector<Weight, DynamicBackGraph<Weight>>(detectors.size(), this, g_under_back,
                                                                                 g_over_back, cutGraph_back,
                                                                                 drand(rnd_seed))));
-                        assert(detectors.last()->getID() == detectors.size() - 1);
+                assert(detectors.last()->getID() == detectors.size() - 1);
 
                 backward_reach_info[from].source = from;
                 backward_reach_info[from].detector = detectors.last();

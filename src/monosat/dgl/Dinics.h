@@ -61,7 +61,7 @@ public:
     std::vector<int> dist;
     std::vector<int> pos; //position in the combined forward and backward adjacency list of each node in the DFS.
     std::vector<bool> changed;
-    Graph <Weight>& g;
+    Graph<Weight>& g;
 
 
     int src = -1;
@@ -78,7 +78,7 @@ public:
 #endif
 
 public:
-    Dinitz(Graph <Weight>& _g, int source = -1, int sink = -1) :
+    Dinitz(Graph<Weight>& _g, int source = -1, int sink = -1) :
             g(_g), source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     ,ek(_g,cap,source,sink)

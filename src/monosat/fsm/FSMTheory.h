@@ -933,7 +933,7 @@ public:
                 propagationtime += rtime(1) - startproptime;
                 return false;
             }else{
-                assert(conflict.size()==0);
+                assert(conflict.size() == 0);
             }
         }
 

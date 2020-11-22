@@ -248,7 +248,6 @@ public:
         }
 
 
-
         last_modification = g.modifications;
         last_deletion = g.deletions;
         last_addition = g.additions;

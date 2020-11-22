@@ -61,7 +61,7 @@ public:
     std::vector<int> dist;
     std::vector<int> pos;    //position in the combined forward and backward adjacency list of each node in the DFS.
     std::vector<bool> changed;
-    Graph <Weight>& g;
+    Graph<Weight>& g;
 
     int source = -1;
     int sink = -1;
@@ -97,7 +97,7 @@ public:
     }
 
 public:
-    DinitzLinkCut(Graph <Weight>& _g, int source = -1, int sink = -1) :
+    DinitzLinkCut(Graph<Weight>& _g, int source = -1, int sink = -1) :
             g(_g), source(source), sink(sink), INF(0xF0F0F0){
         curflow = 0;
         last_modification = -1;

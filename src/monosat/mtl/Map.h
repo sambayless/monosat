@@ -163,7 +163,7 @@ private:
     H hash;
     E equals;
 
-    vec <Pair>* table = nullptr;
+    vec<Pair>* table = nullptr;
     int cap = 1;
     int size = 0;
 
@@ -321,7 +321,7 @@ public:
     }
 
     // NOTE: given a bit more time, I could make a more C++-style iterator out of this:
-    const vec <Pair>& bucket(int i) const{
+    const vec<Pair>& bucket(int i) const{
         return table[i];
     }
 };

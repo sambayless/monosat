@@ -99,10 +99,7 @@ void ConnectedComponentsDetector<Weight, Graph>::addMinimumConnectedComponentsLi
     g_over.invalidate();
 
 
-
     Var weight_var = outer->newVar(outer_weight_var, getID());
-
-
 
 
     Lit reachLit = mkLit(weight_var, false);
@@ -126,12 +123,6 @@ void ConnectedComponentsDetector<Weight, Graph>::addMinimumConnectedComponentsLi
     }
 
 }
-
-
-
-
-
-
 
 
 template<typename Weight, typename Graph>

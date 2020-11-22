@@ -49,7 +49,7 @@ static void randomShuffle(double& seed, V& xs){
 
 // Randomly shuffle the contents of a vector:
 template<class T>
-static void randomShuffle(double& seed, vec <T>& xs){
+static void randomShuffle(double& seed, vec<T>& xs){
     for(int i = 0; i < xs.size(); i++){
         int pick = i + irand(seed, xs.size() - i);
         T tmp = xs[i];
@@ -60,7 +60,7 @@ static void randomShuffle(double& seed, vec <T>& xs){
 
 // Randomly shuffle a vector of a vector (ugly)
 template<class T>
-static void randomShuffle(double& seed, vec <vec<T>>& xs){
+static void randomShuffle(double& seed, vec<vec<T>>& xs){
     for(int i = 0; i < xs.size(); i++){
         int pick = i + irand(seed, xs.size() - i);
         vec<T> tmp;

@@ -1894,8 +1894,6 @@ class Monosat::ReachDetector<int64_t, DynamicBackGraph<int64_t>>;
 template
 class Monosat::ReachDetector<double, DynamicBackGraph<double>>;
 
-#include <gmpxx.h>
-
 template
 class Monosat::ReachDetector<mpq_class>;
 

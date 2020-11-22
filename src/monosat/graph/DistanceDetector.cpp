@@ -106,7 +106,8 @@ DistanceDetector<Weight, Graph>::DistanceDetector(int _detectorID, GraphTheorySo
             overapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight, Graph, typename DistanceDetector<Weight, Graph>::ReachStatus>(
                     from, g_over, *negativeReachStatus, 0);
             underapprox_path_detector = new UnweightedBFS<Weight, Graph, Distance<int>::NullStatus>(from, g_under,
-                                                                                                    Distance<int>::nullStatus,0);
+                                                                                                    Distance<int>::nullStatus,
+                                                                                                    0);
         }
 
     }else if(distalg == DistAlg::ALG_RAMAL_REPS){

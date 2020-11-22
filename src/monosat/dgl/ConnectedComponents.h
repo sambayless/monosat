@@ -48,13 +48,13 @@ public:
 
     }
 
-    virtual void update()=0;
+    virtual void update() = 0;
 
     virtual void addConnectedCheck(int u, int v){
         throw std::runtime_error("Not implemented");
     }
 
-    virtual int numComponents()=0;
+    virtual int numComponents() = 0;
 
     //Get an arbitrary element from the given set
     virtual int getElement(int set){
@@ -62,9 +62,9 @@ public:
     }
 
     //Get the component this element belongs to
-    virtual int getComponent(int node)=0;
+    virtual int getComponent(int node) = 0;
 
-    virtual bool connected(int from, int to)=0;
+    virtual bool connected(int from, int to) = 0;
 };
 };
 #endif

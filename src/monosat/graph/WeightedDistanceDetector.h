@@ -79,12 +79,12 @@ public:
         int within;
         DistLitType type;
     };
-    vec <ReachLit> reach_lit_map;
+    vec<ReachLit> reach_lit_map;
     vec<int> force_reason;
 
     bool has_weighted_shortest_paths_overapprox = false;
     vec<int> unweighted_over_approx_shortest_paths;
-    vec <Weight> over_approx_shortest_paths;
+    vec<Weight> over_approx_shortest_paths;
     MaxFlow<Weight>* conflict_flow = nullptr;
 
     vec<int> to_visit;
@@ -100,7 +100,7 @@ public:
     int64_t stats_gt_unweighted_edges_skipped = 0;
     int64_t stats_gt_weighted_edges_skipped = 0;
 
-    BVTheorySolver <Weight>* bvTheory = nullptr;
+    BVTheorySolver<Weight>* bvTheory = nullptr;
 
     class DistanceOp : public GraphTheorySolver<Weight>::GraphTheoryOp {
         WeightedDistanceDetector* outer;
@@ -109,7 +109,7 @@ public:
         bool strictCompare;
         Lit comparisonLit;
     public:
-        DistanceOp(BVTheorySolver <Weight>& theory, WeightedDistanceDetector* outer, int bvID, int to,
+        DistanceOp(BVTheorySolver<Weight>& theory, WeightedDistanceDetector* outer, int bvID, int to,
                    bool strictCompare, Lit comparisonLit) : GraphTheorySolver<Weight>::GraphTheoryOp(theory,
                                                                                                      outer->outer),
                                                             outer(outer), bvID(bvID), to(to),
@@ -121,7 +121,7 @@ public:
             return bvID;
         }
 
-        bool propagate(bool& changed, vec <Lit>& conflict) override{
+        bool propagate(bool& changed, vec<Lit>& conflict) override{
             return true;
         }
 
@@ -131,7 +131,7 @@ public:
             ;
         }
 
-        void analyzeReason(bool compareOver, Comparison op, Weight to, vec <Lit>& conflict) override;
+        void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit>& conflict) override;
 
         bool checkSolved() override{
             return true;
@@ -150,7 +150,7 @@ public:
         }
     };
 
-    vec <WeightedDistLit> weighted_dist_lits;
+    vec<WeightedDistLit> weighted_dist_lits;
 
 
     struct WeightedDistBVLit {
@@ -160,17 +160,17 @@ public:
         bool strictComparison;
         DistanceOp* op;
     };
-    vec <WeightedDistBVLit> weighted_dist_bv_lits;
+    vec<WeightedDistBVLit> weighted_dist_bv_lits;
 
     struct Change {
         //Var v;
         int u;
         //int min_distance;
     };
-    vec <Change> changed;
+    vec<Change> changed;
     vec<bool> is_changed_under;
     vec<bool> is_changed_over;
-    vec <Var> tmp_nodes;
+    vec<Var> tmp_nodes;
 
     std::vector<double> rnd_weight;
 
@@ -285,17 +285,17 @@ public:
 
     void preprocess() override;
 
-    bool propagate(vec <Lit>& conflict) override;
+    bool propagate(vec<Lit>& conflict) override;
 
-    void buildDistanceLEQReason(int to, Weight& min_distance, vec <Lit>& conflict, bool strictComparison = false);
+    void buildDistanceLEQReason(int to, Weight& min_distance, vec<Lit>& conflict, bool strictComparison = false);
 
-    void buildDistanceGTReason(int to, Weight& min_distance, vec <Lit>& conflict, bool strictComparison = true);
+    void buildDistanceGTReason(int to, Weight& min_distance, vec<Lit>& conflict, bool strictComparison = true);
 
-    void analyzeDistanceLEQReason(int to, Weight& min_distance, vec <Lit>& conflict, bool strictComparison = true);
+    void analyzeDistanceLEQReason(int to, Weight& min_distance, vec<Lit>& conflict, bool strictComparison = true);
 
-    void analyzeDistanceGTReason(int to, Weight& min_distance, vec <Lit>& conflict, bool strictComparison = true);
+    void analyzeDistanceGTReason(int to, Weight& min_distance, vec<Lit>& conflict, bool strictComparison = true);
 
-    void buildReason(Lit p, vec <Lit>& reason, CRef marker) override;
+    void buildReason(Lit p, vec<Lit>& reason, CRef marker) override;
 
     bool checkSatisfied() override;
 

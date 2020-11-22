@@ -47,14 +47,14 @@ public:
 
     }
 
-    virtual void update()=0;
+    virtual void update() = 0;
 
     //Total weight of the steiner tree (or infinite, if the graph is disconnected)
-    virtual Weight& weight()=0;
+    virtual Weight& weight() = 0;
 
-    virtual bool disconnected()=0;
+    virtual bool disconnected() = 0;
 
-    virtual void getSteinerTree(std::vector<int>& edges)=0;
+    virtual void getSteinerTree(std::vector<int>& edges) = 0;
 };
 
 template<typename Weight>

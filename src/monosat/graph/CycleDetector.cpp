@@ -192,7 +192,7 @@ void CycleDetector<Weight, Graph>::buildReason(Lit p, vec<Lit>& reason, CRef mar
 
 template<typename Weight, typename Graph>
 bool CycleDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
-      if(directed_acyclic_lit != lit_Undef){
+    if(directed_acyclic_lit != lit_Undef){
 
         if(outer->value(directed_acyclic_lit) != l_False && underapprox_directed_cycle_detector->hasDirectedCycle()){
 

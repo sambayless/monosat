@@ -29,7 +29,7 @@
 #include "Graph.h"
 
 namespace dgl {
-template<typename Weight = int, typename Graph = DynamicGraph <Weight>>
+template<typename Weight = int, typename Graph = DynamicGraph<Weight>>
 class EdmondsKarp : public MaxFlow<Weight> {
 public:
 

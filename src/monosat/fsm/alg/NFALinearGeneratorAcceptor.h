@@ -581,12 +581,6 @@ private:
         bool hasSuffix = false;
 
 
-
-
-
-
-
-
         cur_seen.growTo(accept.states());
         gen_cur_seen.growTo(gen.states());
         next_seen.growTo(accept.states());

@@ -61,7 +61,7 @@ class EdmondsKarpDynamic : public MaxFlow<Weight>, public DynamicGraphAlgorithm 
     std::vector<Weight> M;
     std::vector<int> changed_edges;
     std::vector<bool> changed;
-    Graph <Weight>& g;
+    Graph<Weight>& g;
 
     bool allow_flow_cycles = true; //actually, this flag doesn't appear to work - spurious flow cycles are still sometimes produced.
     int source = -1;
@@ -147,7 +147,7 @@ class EdmondsKarpDynamic : public MaxFlow<Weight>, public DynamicGraphAlgorithm 
     }
 
 public:
-    EdmondsKarpDynamic(Graph <Weight>& _g, int source, int sink) :
+    EdmondsKarpDynamic(Graph<Weight>& _g, int source, int sink) :
             g(_g), source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     ,ek(_g,cap,source,sink)

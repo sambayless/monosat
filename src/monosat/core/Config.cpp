@@ -321,7 +321,9 @@ BoolOption Monosat::opt_theory_order_conflict_luby(_cat_theory, "theory-order-co
 BoolOption Monosat::opt_check_solution(_cat_graph, "check-solution", "Double check solution", true);
 BoolOption Monosat::opt_print_reach(_cat_graph, "print-reach", "Print reachability graphs", false);
 BoolOption Monosat::opt_print_graph(_cat_graph, "print-graph", "Print digraph", false);
-BoolOption Monosat::opt_print_theory_debug(_cat_graph, "print-theory-debug", "Print internal theory solution assignments (intended for debugging only; output format is not stable)", false);
+BoolOption Monosat::opt_print_theory_debug(_cat_graph, "print-theory-debug",
+                                           "Print internal theory solution assignments (intended for debugging only; output format is not stable)",
+                                           false);
 
 BoolOption Monosat::opt_compute_max_distance(_cat_graph, "max-distance",
                                              "Optimize shortest path computation to abort when a path is longer than the longest path in the constraints.",
@@ -532,12 +534,12 @@ IntOption Monosat::opt_fsm_symmetry_breaking(_cat_fsm, "fsm-symmetry-breaking",
                                              "", 0, IntRange(0, 2));
 BoolOption Monosat::opt_fsm_negate_underapprox(_cat_fsm, "fsm-negate-under",
                                                "", false);//this option appears to be broken
-BoolOption Monosat::opt_fsm_forced_edge_prop(_cat_fsm, "fsm-forced-edge-prop","", false);
+BoolOption Monosat::opt_fsm_forced_edge_prop(_cat_fsm, "fsm-forced-edge-prop", "", false);
 BoolOption Monosat::opt_fsm_edge_prop(_cat_fsm, "fsm-edge-prop", "", false);
-BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph","", true);
-BoolOption Monosat::opt_fsm_chokepoint_prop(_cat_fsm, "fsm-chokepoint","", false);
+BoolOption Monosat::opt_fsm_as_graph(_cat_fsm, "fsm-as-graph", "", true);
+BoolOption Monosat::opt_fsm_chokepoint_prop(_cat_fsm, "fsm-chokepoint", "", false);
 
-BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows","", false);
+BoolOption Monosat::opt_learn_acyclic_flows(_cat_graph, "learn-acyclic-flows", "", false);
 
 IntOption Monosat::opt_min_edgeset(_cat_graph, "min-edge-set",
                                    "set to 0 to accept all edge sets, or -1 to disable all edge sets", 10,

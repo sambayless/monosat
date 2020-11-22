@@ -37,11 +37,11 @@ namespace dgl {
  */
 class DynamicGraphAlgorithm {
 public:
-    virtual std::string getName()=0;
+    virtual std::string getName() = 0;
 
     virtual ~DynamicGraphAlgorithm(){}
 
-    virtual void updateHistory()=0;
+    virtual void updateHistory() = 0;
 };
 
 /**
@@ -88,122 +88,122 @@ public:
 
     }
 
-    virtual FILE* outfile()=0;
+    virtual FILE* outfile() = 0;
 
-    virtual void addNodes(int n) =0;
+    virtual void addNodes(int n) = 0;
 
     //Returns true iff the edge exists and is a self loop
-    virtual bool selfLoop(int edgeID)=0;
+    virtual bool selfLoop(int edgeID) = 0;
 
     //SLOW!
-    virtual bool hasEdge(int from, int to) const =0;
+    virtual bool hasEdge(int from, int to) const = 0;
 
     //SLOW! Returns -1 if there is no edge
-    virtual int getEdge(int from, int to) const =0;
+    virtual int getEdge(int from, int to) const = 0;
 
-    virtual bool hasEdgeUndirected(int from, int to) const =0;
+    virtual bool hasEdgeUndirected(int from, int to) const = 0;
 
-    virtual int addNode() =0;
+    virtual int addNode() = 0;
 
     //true iff the edge's current assignment will never be altered.
-    virtual bool isConstant(int edgeID) const =0;
+    virtual bool isConstant(int edgeID) const = 0;
 
-    virtual void makeEdgeAssignmentConstant(int edgeID)=0;
+    virtual void makeEdgeAssignmentConstant(int edgeID) = 0;
 
-    virtual bool edgeEnabled(int edgeID) const =0;
+    virtual bool edgeEnabled(int edgeID) const = 0;
 
-    virtual bool isEdge(int edgeID) const =0;
+    virtual bool isEdge(int edgeID) const = 0;
 
-    virtual bool hasEdge(int edgeID) const =0;
+    virtual bool hasEdge(int edgeID) const = 0;
 
     //Instead of actually adding and removing edges, tag each edge with an 'enabled/disabled' label, and just expect reading algorithms to check and respect that label.
-    virtual int addEdge(int from, int to, int id = -1, Weight weight = 1)=0;
+    virtual int addEdge(int from, int to, int id = -1, Weight weight = 1) = 0;
 
-    virtual int nEdgeIDs() =0;
+    virtual int nEdgeIDs() = 0;
 
-    virtual int nodes() const =0;
+    virtual int nodes() const = 0;
 
-    virtual int edges() const =0;
+    virtual int edges() const = 0;
 
-    virtual int nIncident(int node, bool undirected = false)  =0;
+    virtual int nIncident(int node, bool undirected = false) = 0;
 
-    virtual int nDirectedEdges(int node, bool incoming) =0;
+    virtual int nDirectedEdges(int node, bool incoming) = 0;
 
-    virtual Edge& directedEdges(int node, int i, bool is_incoming) =0;
+    virtual Edge& directedEdges(int node, int i, bool is_incoming) = 0;
 
-    virtual int nIncoming(int node, bool undirected = false) =0;
+    virtual int nIncoming(int node, bool undirected = false) = 0;
 
-    virtual Edge& incident(int node, int i, bool undirected = false) =0;
+    virtual Edge& incident(int node, int i, bool undirected = false) = 0;
 
-    virtual Edge& incoming(int node, int i, bool undirected = false) =0;
+    virtual Edge& incoming(int node, int i, bool undirected = false) = 0;
 
-    virtual std::vector<FullEdge>& getEdges()=0;
+    virtual std::vector<FullEdge>& getEdges() = 0;
 
-    virtual std::vector<Weight>& getWeights()=0;
+    virtual std::vector<Weight>& getWeights() = 0;
 
-    virtual Weight getWeight(int edgeID)=0;
+    virtual Weight getWeight(int edgeID) = 0;
 
-    virtual FullEdge& getEdge(int id)  =0;
+    virtual FullEdge& getEdge(int id) = 0;
 
-    virtual void setEdgeEnabled(int id, bool enable)=0;
+    virtual void setEdgeEnabled(int id, bool enable) = 0;
 
-    virtual void enableEdge(int id) =0;
+    virtual void enableEdge(int id) = 0;
 
-    virtual void disableEdge(int id) =0;
+    virtual void disableEdge(int id) = 0;
 
-    virtual void enableEdge(int from, int to, int id) =0;
+    virtual void enableEdge(int from, int to, int id) = 0;
 
-    virtual bool undoEnableEdge(int id) =0;
+    virtual bool undoEnableEdge(int id) = 0;
 
-    virtual void disableEdge(int from, int to, int id) =0;
+    virtual void disableEdge(int from, int to, int id) = 0;
 
-    virtual bool undoDisableEdge(int id) =0;
+    virtual bool undoDisableEdge(int id) = 0;
 
-    virtual Weight getEdgeWeight(int edgeID)=0;
+    virtual Weight getEdgeWeight(int edgeID) = 0;
 
-    virtual void setEdgeWeight(int id, const Weight& w) =0;
+    virtual void setEdgeWeight(int id, const Weight& w) = 0;
 
-    virtual void drawFull(bool showWeights = false, bool force_draw = false) =0;
+    virtual void drawFull(bool showWeights = false, bool force_draw = false) = 0;
 
-    virtual bool rewindHistory(int steps) =0;
+    virtual bool rewindHistory(int steps) = 0;
 
     /**
      * Returns a unique identifier for this algorithm.
      */
-    virtual int addDynamicAlgorithm(DynamicGraphAlgorithm* alg)=0;
+    virtual int addDynamicAlgorithm(DynamicGraphAlgorithm* alg) = 0;
 
-    virtual void updateAlgorithmHistory(DynamicGraphAlgorithm* alg, int algorithmID, int historyPos)=0;
+    virtual void updateAlgorithmHistory(DynamicGraphAlgorithm* alg, int algorithmID, int historyPos) = 0;
 
-    virtual EdgeChange& getChange(int64_t historyPos)=0;
+    virtual EdgeChange& getChange(int64_t historyPos) = 0;
 
-    virtual int historySize()=0;
+    virtual int historySize() = 0;
 
-    virtual int nHistoryClears() const =0;
+    virtual int nHistoryClears() const = 0;
 
-    virtual int getCurrentHistory() const =0;
+    virtual int getCurrentHistory() const = 0;
 
-    virtual int nDeletions() const =0;
+    virtual int nDeletions() const = 0;
 
-    virtual int nAdditions() const =0;
+    virtual int nAdditions() const = 0;
 
-    virtual int lastEdgeIncrease() const =0;
+    virtual int lastEdgeIncrease() const = 0;
 
-    virtual int lastEdgeDecrease() const =0;
+    virtual int lastEdgeDecrease() const = 0;
 
-    virtual void clearHistory(bool forceClear = false) =0;
+    virtual void clearHistory(bool forceClear = false) = 0;
 
     //force a new modification
-    virtual void invalidate() =0;
+    virtual void invalidate() = 0;
 
-    virtual int64_t getPreviousHistorySize() const =0;
+    virtual int64_t getPreviousHistorySize() const = 0;
 
-    virtual void markChanged() =0;
+    virtual void markChanged() = 0;
 
-    virtual bool changed() =0;
+    virtual bool changed() = 0;
 
-    virtual void clearChanged() =0;
+    virtual void clearChanged() = 0;
 
-    virtual void clear()=0;
+    virtual void clear() = 0;
 
 
 };

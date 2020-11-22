@@ -61,7 +61,7 @@ public:
     SteinerTree<Weight>* underapprox_conflict_detector = nullptr;
     SteinerTree<Weight>* overapprox_conflict_detector = nullptr;
 
-    vec <Var> terminal_map;
+    vec<Var> terminal_map;
     vec<int> terminal_var_map;
 
     struct WeightLit {
@@ -75,20 +75,20 @@ public:
 
     bool checked_unique;
     bool all_unique;
-    vec <WeightLit> weight_lits;
+    vec<WeightLit> weight_lits;
 
     Var first_reach_var;
     struct ChangedWeight {
         Lit l;
         Weight weight;
     };
-    vec <ChangedWeight> changed_weights;
-    vec <Var> tmp_nodes;
+    vec<ChangedWeight> changed_weights;
+    vec<Var> tmp_nodes;
     vec<bool> seen;
     vec<bool> black;
     vec<int> ancestors;
 
-    vec <Lit> tmp_conflict;
+    vec<Lit> tmp_conflict;
     vec<int> visit;
     DisjointSets sets;
 
@@ -106,13 +106,13 @@ public:
     SteinerStatus* negativeStatus;
     SteinerStatus* positiveStatus;
 
-    bool propagate(vec <Lit>& conflict) override;
+    bool propagate(vec<Lit>& conflict) override;
 
-    void buildMinWeightTooSmallReason(Weight& weight, vec <Lit>& conflict);
+    void buildMinWeightTooSmallReason(Weight& weight, vec<Lit>& conflict);
 
-    void buildMinWeightTooLargeReason(Weight& weight, vec <Lit>& conflict);
+    void buildMinWeightTooLargeReason(Weight& weight, vec<Lit>& conflict);
 
-    void buildReason(Lit p, vec <Lit>& reason, CRef marker) override;
+    void buildReason(Lit p, vec<Lit>& reason, CRef marker) override;
 
     bool checkSatisfied() override;
 

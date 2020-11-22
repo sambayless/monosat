@@ -42,15 +42,15 @@ public:
     }
 
 
-    int getTheoryIndex() const override =0;
+    int getTheoryIndex() const override = 0;
 
-    virtual void setTheoryIndex(int id)=0;
+    virtual void setTheoryIndex(int id) = 0;
 
-    virtual void backtrackUntil(int untilLevel)=0;
+    virtual void backtrackUntil(int untilLevel) = 0;
 
-    virtual void newDecisionLevel()=0;
+    virtual void newDecisionLevel() = 0;
 
-    virtual void enqueueTheory(Lit p)=0;
+    virtual void enqueueTheory(Lit p) = 0;
 
     virtual void enqueueAnyUnqueued(){
 
@@ -60,9 +60,9 @@ public:
 
     }
 
-    virtual bool propagateTheory(vec<Lit>& conflict)=0;
+    virtual bool propagateTheory(vec<Lit>& conflict) = 0;
 
-    virtual bool solveTheory(vec<Lit>& conflict)=0;
+    virtual bool solveTheory(vec<Lit>& conflict) = 0;
 
     virtual bool theoryIsSatisfied(){
         return false;
@@ -106,7 +106,7 @@ public:
         return empty;
     }
 
-    virtual const char* getTheoryType()=0;
+    virtual const char* getTheoryType() = 0;
 
 protected:
     virtual void buildReason(Lit p, vec<Lit>& reason){

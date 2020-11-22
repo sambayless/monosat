@@ -31,7 +31,6 @@ template<typename T>
 class SplayTree : public SearchTree<_node < T>>
 
 
-
 template<typename T>
 struct _node {
     friend SplayTree<_node<T>>;
