@@ -838,10 +838,6 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
                     stats_total_prop_time += rtime(2) - start_prop_time;
                     if(backtrackOnly){
                         return false;
-                        /*conflictLit = findFirstReasonTooHigh(maxflow);
-                        if(conflictLit!=lit_Undef){
-                            return false;
-                        }*/
                     }
 
                     buildMaxFlowTooHighReason(maxflow, conflict);
@@ -855,16 +851,12 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
                     outer->enqueueSat(~l);
                 }else if(outer->value(l) == l_Undef){
                     //trail.push(Assignment(false,false,detectorID,0,var(l)));
-                    outer->enqueue(~l, underprop_marker);
+                    outer->enqueue(~l, overprop_marker);
                     outer->enqueueSat(~l);
                 }else if(outer->value(l) == l_True){
                     stats_total_prop_time += rtime(2) - start_prop_time;
                     if(backtrackOnly){
                         return false;
-                        /*	conflictLit= findFirstReasonTooLow(maxflow);
-                            if(conflictLit!=lit_Undef){
-                                return false;
-                            }*/
                     }
 
 
