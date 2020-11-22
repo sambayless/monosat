@@ -331,10 +331,6 @@ public:
 
     bool propagateTheory(vec<Lit>& conflict) override{
 
-        /*	 		if(trail.size()==0){
-         stats_propagations_skipped++;
-         return true;
-         }*/
         if(inq.size() == 0){
             dbg_fully_propped();
             return true;
@@ -342,26 +338,17 @@ public:
 
         stats_propagations++;
 
-        static int iter = 0;
-        ++iter;
         double startproptime = rtime(2);
 
-        //This is wrong! Only need to visit each _clause_ that has any involved literals once per propagation round.
-        //for(int i = 0;i<trail.size();i++){
-        //int clauseID = trail[i];
-        //for(int clauseID = 0;clauseID<clauses.size();clauseID++){
         while(inq.size()){
             int clauseID = inq.last();
             PbClause& pbclause = clauses[clauseID];
             assert(pbclause.inQueue);
-            //if(pbclause.isSatisfied)
-            //	continue;
 
             Lit rhs = pbclause.rhs.lit;
             lbool rhs_val = value(rhs);
             if(pbclause.side == ConstraintSide::Upper && rhs_val == l_False){
                 //this clause is free.
-                //pbclause.isSatisfied=true;
                 pbclause.inQueue = false;
                 inq.pop();
                 continue;
@@ -376,32 +363,7 @@ public:
             unsigned int underApprox = pbclause.under;
             int unassignedWeight = pbclause.unassigned;
             unsigned int overApprox = pbclause.under + pbclause.unassigned;
-            /*	int n_Free=0;
-             unsigned int unassignedWeight = 0;
-             unsigned int smallestUnassignedWeight = INT32_MAX;
-             unsigned int largestUnassignedWeight =0;
-             Lit largestUnassigned = lit_Undef;
-             for(PbElement e:pbclause.clause){
-             Lit l = e.lit;
-             lbool val = value(l);
-             if(val==l_True){
-             underApprox +=e.weight;
-             }else if(val==l_Undef){
-             n_Free++;
-             unassignedWeight+=e.weight;
-             if(e.weight>largestUnassignedWeight){
-             largestUnassignedWeight=e.weight;
-             largestUnassigned = e.lit;
-             }
-             if (e.weight<=smallestUnassignedWeight){
-             smallestUnassignedWeight=e.weight;
-             }
-             }else{
-             int  a=1;
-             }
-             }
-             */
-            //overApprox=underApprox+;
+
             if(rhs_val == l_True && underApprox >= total){
                 //this is a satisfied constraint
                 //pbclause.isSatisfied=true;
@@ -413,8 +375,6 @@ public:
             }else if(rhs_val == l_True && overApprox < total){
                 //conflict
                 assert(pbclause.side != ConstraintSide::Lower);
-                static int iter = 0;
-                ++iter;
                 conflict.push(~rhs);
                 buildSumLTReason(clauseID, conflict);
                 dbg_prove(pbclause, conflict);
@@ -1042,8 +1002,6 @@ private:
         dbg_sat(c, prove);
 
         for (PbElement p : c.clause) {
-            // if(var(p.lit)==23 || toInt(p.lit)==23){
-
             if (value(p.lit) == l_Undef) {
                 prove.push(p.lit);
                 dbg_sat(c, prove);
@@ -1053,7 +1011,6 @@ private:
                 prove.pop();
 
             }
-            // }
         }
 
         if (value(c.rhs.lit) == l_Undef) {
@@ -1333,10 +1290,6 @@ public:
         stats_reasons++;
 
         int clauseID = reasonMap[marker];
-        static int iter = 0;
-        if(++iter == 13){
-            int a = 1;
-        }
         PbClause& pbclause = clauses[clauseID];
         reason.push(p);
         if(var(p) == var(pbclause.rhs.lit)){
@@ -1367,9 +1320,7 @@ public:
         }
 
         dbg_prove(pbclause, reason);
-        //if( iter==13){
         dbg_min_conflict(pbclause, reason);
-        //}
         toSolver(reason);
     }
 

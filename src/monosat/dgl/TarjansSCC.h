@@ -162,10 +162,8 @@ public:
                 }
                 scc[n] = {sccID, next};
                 if(scc_out && (n != node)){
-                    if(curEdge != -1)
+                    if(curEdge != -1){
                         scc_out->push_back(curEdge);
-                    else{
-                        int a = 1;
                     }
                 }
                 if(n == node){
@@ -194,9 +192,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
             return;

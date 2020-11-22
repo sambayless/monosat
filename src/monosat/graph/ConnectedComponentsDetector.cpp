@@ -220,9 +220,6 @@ void ConnectedComponentsDetector<Weight, Graph>::buildMinComponentsTooLowReason(
 template<typename Weight, typename Graph>
 void
 ConnectedComponentsDetector<Weight, Graph>::buildMinComponentsTooHighReason(int min_components, vec<Lit>& conflict){
-    static int it = 0;
-    ++it;
-
     //drawFull( non_reach_detectors[detector]->getSource(),u);
     //assert(outer->dbg_distance( source,u));
 
@@ -371,42 +368,7 @@ void ConnectedComponentsDetector<Weight, Graph>::buildNodesNotConnectedReason(in
     double starttime = rtime(2);
     cutGraph.clearHistory();
     outer->stats_mc_calls++;
-    /*	if(opt_conflict_min_cut){
-     if(mincutalg!= MinCutAlg::ALG_EDKARP_ADJ){
-     //ok, set the weights for each edge in the cut graph.
-     //Set edges to infinite weight if they are undef or true, and weight 1 otherwise.
-     for(int u = 0;u<cutGraph.nodes();u++){
-     for(int j = 0;j<cutGraph.nIncident(u);j++){
-     int v = cutGraph.incident(u,j).node;
-     int edgeid =  cutGraph.incident(u,j).id;
-     Var var = outer->getEdgeVar(edgeid);
-     if(S->value(var)==l_False){
-     mc.setCapacity(u,v,1);
-     }else{
-     outer->mc->setCapacity(u,v,0xF0F0F0);
-     //}
-     }
-     }
-
-     //find any edges assigned to false, and set their capacity to 1
-     for(int i =0;i<outer->trail.size();i++){
-     if(outer->trail[i].isEdge && !outer->trail[i].assign){
-     outer->mc->setCapacity(outer->trail[i].from, outer->trail[i].to,1);
-     }
-     }
-     }
-     outer->cut.clear();
-
-     int f =outer->mc->minCut(source,node,outer->cut);
-     assert(f<0xF0F0F0); assert(f==outer->cut.size());//because edges are only ever infinity or 1
-     for(int i = 0;i<outer->cut.size();i++){
-     MaxFlowEdge e = outer->cut[i];
-
-     Lit l = mkLit(outer->getEdgeVar(e.id),false);
-     assert(outer->value(l)==l_False);
-     conflict.push(l);
-     }
-     }else*/{
+    {
         //We could learn an arbitrary (non-infinite) cut here, or just the whole set of false edges
         //or perhaps we can learn the actual 1-uip cut?
 

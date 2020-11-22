@@ -55,9 +55,7 @@ public:
     std::vector<int> check;
     const int reportPolarity;
 
-    //std::vector<char> old_seen;
     std::vector<char> seen;
-//	std::vector<int> changed;
 
     std::vector<int> prev;
 
@@ -105,96 +103,6 @@ public:
         return source;
     }
 
-    /*void updateFast(){
-     stats_fast_updates++;
-
-
-     assert(last_deletion==g.nDeletions());
-     last_modification=g.getCurrentHistory();
-     last_addition=g.nAdditions();
-     INF=g.nodes()+1;
-     seen.resize(g.nodes());
-     prev.resize(g.nodes());
-
-     if(lastaddlist!=g.addlistclears){
-     addition_qhead=0;
-     lastaddlist=g.addlistclears;
-     }
-     int start = q.size();
-     //ok, now check if any of the added edges allow for new connectivity
-     for (int i = addition_qhead;i<g.addition_list.size();i++){
-     int u=g.addition_list[i].u;
-     int v=g.addition_list[i].v;
-
-     if(!seen[v]){
-     q.push_back(v);
-     seen[v]=1;
-     prev[v]=u;
-     }
-     }
-     addition_qhead=g.addition_list.size();
-
-     for(int i = start;i<q.size();i++){
-     int u = q[i];
-     assert(seen[u]);
-     for(int i = 0;i<g.nIncident(u);i++){
-     int v = g.incident(u,i);
-
-     if(!seen[v]){
-     //this was changed
-     changed.push_back(v);
-     seen[v]=1;
-     prev[v]=u;
-     q.push_back(v);
-     }
-     }
-     }
-
-     }*/
-    /*	std::vector<int> & getChanged(){
-     return changed;
-     }
-     void clearChanged(){
-     changed.clear();
-     }*/
-
-    /*
-     * WARNING: THIS FUNDAMENTALLY WONT WORK if there are any cycles in the graph!
-     * inline void delete_update(int to){
-     q.clear();
-     q.push_back(to);
-     seen[to]=0;
-     //Is this really safe? check it very carefully, it could easily be wrong
-     while(q.size()){
-     int u = q.back();
-     q.pop_back();
-     assert(!seen[u]);
-     for(int i = 0;i<g.nIncoming(u);i++){
-     int v = g.incoming(u,i);
-     if(seen[v]){
-     seen[v]=1;
-     //Then since to is still seen, we are up to date
-     break;
-     }
-     }
-     if(!seen[u]){
-     for(int i = 0;i<g.nIncident(u);i++){
-     int v = g.incident(u,i);
-     if(seen[v] && prev[v]==to){
-     seen[v]=0;
-     }
-     }
-     }else{
-     #ifdef GRAPH_DEBUG
-     for(int i = 0;i<g.nIncident(u);i++){
-     int v = g.incident(u,i);
-     assert(seen[v]);
-     }
-     #endif
-     }
-     }
-     }*/
-
     void setNodes(int n){
         q.reserve(n);
         check.reserve(n);
@@ -206,18 +114,12 @@ public:
     inline void add_update(int to, bool update){
         q.clear();
         q.push_back(to);
-        //while(q.size()){
-        //auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
         while(q.size()){
             int u = q.back();
             q.pop_back();
             assert(seen[u]);
             if(update)
                 status.setReachable(u, seen[u]);
-            //status.setReachable(u,true);
-            //if(!old_seen[u]){
-            //	changed.push_back(u);
-            //}
             for(int i = 0; i < g.nIncident(u, undirected); i++){
                 if(!g.edgeEnabled(g.incident(u, i, undirected).id))
                     continue;
@@ -239,16 +141,12 @@ public:
         prev[to] = -1;
         check.clear();
         check.push_back(to);
-        //while(q.size()){
-        //auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
         while(q.size()){
             int u = q.back();
             q.pop_back();
             assert(!seen[u]);
 
             for(int i = 0; i < g.nIncident(u, undirected); i++){
-                /*				if(!g.edgeEnabled( g.incident(u,i).id))
-                 continue;*/
                 int v = g.incident(u, i, undirected).node;
                 int edgeID = g.incident(u, i, undirected).id;
                 if(seen[v] && previous(v) == u){
@@ -292,7 +190,6 @@ public:
 
         assert(INF > g.nodes());
         assert(seen.size() >= g.nodes());
-        //old_seen.resize(g.nodes());
         q.clear();
 
         for(int i = history_qhead; i < g.historySize(); i++){
@@ -353,7 +250,6 @@ public:
 
         assert(INF > g.nodes());
         assert(seen.size() >= g.nodes());
-        //old_seen.resize(g.nodes());
         q.clear();
 
         for(int i = history_qhead; i < g.historySize(); i++){
@@ -414,9 +310,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
             return;
@@ -486,7 +379,6 @@ public:
                         return;
                 }
             }
-            /**/
         }
 
         stats_full_updates++;
@@ -497,7 +389,6 @@ public:
             prev[i] = -1;
         }
         seen[source] = 1;
-        //auto & adjacency = undirected? g.adjacency_undirected:g.adjacency;
         q.push_back(source);
         while(q.size()){
             int u = q.back();

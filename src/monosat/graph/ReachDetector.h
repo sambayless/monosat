@@ -183,49 +183,9 @@ public:
     MaxFlow<Weight>* conflict_flow = nullptr;
     std::vector<MaxFlow<Weight>*> conflict_flows;
 
-
-    /*struct OptimalWeightEdgeStatus{
-     ReachDetector & detector;
-     int operator [] (int edge) const ;
-     int size()const;
-     OptimalWeightEdgeStatus(ReachDetector & _outer):detector(_outer){}
-
-     };
-
-     OptimalWeightEdgeStatus opt_weight;
-     WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;*/
     Reach* chokepoint_detector = nullptr;
-/*	struct CutStatus {
-		int64_t one = 1;
-		int64_t inf = 0xFFFF;
-		ReachDetector & outer;
 
-		const int64_t &operator [](int id) const {
-			if (id % 2 == 0) {
-				return one;
-			} else {
-				return inf;
-			}
-		}
-		int size() const {
-			return outer.g_under.edges() * 2;
-		}
-		CutStatus(ReachDetector & _outer) :
-				outer(_outer) {
-		}
-
-	} cutStatus;*/
     std::vector<MaxFlowEdge> cut;
-    /*		struct ChokepointStatus{
-     ReachDetector & detector;
-     bool mustReach(int node);
-     bool operator() (int edge_id);
-     ChokepointStatus(ReachDetector & _outer):detector(_outer){
-
-     }
-     }chokepoint_status;
-
-     Chokepoint<ChokepointStatus > chokepoint;*/
 
     //This class can stand in as a reach algorithm if we have encoded reachability directly into the cnf.
     class CNFReachability : public Reach {

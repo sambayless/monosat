@@ -500,10 +500,6 @@ public:
 
     //Lazily construct a reason for a literal propagated from a theory
     CRef constructReason(Lit p){
-        static int iterp = 0;
-        if(++iterp == 45){
-            int a = 1;
-        }
         assert(value(p) == l_True);
         CRef cr = reason(var(p));
         assert(isTheoryCause(cr));

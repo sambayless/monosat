@@ -176,19 +176,6 @@ public:
 
     WeightedDijkstra<Weight, Graph, double>* rnd_path;
 
-
-
-
-
-    /*struct OptimalWeightEdgeStatus{
-     WeightedDistanceDetector & detector;
-     int operator [] (int edge) const ;
-     int size() const;
-     OptimalWeightEdgeStatus(WeightedDistanceDetector & _outer):detector(_outer){}
-
-     };*/
-    //OptimalWeightEdgeStatus opt_weight;
-    //WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
     struct ReachStatus {
         WeightedDistanceDetector& detector;
         bool polarity;
@@ -223,26 +210,6 @@ public:
         }
     };
 
-    /*struct CutStatus {
-        int64_t one = 1;
-        int64_t inf = 0xFFFF;
-        WeightedDistanceDetector & outer;
-
-        const int64_t &operator [](int id) const {
-            if (id % 2 == 0) {
-                return one;
-            } else {
-                return inf;
-            }
-        }
-        int size() const {
-            return outer.g_under.edges() * 2;
-        }
-        CutStatus(WeightedDistanceDetector & _outer) :
-                outer(_outer) {
-        }
-
-    } cutStatus;*/
     std::vector<MaxFlowEdge> cut;
 
     DistanceStatus* positiveDistanceStatus;
@@ -312,25 +279,8 @@ public:
 
     void printSolution(std::ostream& write_to) override;
 
-    /*	Lit getLit(int node){
-
-     return reach_lits[node];
-
-     }*/
-
     void unassign(Lit l) override{
         Detector::unassign(l);
-/*
-		int index = var(l) - first_reach_var;
-
-		//at the moment, change in assignments are only tracked this way for unweighted lits:
-		if (index >= 0 && index < reach_lit_map.size() && getLitType(l)==UnweightedLit && reach_lit_map[index].to != -1) {
-			int node = reach_lit_map[index].to;
-			if (!is_changed[node]) {
-				changed.push( { node });
-				is_changed[node] = true;
-			}
-		}*/
     }
 
     void preprocess() override;

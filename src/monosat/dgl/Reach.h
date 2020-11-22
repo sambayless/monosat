@@ -55,7 +55,6 @@ public:
     virtual void setSource(int s)=0;
 
     virtual int getSource()=0;
-    //virtual addSource(int s)=0;
 
     virtual void update()=0;
 
@@ -80,9 +79,6 @@ public:
         return incomingEdge(node);
     }
     //The maximum distance to compute up to.
-    /*	virtual void setMaxDistance(int maxDistance){
-
-     }*/
     virtual void addDestination(int node){
 
     }

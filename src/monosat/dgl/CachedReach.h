@@ -109,7 +109,6 @@ public:
 
     alg::IntSet<int> destinations;
     alg::IntSet<int> edge_in_path;
-    //std::vector<bool> edge_in_path;
     std::vector<bool> has_path_to;
     std::vector<int> previous_edge;
     bool has_non_reach_destinations = false;
@@ -153,10 +152,6 @@ public:
         edge_in_path.clear();//clear and rebuild the path tree
         int source = getSource();
         assert(previous_edge[source] == -1);
-        static int iter = 0;
-        if(++iter == 25){
-            int a = 1;
-        };
         has_non_reach_destinations = false;
 
         bool randomShortestPath = alg::drand(random_seed) < randomShortestPathFrequency;
@@ -223,8 +218,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
 
         if(!needs_recompute && last_modification > 0 && g.getCurrentHistory() == last_modification){
             return;
@@ -234,13 +227,10 @@ public:
         if(last_modification <= 0 || g.changed()){//Note for the future: there is probably room to improve this further.
             edge_in_path.clear();
 
-            //edge_in_path.resize(g.edges(),false);
             has_path_to.clear();
             has_path_to.resize(g.nodes(), false);
             previous_edge.clear();
             previous_edge.resize(g.nodes(), -1);
-            // prev_edge.clear();
-            //prev_edge.resize(g.nodes(),-1);
             needs_recompute = true;
 
         }
@@ -321,7 +311,6 @@ public:
     }
 
     bool connected(int t) override{
-        //if (last_modification != g.getCurrentHistory())
         update();
         return has_path_to[t];
     }
@@ -343,7 +332,7 @@ public:
     int incomingEdge(int t) override{
         assert(last_modification == g.getCurrentHistory() && !needs_recompute);
         assert(previous_edge[t] >= 0);
-        return previous_edge[t]; //reach->incomingEdge(t);
+        return previous_edge[t];
     }
 
     int previous(int t) override{

@@ -1022,8 +1022,6 @@ public:
             stats_skipped_updates++;
             return;
         }
-        static int iteration = 0;
-        int local_it = ++iteration;
         stats_full_updates++;
 
         if(gen_last_modification <= 0 || gen.changed() || gen_last_history_clear != gen.historyclears ||

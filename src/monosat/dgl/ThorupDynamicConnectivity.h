@@ -428,11 +428,6 @@ private:
                     //note: we only visit this search loop if we have not already found a replacement edge.
                     int w = n ? treeEdge.to : treeEdge.from;
                     dbg_incident();
-                    static int iter = 0;
-                    if(++iter == 93){
-                        int a = 1;
-                        int b = 2;
-                    }
                     foundReplacement = visit(w, u, edgeID, i, replacementEdge);
                     dbg_incident();
                 }
@@ -744,10 +739,6 @@ public:
      * Returns true if the set of connected components have changed
      */
     bool setEdgeEnabled(int from, int to, int edgeID, bool enabled){
-        static int iter = 0;
-        if(++iter == 531){
-            int a = 1;
-        }
         addEdge(from, to, edgeID);
         bool changed = false;
         /*	if(enabled)
@@ -775,10 +766,6 @@ public:
     }
 
     bool setEdgeEnabledUnchecked(int from, int to, int edgeID, bool connected){
-        static int iter = 0;
-        if(++iter == 531){
-            int a = 1;
-        }
         addEdge(from, to, edgeID);
         bool changed = false;
 

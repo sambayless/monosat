@@ -51,14 +51,10 @@ public:
     std::vector<int> check;
     const int reportPolarity;
 
-    //std::vector<char> old_seen;
     std::vector<char> seen;;
-//	std::vector<int> changed;
-    //std::vector<int> edge_weights;
     std::vector<Weight> keys;
     std::vector<int> parents;
     std::vector<int> parent_edges;
-    //int next_component;
     std::vector<int> components;
     std::vector<int> roots;
     std::vector<bool> in_tree;
@@ -76,7 +72,6 @@ public:
         }
     };
 
-    //bool hasComponents;
     alg::Heap<VertLt> Q;
 
     std::vector<int> mst;
@@ -117,7 +112,6 @@ public:
         check.reserve(n);
         seen.resize(n);
         prev.resize(n);
-        //INF=std::numeric_limits<int>::max();
         components.resize(g.nodes());
         parents.resize(n);
         keys.resize(n);
@@ -131,23 +125,18 @@ public:
     }
 
     void update(){
-        static int iteration = 0;
-        int local_it = ++iteration;
 
         if(g.outfile()){
             fprintf(g.outfile(), "m\n");
             fflush(g.outfile());
         }
 
-        if(g.getCurrentHistory() == 89){
-            int a = 1;
-        }
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
             return;
         }
         if(last_modification <= 0 || g.changed() || last_history_clear != g.nHistoryClears()){
-            INF = 1;    //g.nodes()+1;
+            INF = 1;
 
             for(auto& w : g.getWeights())
                 INF += w;
@@ -219,13 +208,6 @@ public:
             }
         }
 
-        /*		for(int i = 0;i<g.nodes();i++){
-         if(parents[i] ==-1) {
-         numsets++;
-         }
-
-         }*/
-
         if(numsets == 0){
             assert(min_weight == 0);
         }
@@ -274,9 +256,6 @@ public:
 
     bool edgeInTree(int edgeid){
         update();
-        //int u = g.all_edges[edgeid].from;
-        //int v = g.all_edges[edgeid].to;
-        //return parents[u]==v || parents[v]==u;
         return in_tree[edgeid];
     }
 
@@ -296,13 +275,6 @@ public:
     int getRoot(int component = 0){
         update();
         return components[component];
-        /*	if(component>0){
-         buildComponents();
-         assert(getParent(roots[component])==-1);
-         return roots[component];
-         }
-         assert(getParent(0)==-1);//because we always build the tree from 0
-         return 0;*/
     }
 
     Weight& weight(){
@@ -335,26 +307,6 @@ public:
 #endif
         return true;
     };
-private:
-    /*	void buildComponents(){
-     if(!hasComponents){
-     hasComponents=true;
-     components.clear();
-     components.resize(g.nodes(),-1);
-     next_component = 0;
-     roots.clear();
-     //root_list.clear();
-
-     //identify each connected component.
-     //use disjoint sets for this, later
-
-
-     assert(roots.size()>0);
-
-
-     }
-     }*/
-
 };
 };
 #endif

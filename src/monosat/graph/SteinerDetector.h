@@ -64,8 +64,6 @@ public:
     vec <Var> terminal_map;
     vec<int> terminal_var_map;
 
-    //Map<float,int> weight_lit_map;
-
     struct WeightLit {
         Lit l;
         Weight min_weight;

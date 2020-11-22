@@ -310,9 +310,6 @@ public:
 
     //Called when an edge is enabled
     void AddEdge(int edgeID){
-        static int iter = 0;
-        ++iter;
-
         assert(g.edgeEnabled(edgeID));
         if(edgeInShortestPathGraph[edgeID])
             return;
@@ -384,17 +381,10 @@ public:
 
     //Called if an edge weight is decreased
     void DecreaseWeight(int edgeID){
-        static int iter = 0;
-        ++iter;
 
         assert(g.edgeEnabled(edgeID));
-        //if (edgeInShortestPathGraph[edgeID]) //must process this whether or not the edge is in the shortest path
-        //    return;
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 5748){
-            int a = 1;
-        }
         Weight& rdv = dist[rv];
         Weight& rdu = dist[ru];
 
@@ -461,9 +451,6 @@ public:
 
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 5748){
-            int a = 1;
-        }
         assert(weights[edgeID] > 0);
         assert(delta[rv] > 0);
         delta[rv]--;
@@ -521,14 +508,8 @@ public:
         if(g.outfile()){
             fprintf(g.outfile(), "r %d %d %d %d %d\n", getSource(), last_modification, g.getCurrentHistory(),
                     g.changed(), g.historySize());
-            //fprintf(g.outfile(), "r %d\n", getSource());
         }
 
-        static int iteration = 0;
-        int local_it = ++iteration;
-        if(local_it == 5){
-            int a = 1;
-        }
         stats_all_updates++;
         if(last_modification > 0 && g.getCurrentHistory() == last_modification)
             return;
@@ -675,8 +656,6 @@ public:
             processDistanceShorter();
             dbg_delta_lite();
         }
-        //for(int i = 0;i<g.nodes();i++){
-        //	int u=i;
         if(reportPolarity > -2 && !has_zero_weights){
             for(int u : changed){
                 //int u = changed[i];
@@ -906,7 +885,6 @@ public:
                 changed.push_back(u);
             }
             delta[u] = 0;
-            //for(auto & e:g.inverted_adjacency[u]){
             for(int i = 0; i < g.nIncoming(u); i++){
                 auto& e = g.incoming(u, i);
                 int adjID = e.id;
@@ -925,13 +903,10 @@ public:
                         delta[u]++;
                     }else if(dist[u] < alt || (alt == INF)){
                         //This doesn't hold for us, because we are allowing multiple edges to be added at once.
-                        //assert(dist[u]<(dist[v]+w));
-
                         edgeInShortestPathGraph[adjID] = false;
                     }else{
                         //don't do anything. This will get corrected in a future call to AddEdge.
                         //assert(false);
-
                     }
                 }else{
                     edgeInShortestPathGraph[adjID] = false;    //need to add this, because we may have disabled multiple edges at once.
@@ -959,7 +934,6 @@ public:
                             delta[s]++;
                         }
                     }else{
-                        //assert(!edgeInShortestPathGraph[adjID] || ( dist[s] >=dist[u] && q_inc.inHeap(s)));
                     }
                 }else{
                     assert(!edgeInShortestPathGraph[adjID]);
@@ -1020,7 +994,6 @@ public:
                 throw std::logic_error("Internal error in Ramal Reps");
             }
         }
-//#endif
 
         return true;
     }
@@ -1051,7 +1024,6 @@ public:
     }
 
     bool connected_unsafe(int t) override{
-        //dbg_uptodate();
         if(has_zero_weights){
             return dijkstras.connected_unsafe(t);
         }
@@ -1296,7 +1268,6 @@ public:
         };
     };
 
-    //Heap<DistCmp> q;
     std::vector<bool> in_queue_inc;
     std::vector<bool> in_queue_dec;
     std::vector<bool> in_queue2;
@@ -1353,7 +1324,6 @@ public:
                stats_all_updates - stats_updates, stats_resets);
     }
 
-    //Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
     void setMaxDistance(int& _maxDistance) override{
         if(_maxDistance != maxDistance){
             last_modification = -1;        //force the next update to recompute from scratch
@@ -1508,8 +1478,6 @@ public:
     }
 
     void AddEdge(int edgeID){
-        static int iter = 0;
-        ++iter;
         dbg_delta_lite();
         assert(g.edgeEnabled(edgeID));
         if(edgeInShortestPathGraph[edgeID])
@@ -1671,8 +1639,6 @@ public:
             changeset.push_back(rv);
             in_changeset[rv] = true;
         }
-
-
     }
 
     int64_t num_updates = 0;
@@ -1762,10 +1728,7 @@ public:
         processDistanceLonger();
         processDistanceShorter();
         dbg_delta_lite();
-        //for(int i = 0;i<g.nodes();i++){
         for(int u : changed){
-            //int u=i;
-            //int u = changed[i];
             node_changed[u] = false;
 
             if(reportPolarity <= 0 && dist[u] >= INF){
@@ -1792,8 +1755,6 @@ public:
     }
 
     void processChanged(){
-
-
         //find all effected nodes whose shortest path lengths may now be increased (or that may have become unreachable)
         for(int i = 0; i < changeset.size(); i++){
             int u = changeset[i];
@@ -1829,7 +1790,6 @@ public:
             int shortest_edge = -1;
             assert(dist[u] == INF);
 
-            //for(auto & e:g.inverted_adjacency[u]){
             for(int i = 0; i < g.nIncoming(u); i++){
                 auto& e = g.incoming(u, i);
                 int adjID = e.id;
@@ -1858,8 +1818,6 @@ public:
                     edgeInShortestPathGraph[shortest_edge] = true;
                     delta[u]++;
                 }
-                //q.insert(u);
-                //dbg_Q_add(q,u);
                 if(!in_queue_dec[u]){
                     q_dec.push_back(u);
                     in_queue_dec[u] = true;
@@ -1927,12 +1885,7 @@ public:
                 node_changed[u] = true;
                 changed.push_back(u);
             }
-            if(dist[u] >= INF){
-                int a = 1;
-            }
             delta[u] = 0;
-            //assert(dist[u] < INF);
-            //for(auto & e:g.inverted_adjacency[u]){
             for(int k = 0; k < g.nIncoming(u); k++){
                 auto& e = g.incoming(u, k);
                 int adjID = e.id;
@@ -2061,9 +2014,6 @@ public:
             }else{
                 assert(dist[q2[j]] <= dist[q_dec[i]]);
                 u = q2[j++];
-            }
-            if(dist[u] >= INF){
-                int a = 1;
             }
             if(dist[u] >= INF){
                 assert(delta[u] == 0);
@@ -2219,13 +2169,11 @@ public:
                 throw std::logic_error("Internal error in Ramal Reps");
             }
         }
-//#endif
 
         return true;
     }
 
     bool dbg_uptodate(){
-//#ifdef DEBUG_GRAPH
 #ifdef DEBUG_RAMAL2
         if(last_modification<0)
         return true;

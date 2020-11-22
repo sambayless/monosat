@@ -307,17 +307,11 @@ public:
 
     //Called when an edge is enabled
     void AddEdge(int edgeID){
-        static int iter = 0;
-        ++iter;
-
         assert(g.edgeEnabled(edgeID));
         if(edgeInShortestPathGraph[edgeID])
             return;
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 5748){
-            int a = 1;
-        }
         Weight& rdv = dist[rv];
         Weight& rdu = dist[ru];
 
@@ -382,17 +376,10 @@ public:
 
     //Called if an edge weight is decreased
     void DecreaseWeight(int edgeID){
-        static int iter = 0;
-        ++iter;
 
         assert(g.edgeEnabled(edgeID));
-        //if (edgeInShortestPathGraph[edgeID]) //must process this whether or not the edge is in the shortest path
-        //    return;
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 5748){
-            int a = 1;
-        }
         Weight& rdv = dist[rv];
         Weight& rdu = dist[ru];
 
@@ -459,9 +446,6 @@ public:
 
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 5748){
-            int a = 1;
-        }
         assert(weights[edgeID] > 0);
         assert(delta[rv] > 0);
         delta[rv]--;
@@ -493,9 +477,6 @@ public:
 
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 5748){
-            int a = 1;
-        }
         assert(delta[rv] > 0);
         delta[rv]--;
         if(delta[rv] > 0)
@@ -521,14 +502,8 @@ public:
         if(g.outfile()){
             fprintf(g.outfile(), "r %d %d %d %d %d\n", getSource(), last_modification, g.getCurrentHistory(),
                     g.changed(), g.historySize());
-            //fprintf(g.outfile(), "r %d\n", getSource());
         }
 
-        static int iteration = 0;
-        int local_it = ++iteration;
-        if(local_it == 5){
-            int a = 1;
-        }
         stats_all_updates++;
         if(last_modification > 0 && g.getCurrentHistory() == last_modification)
             return;
@@ -537,7 +512,7 @@ public:
             stats_resets++;
             Weight oldInf = INF;
 
-            INF = 1;                            //g.nodes()+1;
+            INF = 1;
             has_zero_weights = false;
             for(Weight& w : weights){
                 if(w <= 0){
@@ -1421,8 +1396,6 @@ public:
     }
 
     void AddEdge(int edgeID){
-        static int iter = 0;
-        ++iter;
         dbg_delta_lite();
         assert(g.edgeEnabled(edgeID));
         if(edgeInShortestPathGraph[edgeID])

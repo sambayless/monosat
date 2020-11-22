@@ -312,11 +312,6 @@ void MSTDetector<Weight, Graph>::TarjanOLCA(int node, vec<Lit>& conflict){
 template<typename Weight, typename Graph>
 void MSTDetector<Weight, Graph>::buildMinWeightTooLargeReason(Weight& weight, vec<Lit>& conflict){
 
-    static int it = 0;
-    ++it;
-
-    //drawFull( non_reach_detectors[detector]->getSource(),u);
-    //assert(outer->dbg_distance( source,u));
     double starttime = rtime(2);
 
     overapprox_conflict_detector->update();
@@ -574,18 +569,12 @@ void MSTDetector<Weight, Graph>::buildEdgeInTreeReason(int edgeid, vec<Lit>& con
     }
     Var vt = outer->getEdgeVar(edgeid);
     assert(vt > 0);
-    //assert(outer->value(vt)==l_True);
-    static int it = 0;
-    if(++it == 3){
-        int a = 1;;
-    }
+
     ancestors.clear();
     ancestors.growTo(g_under.nodes(), -1);
 
     black.clear();
     black.growTo(g_under.nodes());
-    //drawFull( non_reach_detectors[detector]->getSource(),u);
-    //assert(outer->dbg_distance( source,u));
     double starttime = rtime(2);
     int INF = std::numeric_limits<int>::max();
     overapprox_conflict_detector->update();
@@ -706,16 +695,9 @@ void MSTDetector<Weight, Graph>::preprocess(){
 
 template<typename Weight, typename Graph>
 bool MSTDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
-    static int it = 0;
-    if(++it == 7){
-        int a = 1;
-    }
     if(outer->has_any_bitvector_edges){
         throw std::runtime_error("MST constraints don't yet support bitvector weight edges");
     }
-    //printf("it %d: \n",it);
-//	changed_edges.clear();
-//changed_weights.clear();
 //NOTE! Cannot use pure theory lits here, because the edge literals and the mst weight literals are computed
 //in opposed polarity by each detector! So unless we separate those unassigned counts out, we can't skip either...
 //Fix this later if needed...
@@ -790,8 +772,6 @@ bool MSTDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
                 }
                 outer->toSolver(conflict);
                 return false;
-            }else{
-                int a = 1;
             }
 
         }
@@ -826,9 +806,6 @@ bool MSTDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
         }else if(outer->value(l) == l_Undef){
             //trail.push(Assignment(false,reach,detectorID,0,var(l)));
             if(reach){
-                if(var(l) < 72){
-                    int a = 1;
-                }
                 outer->enqueue(l, underprop_edge_marker);
             }else
                 outer->enqueue(l, overprop_edge_marker);
@@ -852,8 +829,6 @@ bool MSTDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
             }
             outer->toSolver(conflict);
             return false;
-        }else{
-            int a = 1;
         }
         assert(changed_edges.size() == sz);
         assert(changed_edges.last().edgeID == edgeID);
@@ -933,7 +908,6 @@ bool MSTDetector<Weight, Graph>::checkSatisfied(){
             }
         }
     }
-//if(positive_checker.numComponents()==1){
     Weight sum_weight = 0;
     for(int edgeid = 0; edgeid < g_under.edges(); edgeid++){
         if(positive_checker.edgeInTree(edgeid)){
@@ -950,7 +924,6 @@ bool MSTDetector<Weight, Graph>::checkSatisfied(){
     if(sum_weight != positive_checker.forestWeight()){
         return false;
     }
-//}
     return true;
 }
 

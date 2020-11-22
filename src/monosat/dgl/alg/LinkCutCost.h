@@ -92,7 +92,6 @@ class LinkCutCost {
 #endif
         expose(v);
         //dbg_print_forest();
-        //int it = iter;
         Weight cost = nodes[v].netcost;
 #ifdef DEBUG_DGL_LINKCUT
         assert(cost == cp);
@@ -240,15 +239,6 @@ class LinkCutCost {
 
     inline void dbg_print_forest(bool force = false){
 #ifdef DEBUG_DGL_LINKCUT
-        int iter = 0;
-        /*if (!force)
-            return;*/
-        /* if(++iter<= 1415550){
-         return;
-         }
-         if(iter== 1415555){
-         int a =1;
-         }*/
 
         printf("digraph{\n");
         for (int i = 0; i < nodes.size(); i++) {
@@ -284,15 +274,6 @@ class LinkCutCost {
 public:
     inline void print_forest(bool force = false){
 #ifdef DEBUG_DGL
-        int iter = 0;
-        /*if (!force)
-            return;*/
-        /* if(++iter<= 1415550){
-         return;
-         }
-         if(iter== 1415555){
-         int a =1;
-         }*/
 
         printf("digraph{\n");
         for (int i = 0; i < nodes.size(); i++) {
@@ -301,26 +282,6 @@ public:
                 std::cout<<"n" << i << "[label=\"" << i << ": c" <<  getCost(i) << " m" << ancecstorFindMin(i)  << "\"]\n";
         }
 
-        /*for (int i = 0; i < nodes.size(); i++) {
-
-            Node & n = nodes[i];
-            if (n.parent>=0) {
-                const char * s = "black";
-                if (n.dbg_ID == nodes[n.parent].left) {
-                    s = "blue";
-                    assert(n.dbg_ID != nodes[n.parent].right);
-                }
-
-                if (n.dbg_ID == nodes[n.parent].right) {
-                    s = "red";
-                }
-                printf("n%d -> n%d\n",i,n.parent);
-                //std::cout<<"n" << i << " . n" << nodes[n.parent].dbg_ID << "[label=\"" << i << ": " << n.cost << "\",color=\"" << s << "\"\n";
-                //printf("n%d . n%d [label=\"%d: %d\",color=\"%s\"]\n", i, nodes[n.parent].dbg_ID, i, n.cost, s);
-            }
-
-        }
-*/
         printf("}\n");
 
 #endif
@@ -358,21 +319,11 @@ public:
 
     void dbg_isGrossMin(int min, int v){
 #ifdef DEBUG_DGL_LINKCUT
-        static int iter = 0;
-        if (++iter == 22349) {
-            int a = 1;
-        }
-        // dbg_print_forest();
+
         Weight minGrossCost = nodes[v].cost;
 
         std::vector<int> Q;
-        /* for(int i = 0;i<nodes.size();i++){
-         Node & y = nodes[i];
-         if(dbg_is_ancestor(y,v)){
-         minGrossCost = std::min(minGrossCost, grosscost(y));
-         assert(minGrossCost>=v.min);
-         }
-         }*/
+
         Q.push_back(v);
         while (Q.size()) {
             Node & w = nodes[Q.back()];
@@ -394,16 +345,6 @@ public:
     bool isSplayRoot(int x){
         return nodes[x].parent == -1 || (nodes[nodes[x].parent].left != x && nodes[nodes[x].parent].right != x);
     }
-
-    /* void connect(Node &ch, Node &p, bool leftChild) {
-     if (leftChild)
-     p.left = ch;
-     else
-     p.right = ch;
-     if (ch != NULL)
-     ch.parent = p;
-     }
-     */
 
     void rotR(int pID){
         Node& p = nodes[pID];
@@ -455,7 +396,7 @@ public:
         dbg_cost(pID);
         dbg_cost(rID);
         dbg_cost(q.right);
-        //dbg_min(q);dbg_min(p);dbg_min(r); dbg_min(q.right);
+
     }
 
     void rotL(int pID){
@@ -506,7 +447,7 @@ public:
         dbg_cost(pID);
         dbg_cost(rID);
         dbg_cost(q.right);
-        //dbg_min(q);dbg_min(p);dbg_min(r); dbg_min(q.right);
+
     }
 
     void splay(int pID){

@@ -27,11 +27,6 @@ class SearchTree {
 
 public:
 
-    /*	class Node{
-     virtual BST::Node* getParent()=0;
-     virtual BST::Node* getLeft()=0;
-     virtual BST::Node* getRight()=0;
-     };*/
 
     SearchTree(){
 
@@ -41,8 +36,6 @@ public:
 
     }
 
-    /*	virtual void insertAfter(Node* insertAt,Node* toInsert) =0;
-     virtual void insertBefore(Node* insertAt,Node* toInsert) =0;*/
     virtual Node* findRoot(Node* of)=0;
 
     virtual Node* findMin(Node* root)=0;
@@ -73,14 +66,7 @@ public:
 
     //Returns the number of nodes in the subtree rooted at n (including n)
     virtual int size(Node* n)=0;
-    /*virtual void addToIncident(Node * x, int n_incident)=0;
 
-     virtual void setIncident(Node * x, int n_incident)=0;
-     virtual  int getIncident(Node * x)=0;
-     virtual int getSubtreeIncident(Node * of)=0;*/
-
-    /*	virtual void insertAfter(Node* insertAt,Node* toInsert) =0;
-     virtual void insertBefore(Node* insertAt,Node* toInsert) =0;*/
     virtual Node* findRoot(Node* of)=0;
 
     virtual Node* findMin(Node* root)=0;

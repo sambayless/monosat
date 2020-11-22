@@ -36,7 +36,6 @@
 #include "monosat/mtl/Vec.h"
 #include "monosat/utils/Options.h"
 #include <monosat/graph/GraphHeuristic.h>
-//#include "monosat/dgl/UnweightedDistance.h"
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -74,14 +73,10 @@ DistanceDetector<Weight, Graph>::DistanceDetector(int _detectorID, GraphTheorySo
         rnd_path = new WeightedDijkstra<Weight, Graph, double>(from, g_over, rnd_weight);
         for(int i = 0; i < outer->nEdges(); i++){
             double w = drand(rnd_seed);
-
             rnd_weight.push_back(w);
         }
 
     }
-    /* if(opt_use_optimal_path_for_decisions){
-     opt_path = new WeightedDijkstra< OptimalWeightEdgeStatus >(from,g_over,opt_weight);
-     }*/
     positiveReachStatus = new DistanceDetector<Weight, Graph>::ReachStatus(*this, true);
     negativeReachStatus = new DistanceDetector<Weight, Graph>::ReachStatus(*this, false);
 
@@ -111,18 +106,13 @@ DistanceDetector<Weight, Graph>::DistanceDetector(int _detectorID, GraphTheorySo
             overapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight, Graph, typename DistanceDetector<Weight, Graph>::ReachStatus>(
                     from, g_over, *negativeReachStatus, 0);
             underapprox_path_detector = new UnweightedBFS<Weight, Graph, Distance<int>::NullStatus>(from, g_under,
-                                                                                                    Distance<int>::nullStatus,
-                                                                                                    0);
+                                                                                                    Distance<int>::nullStatus,0);
         }
 
-        /*	if(opt_conflict_shortest_path)
-         reach_detectors.last()->positive_dist_detector = new Dijkstra<PositiveEdgeStatus>(from,g);*/
     }else if(distalg == DistAlg::ALG_RAMAL_REPS){
         if(!opt_encode_dist_underapprox_as_sat){
             underapprox_unweighted_distance_detector = new UnweightedRamalReps<Weight, Graph,
                     typename DistanceDetector<Weight, Graph>::ReachStatus>(from, g_under, *(positiveReachStatus), 0);
-            //underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight,Graph>::ReachStatus>(
-            //				from, g_under, *positiveReachStatus, 0);
         }
         overapprox_unweighted_distance_detector =
                 new UnweightedRamalReps<Weight, Graph, typename DistanceDetector<Weight, Graph>::ReachStatus>(from,
@@ -136,13 +126,10 @@ DistanceDetector<Weight, Graph>::DistanceDetector(int _detectorID, GraphTheorySo
             underapprox_path_detector = underapprox_unweighted_distance_detector = new UnweightedRamalReps<Weight, Graph,
                     typename DistanceDetector<Weight, Graph>::ReachStatus>(from, g_under, *(positiveReachStatus), 0);
         }
-        //new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 0);
     }else if(distalg == DistAlg::ALG_RAMAL_REPS_BATCHED){
         if(!opt_encode_dist_underapprox_as_sat){
             underapprox_unweighted_distance_detector = new UnweightedRamalRepsBatched<Weight, Graph,
                     typename DistanceDetector<Weight, Graph>::ReachStatus>(from, g_under, *(positiveReachStatus), 0);
-            //underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight,Graph>::ReachStatus>(
-            //				from, g_under, *positiveReachStatus, 0);
         }
         overapprox_unweighted_distance_detector =
                 new UnweightedRamalRepsBatched<Weight, Graph, typename DistanceDetector<Weight, Graph>::ReachStatus>(
@@ -155,13 +142,10 @@ DistanceDetector<Weight, Graph>::DistanceDetector(int _detectorID, GraphTheorySo
             underapprox_path_detector = underapprox_unweighted_distance_detector = new UnweightedRamalRepsBatched<Weight, Graph,
                     typename DistanceDetector<Weight, Graph>::ReachStatus>(from, g_under, *(positiveReachStatus), 0);
         }
-        //new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 0);
     }else if(distalg == DistAlg::ALG_RAMAL_REPS_BATCHED2){
         if(!opt_encode_dist_underapprox_as_sat){
             underapprox_unweighted_distance_detector = new UnweightedRamalRepsBatchedUnified<Weight, Graph,
                     typename DistanceDetector<Weight, Graph>::ReachStatus>(from, g_under, *(positiveReachStatus), 0);
-            //underapprox_unweighted_distance_detector = new UnweightedDijkstra<Weight,typename DistanceDetector<Weight,Graph>::ReachStatus>(
-            //				from, g_under, *positiveReachStatus, 0);
         }
         overapprox_unweighted_distance_detector =
                 new UnweightedRamalRepsBatchedUnified<Weight, Graph, typename DistanceDetector<Weight, Graph>::ReachStatus>(
@@ -174,7 +158,6 @@ DistanceDetector<Weight, Graph>::DistanceDetector(int _detectorID, GraphTheorySo
             underapprox_path_detector = underapprox_unweighted_distance_detector = new UnweightedRamalRepsBatchedUnified<Weight, Graph,
                     typename DistanceDetector<Weight, Graph>::ReachStatus>(from, g_under, *(positiveReachStatus), 0);
         }
-        //new UnweightedBFS<Weight,Distance<int>::NullStatus>(from, g_under, Distance<int>::nullStatus, 0);
     }else{
         if(!opt_encode_dist_underapprox_as_sat){
             underapprox_unweighted_distance_detector =
@@ -195,7 +178,6 @@ DistanceDetector<Weight, Graph>::DistanceDetector(int _detectorID, GraphTheorySo
             underapprox_path_detector = new UnweightedDijkstra<Weight, Graph, typename DistanceDetector<Weight, Graph>::ReachStatus>(
                     from, g_under, *positiveReachStatus, 0);
         }
-        //reach_detectors.last()->positive_dist_detector = new Dijkstra(from,g);
     }
 
 
@@ -283,9 +265,6 @@ void DistanceDetector<Weight, Graph>::buildUnweightedSATConstraints(bool onlyUnd
                 //source has no outgoing edge, and exactly one outgoing edge
                 for(int n = 0; n < g_under.nodes(); n++){
                     {
-                        //Lit any_incoming_enabled= mkLit( outer->newVar(),false); //~True;
-                        //vec<Lit> any_incoming_clause;
-                        //any_incoming_clause.push(~any_incoming_enabled);
                         Lit any_incoming_enabled = ~True;
                         BitVector<Weight> dist = node_distances[n];
                         if(n != source){
@@ -494,7 +473,6 @@ DistanceDetector<Weight, Graph>::addUnweightedShortestPathLit(int from, int to, 
         if(opt_compute_max_distance){
             underapprox_unweighted_distance_detector->setMaxDistance(max_unweighted_distance);
             overapprox_unweighted_distance_detector->setMaxDistance(max_unweighted_distance);
-            //positive_path_detector->setMaxDistance(max_distance);
         }
     }
 
@@ -511,8 +489,6 @@ DistanceDetector<Weight, Graph>::addUnweightedShortestPathLit(int from, int to, 
             Lit r = unweighted_dist_lits[to][i].l;
             //force equality between the new lit and the old reach lit, in the SAT solver
             outer->makeEqual(reachLit, r, true);
-            /*outer->S->addClause(~r, reachLit);
-             outer->S->addClause(r, ~reachLit);*/
         }
     }
 
@@ -531,15 +507,7 @@ DistanceDetector<Weight, Graph>::addUnweightedShortestPathLit(int from, int to, 
 
 template<typename Weight, typename Graph>
 void DistanceDetector<Weight, Graph>::ReachStatus::setReachable(int u, bool reachable){
-    /*	if(polarity==reachable && u<detector.reach_lits.size()){
-     Lit l = detector.reach_lits[u];
-     if(l!=lit_Undef){
-     lbool assign = detector.outer->value(l);
-     if(assign!= (reachable? l_True:l_False )){
-     detector.changed.push({reachable? l:~l,u});
-     }
-     }
-     }*/
+
 }
 
 template<typename Weight, typename Graph>
@@ -552,26 +520,14 @@ void DistanceDetector<Weight, Graph>::ReachStatus::setMininumDistance(int u, boo
     if(u < detector.unweighted_dist_lits.size() && detector.unweighted_dist_lits[u].size()){
         assert(distance >= 0);
 
-        //for(int i = 0;i<detector.unweighted_dist_lits[u].size();i++){
-        //int& min_distance =  detector.unweighted_dist_lits[u][i].min_unweighted_distance;
-
-        //Lit l = detector.unweighted_dist_lits[u][i].l;
-
-
-        if(!polarity && !detector.is_changed_over[u]){                // && (!reachable || (distance>min_distance))){
-            //lbool assign = detector.outer->value(l);
-            //if( assign!= l_False ){
+        if(!polarity && !detector.is_changed_over[u]){
             detector.is_changed_over[u] = true;
-            detector.changed.push({u, polarity});                        //{var(l),u,min_distance});
-            //}
+            detector.changed.push({u, polarity});
         }else if(polarity &&
-                 !detector.is_changed_under[u]){                        // && reachable && (distance<=min_distance)){
+                 !detector.is_changed_under[u]){
             detector.is_changed_under[u] = true;
-            detector.changed.push({u, polarity});                        //{var(l),u,min_distance});
-            //}
+            detector.changed.push({u, polarity});
         }
-
-        //}
     }
 
 }
@@ -588,7 +544,6 @@ void DistanceDetector<Weight, Graph>::DistanceStatus::setMininumDistance(int u, 
 
 template<typename Weight, typename Graph>
 void DistanceDetector<Weight, Graph>::buildUnweightedDistanceLEQReason(int node, vec<Lit>& conflict){
-    //drawFull();
     Reach& d = *underapprox_path_detector;
     stats_unweighted_leq_reasons++;
     stats_under_conflicts++;
@@ -599,7 +554,6 @@ void DistanceDetector<Weight, Graph>::buildUnweightedDistanceLEQReason(int node,
     assert(underapprox_unweighted_distance_detector->connected(node));
 
     assert(d.connected_unchecked(node));
-    //if(opt_learn_reaches ==0 || opt_learn_reaches==2)
     {
         int u = node;
         int p;
@@ -611,28 +565,7 @@ void DistanceDetector<Weight, Graph>::buildUnweightedDistanceLEQReason(int node,
             u = p;
 
         }
-    }/*else{
-	 //Instead of a complete path, we can learn reach variables, if they exist
-	 int u = node;
-	 int p;
-	 while(( p = d.previous(u)) != -1){
-	 Edge edg = outer->edges[p][u];
-	 Var e =outer->edges[p][u].v;
-	 lbool val = outer->value(e);
-	 assert(outer->value(e)==l_True);
-	 conflict.push(mkLit(e, true));
-	 u = p;
-	 if( u< reach_lits.size() && reach_lits[u]!=lit_Undef && outer->value(reach_lits[u])==l_True && outer->S->level(var(reach_lits[u]))< outer->S->decisionLevel()){
-	 //A potential (fixed) problem with the above: reach lit can be false, but have been assigned after r in the trail, messing up clause learning if this is a reason clause...
-	 //This is avoided by ensuring that L is lower level than the conflict.
-	 Lit l =reach_lits[u];
-	 assert(outer->value(l)==l_True);
-	 conflict.push(~l);
-	 break;
-	 }
-	 }
-
-	 }*/
+    }
     outer->num_learnt_paths++;
     outer->learnt_path_clause_length += (conflict.size() - 1);
 
@@ -644,13 +577,9 @@ void DistanceDetector<Weight, Graph>::buildUnweightedDistanceLEQReason(int node,
 
 template<typename Weight, typename Graph>
 void DistanceDetector<Weight, Graph>::buildUnweightedDistanceGTReason(int node, int within_steps, vec<Lit>& conflict){
-    static int it = 0;
     stats_unweighted_gt_reasons++;
     stats_over_conflicts++;
     double starttime = rtime(2);
-    if(++it == 14){
-        int a = 1;
-    }
 
     int u = node;
     bool reaches = overapprox_unweighted_distance_detector->connected(node);
@@ -684,10 +613,6 @@ void DistanceDetector<Weight, Graph>::buildUnweightedDistanceGTReason(int node, 
         stats_over_conflict_time += elapsed;
         return;
     }
-
-    //drawFull( non_reach_detectors[detector]->getSource(),u);
-    //assert(outer->dbg_distance( source,u));
-
     cutGraph.clearHistory();
     outer->stats_mc_calls++;
     {
@@ -706,8 +631,7 @@ void DistanceDetector<Weight, Graph>::buildUnweightedDistanceGTReason(int node, 
             assert(u != source);
             to_visit.pop();
             assert(seen[u]);
-            //assert(negative_reach_detector->distance_unsafe(u)>d);
-            //Ok, then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
+            // then add all its incoming disabled edges to the cut, and visit any unseen, non-disabled incoming.edges()
             for(int i = 0; i < g_over.nIncoming(u); i++){
                 int v = outer->getEdgeVar(g_over.incoming(u, i).id);
                 int from = g_over.incoming(u, i).node;
@@ -738,7 +662,6 @@ void DistanceDetector<Weight, Graph>::buildUnweightedDistanceGTReason(int node, 
                 if(outer->value(v) == l_False){
                     //note: we know we haven't seen this edge variable before, because we know we haven't visited this node before
                     //if we are already planning on visiting the from node, then we don't need to include it in the conflict (is this correct?)
-                    //if(!seen[from])
                     conflict.push(mkLit(v, false));
                 }else if(from != source){
                     //for distance analysis, we _can_ end up reaching source.
@@ -775,15 +698,9 @@ void DistanceDetector<Weight, Graph>::buildReason(Lit p, vec<Lit>& reason, CRef 
 
     if(marker == unweighted_underprop_marker){
         reason.push(p);
-        //	double startpathtime = rtime(2);
-
-
         Var v = var(p);
         int u = getNode(v);
         buildUnweightedDistanceLEQReason(u, reason);
-
-        //double elapsed = rtime(2)-startpathtime;
-        //	pathtime+=elapsed;
     }else if(marker == unweighted_overprop_marker){
         reason.push(p);
 
@@ -830,15 +747,6 @@ void DistanceDetector<Weight, Graph>::preprocess(){
     }else if(!underapprox_unweighted_distance_detector){
         //can optimize
         buildUnweightedSATConstraints(true);
-/*
-		if (unweighted_sat_lits.size() >= within_steps) {
-			//then we are using the sat encoding and can directly look up its corresponding distance lit
-
-			Lit r = unweighted_sat_lits[within_steps][to];
-			//force equality between the new lit and the old reach lit, in the SAT solver
-			outer->makeEqual(r, reachLit);
-		}*/
-
     }
 
 
@@ -850,14 +758,7 @@ bool DistanceDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
     if(!underapprox_unweighted_distance_detector)
         return true;
 
-    static int iter = 0;
-    if(++iter == 1722){ //18303
-        int a = 1;
-    }
-
-    //printf("iter %d\n",iter);
     bool skipped_positive = false;
-    //getChanged().clear();
     if(!opt_detect_pure_theory_lits || unassigned_positives > 0){
         double startdreachtime = rtime(2);
         stats_under_updates++;
@@ -867,10 +768,8 @@ bool DistanceDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
     }else{
         skipped_positive = true;
         stats_skipped_under_updates++;
-        //stats_pure_skipped++;
     }
 
-    //  outer->reachupdatetime+=reachUpdateElapsed;
     bool skipped_negative = false;
 
     if(!opt_detect_pure_theory_lits || unassigned_negatives > 0){
@@ -884,11 +783,6 @@ bool DistanceDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
         skipped_negative = true;
         stats_skipped_over_updates++;
     }
-
-    if(skipped_positive && skipped_negative){
-        int a = 1;
-    }
-    //outer->unreachupdatetime+=unreachUpdateElapsed;
 
     if(opt_rnd_shuffle){
         randomShuffle(rnd_seed, changed);
@@ -960,8 +854,6 @@ bool DistanceDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
 #endif
                 outer->toSolver(conflict);
                 return false;
-            }else{
-                int a = 1;
             }
         }
         if(sz == changed.size()){
@@ -1079,10 +971,7 @@ Lit DistanceDetector<Weight, Graph>::decide(CRef& decision_reason){
     //ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
 
     //this can be obviously more efficient
-    //for(int j = 0;j<nNodes();j++){
-    /*	if(opt_decide_graph_neg){
 
-     }*/
 
     for(int k = 0; k < unweighted_dist_lits.size(); k++){
         for(int n = 0; n < unweighted_dist_lits[k].size(); n++){
@@ -1093,8 +982,6 @@ Lit DistanceDetector<Weight, Graph>::decide(CRef& decision_reason){
             int j = r->getNode(var(l));
             if(outer->value(l) == l_True){
                 if(opt_decide_graph_pos){
-                    //if(S->level(var(l))>0)
-                    //	continue;
 
                     assert(over->distance(j) <=
                            min_dist);//else we would already be in conflict before this decision was attempted!
@@ -1132,10 +1019,6 @@ Lit DistanceDetector<Weight, Graph>::decide(CRef& decision_reason){
 
                                 for(int i = 0; i < outer->nEdges(); i++){
                                     double w = drand(rnd_seed);
-                                    /* w-=0.5;
-                                     w*=w;*/
-                                    //printf("%f (%f),",w,rnd_seed);
-                                    //rnd_path->setWeight(i,w);
                                     rnd_weight[i] = w;
                                 }
                             }
@@ -1158,11 +1041,7 @@ Lit DistanceDetector<Weight, Graph>::decide(CRef& decision_reason){
                         }
 
                         //ok, now pick some edge p->last that will connect p to last;
-                        /*	assert(!under->connected(last));
-                         assert(under->connected(p));
 
-                         assert(over->connected(last));
-                         assert(over->connected(p));*/
                         assert(p > -1);
                         if(p > -1){
                             assert(g_over.getEdge(last_edge).from == p);
@@ -1188,10 +1067,7 @@ Lit DistanceDetector<Weight, Graph>::decide(CRef& decision_reason){
                         int p = j;
                         int last = j;
                         int dist = 0;
-                        // tmp_nodes.clear();
                         while(under->distance(p) > min_dist - dist){
-                            //int d = under->distance(p);
-                            //int d_over = over->distance(p);
                             last = p;
                             assert(p != source);
                             int prev = over->previous(p);
@@ -1200,9 +1076,6 @@ Lit DistanceDetector<Weight, Graph>::decide(CRef& decision_reason){
                             assert(g_over.getEdge(edgeid).to == p);
                             Var v = outer->getEdgeVar(edgeid); //outer->edges[prev][p].v;
                             if(outer->value(v) == l_Undef){
-                                //if(opt_use_random_path_for_decisions)
-                                //	tmp_nodes.push(v);
-                                //else
                                 return mkLit(v, true);
                             }else{
                                 assert(outer->value(v) != l_False);
@@ -1212,12 +1085,6 @@ Lit DistanceDetector<Weight, Graph>::decide(CRef& decision_reason){
                             p = prev;
 
                         }
-                        /*		assert(opt_use_random_path_for_decisions);
-                         assert(tmp_nodes.size()>0);
-                         int i = irand(rnd_seed,tmp_nodes.size());
-                         Var v= tmp_nodes[i];
-                         return mkLit(v,true);*/
-
                     }
                 }
             }

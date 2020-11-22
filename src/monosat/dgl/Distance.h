@@ -58,7 +58,6 @@ public:
     void setSource(int s) override =0;
 
     int getSource() override =0;
-    //virtual addSource(int s)=0;
 
     void update() override =0;
 

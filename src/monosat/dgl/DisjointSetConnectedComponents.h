@@ -56,7 +56,6 @@ public:
         int v;
     };
     std::vector<ConnectCheck> connectChecks;
-    //std::vector<char> old_seen;
 
     //stats
 
@@ -99,9 +98,6 @@ public:
     }
 
     void update(){
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
             return;

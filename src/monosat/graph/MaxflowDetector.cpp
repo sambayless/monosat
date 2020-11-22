@@ -503,45 +503,18 @@ void MaxflowDetector<Weight, Graph>::analyzeMaxFlowLEQ(Weight flow, vec<Lit>& co
 
             }
         }else{
-            int a = 1;
-
             //there is no way to increase the max flow.
         }
-
-        /*	printf("conflict in theory %d ", outer->getTheoryIndex());
-            if (f < 0x0FF0F0) {
-                assert(f < 0x0FF0F0);
-
-                for (int i = 0; i < cut.size(); i++) {
-                    MaxFlowEdge e = cut[i];
-                    int edgeID = e.id;//because we've doubled the set of edges in the learn graph relative to g_over/g_under.
-                    Lit l = mkLit(outer->getEdgeVar(edgeID), false);
-                    if(outer->value(l)==l_False){//it is possible for the edge to be enabled, but to be set to capacity 0.
-
-                        std::cout << "edge " << edgeID << " enabled ";
-                    }else if(outer->hasBitVector(edgeID)){
-                        std::cout << "edge " << edgeID << " bvid " << outer->getEdgeBV(edgeID).getID() << " > " << g_over.getWeight(edgeID)<< " ";
-                    }
-                }
-            }
-            printf("\n");*/
-
-
 
         return;
     }
 
-    //drawFull( non_reach_detectors[detector]->getSource(),u);
-    //assert(outer->dbg_distance( source,u));
-    //g_over.drawFull(true);
     //The reason why we can't reach this assignment is a cut through the disabled edges in the residual graph from the overapprox.
     //we could search for a min cut, but instead we will just step back in the RESIDUAL graph, from u to s, collecting disabled edges.
     assert(!seen.contains(true));
 
     visit.clear();
     Weight foundflow = overapprox_conflict_detector->maxFlow();
-    /*			std::vector<MaxFlowEdge> ignore;
-     negative_conflict_detector->minCut(ignore);*/
     visit.push(target);
     seen[target] = true;
     for(int k = 0; k < visit.size(); k++){
@@ -554,8 +527,6 @@ void MaxflowDetector<Weight, Graph>::analyzeMaxFlowLEQ(Weight flow, vec<Lit>& co
 
                 int edgeid = g_over.incoming(u, i).id;
                 bool skipEdge = false;
-
-
                 int v = outer->getEdgeVar(edgeid);
                 if(!skipEdge){
                     //assert( g.incoming(u,i).to==u);
@@ -656,15 +627,6 @@ void MaxflowDetector<Weight, Graph>::analyzeMaxFlowLEQ(Weight flow, vec<Lit>& co
 template<typename Weight, typename Graph>
 void MaxflowDetector<Weight, Graph>::buildMaxFlowTooLowReason(Weight maxflow, vec<Lit>& conflict, bool force_maxflow){
     //Consider using the kernigan-lin partitioning heuristic to get a separating cut here, instead of maxflow?
-
-    static int it = 0;
-    ++it;
-    if(it == 3){
-        int a = 1;
-    }
-    if(opt_verb > 1){
-        printf("Maxflow conflict %d, graph %d\n", it, outer->getTheoryIndex());
-    }
     double starttime = rtime(2);
     if(outer->bvTheory){
         outer->bvTheory->rewind_trail_pos(outer->bvTheory->trail.size());
@@ -709,36 +671,17 @@ void MaxflowDetector<Weight, Graph>::buildReason(Lit p, vec<Lit>& reason, CRef m
 
     if(marker == underprop_marker){
         reason.push(outer->toSolver(p));
-        //	double startpathtime = rtime(2);
 
-        /*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
-         //the reason is a path from s to p(provided by d)
-         //p is the var for a reachability detector in dijkstra, and corresponds to a node
-         detector.update();
-         Var v = var(p);
-         int u =reach_detectors[d]->getNode(v); //reach_detectors[d]->reach_lit_map[v];
-         assert(detector.connected(u));
-         int w;
-         while(( w= detector.previous(u)) > -1){
-         Lit l = mkLit( edges[w][u].v,true );
-         assert(S->value(l)==l_False);
-         reason.push(outer->toSolver(l));
-         u=w;
-         }*/
         Var v = var(p);
         DistLit& f = flow_lits[reach_lit_map[v - first_reach_var]];
         if(f.max_flow >= 0){
             Weight flow = f.max_flow;
-            //int u =getNode(v);
             buildMaxFlowTooHighReason(flow, reason);
         }else{
             auto& bv = f.bv;
-            //outer->buildBVReason(bv.getID(),f.inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),reason);
             outer->bvTheory->addAnalysis(f.inclusive ? Comparison::gt : Comparison::geq, bv.getID(), bv.getUnder());
             buildMaxFlowTooHighReason(bv.getOver(), reason);
         }
-        //double elapsed = rtime(2)-startpathtime;
-        //	pathtime+=elapsed;
     }else if(marker == overprop_marker){
         reason.push(outer->toSolver(p));
 
@@ -752,13 +695,10 @@ void MaxflowDetector<Weight, Graph>::buildReason(Lit p, vec<Lit>& reason, CRef m
         DistLit& f = flow_lits[reach_lit_map[v - first_reach_var]];
         if(f.max_flow >= 0){
             Weight flow = f.max_flow;
-            //int t = getNode(v); // v- var(reach_lits[d][0]);
             buildMaxFlowTooLowReason(flow, reason);
         }else{
             auto& bv = f.bv;
             outer->bvTheory->addAnalysis(f.inclusive ? Comparison::leq : Comparison::lt, bv.getID(), bv.getUnder());
-            //outer->buildBVReason(bv.getID(),f.inclusive ? Comparison::gt:Comparison::geq,bv.getUnder(),reason);
-            //int t = getNode(v); // v- var(reach_lits[d][0]);
             buildMaxFlowTooLowReason(bv.getUnder(), reason);
         }
 
@@ -774,19 +714,6 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
     if(flow_lits.size() == 0){
         return true;
     }
-    static int iter1 = 0;
-    if(++iter1 == 156 || iter1 == 19){
-        int a = 1;
-    }
-
-    if(g_under.outfile()){
-        fprintf(g_under.outfile(), "iter %d\n", iter1);
-        fflush(g_under.outfile());
-    }
-    if(g_over.outfile()){
-        fprintf(g_over.outfile(), "iter %d\n", iter1);
-        fflush(g_over.outfile());
-    }
     if(n_satisfied_lits == flow_lits.size()){
         stats_skipped_satisfied_updates++;
         return true;
@@ -798,10 +725,6 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
     Weight under_maxflow = -1;
     bool computed_under = false;
     bool computed_over = false;
-    if(this->detectorID == 2){
-        int a = 1;
-    }
-
     //If all flow lit requirements are >=0, including bitvectors, then we can skip this...
     //probably the easiest way to do this is using the 'markSatisfied' approach.
     if(underapprox_detector && (!opt_detect_pure_theory_lits || unassigned_positives > 0)){
@@ -822,15 +745,12 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
         bool inclusive = f.inclusive;
         if(f.max_flow >= 0){
             Weight& maxflow = f.max_flow;
-            //int u = getNode(var(l));
-
             if(computed_under && ((inclusive && computeUnderApprox(under_maxflow) >= maxflow) ||
                                   (!inclusive && computeUnderApprox(under_maxflow) > maxflow))){
                 if(outer->value(l) == l_True){
 
                     outer->enqueueSat(l);
                 }else if(outer->value(l) == l_Undef){
-                    //trail.push(Assignment(false,true,detectorID,0,var(l)));
                     outer->enqueue(l, underprop_marker);
 
                     outer->enqueueSat(l);
@@ -850,7 +770,6 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
                 if(outer->value(l) == l_False){
                     outer->enqueueSat(~l);
                 }else if(outer->value(l) == l_Undef){
-                    //trail.push(Assignment(false,false,detectorID,0,var(l)));
                     outer->enqueue(~l, overprop_marker);
                     outer->enqueueSat(~l);
                 }else if(outer->value(l) == l_True){
@@ -874,10 +793,7 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
             Weight& max_flow_under = bv.getUnder();
             Weight& max_flow_over = bv.getOver();
             lbool v = outer->value(l);
-            //std::cout << "theory id " << outer->getTheoryIndex() << " maxflow " << getID()  << " bv "<< (outer->value(l) ==l_True ?  " true " : " undef " ) <<" [" << max_flow_under << "," <<max_flow_over << "]\n";
-            if(v != l_Undef && this->detectorID == 2){
-                int a = 1;
-            }
+
             if((max_flow_over == 0 && inclusive) || (computed_under && ((inclusive &&
                                                                          computeUnderApprox(under_maxflow) >=
                                                                          max_flow_over) || (!inclusive &&
@@ -888,11 +804,9 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
 
                     outer->enqueueSat(l);
                 }else if(outer->value(l) == l_Undef){
-                    //trail.push(Assignment(false,true,detectorID,0,var(l)));
                     outer->enqueue(l, underprop_marker);
 
                     outer->enqueueSat(l);
-                    //should also enqueue that the flow is >= under->flow, and <= over->flow...
                 }else if(outer->value(l) == l_False){
                     stats_total_prop_time += rtime(2) - start_prop_time;
                     if(backtrackOnly)
@@ -900,7 +814,6 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
 
                     outer->bvTheory->addAnalysis(inclusive ? Comparison::leq : Comparison::lt, bv.getID(),
                                                  computeUnderApprox(under_maxflow));
-                    //outer->buildBVReason(bv.getID(),inclusive ? Comparison::leq:Comparison::lt,under_maxflow,conflict);
                     buildMaxFlowTooHighReason(bv.getOver(), conflict);
                     conflict.push(outer->toSolver(l));
 
@@ -917,11 +830,9 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
                     if(opt_detect_satisfied_predicates)
                         outer->enqueueSat(~l);
                 }else if(outer->value(l) == l_Undef){
-                    //trail.push(Assignment(false,false,detectorID,0,var(l)));
                     outer->enqueue(~l, underprop_marker);
                     if(opt_detect_satisfied_predicates)
                         outer->enqueueSat(~l);
-                    //should also enqueue that the flow is >= under->flow, and <= over->flow...
                 }else if(outer->value(l) == l_True){
                     stats_total_prop_time += rtime(2) - start_prop_time;
                     if(backtrackOnly)
@@ -931,8 +842,6 @@ bool MaxflowDetector<Weight, Graph>::propagate(vec<Lit>& conflict, bool backtrac
                                                  computeOverApprox(over_maxflow));
                     buildMaxFlowTooLowReason(bv.getUnder(), conflict);
                     conflict.push(outer->toSolver(~l));
-                    //outer->buildBVReason(bv.getID(),inclusive ? Comparison::gt:Comparison::geq,over_maxflow,conflict);
-
                     return false;
                 }
 
@@ -960,10 +869,6 @@ template<typename Weight, typename Graph>
 void
 MaxflowDetector<Weight, Graph>::FlowOp::analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit>& conflict){
 //watch out - might need to backtrack the graph theory appropriately, here...
-    static int iter = 0;
-    if(++iter == 46){
-        int a = 1;
-    }
     GraphTheorySolver<Weight>::GraphTheoryOp::analyzeReason(compareOver, op, to, conflict);
     if(!compareOver){
         outer->analyzeMaxFlowGEQ(to, conflict);
@@ -976,7 +881,6 @@ MaxflowDetector<Weight, Graph>::FlowOp::analyzeReason(bool compareOver, Comparis
 
 template<typename Weight, typename Graph>
 bool MaxflowDetector<Weight, Graph>::checkSatisfied(){
-    //g_under.drawFull(true);
     EdmondsKarpAdj<Weight> underCheck(g_under, source, target);
     EdmondsKarpAdj<Weight> overCheck(g_over, source, target);
     for(int j = 0; j < flow_lits.size(); j++){
@@ -985,7 +889,6 @@ bool MaxflowDetector<Weight, Graph>::checkSatisfied(){
             Weight dist = flow_lits[j].max_flow;
 
             if(l != lit_Undef){
-                //int node =getNode(var(l));
                 if(flow_lits[j].inclusive){
                     if(outer->value(l) == l_True){
                         if(underCheck.maxFlow() < dist){
@@ -1028,7 +931,6 @@ bool MaxflowDetector<Weight, Graph>::checkSatisfied(){
             Weight under = underCheck.maxFlow();
             Weight over = overCheck.maxFlow();
             if(l != lit_Undef){
-                //int node =getNode(var(l));
                 if(flow_lits[j].inclusive){
                     if(outer->value(l) == l_True){
                         if(underCheck.maxFlow() < dist_under){
@@ -1239,17 +1141,10 @@ void MaxflowDetector<Weight, Graph>::collectChangedEdges(){
         buildLearnGraph();
     }
 
-
     std::vector<int>& changed_edges = overapprox_conflict_detector->getChangedEdges();
-
-
-    //for(int j = 0;j<changed_edges.size();j++){
-    //			int edgeid = changed_edges[j];
 
     //need to deal with changes to bv edge weights, also!
     for(int j = changed_edges.size() - 1; j >= 0; j--){
-        static int iter = 0;
-        ++iter;
         int edgeid = changed_edges[j];
         if(opt_theory_internal_vsids){
             insertEdgeOrder(edgeid);
@@ -1281,13 +1176,6 @@ void MaxflowDetector<Weight, Graph>::collectChangedEdges(){
                             }else if(opt_maxflow_decisions_q == 4){
                                 potential_decisions_q.insertBack(edgeid);
                             }
-                            /*	printf("g%d %d mf collect change q (size %d): ", outer->id,iter,potential_decisions_q.size());
-                                for(int i =0;i<potential_decisions_q.size();i++){
-                                    printf("%d, ",(int) potential_decisions_q[i]);
-                                    break;
-                                }
-                                printf("%d, ",(int) potential_decisions_q[potential_decisions_q.size()-1]);
-                                printf("\n");*/
                         }
                     }
                 }
@@ -1393,85 +1281,9 @@ void MaxflowDetector<Weight, Graph>::collectChangedEdges(){
 template<typename Weight, typename Graph>
 void MaxflowDetector<Weight, Graph>::dbg_decisions(){
 #ifdef DEBUG_GRAPH
-    static int iter = 0;
-    ++iter;
-    if (iter == 911) {
-        int a = 1;
-    }
-    //printf("Potential Decisions %d: ",iter);
-    /*for (int edgeID = 0; edgeID < g_under.edges(); edgeID++) {
 
-        if (is_potential_decision[edgeID]) {
-            if(potential_decisions.contains(edgeID) || potential_decisions_q.contains(edgeID)){
-             printf("%d ",edgeID);
-             }
-            Lit l = mkLit(outer->getEdgeVar(edgeID));
-            //assert(!decisions.contains(l));
-            //assert(!decisions.contains(~l));
-            bassert(potential_decisions.count(edgeID) <= 1);
-            bassert(potential_decisions_q.count(edgeID) <= 1);
-            bassert(
-                    potential_decisions.contains(edgeID) || potential_decisions_q.contains(edgeID)
-                            || decisions.contains(l) || decisions.contains(~l));
-        }
-    }
-    for (Lit l : decisions) {
-        Var v = var(l);
-        int edgeID = outer->getEdgeID(v);
-        assert(is_potential_decision[edgeID]);
-        bassert(!potential_decisions.contains(edgeID));
-        bassert(!potential_decisions_q.contains(edgeID));
-        //printf("%d ",edgeID);
-    }*/
-    /*printf("\n");
-     printf("Decisions %d: ",iter);
-
-     printf("\n");*/
 #endif
 }
-
-/*template<typename Weight,typename Graph>
-Lit MaxflowDetector<Weight,Graph>::decideByPath(int level){
-	//given an edgeID, decide any undecided edge contributing to its flow.
-	if(current_decision_edge<0)
-		return lit_Undef;
-	if (overapprox_conflict_detector->getEdgeFlow(current_decision_edge)<=0){
-		current_decision_edge=-1;
-	}
-	bool forward = (opt_maxflow_decision_paths==1);
-	//explore forward and backwards from this edge to find other edges with flow (in the over approx)
-	int lastDecisionEdge = -1;
-
-
-	if(lastDecisionEdge==-1){
-		int node = g_over.getEdge(current_decision_edge).from;
-		while(node!=(forward? target:source)){
-			for (int i = 0;i<g_over.nDirectedEdges(node,!forward);i++){
-				int edgeID = g_over.directedEdges(node,i,!forward).id;
-				if(g_over.edgeEnabled(edgeID)){
-					if(overapprox_conflict_detector->getEdgeFlow(edgeID)>0){
-						//if(!g_under.edgeEnabled(edgeID)){
-						if(outer->value(outer->getEdgeVar(edgeID))==l_Undef){
-							lastDecisionEdge=edgeID;//in the forward direction, decide the first encountered node, not the last.
-							node = forward? target:source;
-							break;
-						}
-						node = g_over.directedEdges(node,i,!forward).node;
-						break;
-					}
-				}
-			}
-		}
-	}
-	current_decision_edge=lastDecisionEdge;
-	if(lastDecisionEdge>-1){
-		Lit l = mkLit(outer->getEdgeVar(lastDecisionEdge), false);
-		decideEdge(lastDecisionEdge, level, true);
-		return l;
-	}
-	current_decision_edge=-1;
-	return lit_Undef;
-}*/
 
 template<typename Weight, typename Graph>
 bool MaxflowDetector<Weight, Graph>::decideEdgeWeight(int edgeID, Weight& store, DetectorComparison& op){
@@ -1531,8 +1343,6 @@ void MaxflowDetector<Weight, Graph>::undecideEdgeWeight(int edgeid){
         if(opt_maxflow_decisions_type == 1){
             //problem: this check is applied before any backtracking might occur (if lazy backtracking is not applied).
             //On large problems, this pre-emptive check is too slow, so I disabled it. I'm not sure how important it was to the decision heuristic...
-            //if (overapprox_conflict_detector->getEdgeFlow(edgeid) > 0)
-            // {			//this check is optional
 
             if(!in_decision_q[edgeid]){
                 in_decision_q[edgeid] = true;
@@ -1551,11 +1361,6 @@ void MaxflowDetector<Weight, Graph>::undecideEdgeWeight(int edgeid){
                             edgeid);//insert in LIFO order, no FIFO, because we are unwinding the decisions
                 }
             }
-
-            //}// else {
-            //	is_potential_decision[edgeid] = false;			//discard this edge from the set of potential decisions
-            //printf("undecide remove from q %d\n", edgeid);
-            //}
         }else if(opt_maxflow_decisions_type == 2){
             int from = g_over.getEdge(edgeid).from;
             int to = g_over.getEdge(edgeid).to;
@@ -1588,24 +1393,12 @@ void MaxflowDetector<Weight, Graph>::undecideEdgeWeight(int edgeid){
 
 template<typename Weight, typename Graph>
 void MaxflowDetector<Weight, Graph>::assignBV(int bvID){
-    /*Weight upper_bound = outer->getBV(bvID).getOver();
-    if (upper_bound==0 && !maximum_flow_bvs[bvID].isSatisfied){
-        //this bv is trivially satisfied
-        maximum_flow_bvs[bvID].isSatisfied=true;
-        n_satisfied_lits++;
-        assert(n_satisfied_lits<=this->flow_lits.size());
-    }*/
+
 }
 
 template<typename Weight, typename Graph>
 void MaxflowDetector<Weight, Graph>::unassignBV(int bvID){
-    /*Weight upper_bound = outer->getBV(bvID).getOver();
-    if (maximum_flow_bvs[bvID].isSatisfied && upper_bound>0){
-        //this bv is trivially satisfied
-        maximum_flow_bvs[bvID].isSatisfied=false;
-        n_satisfied_lits--;
-        assert(n_satisfied_lits>=0);
-    }*/
+
 }
 
 template<typename Weight, typename Graph>
@@ -1626,21 +1419,12 @@ bool MaxflowDetector<Weight, Graph>::detectorIsSatisfied(){
 
 template<typename Weight, typename Graph>
 void MaxflowDetector<Weight, Graph>::undecide(Lit l){
-    static int iter = 0;
     Detector::unassign(l);
     if(outer->isEdgeVar(var(l))){
-        ++iter;
         int edgeid = outer->getEdgeID(var(l));
         undecideEdgeWeight(edgeid);
     }
 
-
-
-    /*printf("g%d %d undecide %d q: ", outer->id,iter,dimacs(l));
-    for(int i =0;i<potential_decisions_q.size();i++){
-        printf("%d, ",(int) potential_decisions_q[i]);
-    }
-    printf("\n");*/
 }
 
 template<typename Weight, typename Graph>
@@ -1657,14 +1441,9 @@ Lit MaxflowDetector<Weight, Graph>::decide(CRef& decision_reason){
     if(n_satisfied_lits == flow_lits.size())
         return lit_Undef;
 
-    static int it = 0;
-    if(++it == 51085){
-        int a = 1;
-    }
     double startdecidetime = rtime(2);
     auto* over = overapprox_conflict_detector;
     auto* under = underapprox_conflict_detector;
-
 
     //typically, only one of the priority decisions will be selected (and, in doing so, satisfy the learn clause that filled the priority queue)
     while(priority_decisions.size() > 0){
@@ -1754,7 +1533,6 @@ Lit MaxflowDetector<Weight, Graph>::decide(CRef& decision_reason){
         }
 #endif
 
-
         Lit decision = lit_Undef;
 
         if(opt_maxflow_decisions_type == 1){
@@ -1777,37 +1555,28 @@ Lit MaxflowDetector<Weight, Graph>::decide(CRef& decision_reason){
                                                                        overapprox_conflict_detector->getEdgeFlow(
                                                                                edgeID)))) &&
                    over->getEdgeFlow(edgeID) > 0){
-                    //decideEdge(edgeID, true);
-
                     decision = l;
-                    //printf("decide edge %d\n", edgeID);
                     break;
                 }else if(outer->value(l) != l_False){
                     potential_decisions_q.popBack();
                     in_decision_q[edgeID] = false;
                     if(over->getEdgeFlow(edgeID) > 0){            //this check is optional
-                        //decideEdge(edgeID, true);
-                        //	printf("skip decision keep edge %d\n", edgeID);
                     }else{
                         is_potential_decision[edgeID] = false;
-                        //	printf("skip decision remove edge %d\n", edgeID);
                     }
                 }else{
                     potential_decisions_q.popBack();
                     in_decision_q[edgeID] = false;
                     assert(over->getEdgeFlow(edgeID) == 0);
                     is_potential_decision[edgeID] = false;
-                    //printf("skip decision remove edge %d\n", edgeID);
                 }
             }
         }else if(opt_maxflow_decisions_type == 2){
             //cut based decision
             while(potential_decisions_q.size() > 0){
                 int edgeID;
-                //bool path_decision=false;
 
                 edgeID = potential_decisions_q.peekBack();
-                //path_decision = potential_decisions_q.peekBack().path_decision;
                 assert(in_decision_q[edgeID]);
                 assert(outer->hasBitVector(edgeID) || is_potential_decision[edgeID]);
                 Lit l = mkLit(outer->getEdgeVar(edgeID), false);
@@ -1816,10 +1585,8 @@ Lit MaxflowDetector<Weight, Graph>::decide(CRef& decision_reason){
                 if((outer->decidable(l) ||
                     outer->edgeWeightDecidable(edgeID, DetectorComparison::geq, g_under.getWeight(edgeID))) &&
                    over->isOnCut(edgeID) > 0){
-                    //decideEdge(edgeID, true);
 
                     decision = l;
-                    //printf("decide edge %d\n", edgeID);
                     break;
                 }else{
                     in_decision_q[edgeID] = false;
@@ -2008,7 +1775,6 @@ Lit MaxflowDetector<Weight, Graph>::decide(CRef& decision_reason){
                 //in principle we can do this check, and it can avoid un-needed decisions - but if we are detecting pure theory literals,
                 //then we might not have computed the underflow yet, and it is probably too expensive to compute here in that case.
 
-                //if(under_flow <required_flow)
                 {
                     stats_decision_calculations++;
                     //then decide an unassigned edge of the currently selected flow
@@ -2123,7 +1889,6 @@ Lit MaxflowDetector<Weight, Graph>::decide(CRef& decision_reason){
                         }
                     }
                     stats_flow_recalc_time += rtime(2) - post_calc_time;
-                    //assert(to_decide.size()==dbg_count);
                 }
             }else if(outer->value(l) == l_False && opt_decide_graph_neg){
 

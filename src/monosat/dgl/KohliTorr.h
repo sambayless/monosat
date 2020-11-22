@@ -619,10 +619,6 @@ public:
         if(same_source_sink)
             return INF;
         //see http://cstheory.stackexchange.com/a/10186
-        static int it = 0;
-        if(++it == 54){
-            int a = 1;
-        }
 
         if(g.outfile()){
             fprintf(g.outfile(), "f %d %d\n", s, t);
@@ -918,10 +914,6 @@ private:
 
         if (edge_enabled.size() < g.edges())
             return;
-        static int it = 0;
-        if (++it == 6) {
-            int a = 1;
-        }
         printf("Graph %d\n", it);
         printf("digraph{\n");
         for (int i = 0; i < g.nodes(); i++) {
@@ -1232,12 +1224,8 @@ public:
         int arc_id = arc_map[flow_edge];
         assert(arc_id >= 0);
         arc a;
-        //if(!backward_maxflow){
         a = kt->get_arc(arc_id);
 
-        /*	}else{
-         a= kt->get_reverse( kt->get_arc(arc_id));
-         }*/
         Weight start_cap = kt->get_ecap(a);
         Weight end_cap = kt->get_rcap(a);
         Weight remaining_flow = kt->get_ecap(a) - kt->get_rcap(a);

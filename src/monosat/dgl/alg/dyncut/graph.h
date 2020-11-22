@@ -607,10 +607,6 @@ public:
 
     //Run edmonds-karp to remove any excess flow on t-edges
     void clear_t_edges(int source_node, int sink_node){
-        static int iter = 0;
-        if(++iter == 96){
-            int a = 1;
-        }
         flowtype total_flow = maxflow(true, nullptr);
         flowtype f = 0;
 #ifdef DEBUG_DGL

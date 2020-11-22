@@ -67,7 +67,6 @@ public:
 
     Reach* underapprox_path_detector = nullptr;
 
-    //vec<Lit>  reach_lits;
     Var first_reach_var = var_Undef;
 
     struct ReachLit {
@@ -76,11 +75,9 @@ public:
 
     };
     vec <ReachLit> reach_lit_map;
-    vec<int> force_reason;
     bool has_unweighted_shortest_paths_overapprox = false;
 
     vec<int> unweighted_over_approx_shortest_paths;
-    vec <Weight> over_approx_shortest_paths;
     MaxFlow<Weight>* conflict_flow = nullptr;
 
 
@@ -107,33 +104,17 @@ public:
 
 
     struct Change {
-        //Var v;
         int u;
         bool polarity;
-        //int min_distance;
     };
     vec <Change> changed;
     vec<bool> is_changed_under;
     vec<bool> is_changed_over;
-    vec <Var> tmp_nodes;
-
     std::vector<double> rnd_weight;
 
     WeightedDijkstra<Weight, Graph, double>* rnd_path;
 
 
-
-
-
-    /*struct OptimalWeightEdgeStatus{
-     DistanceDetector & detector;
-     int operator [] (int edge) const ;
-     int size() const;
-     OptimalWeightEdgeStatus(DistanceDetector & _outer):detector(_outer){}
-
-     };*/
-    //OptimalWeightEdgeStatus opt_weight;
-    //WeightedDijkstra<OptimalWeightEdgeStatus> * opt_path;
     struct ReachStatus {
         DistanceDetector& detector;
         bool polarity;
@@ -168,26 +149,6 @@ public:
         }
     };
 
-    /*struct CutStatus {
-        int64_t one = 1;
-        int64_t inf = 0xFFFF;
-        DistanceDetector & outer;
-
-        const int64_t &operator [](int id) const {
-            if (id % 2 == 0) {
-                return one;
-            } else {
-                return inf;
-            }
-        }
-        int size() const {
-            return outer.g_under.edges() * 2;
-        }
-        CutStatus(DistanceDetector & _outer) :
-                outer(_outer) {
-        }
-
-    } cutStatus;*/
     std::vector<MaxFlowEdge> cut;
 
     ReachStatus* positiveReachStatus;
@@ -215,7 +176,6 @@ public:
     }
 
     void printStats() override{
-        //printf("Distance detector\n");
         Detector::printStats();
         if(opt_verb > 0){
             if(opt_detect_pure_theory_lits)
@@ -231,12 +191,6 @@ public:
     }
 
     void printSolution(std::ostream& write_to) override;
-
-    /*	Lit getLit(int node){
-
-     return reach_lits[node];
-
-     }*/
 
     void unassign(Lit l) override{
         Detector::unassign(l);

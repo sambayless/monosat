@@ -43,12 +43,6 @@ public:
         local_decision_reason = outer->newReasonMarker(this, true);//normal_detector->detectorID
     }
 
-/*
-    void setEdgeSetDetector(Detector *d) {
-        assert(edge_set_detector == nullptr);
-        edge_set_detector = d;
-    }*/
-
     int getTheoryIndex() const override{
         return outer->getTheoryIndex();
     }
@@ -58,18 +52,11 @@ public:
     }
 
     Lit decideTheory(CRef& decision_reason) override{
-        static int iter = 0;
-        if(++iter == 67749){
-            int a = 1;
-        };
-
-
         //first, give the main graph theory a chance to make a decision
         outer->dbg_full_sync();
         if(opt_lazy_backtrack && outer->supportsLazyBacktracking() && opt_lazy_backtrack_decisions &&
            outer->detectors.size()){//the detectors.size() check is a hack, to prevent empty graphs from forcing the decisions that they didn't originally contribute to.
-            //assert(n_decisions<=decisionLevel());
-            //printf("g%d lazy dec start: decisionLevel %d, decisions %d\n", this->id, decisionLevel(),n_decisions);
+
             //when redeciding a literal, should check to see whether it would still be recomended as a decision by its detector...
             if(outer->lazy_trail_head != var_Undef){
                 assert(outer->value(outer->lazy_trail_head) != l_Undef);
@@ -80,7 +67,6 @@ public:
                 outer->stats_lazy_decisions++;
                 outer->stats_decisions++;
                 decision_reason = outer->graph_decision_reason;
-                //printf("g%d: graph lazy decision %d: %d\n", this->id, iter, dimacs(d));
                 return solverLit;
             }
         }
@@ -120,8 +106,6 @@ public:
                         bvOp = Comparison::lt;
                         bv_decision = bvTheory->decideBV(bvOp, outer->getEdgeBV(edgeID).getID(), edgeWeight);
                     }else if(op == DetectorComparison::geq){
-                        /*printf("decide graph %d edge %d bv %d >= ",this->getTheoryIndex(), getEdgeBV(edgeID).getID(),edgeID);
-                        std::cout << edgeWeight <<"\n";*/
                         bvOp = Comparison::geq;
                         bv_decision = bvTheory->decideBV(bvOp, outer->getEdgeBV(edgeID).getID(), edgeWeight);
                     }else if(op == DetectorComparison::gt){
@@ -146,13 +130,9 @@ public:
                     }
                 }
             }
-            //assert(l == lit_Undef || outer->value(l) == l_Undef);
             assert(l == lit_Undef || S->value(outer->toSolver(l)) == l_Undef);
             outer->stats_decisions++;
             detector->stats_decisions++;
-
-
-            //assert(l == lit_Undef || outer->value(l) == l_Undef);
             assert(l == lit_Undef || S->value(outer->toSolver(l)) == l_Undef);
             return outer->toSolver(l);
         }

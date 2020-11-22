@@ -184,49 +184,6 @@ public:
 
     }
 
-    /*
-     * 	//chin houck insertion
-     void insert(int newNode){
-     if(g.adjacency_undirected[newNode].size()==0)
-     return;
-     marked.clear();
-     marked.resize(g.nodes());
-     incident_edges.clear();
-     incident_edges.resize(g.nodes(),-1);
-     for(auto & edge:g.adjacency_undirected[newNode]){
-     incident_edges[edge.node]=edge.id;
-     }
-     insert(g.adjacency_undirected[newNode][0]);
-     }
-
-     //Insert a node into an _existing_ minimum spanning tree
-     void insert(int r, int z, int & t){
-     int m = incident_edges[r];
-     marked[r]=true;
-
-     for(auto edge:g.adjacency_undirected[r]){//IF this is a dense graph, then this loop is highly sub-optimal!
-     //for each incident edge in the old MST:
-     if(in_tree[edge.id] && !marked[ edge.node]){
-     insert(edge.node,z,t);
-     assert(dbg_is_largest_edge_on_path(m,r,z));
-     assert(dbg_is_largest_edge_on_path(t,edge.node,z));
-     int k = t;
-     if(t<0 || g.g.getWeight(edge.id)>g.weights[t])
-     k=edge.id;
-     int h = t;
-     if(t<0 || g.g.getWeight(edge.id)<g.weights[t])
-     h=edge.id;
-     if(h>=0){
-     keep_in_tree[h]=true;
-     }
-     if(m<0 || (k>=0 && g.weights[k]<g.weights[m])){
-     m=k;
-     }
-     }
-     }
-     t=m;
-     }*/
-
     bool dbg_is_largest_edge_on_path(int edge, int from, int to){
 #ifdef DEBUG_DGL
 
@@ -520,7 +477,6 @@ public:
             while(q.size()){
                 int n = q.back();
                 q.pop_back();
-                //for(auto & edge:g.adjacency_undirected[n]){
                 for(int i = 0; i < g.nIncident(n, true); i++){
                     auto& edge = g.incident(n, i, true);
                     if(in_tree[edge.id]){
@@ -614,7 +570,6 @@ public:
                         if(edge_enabled[edge.id]){
                             int t = edge.node;
                             if(!in_tree[edge.id]){
-                                //assert(g.edgeEnabled(edge.id));
                                 int ncomponent = components[t];
                                 if(ncomponent != c && ncomponent != cur_component){
                                     Weight w = g.getWeight(edge.id);
@@ -622,7 +577,6 @@ public:
 
                                         edge_to_component[ncomponent] = edge.id;
                                         component_edge_weight[ncomponent] = w;
-
                                         Q.update(ncomponent);
                                     }
                                 }
@@ -662,9 +616,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(g.outfile()){
             fprintf(g.outfile(), "m\n");
             fflush(g.outfile());
@@ -730,7 +681,6 @@ public:
             min_weight = 0;
 
         }else{
-            //std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
             for(int i = history_qhead; i < g.historySize(); i++){
 
                 int edgeid = g.getChange(i).id;
@@ -743,20 +693,16 @@ public:
                     removeEdgeFromMST(edgeid);
                     edge_enabled[edgeid] = false;
                 }
-                //std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
             }
 #ifdef DEBUG_DGL
             for(int i = 0;i<g.edges();i++)
                 assert(g.edgeEnabled(i)==edge_enabled[i]);
 #endif
             prims();
-            //std::cout<<"Weight " << min_weight << " Components " << num_sets << " Dbg Weight: " << dbg.forestWeight() << " Components " << dbg.numComponents() <<"\n";
-            //g.drawFull(true);
+
             dbg_parents();
-            //dbg_printSpanningTree();
 #ifdef DEBUG_DGL
             Weight expect = dbg.forestWeight();
-            //dbg.dbg_printSpanningTree();
             assert(min_weight == dbg.forestWeight());
             assert(num_sets == dbg.numComponents());
 #endif
@@ -764,7 +710,6 @@ public:
         }
         status.setMinimumSpanningTree(num_sets > 1 ? INF : min_weight, num_sets <= 1);
 
-        //if(reportPolarity>-1){
         for(int i = 0; i < in_tree.size(); i++){
 
             //Note: for the tree edge detector, polarity is effectively reversed.
@@ -860,7 +805,6 @@ public:
         }
         assert(component_member[c] > -1);
         return component_member[c];
-        //return parents[component];
     }
 
     bool dbg_uptodate() override{
@@ -903,17 +847,6 @@ public:
 #endif
         return true;
     };
-
-    /*
-     #ifdef DEBUG_DGL
-     int rootcount =0;
-     for(int i = 0;i<parents.size();i++){
-     if(parents[i]==-1)
-     rootcount++;
-     }
-     assert(rootcount==1);
-     #endif
-     */
 
 };
 };
