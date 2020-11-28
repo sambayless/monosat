@@ -61,7 +61,7 @@ class EdmondsKarpDynamic : public MaxFlow<Weight>, public DynamicGraphAlgorithm 
     std::vector<Weight> M;
     std::vector<int> changed_edges;
     std::vector<bool> changed;
-    Graph <Weight>& g;
+    Graph<Weight>& g;
 
     bool allow_flow_cycles = true; //actually, this flag doesn't appear to work - spurious flow cycles are still sometimes produced.
     int source = -1;
@@ -110,7 +110,6 @@ class EdmondsKarpDynamic : public MaxFlow<Weight>, public DynamicGraphAlgorithm 
                         break;
                     }
 
-                    //return M[t];
                 }
             }
             for(int i = 0; i < g.nIncoming(u); i++){
@@ -124,7 +123,6 @@ class EdmondsKarpDynamic : public MaxFlow<Weight>, public DynamicGraphAlgorithm 
                 Weight f = 0;
                 Weight c = std::min(F[id], g.getWeight(id));
 
-                //  int fr = F[id];
                 if(((c - f) > 0) && (prev[v].from == -1)){
                     prev[v] = LocalEdge(u, id, true);
 
@@ -149,7 +147,7 @@ class EdmondsKarpDynamic : public MaxFlow<Weight>, public DynamicGraphAlgorithm 
     }
 
 public:
-    EdmondsKarpDynamic(Graph <Weight>& _g, int source, int sink) :
+    EdmondsKarpDynamic(Graph<Weight>& _g, int source, int sink) :
             g(_g), source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     ,ek(_g,cap,source,sink)
@@ -158,7 +156,6 @@ public:
         curflow = 0;
 
         alg_id = g.addDynamicAlgorithm(this);
-        //setAllEdgeCapacities(1);
     }
 
     std::string getName() override{
@@ -174,8 +171,6 @@ public:
     }
 
     void setCapacity(int u, int w, Weight c){
-        //C.resize(g.edges());
-        //C[ ]=c;
 
     }
 
@@ -209,10 +204,6 @@ public:
         int s = source;
         int t = sink;
         //see http://cstheory.stackexchange.com/a/10186
-        static int it = 0;
-        if(++it == 56){
-            int a = 1;
-        }
 
         if(g.outfile()){
             fprintf(g.outfile(), "f %d %d\n", s, t);
@@ -478,34 +469,6 @@ private:
     }
 
     Weight maxFlow_residual(int s, int t, Weight bound){
-        /*
-         #ifdef DEBUG_DGL
-         Graph d;
-         d.addNodes(g.nodes());
-         std::vector<Weight> weights;
-         for(int i = 0;i<g.edges();i++){
-         if(g.isEdge(i)){
-         if(edge_enabled[i]){
-         Weight r =capacity[i]-F[i];
-         d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id);//,r);
-         weights.push_back(r);
-         }else  {
-         d.addEdge(g.all_edges[i].from,g.all_edges[i].to,g.all_edges[i].id,0);
-         weights.push_back(0);
-         d.disableEdge(g.all_edges[i].id);
-         }
-         }
-         }
-         for(int i = 0;i<g.edges();i++){
-         if(edge_enabled[i]){
-         if(F[i]>0){
-         d.addEdge(g.all_edges[i].to,g.all_edges[i].from,-1);//,F[i]);
-         weights.push_back(-1);
-         }
-         }
-         }
-         #endif
-         */
         Weight new_flow = 0;
         while(true){
             dbg_print_graph(s, t, -1, -1);
@@ -529,23 +492,10 @@ private:
                     F[id] = F[id] + m;
                 }
                 markChanged(id);
-                /*	if(rev[id]>-1){
-                 F[rev[id]]-=m;
-                 }*/
-                // F[v][u] = F[v][u] - m;
-                //assert(F[id] <= g.getWeight(id));
                 v = u;
             }
             dbg_print_graph(s, t, -1, -1);
         }
-        /*
-         #ifdef DEBUG_DGL
-         EdmondsKarpAdj<std::vector<Weight>,Weight> ek_check(d,weights);
-
-         Weight expect =  ek_check.maxFlow(s,t);
-         assert(new_flow<=expect);
-         #endif
-         */
 
         return new_flow;
     }
@@ -564,27 +514,13 @@ private:
             while(v != s){
                 int u = prev[v].from;
                 int id = prev[v].id;
-                if(id == 29){
-                    int a = 1;
-                }
                 if(prev[v].backward){
                     F[id] = F[id] - m;
-                    /*		if(rev[id]>-1){
-                     if(rev[id]==29){
-                     int a=1;
-                     }
-                     F[rev[id]]+=m;
-                     }*/
                 }else{
                     F[id] = F[id] + m;
-
-                    /*	if(rev[id]>-1){
-                     F[rev[id]]-=m;
-                     }*/
                 }
                 markChanged(id);
                 assert(F[id] <= g.getWeight(id));
-                // F[v][u] = F[v][u] - m;
                 v = u;
             }
 
@@ -659,13 +595,9 @@ private:
                     int id = g.incident(u, i).id;
                     int v = g.incident(u, i).node;
                     ///(If there is available capacity, and v is not seen before in search)
-                    if(id == 27 || id == 29){
-                        int a = 1;
-                    }
                     Weight f = F[id];
                     const Weight& c = g.getWeight(id);
 
-                    //  int fr = F[id];
                     if(((c - f) > 0) && (prev[v].from == -1)){
                         prev[v] = LocalEdge(u, id, false);
                         Weight b = c - f;
@@ -687,10 +619,6 @@ private:
     void dbg_print_graph(int from, int to, Weight shortCircuitFrom = -1, Weight shortCircuitTo = -1){
 #ifdef DEBUG_DGL
         return;
-        static int it = 0;
-        if (++it == 6) {
-            int a = 1;
-        }
         printf("Graph %d\n", it);
         printf("digraph{\n");
         for (int i = 0; i < g.nodes(); i++) {
@@ -774,21 +702,12 @@ private:
             int v = t;
             while(v != s){
                 int u = prev[v].from;
-                if(u == s){
-                    int a = 1;
-                }
                 int id = prev[v].id;
                 if(id >= 0){
                     if(prev[v].backward){
                         F[id] = F[id] - m;
-                        /*	if(rev[id]>-1){
-                         F[rev[id]]+=m;
-                         }*/
                     }else{
                         F[id] = F[id] + m;
-                        /*		if(rev[id]>-1){
-                         F[rev[id]]-=m;
-                         }*/
                     }
                     markChanged(id);
                     assert(id >= 0);
@@ -799,7 +718,6 @@ private:
                     u = shortCircuitFrom;
                 }
 
-                // F[v][u] = F[v][u] - m;
                 v = u;
             }
         }

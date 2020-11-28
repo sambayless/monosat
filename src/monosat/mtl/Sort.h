@@ -98,12 +98,12 @@ static inline void sort(T* array, int size){
 // For 'vec's:
 
 template<class T, class LessThan>
-void sort(vec <T>& v, LessThan lt){
+void sort(vec<T>& v, LessThan lt){
     sort((T*) v, v.size(), lt);
 }
 
 template<class T>
-void sort(vec <T>& v){
+void sort(vec<T>& v){
     sort(v, LessThan_default<T>());
 }
 

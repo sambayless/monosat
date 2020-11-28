@@ -53,13 +53,9 @@ public:
 
     const int reportPolarity;
 
-    //std::vector<char> old_seen;
     std::vector<int> processed;
     std::vector<bool> seen;
     std::vector<bool> ever_seen;
-
-
-//	std::vector<int> changed;
 
     bool has_undirected_cycle = false;
     bool has_directed_cycle = false;
@@ -249,12 +245,9 @@ public:
 
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
 
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
-            //reportPolarity(undirected_cycle,directed_cycle);
             return;
         }
 

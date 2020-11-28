@@ -45,7 +45,7 @@ public:
     typedef typename Graph<Weight>::FullEdge FullEdge;
     typedef typename Graph<Weight>::EdgeChange EdgeChange;
 private:
-    DynamicGraph <Weight>& base;
+    DynamicGraph<Weight>& base;
     std::vector<FullEdge> all_back_edges;
 
     void updateEdges(){
@@ -60,7 +60,7 @@ private:
 
 public:
 
-    DynamicBackGraph(DynamicGraph <Weight>& base) : base(base){
+    DynamicBackGraph(DynamicGraph<Weight>& base) : base(base){
 
     }
 

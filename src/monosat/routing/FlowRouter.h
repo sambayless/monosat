@@ -214,12 +214,6 @@ public:
             auto* over_reach = reach;
             auto* over_path = reach;
 
-            static int iter = 0;
-            if(++iter == 109){
-                int a = 1;
-            };
-
-
             assert(over_path);
             assert(over_reach);
 
@@ -463,10 +457,6 @@ public:
                     if(outer->getSolver()->value(reach_lit) == l_Undef){
                         assert(false);
                         return lit_Undef;//if the reach lit is unassigned, do not make any decisions here
-                    }
-                    static int iter = 0;
-                    if(++iter == 11){
-                        int a = 1;
                     }
 
                     if(needsRecompute(to)){
@@ -796,22 +786,11 @@ template<typename Weight>
 bool FlowRouter<Weight>::propagateTheory(vec<Lit>& conflict, bool solve){
     //for each net to be routed, pick one unrouted endpoint (if any).
     //connect it to destination in g.
-    static int iter = 0;
-    ++iter;
-
     if(!maxflow_detector->propagate(conflict)){
         return false;
     }
     if(opt_flow_router_policy == 0)
         return true;
-    /* if(S->decisionLevel()==0)
-         return true;//don't do anything at level 0*/
-    if(opt_verb > 2){
-        /* printf("Under:\n");
-         drawGrid(g_theory->g_under);
-         printf("Over:\n");
-         drawGrid(g_theory->g_over);*/
-    }
 
     bool has_level_decision = false;
     int lev = S->decisionLevel();
@@ -820,8 +799,6 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit>& conflict, bool solve){
     inner_conflict.clear();
 
     DynamicGraph<Weight>& g = g_theory->getOverApproximationGraph();
-
-    //vec<int> routing_edges;
 
     /*
     * Possible net choice policies
@@ -836,10 +813,6 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit>& conflict, bool solve){
         Net& net = nets[j];
         net.cur_routing_dest = -1;
         net.n_satisifed = 0;
-        if(opt_verb > 2){
-            /* printf("Under %d:\n",j);
-             drawGrid(g_theory->g_under,j);*/
-        }
         //check if any members of this detector are unrouted
         Lit unrouted = lit_Undef;
         int unrouted_n = -1;
@@ -868,9 +841,6 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit>& conflict, bool solve){
             if(best_heuristic_net >= 0){
                 unrouted = net.dest_edgelits[best_heuristic_net];
                 unrouted_n = best_heuristic_net;
-                if(unrouted_n > 0){
-                    int a = 1;
-                }
             }
         }
         for(int i = 0; i < net.dest_edgelits.size(); i++){
@@ -984,10 +954,8 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit>& conflict, bool solve){
             Lit l = inner_conflict[i];
             assert(l != lit_Undef);
             if(edgevars.has(var(l))){
-                int a = 1;
                 //drop this literal
             }else if(S->level(var(l)) > lev){
-                int a = 1;
                 //drop this literal.
                 //Note that in addition to edge literals assigned temporarily above, it may be possible for the solver to
                 //assign other literals through bcp.
@@ -1037,8 +1005,6 @@ bool FlowRouter<Weight>::propagateTheory(vec<Lit>& conflict, bool solve){
             //g_theory->backtrackAssign(S->getTheoryLit(l));
             assert(S->value(l) == l_Undef);
         }
-    }else{
-        int a = 1;
     }
     return true;
 

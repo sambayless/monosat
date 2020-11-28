@@ -29,26 +29,6 @@ using Monosat::vec;
 //=================================================================================================
 // Interface required by parser:
 
-/*
-int PbSolver::getVar(cchar *name) {
-    int ret;
-    if (!name2index.peek(name, ret)) {
-        // Create new variable:
-        Var x = sat_solver.newVar();        // (reserve one SAT variable for each PB variable)
-        vars.push(x);
-        var_indices.growTo(x+1,-1);
-        var_indices[x]=vars.size()-1;
-        index2name.growTo(x+1,nullptr);
-        //index2name.size();
-        index2name[x] = xstrdup(name);
-        n_occurs.push(0);
-        n_occurs.push(0);
-        //assigns   .push(toInt(l_Undef));
-
-        ret = name2index.set(index2name.last(), x);
-    }
-    return ret;
-}*/
 int PbSolver::getPBVar(Var var, bool polarity, bool dvar){
     if(var == var_Undef){
         var = sat_solver.newVar(polarity, dvar);
@@ -582,9 +562,9 @@ void PbSolver::solve(solve_Command cmd){
         opt_convert = opt_convert_goal;
     opt_sort_thres *= opt_goal_bias;
 
-    if(Int((int64) opt_goal) != Int_MAX)
-        addConstr_(goal_ps, goal_Cs, (int64) opt_goal, -1),
-                convertPbs(false);
+    if(Int((int64) opt_goal) != Int_MAX){
+        addConstr_(goal_ps, goal_Cs, (int64) opt_goal, -1), convertPbs(false);
+    }
 
     if(cmd == sc_Convert){
         return;

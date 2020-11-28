@@ -201,8 +201,6 @@ void FSMGeneratesDetector::buildReason(Lit p, vec<Lit>& reason, CRef marker){
 }
 
 void FSMGeneratesDetector::buildGeneratesReason(int str, vec<Lit>& conflict){
-    static int iter = 0;
-    ++iter;
     //find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
 
     static vec<NFATransition> path;

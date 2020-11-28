@@ -55,7 +55,6 @@ CycleDetector<Weight, Graph>::CycleDetector(int _detectorID, GraphTheorySolver<W
 
     undirected_cycle_marker = outer->newReasonMarker(getID());
     no_undirected_cycle_marker = outer->newReasonMarker(getID());
-    //forced_reach_marker=outer->newReasonMarker(getID());
 }
 
 template<typename Weight, typename Graph>
@@ -193,18 +192,6 @@ void CycleDetector<Weight, Graph>::buildReason(Lit p, vec<Lit>& reason, CRef mar
 
 template<typename Weight, typename Graph>
 bool CycleDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
-    static int it = 0;
-
-
-    double startdreachtime = rtime(2);
-    /*if(directed_acyclic_lit != lit_Undef && outer->value(directed_acyclic_lit)==l_True && outer->level(var(directed_acyclic_lit))==0 && opt_graph_prop_skip<=1 && !opt_lazy_backtrack){
-        //this doesn't work properly, if after a backtracking (which removes a cycle), a newly learnt clause forces
-        //a new cycle to be re-introduced at the same level that was back tracked to.
-         underapprox_directed_cycle_detector->forceDAG();
-    }*/
-
-    //g_over.drawFull(false,true);
-
     if(directed_acyclic_lit != lit_Undef){
 
         if(outer->value(directed_acyclic_lit) != l_False && underapprox_directed_cycle_detector->hasDirectedCycle()){
@@ -229,7 +216,6 @@ bool CycleDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
             if(outer->value(l) == l_True){
                 //do nothing
             }else if(outer->value(l) == l_Undef){
-                //trail.push(Assignment(false,true,detectorID,0,var(l)));
                 outer->enqueue(l, directed_cycle_marker);
             }else if(outer->value(l) == l_False){
                 conflict.push(l);
@@ -251,7 +237,6 @@ bool CycleDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
             if(outer->value(l) == l_True){
                 //do nothing
             }else if(outer->value(l) == l_Undef){
-                //trail.push(Assignment(false,false,detectorID,0,var(l)));
                 outer->enqueue(l, no_undirected_cycle_marker);
             }else if(outer->value(l) == l_False){
                 conflict.push(l);
@@ -266,7 +251,6 @@ bool CycleDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
             if(outer->value(l) == l_True){
                 //do nothing
             }else if(outer->value(l) == l_Undef){
-                //trail.push(Assignment(false,true,detectorID,0,var(l)));
                 outer->enqueue(l, undirected_cycle_marker);
             }else if(outer->value(l) == l_False){
                 conflict.push(l);
@@ -275,7 +259,6 @@ bool CycleDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
                 return false;
             }
         }
-
     }
     return true;
 }

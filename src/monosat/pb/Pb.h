@@ -42,10 +42,10 @@ public:
 
     }
 
-    virtual bool addConstr(const vec <Lit>& ps, const vec<int>& Cs, int rhs, Ineq ineq)=0;
+    virtual bool addConstr(const vec<Lit>& ps, const vec<int>& Cs, int rhs, Ineq ineq) = 0;
 
     virtual Lit
-    addConditionalConstr(const vec <Lit>& ps, const vec<int>& Cs, int rhs, Ineq ineq, Lit cond = lit_Undef)=0;
+    addConditionalConstr(const vec<Lit>& ps, const vec<int>& Cs, int rhs, Ineq ineq, Lit cond = lit_Undef) = 0;
 
     virtual void convert(){
 

@@ -46,7 +46,6 @@ public:
 
     std::vector<bool> is_strict_scc;
     std::vector<int> strict_sccs;
-    //int num_invalidated_sccs=0;
     int num_strict_sccs = 0;
 
     int last_modification = -1;
@@ -512,18 +511,9 @@ private:
 
 public:
     void update() override{
-        static int iteration = 0;
-
-
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
-            //reportPolarity(undirected_cycle,directed_cycle);
             return;
-        }
-        //g.drawFull();
-        int local_it = ++iteration;//7
-        if(local_it == 5){
-            int a = 1;
         }
         if(last_modification <= 0 || g.nHistoryClears() != last_history_clear || g.changed()){
             setNodes(g.nodes());

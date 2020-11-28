@@ -118,7 +118,7 @@ struct IntRange {
     int begin;
     int end;
 
-    IntRange(int b, int e)noexcept :
+    IntRange(int b, int e) noexcept :
             begin(b), end(e){
     }
 };
@@ -127,7 +127,7 @@ struct Int64Range {
     int64_t begin;
     int64_t end;
 
-    Int64Range(int64_t b, int64_t e)noexcept :
+    Int64Range(int64_t b, int64_t e) noexcept :
             begin(b), end(e){
     }
 };
@@ -290,7 +290,7 @@ protected:
 
 public:
     Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(),
-                Int64Range r = Int64Range(INT64_MIN, INT64_MAX))noexcept :
+                Int64Range r = Int64Range(INT64_MIN, INT64_MAX)) noexcept :
             Option(n, d, c, "<int64>"), range(r), value(def){
     }
 

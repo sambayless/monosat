@@ -95,9 +95,6 @@ public:
 
 #ifdef DEBUG_DGL
         printf("graph{\n");
-    /*	for (int i = 0; i < g.nodes(); i++) {
-            printf("n%d\n", i);
-        }*/
 
         for (int i = 0; i < g.adjacency_list.size(); i++) {
             for (int j = 0; j < g.adjacency_list[i].size(); j++) {
@@ -158,8 +155,6 @@ public:
     }
 
     void update(){
-        static int iteration = 0;
-        int local_it = ++iteration;
 
         if(g.outfile()){
             fprintf(g.outfile(), "m\n");
@@ -191,8 +186,6 @@ public:
         if(edge_list.size() < g.nEdgeIDs()){
             edge_list.clear();
             for(int i = 0; i < g.nEdgeIDs(); i++){
-
-                //edge_heap.insert(i);
                 edge_list.push_back(i);
 
             }
@@ -200,9 +193,8 @@ public:
         }
         for(int i = 0; i < in_tree.size(); i++)
             in_tree[i] = false;
-        //while(edge_heap.size()){
         for(int i = 0; i < edge_list.size(); i++){
-            int edge_id = edge_list[i]; //edge_heap.removeMin();
+            int edge_id = edge_list[i];
             if(!g.edgeEnabled(edge_id))
                 continue;
             int u = g.getEdge(edge_id).from;
@@ -214,20 +206,14 @@ public:
                 assert(g.edgeEnabled(edge_id));
                 in_tree[edge_id] = true;
                 mst.push_back(edge_id);
-                //if(reportPolarity>-1)
-                //	status.inMinimumSpanningTree(edge_id,true);
                 min_weight += g.getWeight(edge_id);
                 sets.UnionSets(set1, set2);
                 assert(sets.FindSet(u) == sets.FindSet(v));
             }
         }
 
-        /*		if (sets.NumSets()>1)
-         min_weight=INF;*/
-
         status.setMinimumSpanningTree(sets.NumSets() > 1 ? INF : min_weight, sets.NumSets() <= 1);
 
-        //if(reportPolarity>-1){
         for(int i = 0; i < in_tree.size(); i++){
             //Note: for the tree edge detector, polarity is effectively reversed.
             if(reportPolarity < 1 && (!g.edgeEnabled(i) || in_tree[i])){
@@ -236,7 +222,6 @@ public:
                 status.inMinimumSpanningTree(i, false);
             }
         }
-        //}
 
         num_updates++;
         last_modification = g.getCurrentHistory();
@@ -247,8 +232,6 @@ public:
         last_history_clear = g.nHistoryClears();
 
         assert(dbg_uptodate());
-
-        ;
     }
 
     std::vector<int>& getSpanningTree(){
@@ -376,16 +359,6 @@ private:
             }
             assert(parents[root] == -1);
         }
-        /*
-         #ifdef DEBUG_DGL
-         int rootcount =0;
-         for(int i = 0;i<parents.size();i++){
-         if(parents[i]==-1)
-         rootcount++;
-         }
-         assert(rootcount==1);
-         #endif
-         */
     }
 };
 };

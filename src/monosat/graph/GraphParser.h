@@ -976,18 +976,20 @@ private:
             skipLine(in);
             return;
         }
-        //connected_component_count_lt grachID min_components var is a minimum connected component count constraint, true if the max flow is >= var
+        // graph_connected_component_count_geq grachID min_components var
+        // connected component count constraint, true if number of connected components in graph is >= min_components
 
         ++in;
 
         int graphID = parseInt(in);
-        int min_components = parseInt(in);
         Var reachVar = parseInt(in) - 1;
+        int min_components = parseInt(in);
+
         if(graphID < 0 || graphID >= graphs.size()){
             parse_errorf("PARSE ERROR! Undeclared graph identifier %d for edge %d\n", graphID, reachVar);
         }
         if(reachVar < 0){
-            parse_errorf("PARSE ERROR! Edge variables must be >=0, was %d\n", reachVar);
+            parse_errorf("PARSE ERROR! Theory atoms must be >=0, was %d\n", reachVar);
         }
 
         reachVar = mapVar(S, reachVar);
@@ -1317,7 +1319,7 @@ public:
             //for compatibility with an old file format (don't use this!)
             readOldMaxFlowConstraint(in, S);
             return true;
-        }else if(match(in, "connected_component_count_lt")){
+        }else if(match(in, "graph_connected_component_count_geq")){
             readMinConnectedComponentsConstraint(in, S);
             return true;
         }else if(match(in, "acyclic")){

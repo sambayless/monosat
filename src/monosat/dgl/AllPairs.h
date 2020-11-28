@@ -44,24 +44,24 @@ public:
     virtual ~AllPairs(){
     };
 
-    virtual int numUpdates() const =0;
+    virtual int numUpdates() const = 0;
 
-    virtual void addSource(int s)=0;
+    virtual void addSource(int s) = 0;
 
-    virtual void update()=0;
+    virtual void update() = 0;
 
-    virtual bool connected_unsafe(int from, int t)=0;
+    virtual bool connected_unsafe(int from, int t) = 0;
 
-    virtual bool connected_unchecked(int from, int t)=0;
+    virtual bool connected_unchecked(int from, int t) = 0;
 
-    virtual bool connected(int from, int t)=0;
+    virtual bool connected(int from, int t) = 0;
 
-    virtual int distance(int from, int t)=0;
+    virtual int distance(int from, int t) = 0;
 
-    virtual int distance_unsafe(int from, int t)=0;
+    virtual int distance_unsafe(int from, int t) = 0;
 
     //Return a path of edges from source to 'to'
-    virtual void getPath(int source, int to, std::vector<int>& path_store)=0;
+    virtual void getPath(int source, int to, std::vector<int>& path_store) = 0;
 };
 };
 

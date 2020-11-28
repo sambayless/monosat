@@ -98,9 +98,6 @@ public:
     }
 
     void update(){
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(g.outfile()){
             fprintf(g.outfile(), "m\n");
             fflush(g.outfile());
@@ -212,7 +209,6 @@ public:
 
         history_qhead = g.historySize();
         last_history_clear = g.nHistoryClears();
-        //dbg_drawSteiner();
         assert(dbg_uptodate());
     }
 

@@ -272,11 +272,11 @@ public:
             _enabled = false;
         }
 
-        virtual int getBV()=0;
+        virtual int getBV() = 0;
 
-        virtual OperationType getType() const =0;
+        virtual OperationType getType() const = 0;
 
-        virtual bool propagate(bool& changed, vec<Lit>& conflict)=0;
+        virtual bool propagate(bool& changed, vec<Lit>& conflict) = 0;
 
         virtual void enqueue(Lit l, bool alter_trail = true){
             throw std::runtime_error("No implementation");
@@ -287,7 +287,7 @@ public:
         }
 
         virtual void updateApprox(Var ignore_bv, Weight& under_new, Weight& over_new, Cause& under_cause_new,
-                                  Cause& over_cause_new)=0;
+                                  Cause& over_cause_new) = 0;
 
         virtual bool checkApproxUpToDate(Weight& under, Weight& over){
             return true;
@@ -298,13 +298,13 @@ public:
             throw std::runtime_error("No implementation");
         }
 
-        virtual void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit>& conflict)=0;
+        virtual void analyzeReason(bool compareOver, Comparison op, Weight to, vec<Lit>& conflict) = 0;
 
         virtual void move(int bvID){
 
         }
 
-        virtual bool checkSolved()=0;
+        virtual bool checkSolved() = 0;
 
         virtual void getArgumentBVs(vec<int>& bvIDs) const{
 
@@ -3303,9 +3303,6 @@ public:
             this->bvID = bvID;
         }
 
-
-        //vec<Lit> blasted;
-
         void bitblast(Circuit<TheorySolver>& c) override{
             importTheory(theory);
             vec<Lit>& bv = theory.bitvectors[bvID];
@@ -3334,29 +3331,11 @@ public:
             Lit carry = lit_Undef;
             c.Add(tmp_a, tmp_b, store, carry);
 
-
-            //c.Assert(~carry);//bv is not allowed to overflow
             //need to handle under/over flow correctly.
             assert(store.size() == bv.size());
-            //Lit any_diff = c.getFalse();
             for(int i = 0; i < bv.size(); i++){
-                //Lit v = c.Ite(carry, c.getTrue(), store[i]);
-                //blasted.push(v);
-                //any_diff = c.Or(any_diff, c.Xor(v, tmp_c[i]));
                 c.Ite_(carry, c.getTrue(), store[i], tmp_c[i]);
-                //c.Ite_(carry,c.getTrue(),store[i],bv[i]);
             }
-            /* blasted.push(carry);
-            for (Lit l:tmp_a)
-                blasted.push(l);
-            for (Lit l:tmp_b)
-                blasted.push(l);
-            for (Lit l:tmp_c)
-                blasted.push(l);
-            for (Lit l:store)
-                blasted.push(l);*/
-            //c.Assert(any_diff);
-
         }
 
         void getArgumentBVs(vec<int>& bvIDs) const override{
@@ -3375,8 +3354,6 @@ public:
             Weight& underApprox = under_approx[bvID];
             Weight& overApprox = over_approx[bvID];
 
-            //assert(aID<bvID);
-            //assert(bID<bvID);
             Weight under = under_approx[aID] + under_approx[bID];
             Weight over = over_approx[aID] + over_approx[bID];
             clip_over(under, bvID);
@@ -3384,7 +3361,6 @@ public:
             if(underApprox > over){
                 //then we have a conflict
                 double startconftime = rtime(2);
-                //propagationtime += startconftime - startproptime;
                 theory.stats_num_conflicts++;
                 theory.stats_addition_conflicts++;
                 if(opt_verb > 1){
@@ -3396,7 +3372,6 @@ public:
                 return false;
             }else if(overApprox < under){
                 double startconftime = rtime(2);
-                //propagationtime += startconftime - startproptime;
                 if(opt_verb > 1){
                     printf("bv addition conflict %" PRId64 "\n", theory.stats_num_conflicts);
                 }
@@ -3433,8 +3408,6 @@ public:
             importTheory(theory);
             int aID = arg1->bvID;
             int bID = arg2->bvID;
-            //assert(aID<bvID);
-            //assert(bID<bvID);
             Weight under = under_approx[aID] + under_approx[bID];
             Weight over = over_approx[aID] + over_approx[bID];
             clip_over(under, bvID);
@@ -3459,18 +3432,13 @@ public:
             int bID = arg2->bvID;
             theory.dbg_no_pending_analyses();
             assert(theory.eq_bitvectors[bvID] == bvID);
-            //rewind_trail_pos(trail.size()-1);
             theory.stats_build_addition_reason++;
             Weight over_cur = over_approx[bvID];
             Weight under_cur = under_approx[bvID];
-            //assert(theory.checkApproxUpToDate(bvID));
-
 
             //the reason that the addition is over is the reason that
             //bvID > addition_under, or the reason that addition_under>= its current value.
 
-            //assert(aID<bvID);
-            //assert(bID<bvID);
 
             Weight under_add = under_approx[aID] + under_approx[bID];
             Weight over_add = over_approx[aID] + over_approx[bID];
@@ -3506,8 +3474,6 @@ public:
 
                 int aID = arg1->bvID;
                 int bID = arg2->bvID;
-                //assert(aID<bvID);
-                //assert(bID<bvID);
                 Weight over_bid = over_approx[bID];
                 Weight over_aid = over_approx[aID];
                 //then the reason is that aID is <= weight-under(bID), or bID <= weight-under(aID)
@@ -3523,12 +3489,8 @@ public:
                 int bID = arg2->bvID;
                 Weight under_bid = under_approx[bID];
                 Weight under_aid = under_approx[aID];
-                //addAnalysis(Comparison::geq,aID,under_aid,conflict);
-                //addAnalysis(Comparison::geq,bID,under_bid,conflict);
                 addAnalysis(Comparison::geq, aID, under_approx[bvID] - under_bid);
                 addAnalysis(Comparison::geq, bID, under_approx[bvID] - under_aid);
-                //buildValueReason(op,aID,to-under_bid,conflict,trail_pos-1);
-                //buildValueReason(op,bID,to-under_aid,conflict,trail_pos-1);
             }
         }
 
@@ -3536,8 +3498,6 @@ public:
             importTheory(theory);
             int aID = arg1->bvID;
             int bID = arg2->bvID;
-            //assert(aID<bvID);
-            //assert(bID<bvID);
             Weight underadd = under_approx[aID] + under_approx[bID];
             Weight overadd = over_approx[aID] + over_approx[bID];
             if(underadd > under){
@@ -3554,9 +3514,7 @@ public:
             int aID = arg1->bvID;
             int bID = arg2->bvID;
             int width = theory.bitvectors[bvID].size();
-            Weight max_val = evalBit<Weight>(width) - 1;//evalBit<Weight>(width)-1;
-            //assert(aID<bvID);
-            //assert(bID<bvID);
+            Weight max_val = evalBit<Weight>(width) - 1;
             Weight underadd = under_approx[aID] + under_approx[bID];
             Weight overadd = over_approx[aID] + over_approx[bID];
             if(underadd > max_val){
@@ -4396,7 +4354,6 @@ public:
         using Operation::theory;
     public:
 
-        int iter = 0;
         int bvID = -1;
         Invert* argOp;
 
@@ -4488,11 +4445,6 @@ public:
                           Cause& over_cause_new) override{
             importTheory(theory);
 
-            ++iter;
-            //printf("inv %d iter %d\n",bvID,iter);
-            if(iter >= 176){
-                int a = 1;
-            }
             int width = theory.bitvectors[bvID].size();
             Weight max_val = evalBit<Weight>(width) - 1;//evalBit<Weight>(width)-1;
             Weight& otherUnder = under_approx[argOp->bvID];
@@ -4643,9 +4595,6 @@ public:
             Weight& overApprox = over_approx[bvID];
             int width = theory.bitvectors[bvID].size();
             Weight max_val = evalBit<Weight>(width) - 1;//evalBit<Weight>(width)-1;
-            if(bvID == 7){
-                int a = 1;
-            }
             Weight under = under_approx[aID] * under_approx[bID];
             Weight over = over_approx[aID] * over_approx[bID];
             clip_over(under, bvID);
@@ -4704,11 +4653,7 @@ public:
             importTheory(theory);
             int aID = arg1->bvID;
             int bID = arg2->bvID;
-            if(bvID == 565){
-                int a = 1;
-            }
-            //assert(aID<bvID);
-            //assert(bID<bvID);
+
             Weight under = under_approx[aID] * under_approx[bID];
             Weight over = over_approx[aID] * over_approx[bID];
             clip_over(under, bvID);
@@ -4724,9 +4669,6 @@ public:
                 over_cause_new.clear();
                 over_cause_new.setType(getType());
                 over_cause_new.index = getID();
-            }
-            if(over == 0 || over == 1){
-                int a = 1;
             }
         }
 
@@ -4899,9 +4841,6 @@ public:
             int sumID = resultOp->bvID;
             Weight& underApprox = under_approx[bvID];
             Weight& overApprox = over_approx[bvID];
-            if(bvID == 0){
-                int a = 1;
-            }
             assert(other_argID >= 0);
             assert(sumID >= 0);
             int width = theory.bitvectors[bvID].size();
@@ -4966,9 +4905,6 @@ public:
         void updateApprox(Var ignore_bv, Weight& under_new, Weight& over_new, Cause& under_cause_new,
                           Cause& over_cause_new) override{
             importTheory(theory);
-            if(bvID == 565){
-                int a = 1;
-            }
             int other_argID = otherOp->bvID;
             int sumID = resultOp->bvID;
             int width = theory.bitvectors[bvID].size();
@@ -4990,9 +4926,6 @@ public:
                 over_cause_new.clear();
                 over_cause_new.setType(OperationType::cause_is_mult_argument);
                 over_cause_new.index = getID();
-            }
-            if(over == 0 || over == 1){
-                int a = 1;
             }
         }
 
@@ -5773,31 +5706,12 @@ public:
     enqueueEager(Lit l, int bvID, Weight prev_under, Weight prev_over, Cause prev_under_cause, Cause prev_over_cause,
                  CRef reason_marker){
         enqueue(l, reason_marker);
-        //if newly created lits are enqueued, then they must provide a reason eagerly (so that complex propagation dependencies can be handled correctly by the solver, instead of having to be sorted out in the theories).
-        /*static int iter = 0;
-		++iter;
-		vec<Lit>  reason;
-		buildReason(l,reason,reason_marker);
-
-		Lit sl = toSolver(l);
-
-		S->addClauseSafely(reason);
-
-		//the lit must have been propagated by this clause (or, alternatively, the solver might now have a conflict).
-		if(S->value(sl)==l_True)
-			enqueueTheory(l);*/
     }
 
     inline bool enqueue(Lit l, CRef reason){
         assert(assigns[var(l)] == l_Undef);
-        if(l.x == 55){
-            int a = 1;
-        }
-        Lit sl = toSolver(l);
-        if(sl.x == 83){
-            int a = 1;
-        }
 
+        Lit sl = toSolver(l);
 #ifdef DEBUG_BV
 
                                                                                                                                 /*printf("learnt ");
@@ -5888,27 +5802,13 @@ public:
 
                 if(e.isBoundAssignment()){
                     int bvID = e.bvID;
-                    if(bvID == 6){
-                        int a = 1;
-                    }
                     under_approx[bvID] = e.previous_under;
                     over_approx[bvID] = e.previous_over;
                     under_causes[bvID] = e.prev_under_cause;
                     over_causes[bvID] = e.prev_over_cause;
                     if(hasTheory(bvID)){
                         int theoryID = getTheory(bvID)->getTheoryIndexBV();
-                        /* if(analysis_trail_pos<= satisfied_theory_trail_pos[theoryID]){
-                            satisfied_theory_trail_pos[theoryID]=-1;
-                            post_satisfied_theory_trail_pos[theoryID]=-1;
-                            //printf("bv theory %d no longer sat at lev %d\n",theoryID, decisionLevel());
-                        }
 
-                        if(satisfied_theory_trail_pos[theoryID]< 0 ) {
-						getTheory(bvID)->rewindBV(bvID);
-                        }else if (analysis_trail_pos>satisfied_theory_trail_pos[theoryID] && analysis_trail_pos<= post_satisfied_theory_trail_pos[theoryID]){
-                            getTheory(bvID)->rewindBV(bvID);
-                            post_satisfied_theory_trail_pos[theoryID]= analysis_trail_pos-1;
-                        }*/
                         getTheory(bvID)->rewindBV(bvID);
                     }
                 }else{
@@ -5942,9 +5842,6 @@ public:
             Assignment& e = trail[analysis_trail_pos];
             if(e.isBoundAssignment()){
                 int bvID = e.bvID;
-                if(bvID == 6){
-                    int a = 1;
-                }
                 if(bvID == for_bvID){
                     if(op == Comparison::lt){
                         assert(over_approx[for_bvID] < compareTo);
@@ -6080,9 +5977,6 @@ public:
                 Assignment& e = trail[i];
                 if(e.isBoundAssignment()){
                     int bvID = e.bvID;
-                    if(bvID == 2){
-                        int a = 1;
-                    }
                     under_approx[bvID] = e.previous_under;
                     over_approx[bvID] = e.previous_over;
                     under_causes[bvID] = e.prev_under_cause;
@@ -6354,10 +6248,7 @@ public:
     };
 
     void buildReason(Lit p, vec<Lit>& reason, CRef marker) override{
-        static int iter = 0;
-        if(++iter == 39){//17
-            int a = 1;
-        }
+
         assert(value(p) != l_False);
 
         assert(marker != CRef_Undef);
@@ -6385,15 +6276,9 @@ public:
         //note: the reason has already been transformed into the solvers variable namespace at this point,
         //do _not_ call 'toSolver' again
 
-
         double finish = rtime(1);
         stats_reason_time += finish - start;
         stats_num_reasons++;
-        //stats_reason_initial_time+=start-initial_start;
-        if(reason.size() < 2){
-            int a = 1;
-        }
-
     }
 
 
@@ -6404,15 +6289,6 @@ public:
     }
 
     void setLiteralOccurs(Lit l, bool occurs) override{
-        /*if (isEdgeVar(var(l))) {
-			//don't do anything
-		} else {
-			//this is a graph property detector var
-			if (!sign(l) && vars[var(l)].occursPositive != occurs)
-				detectors[getDetector(var(l))]->setOccurs(l, occurs);
-			else if (sign(l) && vars[var(l)].occursNegative != occurs)
-				detectors[getDetector(var(l))]->setOccurs(l, occurs);
-		}*/
 
     }
 
@@ -6617,9 +6493,6 @@ public:
 
         double update_start_time = rtime(3);
         statis_bv_updates++;
-        static int iter = 0;
-        ++iter;
-
 
         Weight under_old = under_approx[bvID];
         Weight over_old = over_approx[bvID];
@@ -6820,9 +6693,6 @@ public:
     void writeBounds(int bvID){
         if(opt_write_learnt_clauses && opt_write_bv_bounds){
             static int bound_num = 0;
-            if(++opt_n_learnts == 44231){
-                int a = 1;
-            }
 
             int bv = unmapBV(bvID);
             fprintf(opt_write_learnt_clauses, "learnt bound ");
@@ -6845,19 +6715,11 @@ public:
             }
             fprintf(opt_write_learnt_clauses, " 0\n");
             ++bound_num;
-            if(bound_num == 10){
-                int a = 1;
-            }
 
-            if(++opt_n_learnts == 44231){
-                int a = 1;
-            }
             fprintf(opt_write_learnt_clauses, "learnt bound ");
             fprintf(opt_write_learnt_clauses, " %d >= ", unmapBV(bvID));
-            //std::cout<<under_approx[bvID] << " ";
             std::stringstream ss2;
             ss2 << under_approx[bvID] << " ";
-            //fprintf(opt_write_learnt_clauses,"learnt fact bv %d %s %d\n", unmapBV( bvID), ss.str().c_str(),(dimacs(S.unmaptoSolver(l)) ));
             fprintf(opt_write_learnt_clauses, "%s", ss2.str().c_str());
             if(under_approx[bvID] != under_approx0[bvID]){
                 for(int i = 0; i < nVars(); i++){
@@ -6869,10 +6731,6 @@ public:
                 }
             }
             fprintf(opt_write_learnt_clauses, " 0\n");
-            if(++bound_num == 10){
-                int a = 1;
-            }
-            //fprintf(opt_write_learnt_clauses,"%d\n", bound_num);
             fflush(opt_write_learnt_clauses);
         }
     }
@@ -6928,94 +6786,91 @@ public:
 
     bool checkApproxUpToDate(int bvID, Weight* under_store = nullptr, Weight* over_store = nullptr){
 #ifdef DEBUG_BV
-                                                                                                                                if(bvID==2966){
-			int a=1;
-		}
-		if (opt_graph_bv_prop) {
-			(*under_store) = under_approx[bvID];
-			(*over_store) = over_approx[bvID];
-			return true;
-		}
-		if(bvID<skip_updates.size() && skip_udpates[bvID]){
-			return true;
-		}
-		Weight under =under_approx0[bvID];
-		Weight over=over_approx0[bvID];
-		vec<Lit> & bv = bitvectors[bvID];
-		if(eq_bitvectors[bvID]!=bvID && eq_bitvectors[bvID]>-1 ){
-			int eqID = eq_bitvectors[bvID];
-			under=under_approx[eqID];
-			over=over_approx[eqID];
-			assert(over_approx[bvID]==over);
-			assert(under_approx[bvID]==under);
-			return true;
-		}else{
+        if (opt_graph_bv_prop) {
+            (*under_store) = under_approx[bvID];
+            (*over_store) = over_approx[bvID];
+            return true;
+        }
+        if(bvID<skip_updates.size() && skip_udpates[bvID]){
+            return true;
+        }
+        Weight under =under_approx0[bvID];
+        Weight over=over_approx0[bvID];
+        vec<Lit> & bv = bitvectors[bvID];
+        if(eq_bitvectors[bvID]!=bvID && eq_bitvectors[bvID]>-1 ){
+            int eqID = eq_bitvectors[bvID];
+            under=under_approx[eqID];
+            over=over_approx[eqID];
+            assert(over_approx[bvID]==over);
+            assert(under_approx[bvID]==under);
+            return true;
+        }else{
 
 
-			for (int opID:operation_ids[bvID]){
-				getOperation(opID).checkApproxUpToDate(under,over);
-			}
-			for(int i = compares[bvID].size()-1;i>=0;i--){
-				int cID = compares[bvID][i];
+            for (int opID:operation_ids[bvID]){
+                getOperation(opID).checkApproxUpToDate(under,over);
+            }
+            for(int i = compares[bvID].size()-1;i>=0;i--){
+                int cID = compares[bvID][i];
 
-				ComparisonOp & c = (ComparisonOp&) getOperation(cID);
-				c.checkApproxUpToDate(under,over);
-			}
-			Weight refined_over = refine_lbound(bvID, over);
-			if(refined_over>-1 && refined_over< over){
+                ComparisonOp & c = (ComparisonOp&) getOperation(cID);
+                c.checkApproxUpToDate(under,over);
+            }
+            Weight refined_over = refine_lbound(bvID, over);
+            if(refined_over>-1 && refined_over< over){
 
-				over=refined_over;
-			}
-			Weight refined_under = refine_ubound(bvID,under);
-			if(refined_under>-1  && refined_under> under){
+                over=refined_over;
+            }
+            Weight refined_under = refine_ubound(bvID,under);
+            if(refined_under>-1  && refined_under> under){
 
-				under=refined_under;
-			}
+                under=refined_under;
+            }
 
-			int width = bitvectors[bvID].size();
-			Weight max_val = evalBit<Weight>(width)-1;
-			if(under>over_approx0[bvID]){
-				under=over_approx0[bvID];
-			}
-			if(over>over_approx0[bvID]){
-				over=over_approx0[bvID];
-			}
-			if(under<under_approx0[bvID]){
-				under=under_approx0[bvID];
-			}
-			if(over<under_approx0[bvID]){
-				over=under_approx0[bvID];
-			}
-		}
-		if (under_causes[bvID].getType() != OperationType::cause_is_decision &&
-			under_causes[bvID].getType() != OperationType::cause_is_theory)
-			assert(under==under_approx[bvID]);
-		if (over_causes[bvID].getType() != OperationType::cause_is_decision &&
-			over_causes[bvID].getType() != OperationType::cause_is_theory)
-			assert(over==over_approx[bvID]);
+            int width = bitvectors[bvID].size();
+            Weight max_val = evalBit<Weight>(width)-1;
+            if(under>over_approx0[bvID]){
+                under=over_approx0[bvID];
+            }
+            if(over>over_approx0[bvID]){
+                over=over_approx0[bvID];
+            }
+            if(under<under_approx0[bvID]){
+                under=under_approx0[bvID];
+            }
+            if(over<under_approx0[bvID]){
+                over=under_approx0[bvID];
+            }
+        }
+        if (under_causes[bvID].getType() != OperationType::cause_is_decision &&
+            under_causes[bvID].getType() != OperationType::cause_is_theory)
+            assert(under==under_approx[bvID]);
+        if (over_causes[bvID].getType() != OperationType::cause_is_decision &&
+            over_causes[bvID].getType() != OperationType::cause_is_theory)
+            assert(over==over_approx[bvID]);
 
-		assert(under_approx0[bvID]<=under_approx[bvID]);
-		assert(over_approx0[bvID]>=over_approx[bvID]);
+        assert(under_approx0[bvID]<=under_approx[bvID]);
+        assert(over_approx0[bvID]>=over_approx[bvID]);
 
-		if(eq_bitvectors[bvID]!=bvID && eq_bitvectors[bvID]>-1 ){
-			int eqID = eq_bitvectors[bvID];
-			Weight under_expect=under_approx[eqID];
-			Weight over_expect=over_approx[eqID];
-			assert(under_expect==under);
-			assert(over_expect==over);
-			Weight under_approx0_expect = under_approx0[eqID];
-			Weight over_approx0_expect = over_approx0[eqID];
+        if(eq_bitvectors[bvID]!=bvID && eq_bitvectors[bvID]>-1 ){
+            int eqID = eq_bitvectors[bvID];
+            Weight under_expect=under_approx[eqID];
+            Weight over_expect=over_approx[eqID];
+            assert(under_expect==under);
+            assert(over_expect==over);
+            Weight under_approx0_expect = under_approx0[eqID];
+            Weight over_approx0_expect = over_approx0[eqID];
 
-			assert(under_approx0_expect==under_approx0[bvID]);
-			assert(over_approx0_expect==over_approx0[bvID]);
-		}
+            assert(under_approx0_expect==under_approx0[bvID]);
+            assert(over_approx0_expect==over_approx0[bvID]);
+        }
 
-		if(under_store){
-			(*under_store)=under;
-		}
-		if(over_store){
-			(*over_store)=over;
-		}
+        if(under_store){
+            (*under_store)=under;
+        }
+        if(over_store){
+            (*over_store)=over;
+        }
 #endif
         return true;
     }
@@ -7101,14 +6956,9 @@ public:
         }
         S->theoryPropagated(this);
         rewind_trail_pos(trail.size());
-        if(++realprops == 23){
-            int a = 1;
-        }
-        //printf("bv prop %d\n",stats_propagations);
 
         bool any_change = false;
         double startproptime = rtime(2);
-        //static vec<int> detectors_to_check;
 
         while(S->decisionLevel() > trail_lim.size()){
             newDecisionLevel();
@@ -7368,43 +7218,27 @@ public:
             bvID = eq_bitvectors[bvID];
         writeBounds(bvID);
         stats_build_value_reason++;
-        static int iter = 0;
-        ++iter;
-        //printf("reason %d: %d\n",iter,bvID);
-
-        //rewind_trail_pos(trail_pos);
-        //trail_pos  = rewindUntil(bvID,op,to);
-
 
         bool compare_over;
 
         vec<Lit>& bv = bitvectors[bvID];
         Weight over_cur = over_approx[bvID];
         Weight under_cur = under_approx[bvID];
-        //assert(checkApproxUpToDate(bvID));
         if(op == Comparison::lt){
             assert(over_cur < to);
             compare_over = true;
-            /*	assert(to>0);
-			op=Comparison::leq;
-			to-=1;*/
-
         }
         if(op == Comparison::leq){
             assert(over_cur <= to);
             compare_over = true;
-            //to = over_cur;
         }
         if(op == Comparison::gt){
             assert(under_cur > to);
             compare_over = false;
-            /*		op=Comparison::geq;
-			to+=1;*/
         }
         if(op == Comparison::geq){
             assert(under_cur >= to);
             compare_over = false;
-            //to = under_cur;
         }
         if(!compare_over && under_approx[bvID] <= getUnderApprox(bvID, true)){
             //no reason necessary; this is the lowest possible value.
@@ -7414,10 +7248,6 @@ public:
             return;
         }
         if(opt_write_learnt_clauses && opt_write_bv_analysis){
-            static int n_analysis = 0;
-            if(++n_analysis == 430){
-                int a = 1;
-            }
             std::stringstream ss;
             ss << op << " " << to;
             fprintf(opt_write_learnt_clauses, "learnt analysis bv %d %s ", unmapBV(bvID), ss.str().c_str());
@@ -7470,9 +7300,7 @@ public:
 
                 }
             }
-            /*	assert(trail[analysis_trail_pos].isBoundAssignment());
-			assert(trail[analysis_trail_pos].bvID==bvID);
-			Weight prev_weight = trail[analysis_trail_pos].previous_over;*/
+
             //search back in the trail
             int trail_pos = analysis_trail_pos;
             rewindUntil(bvID, Comparison::leq, over_approx[bvID]);
@@ -7481,9 +7309,6 @@ public:
             Weight prev_weight = trail[analysis_trail_pos].previous_over;
             rewind_trail_pos(trail_pos);
             addAnalysis(Comparison::leq, bvID, prev_weight);
-
-
-            //buildValueReason(Comparison::leq,bvID,over_approx[bvID],conflict,trail_pos-1);
 
         }else if(!compare_over && under_causes[bvID].getType() == OperationType::refined_cause){
             //then the reason the underapprox is too large is because of the assignment to the bits
@@ -8210,9 +8035,6 @@ public:
         if(bvID < 0){
             bvID = nBitvectors();
         }
-        if(bvID == 55349){
-            int a = 1;
-        }
         if(vars.size() > (sizeof(Weight) * 8) - 1){
             throw std::runtime_error("Bit widths larger than " + std::to_string(sizeof(Weight) * 8 - 1) +
                                      " are not currently supported (was " + std::to_string(vars.size()) + ")");
@@ -8464,12 +8286,6 @@ public:
         if(bvID < 0){
             bvID = nBitvectors();
         }
-        if(bvID == 792){
-            int a = 1;
-        }
-
-        //bv_callbacks.growTo(id+1,nullptr);
-
         bitvectors.growTo(bvID + 1);
         theoryIds.growTo(bvID + 1, -1);
         symbols.resize(bvID + 1);
@@ -8525,9 +8341,6 @@ public:
     BitVector newBitvector_Lazy(int bvID, vec<Var>& vars){
         if(bvID < 0){
             bvID = nBitvectors();
-        }
-        if(bvID == 55349){
-            int a = 1;
         }
         if(vars.size() > (sizeof(Weight) * 8) - 1){
             throw std::runtime_error("Bit widths larger than " + std::to_string(sizeof(Weight) * 8 - 1) +
@@ -8586,9 +8399,6 @@ public:
     BitVector newBitvector(int bvID, int bitwidth, Weight constval = -1, int equivalentBV = -1){
         if(bvID < 0){
             bvID = nBitvectors();
-        }
-        if(bvID == 55349){
-            int a = 1;
         }
         if(bitwidth > (sizeof(Weight) * 8) - 1){
             throw std::runtime_error("Bit widths larger than " + std::to_string((sizeof(Weight) * 8) - 1) +
@@ -8938,22 +8748,14 @@ public:
             return l;
         }else{
             l = mkLit(newVar(outerVar, comparisonID, true, decidable));
-
         }
-        static int iter = 0;
-        if(++iter == 29){
-            int a = 1;
-        }
-
         if(opt_write_learnt_clauses){
             std::stringstream ss;
             ss << op << " " << to;
             fprintf(opt_write_learnt_clauses, "learnt fact bv %d %s %d\n", unmapBV(bvID), ss.str().c_str(),
                     dimacs(S->unmap(toSolver(l))));
             fflush(opt_write_learnt_clauses);
-            //std::cout << "learnt fact " << "bv " << bvID <<  <<" " << dimacs(toSolver(l)) << "\n";
         }
-
 
         ComparisonOp* compOp = new ComparisonOp(*this, bvID, op, to, l);
 
@@ -10029,16 +9831,9 @@ Weight BVTheorySolver<Weight>::refine_lbound(int bvID, Weight obound, Var ignore
 #ifdef DEBUG_BV
     Weight expected = refine_lbound_check(bvID,obound,ignore_bit);
 #endif
-/*	static int iter = 0;
-	if(++iter==22739){
-		int a=1;
-	}*/
-    //Weight under_old = under_approx[bvID];
-    //Weight over_old = over_approx[bvID];
+
     vec<Lit>& bv = bitvectors[bvID];
     bool done = false;
-    //under_causes[bvID].clear();
-    //over_causes[bvID].clear();
 
     int j = bv.size() - 1;
     int last_set_x = -1;

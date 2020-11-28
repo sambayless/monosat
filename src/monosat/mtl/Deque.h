@@ -29,7 +29,7 @@ namespace Monosat {
 
 template<class T>
 class Deque {
-    vec <T> buf;
+    vec<T> buf;
     int first;
     int end;
 

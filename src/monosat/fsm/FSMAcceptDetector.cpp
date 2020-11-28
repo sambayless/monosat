@@ -291,7 +291,6 @@ bool FSMAcceptDetector::propagate(vec<Lit>& conflict){
         int str = changed.last().str;
 
 
-
         if(underapprox_detector && polarity && !sign(l) && underapprox_detector->acceptsString(str, u)){
 
         }else if(overapprox_detector && !polarity && sign(l) && !overapprox_detector->acceptsString(str, u)){
@@ -575,16 +574,7 @@ bool FSMAcceptDetector::checkSymmetryConstraintsPopCount(vec<Lit>& conflict){
 
 
 void FSMAcceptDetector::buildAcceptReason(int node, int str, vec<Lit>& conflict){
-    static int iter = 0;
-    ++iter;
-//find a path - ideally, the one that traverses the fewest unique transitions - from source to node, learn that one of the transitions on that path must be disabled.
-/*	g_under.draw(source);
-	vec<int> & string = strings[str];
-	printf("Accepts: \"");
-	for(int s:string){
-		printf("%d ",s);
-	}
-	printf("\"\n");*/
+
     static vec<NFATransition> path;
     path.clear();
     bool hasPath = underapprox_detector->getPath(str, node, path);
@@ -603,8 +593,7 @@ void FSMAcceptDetector::buildAcceptReason(int node, int str, vec<Lit>& conflict)
 
 void FSMAcceptDetector::buildNonAcceptReason(int node, int str, vec<Lit>& conflict){
 
-    static int iter = 0;
-//optionally, remove all transitions from the graph that would not be traversed by this string operating on the level 0 overapprox graph.
+    //optionally, remove all transitions from the graph that would not be traversed by this string operating on the level 0 overapprox graph.
 
     //This doesn't work:
     //then, find a cut in the remaining graph through the disabled transitions, separating source from node.

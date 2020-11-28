@@ -27,11 +27,8 @@
 #include <monosat/dgl/Distance.h>
 #include <monosat/dgl/Graph.h>
 #include <monosat/dgl/Reach.h>
-//#include "monosat/core/Config.h"
-//#include <algorithm>
 #include <cassert>
 #include <cstdio>
-//#include <exception>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -304,17 +301,12 @@ public:
     }
 
     void AddEdge(int edgeID){
-        static int iter = 0;
-        ++iter;
         dbg_delta_lite();
         assert(g.edgeEnabled(edgeID));
         if(edgeInShortestPathGraph[edgeID])
             return;
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 2404){
-            int a = 1;
-        }
         Weight& rdv = dist[rv];
         Weight& rdu = dist[ru];
 
@@ -415,17 +407,12 @@ public:
 
     //Called if an edge weight is decreased
     void DecreaseWeight(int edgeID){
-        static int iter = 0;
-        ++iter;
         dbg_delta_lite();
         assert(g.edgeEnabled(edgeID));
         //if (edgeInShortestPathGraph[edgeID]) //must process this whether or not the edge is in the shortest path
         //    return;
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 2404){
-            int a = 1;
-        }
         Weight& rdv = dist[rv];
         Weight& rdu = dist[ru];
 
@@ -457,7 +444,6 @@ public:
                 changed.push_back(u);
             }
             delta[u] = 0;
-            //for(auto & e:g.inverted_adjacency[u]){
             for(int i = 0; i < g.nIncoming(u); i++){
                 auto& e = g.incoming(u, i);
                 int adjID = e.id;
@@ -529,9 +515,6 @@ public:
 
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 2404){
-            int a = 1;
-        }
         assert(delta[rv] > 0);
         delta[rv]--;
         edgeInShortestPathGraph[edgeID] = false;                        //remove this edge from the shortest path graph
@@ -592,8 +575,6 @@ public:
 
             }
             if(dist[u] != INF){
-                //q.insert(u);
-                //dbg_Q_add(q,u);
                 q.insert(u);
 
                 if(!reportDistance && reportPolarity >= 0){
@@ -603,7 +584,7 @@ public:
                     }
                 }
             }else if(reportPolarity <= 0){
-                //have to mark this change even if we are reporting distanec, as u has not been added to the queue.
+                //have to mark this change even if we are reporting distance, as u has not been added to the queue.
                 if(!node_changed[u]){
                     node_changed[u] = true;
                     changed.push_back(u);
@@ -694,9 +675,6 @@ public:
 
         int ru = g.getEdge(edgeID).from;
         int rv = g.getEdge(edgeID).to;
-        if(rv == 2404){
-            int a = 1;
-        }
         assert(delta[rv] > 0);
         delta[rv]--;
         if(delta[rv] > 0)
@@ -748,8 +726,6 @@ public:
 
             }
             if(dist[u] != INF){
-                //q.insert(u);
-                //dbg_Q_add(q,u);
                 q.insert(u);
 
                 if(!reportDistance && reportPolarity >= 0){
@@ -850,14 +826,8 @@ public:
         if(g.outfile()){
             fprintf(g.outfile(), "r %d %d %d %d %d\n", getSource(), last_modification, g.getCurrentHistory(),
                     g.changed(), g.historySize());
-            //fprintf(g.outfile(), "r %d\n", getSource());
         }
 
-        static int iteration = 0;
-        int local_it = ++iteration;
-        if(local_it == 7668){
-            int a = 1;
-        }
         stats_all_updates++;
         if(last_modification > 0 && g.getCurrentHistory() == last_modification)
             return;
@@ -991,8 +961,6 @@ public:
                 }
             }
         }
-        //for(int i = 0;i<g.nodes();i++){
-        //	int u=i;
 
         if(reportPolarity > -2 && !has_zero_weights){
             for(int u : changed){
@@ -1077,7 +1045,6 @@ public:
                 throw std::logic_error("Internal error in Ramal Reps");
             }
         }
-//#endif
 
         return true;
     }
@@ -1488,8 +1455,6 @@ public:
     }
 
     void AddEdge(int edgeID){
-        static int iter = 0;
-        ++iter;
         dbg_delta_lite();
         assert(g.edgeEnabled(edgeID));
         if(edgeInShortestPathGraph[edgeID])
@@ -1543,7 +1508,6 @@ public:
                 changed.push_back(u);
             }
             delta[u] = 0;
-            //for(auto & e:g.inverted_adjacency[u]){
             for(int j = 0; j < g.nIncoming(u); j++){
                 auto& e = g.incoming(u, j);
                 int adjID = e.id;
@@ -1762,8 +1726,6 @@ public:
             }
 
             if(dist[u] < INF){
-                //q.insert(u);
-                //dbg_Q_add(q,u);
                 q.push_back(u);
                 in_queue[u] = true;
 
@@ -1977,10 +1939,7 @@ public:
             }
         }
 
-        //for(int i = 0;i<g.nodes();i++){
         for(int u : changed){
-            //int u=i;
-            //int u = changed[i];
             node_changed[u] = false;
 
             if(reportPolarity <= 0 && dist[u] >= INF){
@@ -1992,7 +1951,6 @@ public:
             }
         }
         changed.clear();
-        //}
         dbg_delta();
         num_updates++;
         last_modification = g.getCurrentHistory();
@@ -2032,7 +1990,6 @@ public:
     }
 
     bool dbg_uptodate(){
-//#ifdef DEBUG_GRAPH
 #ifdef DEBUG_RAMAL2
         if(last_modification<0)
         return true;

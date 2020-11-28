@@ -55,18 +55,17 @@ public:
     ~Distance() override{
     };
 
-    void setSource(int s) override =0;
+    void setSource(int s) override = 0;
 
-    int getSource() override =0;
-    //virtual addSource(int s)=0;
+    int getSource() override = 0;
 
-    void update() override =0;
+    void update() override = 0;
 
-    bool connected_unsafe(int t) override =0;
+    bool connected_unsafe(int t) override = 0;
 
-    bool connected_unchecked(int t) override =0;
+    bool connected_unchecked(int t) override = 0;
 
-    bool connected(int t) override =0;
+    bool connected(int t) override = 0;
 
     virtual Weight& unreachable(){
         return weight_unreach;
@@ -76,13 +75,13 @@ public:
         return INF;
     }
 
-    virtual Weight& distance(int t)=0;
+    virtual Weight& distance(int t) = 0;
 
-    virtual Weight& distance_unsafe(int t)=0;
+    virtual Weight& distance_unsafe(int t) = 0;
 
-    int previous(int node) override =0;
+    int previous(int node) override = 0;
 
-    int incomingEdge(int node) override =0;
+    int incomingEdge(int node) override = 0;
 
     //The maximum distance to compute up to.
     virtual void setMaxDistance(Weight& maxDistance){

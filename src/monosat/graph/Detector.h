@@ -34,7 +34,7 @@
 namespace Monosat {
 
 //Graph properties (such as shortest paths, minimum spanning tree weights) are computed by individual 'detectors',
-//atached to the central graph theory. This allows them to share their edge atoms and a lot of other infrastructure.
+//attached to the central graph theory. This allows them to share their edge atoms and a lot of other infrastructure.
 class Detector {
 public:
 
@@ -102,7 +102,7 @@ public:
     virtual void printSolution(std::ostream& write_to = std::cout){
     }
 
-    virtual bool propagate(vec<Lit>& conflict)=0;
+    virtual bool propagate(vec<Lit>& conflict) = 0;
 
     virtual bool propagate(vec<Lit>& conflict, bool backtrackOnly, Lit& conflictLit){
         return propagate(conflict);
@@ -112,9 +112,9 @@ public:
 
     }
 
-    virtual void buildReason(Lit p, vec<Lit>& reason, CRef marker)=0;
+    virtual void buildReason(Lit p, vec<Lit>& reason, CRef marker) = 0;
 
-    virtual bool checkSatisfied()=0;
+    virtual bool checkSatisfied() = 0;
 
     virtual void preprocess(){
 
@@ -136,7 +136,7 @@ public:
 
     }
 
-    virtual Lit decide(CRef& decision_reason)=0;
+    virtual Lit decide(CRef& decision_reason) = 0;
 
     virtual bool supportsEdgeDecisions(){
         return false;
@@ -200,7 +200,6 @@ public:
         return false;
     }
 
-    //virtual vec<int> & getLitMap();
     Detector(int detectorID) :
             detectorID(detectorID){
 
@@ -210,10 +209,6 @@ public:
 
     }
 
-    /*	virtual void addLit(Lit l){
-     unassigned_negatives++;
-     unassigned_positives++;
-     }*/
     virtual void addVar(Var v){
         unassigned_negatives++;
         unassigned_positives++;
@@ -232,46 +227,12 @@ enum class DetectorComparison {
 template<typename Weight>
 class EdgeDecider {
 public:
-    virtual bool decideEdgeWeight(int edgeID, Weight& store, DetectorComparison& op)=0;
+    virtual bool decideEdgeWeight(int edgeID, Weight& store, DetectorComparison& op) = 0;
 
     virtual ~EdgeDecider(){
 
     }
 };
-
-/*class LevelDetector: public Detector {
-	
-	vec<int> level_trail;
-
-public:
-	LevelDetector(int detectorID) :
-			Detector(detectorID) {
-	}
-	;
-
-	virtual ~LevelDetector() {
-	}
-	
-	virtual void backtrack(int level) {
-		while (level_trail.size() && level < level_trail.last()) {
-			level_trail.pop();
-			localBacktrack();
-		}
-	}
-	virtual void localBacktrack() {
-		//do nothing
-	}
-	//local decision level within the detector
-	int decisionLevel() {
-		return level_trail.size();
-	}
-	
-	void newDecisionLevel(int outer_level) {
-		
-		level_trail.push(outer_level);
-	}
-	
-};*/
 
 };
 

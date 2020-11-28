@@ -29,7 +29,7 @@
 #include "Graph.h"
 
 namespace dgl {
-template<typename Weight = int, typename Graph = DynamicGraph <Weight>>
+template<typename Weight = int, typename Graph = DynamicGraph<Weight>>
 class EdmondsKarp : public MaxFlow<Weight> {
 public:
 
@@ -61,8 +61,6 @@ public:
         Q.clear();
         Q.push_back(s);
 
-        //while (Q.size() > 0){
-        //int u =Q.back(); Q.pop_back();
         for(int j = 0; j < Q.size(); j++){
             int u = Q[j];
 
@@ -307,9 +305,6 @@ public:
         seen.resize(g.nodes());
         seen[s] = true;
         cut.clear();
-        //	visited.clear();
-        //visited.resize(g.nodes());
-        //	visited[s]=true;
         for(int j = 0; j < Q.size(); j++){
             int u = Q[j];
 

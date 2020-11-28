@@ -756,7 +756,6 @@ int main(int argc, char** argv){
                 std::cout << "Writing witness to file " << (const char*) opt_theory_witness_file << "\n";
                 std::ofstream theory_out(opt_theory_witness_file, ios::out);
                 S.writeTheoryWitness(theory_out);
-
             }
 
             if(opt_witness){
@@ -782,8 +781,7 @@ int main(int argc, char** argv){
                 printf("0\n");
             }
 
-
-            if(opt_verb > 2){
+            if(opt_print_theory_debug){
                 for(int i = 0; i < S.theories.size(); i++)
                     S.theories[i]->printSolution();
             }
@@ -811,7 +809,7 @@ int main(int argc, char** argv){
         printf("INDETERMINATE\n");
         exit(0);
     }catch(std::runtime_error& e){
-        std::cerr <<"Unexpected error:\n" << e.what() << std::endl;
+        std::cerr << "Unexpected error:\n" << e.what() << std::endl;
         exit(2);
     }
 }

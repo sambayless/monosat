@@ -213,10 +213,6 @@ CRef Solver::attachReasonClause(Lit r, vec<Lit>& ps){
     assert(value(r) == l_True);
 
     if(opt_write_learnt_clauses){
-        if((++opt_n_learnts) == 47){
-            int a = 1;
-        }
-
         fprintf(opt_write_learnt_clauses, "learnt ");
         for(Lit l:ps){
             fprintf(opt_write_learnt_clauses, " %d", dimacs(unmap(l)));
@@ -306,55 +302,7 @@ CRef Solver::attachReasonClause(Lit r, vec<Lit>& ps){
         clauses.push(cr);
         attachClause(cr);
         enqueueLazy(ps[0], max_lev, cr);
-        if(cr == 34){
-            int a = 1;
-        }
-        //find the highest level in the conflict (should be the current decision level, but we won't require that)
-        /*	if (ps.size() > opt_temporary_theory_reasons) {
-                if (tmp_clause == CRef_Undef) {
-                    tmp_clause = ca.alloc(ps, false);
-                    tmp_clause_sz = ps.size();
-                } else if (tmp_clause_sz < ps.size()) {
-                    ca[tmp_clause].mark(1); //is this needed?
-                    ca.free(tmp_clause);
-                    tmp_clause = ca.alloc(ps, false);
-                    tmp_clause_sz = ps.size();
-                } else {
-                    Clause & c = ca[tmp_clause];
-                    assert(tmp_clause_sz >= ps.size());
-                    assert(tmp_clause_sz >= c.size());
-                    c.grow(tmp_clause_sz - c.size());
-                    for (int i = 0; i < ps.size(); i++) {
-                        c[i] = ps[i];
-                    }
-                    c.shrink(c.size() - ps.size());
-                }
 
-                confl_out = tmp_clause;
-            } else {
-                CRef cr = ca.alloc(ps, !opt_permanent_theory_conflicts);
-                ca[cr].setFromTheory(true);
-                if (opt_permanent_theory_conflicts)
-                    clauses.push(cr);
-                else {
-                    learnts.push(cr);
-                    if (--learntsize_adjust_cnt <= 0) {
-                        learntsize_adjust_confl *= learntsize_adjust_inc;
-                        learntsize_adjust_cnt = (int) learntsize_adjust_confl;
-                        max_learnts *= learntsize_inc;
-
-                        if (verbosity >= 1)
-                            printf("| %9d | %7d %8d %8d | %8d %8d %6.0f | %" PRId64 " removed |\n", (int) conflicts,
-                                    (int) dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(),
-                                    (int) clauses_literals, (int) max_learnts, nLearnts(),
-                                    (double) learnts_literals / nLearnts(), stats_removed_clauses);
-                    }
-
-                }
-                attachClause(cr);
-
-                confl_out = cr;
-            }*/
         return cr;
     }
 }
@@ -1440,14 +1388,7 @@ CRef Solver::propagate(bool propagate_theories){
             initialPropagate = false;
         }
 
-
-
-
-
-
-
         //propagate theories;
-
         while(qhead == trail.size() && confl == CRef_Undef &&
               ((propagate_theories && theory_queue.size()) || unskippable_theory_q.size())){
 
@@ -1490,18 +1431,6 @@ CRef Solver::propagate(bool propagate_theories){
                 }
             }
         }
-
-        //solve theories if this solver is completely assigned
-        /*	for(int i = 0;i<theories.size() && qhead == trail.size() && confl==CRef_Undef && nAssigns()==nVars();i++){
-		 if(opt_subsearch==3 && track_min_level<initial_level)
-		 continue;//Disable attempting to solve sub-solvers if we've backtracked past the super solver
-
-		 if(!theories[i]->solve(theory_conflict)){
-		 if(!addConflictClause(theory_conflict,confl))
-		 return confl;
-
-		 }
-		 }*/
 
     }while(qhead < trail.size());
     propagations += num_props;
@@ -1618,7 +1547,6 @@ void Solver::rebuildTheoryOrderHeap(){
 void Solver::detectPureTheoryLiterals(){
     //Detect any theory literals that are occur only in positive or negative (or neither) polarity
     if(opt_detect_pure_lits){
-        //if(pure_literal_detections==0){
         stats_pure_lits = 0;
         pure_literal_detections++;
         double startTime = rtime(1);
@@ -1643,12 +1571,6 @@ void Solver::detectPureTheoryLiterals(){
             }
         }
         //the learnt clauses likely don't need to be counted here...
-        /*for (CRef cr : learnts) {
-			Clause & c = ca[cr];
-			for (Lit l : c) {
-				lit_counts[toInt(l)].seen = true;
-			}
-		}*/
         for(Var v = 0; v < nVars(); v++){
 
             Lit l = mkLit(v, false);
@@ -1708,7 +1630,6 @@ void Solver::detectPureTheoryLiterals(){
             if(lit_counts[toInt(~l)].occurs && !lit_counts[toInt(~l)].seen){
                 lit_counts[toInt(~l)].occurs = false;
 
-                //stats_pure_lits++;
                 if(hasTheory(v)){
                     stats_pure_theory_lits++;
                     for(int n = 0; n < getNTheories(v); n++){
@@ -1719,7 +1640,6 @@ void Solver::detectPureTheoryLiterals(){
                             theories[theoryID]->setLiteralOccurs(theoryLit, false);
                         }
                     }
-                    //setPolarity(v,true);
                     if(!lit_counts[toInt(l)].occurs){
                         //setDecisionVar(v,false);//If v is pure in both polarities, and is a theory var, then just don't assign it at all - it is unconstrained.
                         //This _should_ be safe to do, if the theory semantics make sense... although there are some clause learning schemes that introduce previosuly unused literals that might break with this...
@@ -1739,7 +1659,7 @@ void Solver::detectPureTheoryLiterals(){
         assert(stats_pure_lits <= nVars() * 2);
         assert(stats_pure_lits >= 0);
         stats_pure_lit_time += rtime(1) - startTime;
-        //}
+
     }
 }
 
@@ -1786,7 +1706,6 @@ bool Solver::simplify(){
             if(seen[var(trail[i])] == 0)
                 trail[j++] = trail[i];
         trail.shrink(i - j);
-        //printf("trail.size()= %d, qhead = %d\n", trail.size(), qhead);
         qhead = trail.size();
 
         for(int i = 0; i < released_vars.size(); i++)
@@ -1809,12 +1728,6 @@ bool Solver::simplify(){
 
 void Solver::addClauseSafely(vec<Lit>& ps){
     if(opt_write_learnt_clauses){
-        if(opt_n_learnts++ == 47){
-            int a = 1;
-        }
-        if(ps.size() == 2 && dimacs(unmap(ps[0])) == -195621 && dimacs(unmap(ps[1])) == 35361){
-            int a = 1;
-        }
         fprintf(opt_write_learnt_clauses, "learnt fact ");
         for(Lit l:ps){
             fprintf(opt_write_learnt_clauses, " %d", dimacs(unmap(l)));
@@ -1826,9 +1739,7 @@ void Solver::addClauseSafely(vec<Lit>& ps){
     if(decisionLevel() == 0){
         addClause_(ps, true);
     }else{
-        //clauses_to_add.push();
-        //ps.copyTo(clauses_to_add.last());
-        //
+
         //check if this clause should imply a literal right now.
         //and IF that literal is already implied, then we may still need to adjust the level the literal should be implied at.
         int undef_count = 0;
@@ -1865,18 +1776,14 @@ void Solver::addClauseSafely(vec<Lit>& ps){
                 bool conflicting = true;
                 int nfalse = 0;
                 int max_lev = 0;
-                //bool satisfied = false;
                 int notFalsePos1 = -1;
                 int notFalsePos2 = -1;
                 for(int j = 0; j < ps.size(); j++){
                     assert(var(ps[j]) < nVars());
-                    //assert(value(ps[j])==l_False);
                     if(value(ps[j]) == l_False){
                         nfalse++;
                     }else{
                         conflicting = false;
-                        //if (value(ps[j]) == l_True)
-                        //	satisfied = true;
                         if(notFalsePos1 < 0)
                             notFalsePos1 = j;
                         else if(notFalsePos2 < 0){
@@ -1927,15 +1834,7 @@ void Solver::addClauseSafely(vec<Lit>& ps){
 }
 
 bool Solver::addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent){
-
-
-
-
     if(opt_write_learnt_clauses){
-
-
-
-
         fprintf(opt_write_learnt_clauses, "learnt ");
         for(Lit l:ps){
             fprintf(opt_write_learnt_clauses, " %d", dimacs(unmap(l)));
@@ -1950,7 +1849,6 @@ bool Solver::addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent){
     for(i = j = 0, p = lit_Undef; i < ps.size(); i++){
         assert(var(ps[i]) != var(theoryDecision));
 
-
         if(((value(ps[i]) == l_True && level(var(ps[i])) == 0)) || ps[i] == ~p)
             return true;
         else if((value(ps[i]) != l_False || level(var(ps[i])) != 0) && ps[i] != p)
@@ -1958,9 +1856,6 @@ bool Solver::addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent){
 
     }
     ps.shrink(i - j);
-
-
-
     confl_out = CRef_Undef;
     if(ps.size() == 0){
         ok = false;
@@ -2078,8 +1973,6 @@ bool Solver::addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent){
             confl_out = cr;
         }
 
-
-
         if(!satisfied && nfalse == ps.size() - 1){
             cancelUntil(max_lev);
             assert(!conflicting);
@@ -2146,11 +2039,6 @@ lbool Solver::search(int nof_conflicts){
     CRef confl = CRef_Undef;
     n_theory_decision_rounds += using_theory_decisions;
     for(;;){
-        static int iter = 0;
-        if(++iter == 33){//3150 //3144
-            int a = 1;
-        }
-
         propagate:
 
         bool all_assumptions_assigned = decisionLevel() >= assumptions.size();
@@ -2168,45 +2056,6 @@ lbool Solver::search(int nof_conflicts){
         confl = propagate(propagate_theories);
 
         conflict:
-
-#ifdef DEBUG_CORE
-        /*{
-           for (int i = 0; i < decision_heuristics.size(); i++) {
-                Heuristic *hv = decision_heuristics[i];
-                {
-                    CRef ignore;
-                    Lit n2 = hv->decideTheory(ignore);
-                    if (n2 != lit_Undef) {
-						if(!theory_order_heap.inHeap(hv)){
-							Lit n3 = hv->decideTheory(ignore);
-						}
-                        assert(theory_order_heap.inHeap(hv));
-                    }
-                }
-            }
-
-            vec<Heuristic *> order;
-            theory_order_heap.copyTo(order, true);
-            IntSet<int> seen_in_order;
-
-            for (Heuristic *h:order) {
-                seen_in_order.insert(h->getHeuristicIndex());
-                for (int i = 0; i < decision_heuristics.size(); i++) {
-                    Heuristic *hv = decision_heuristics[i];
-                    if (hv == h) {
-                        break;
-                    } else {
-                        CRef ignore;
-                        if (!seen_in_order.has(hv->getHeuristicIndex())) {
-                            Lit n2 = hv->decideTheory(ignore);
-                            assert(n2 == lit_Undef);
-                        }
-                    }
-                }
-            }
-        }*/
-#endif
-
 
         if(!okay() || (confl != CRef_Undef)){
             // CONFLICT
@@ -3243,33 +3092,13 @@ void Solver::relocAll(ClauseAllocator& to){
     }
     //Re-allocate the 'theory markers'
     vec<int> marker_theory_tmp;
-
-    /*	for(int i = 0;i<markers.size();i++){
-	 CRef old_cr = markers[i];
-	 assert(old_cr!=CRef_Undef);
-	 int old_theory = getTheory(old_cr);
-	 assert(old_theory>=0);
-	 CRef cr=to.makeMarkerReference();
-	 assert(cr==markers[i]);//these should be identical in the current implementation
-	 markers[i]=cr;
-	 int index = CRef_Undef-cr - 1;
-	 marker_theory_tmp.growTo(index+1,-1 );
-	 marker_theory_tmp[index] = old_theory;
-
-	 assert( marker_theory_tmp[index] == old_theory);
-
-	 assert(markers[ marker_theory_tmp[index]] == cr);
-	 }
-	 marker_theory_tmp.copyTo(marker_theory);*/
     // All watchers:
     //
-    // for (int i = 0; i < watches.size(); i++)
     watches.cleanAll();
     for(int v = 0; v < nVars(); v++){
 
         for(int s = 0; s < 2; s++){
             Lit p = mkLit(v, s);
-            // printf(" >>> RELOCING: %s%d\n", sign(p)?"-":"", var(p)+1);
             vec<Watcher>& ws = watches[p];
             for(int j = 0; j < ws.size(); j++)
                 ca.reloc(ws[j].cref, to);

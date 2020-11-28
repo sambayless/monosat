@@ -143,8 +143,6 @@ public:
             stats_skipped_updates++;
             return;
         }
-        static int iteration = 0;
-        int local_it = ++iteration;
         stats_full_updates++;
 
         if(last_deletion == g.deletions){
@@ -164,24 +162,6 @@ public:
                 status.generates(i, false);
             }
         }
-/*
-		//first, apply e-moves
-
-		//for(int i = 0;i<g.states();i++)
-		for (int str = 0;str<strings.size();str++){
-
-			for(int s:accepts){
-				status.generates(str,s,-1,,true);
-			}
-			//improve this:
-			for(int s = 0;s<g.states();s++){
-				if (!cur_seen[s]){
-					status.generates(str,s,-1,,false);
-				}
-			}
-		}*/
-
-
 
         last_modification = g.modifications;
         last_deletion = g.deletions;

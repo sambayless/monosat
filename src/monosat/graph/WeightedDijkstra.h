@@ -128,8 +128,7 @@ public:
         }
         //ok, now check if any of the added edges allow for a decrease in distance.
         for(int i = history_qhead; i < g.historySize(); i++){
-            assert(g.getChange(
-                    i).addition); //NOTE: Currently, this is glitchy in some circumstances - specifically, ./modsat -rinc=1.05 -rnd-restart  -conflict-shortest-path  -no-conflict-min-cut   -rnd-init -rnd-seed=01231 -rnd-freq=0.01 /home/sam/data/gnf/unit_tests/unit_test_17_reduced.gnf can trigger this assertion!
+            assert(g.getChange(i).addition);
             int edgeID = g.getChange(i).id;
             int u = g.all_edges[edgeID].from;
             int v = g.all_edges[edgeID].to;
@@ -214,66 +213,9 @@ public:
     }
 
     void update(){
-        static int iteration = 0;
-        int local_it = ++iteration;
-        if(local_it == 17513){
-            int a = 1;
-        }
         if(last_modification > 0 && g.getCurrentHistory() == last_modification)
             return;
         assert(weights.size() >= g.edges());
-        /*		while(weight.size()<=g.nodes()){
-         weight.push_back(1);
-         }*/
-        /*if (last_addition==g.nAdditions() && last_modification>0){
-         //if none of the deletions were to edges that were the previous edge of some shortest path, then we don't need to do anything
-         if(last_history_clear!=g.nHistoryClears()){
-         history_qhead=0;
-         last_history_clear=g.nHistoryClears();
-         }
-         bool need_recompute = false;
-         //ok, now check if any of the added edges allow for a decrease in distance.
-         for (int i = history_qhead;i<g.history.size();i++){
-         assert(!g.getChange(i).addition);
-         int u=g.getChange(i).u;
-         int v=g.getChange(i).v;
-         if(prev[v]==u){
-         history_qhead = i-1;
-         need_recompute=true;
-         //this deletion matters, so we need to recompute.
-         break;
-         }
-         }
-         if(!need_recompute){
-         //none of these deletions touched any shortest paths, so we can ignore them.
-
-         last_modification=g.getCurrentHistory();
-         last_deletion = g.nDeletions();
-         last_addition=g.nAdditions();
-
-         history_qhead=g.history.size();
-         last_history_clear=g.nHistoryClears();
-
-         assert(dbg_uptodate());
-         stats_skip_deletes++;
-         return;
-         }
-         }*/
-
-        /*if(last_deletion==g.nDeletions() && last_modification>0  ){
-         //Don't need to do anything at all.
-         if(last_addition==g.nAdditions()){
-         last_modification = g.getCurrentHistory();
-         stats_skipped_updates++;
-         assert(dbg_uptodate());
-         return;
-         }
-         //we can use a faster, simple dijkstra update method
-         updateFast();
-         assert(dbg_uptodate());
-         return;
-         }*/
-
         stats_full_updates++;
 
         dist.resize(g.nodes(), INF);
@@ -315,14 +257,12 @@ public:
         }
 
         for(int u = 0; u < g.nodes(); u++){
-            //while(q.size()){
             //iterate through the unreached nodes and check which ones were previously reached
 
             if(last_modification <= 0 || (old_dist[u] < INF && dist[u] >= INF)){
                 changed.push_back(u);
             }
         }
-        //}
         assert(dbg_uptodate());
         num_updates++;
         last_modification = g.getCurrentHistory();
@@ -331,8 +271,6 @@ public:
 
         history_qhead = g.historySize();
         last_history_clear = g.nHistoryClears();
-
-        ;
     }
 
     bool dbg_path(int to){

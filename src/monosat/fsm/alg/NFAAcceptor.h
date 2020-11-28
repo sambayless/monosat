@@ -19,19 +19,19 @@ public:
 
     }
 
-    virtual void update()=0;
+    virtual void update() = 0;
 
     virtual void setTrackStringAcceptance(int str, int state, bool trackPositiveAcceptance,
                                           bool trackNegativeAcceptance) = 0;
 
-    virtual int numUpdates() const =0;;
+    virtual int numUpdates() const = 0;;
 
     virtual bool acceptsString(int string, int state) = 0;
 
-    virtual bool getPath(int string, int state, vec <NFATransition>& path) = 0;
+    virtual bool getPath(int string, int state, vec<NFATransition>& path) = 0;
 
     //Get an accepting path in the FSM, but don't include multiple copies of the same FSM transition
-    virtual bool getAbstractPath(int string, int state, vec <NFATransition>& path, bool reversed = false) = 0;
+    virtual bool getAbstractPath(int string, int state, vec<NFATransition>& path, bool reversed = false) = 0;
 };
 };
 #endif //MONOSAT_NFAACCEPTOR_H

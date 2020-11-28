@@ -988,9 +988,11 @@ int _solve(Monosat::SimpSolver* S, int* assumptions, int n_assumptions){
     }
     if(opt_verb >= 1){
         printStats(S);
-
     }
-
+    if(opt_print_theory_debug){
+        for(int i = 0; i < S->theories.size(); i++)
+            S->theories[i]->printSolution();
+    }
 
     return toInt(r);
 }
@@ -1901,6 +1903,16 @@ int shortestPathUnweighted_leq_const(Monosat::SimpSolver* S, Monosat::GraphTheor
         return externalLit(S, l);
     }
 }
+
+
+int connectedComponents_geq_const(Monosat::SimpSolver* S, Monosat::GraphTheorySolver<int64_t>* G, int components){
+    Var v = S->newVar();
+    Lit l = mkLit(v);
+    G->minConnectedComponents(components, v);
+    write_out(S, "graph_connected_component_count_geq %d %d %d\n", G->getGraphID(), dimacs(S, l), components);
+    return externalLit(S, l);
+}
+
 
 int
 shortestPath_lt_const(Monosat::SimpSolver* S, Monosat::GraphTheorySolver<int64_t>* G, int from, int to, int64_t dist){

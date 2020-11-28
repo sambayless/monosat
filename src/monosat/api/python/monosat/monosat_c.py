@@ -769,6 +769,13 @@ class Monosat(metaclass=Singleton):
             self.monosat_c.acyclic_directed.argtypes = [c_solver_p, c_graph_p]
             self.monosat_c.acyclic_directed.restype = c_literal
 
+            self.monosat_c.connectedComponents_geq_const.argtypes = [
+                c_solver_p,
+                c_graph_p,
+                c_int
+            ]
+            self.monosat_c.connectedComponents_geq_const.restype = c_literal
+
             self.monosat_c.newEdgeSet.argtypes = [
                 c_solver_p,
                 c_graph_p,
@@ -1814,6 +1821,11 @@ class Monosat(metaclass=Singleton):
         l = self.monosat_c.minimumSpanningTree_lt(
             self.solver._ptr, graph, c_int64(weight)
         )
+        return l
+
+    def connectedComponents_geq_const(self, graph, components):
+        self.backtrack()
+        l = self.monosat_c.connectedComponents_geq_const(self.solver._ptr, graph, c_int(components))
         return l
 
     def acyclic_undirected(self, graph):

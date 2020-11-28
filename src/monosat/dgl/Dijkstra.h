@@ -54,7 +54,6 @@ public:
     int last_history_clear = 0;
 
     int source;
-    //Weight inf();
     std::vector<Weight> dist;
     std::vector<int> prev;
 
@@ -96,10 +95,8 @@ public:
             g(graph), status(Distance<Weight>::nullStatus), reportPolarity(reportPolarity), source(s), q(DistCmp(dist)){
 
         mod_percentage = 0.2;
-        //inf()=std::numeric_limits<Weight>::max()/2;
 
     }
-    //Dijkstra(const Dijkstra& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),inf()(0),q(DistCmp(dist)),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
     void setSource(int s) override{
         source = s;
@@ -123,9 +120,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(last_modification > 0 && g.getCurrentHistory() == last_modification)
             return;
 
@@ -149,12 +143,6 @@ public:
                     //this deletion matters, so we need to recompute.
                     break;
                 }
-                /*if(previous(v)==u || (undirected && previous(u)==v )){
-                 history_qhead = i-1;
-                 need_recompute=true;
-                 //this deletion matters, so we need to recompute.
-                 break;
-                 }*/
             }
             if(!need_recompute){
                 //none of these deletions touched any shortest paths, so we can ignore them.
@@ -176,19 +164,12 @@ public:
         stats_full_updates++;
         if(dist.size() != g.nodes()){
 
-/*			inf() = 1;
-			for (int edgeID = 0;edgeID<g.edges();edgeID++) {
-				if(g.hasEdge(edgeID))
-					inf() += g.getWeight(edgeID);
-			}*/
             dist.resize(g.nodes());
             prev.resize(g.nodes());
         }
 
-        //old_dist.resize(g.nodes());
         q.clear();
         for(int i = 0; i < g.nodes(); i++){
-            //old_dist[i]=last_modification > 0 ? dist[i]:inf();//this won't work properly if we added nodes...
             dist[i] = inf();
             prev[i] = -1;
         }
@@ -199,9 +180,6 @@ public:
             int u = q.peekMin();
             if(dist[u] == inf())
                 break;
-            /*if(old_dist[u]>=inf()){
-             changed.push_back(u);
-             }*/
             q.removeMin();
             for(int i = 0; i < g.nIncident(u, undirected); i++){
                 if(!g.edgeEnabled(g.incident(u, i, undirected).id))
@@ -266,25 +244,6 @@ public:
 #ifdef DEBUG_DIJKSTRA
         if(last_modification<=0)
         return true;
-        /*	Graph gdbg;
-         for(int i = 0;i<g.nodes();i++){
-         gdbg.addNode();
-         }
-
-         for(int i = 0;i<g.nodes();i++){
-         for(int j = 0;j<g.nIncident(u);j++){
-         int u = g.incident(i,j);
-         gdbg.addEdge(i,u);
-         }
-         }*/
-
-        /*	Dijkstra d(source,g);
-         d.update();
-         for(int i = 0;i<g.nodes();i++){
-         int distance = dist[i];
-         int dbgdist = d.dist[i];
-         assert(distance==dbgdist);
-         }*/
 #endif
         return true;
     }
@@ -366,8 +325,6 @@ public:
             }
         }
         assert(prev != -1);
-        //assert(min_prev_dist<dist[t]);
-
         return prev;
     }
 
@@ -405,7 +362,6 @@ public:
             }
         }
         assert(prev != -1);
-        //assert(min_prev_dist<dist[t]);
         assert(prev_edgeID != -1);
         return prev_edgeID;
     }
@@ -496,9 +452,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(last_modification > 0 && g.getCurrentHistory() == last_modification)
             return;
 
@@ -521,12 +474,6 @@ public:
                     //this deletion matters, so we need to recompute.
                     break;
                 }
-                /*if(previous(v)==u || (undirected && previous(u)==v )){
-                 history_qhead = i-1;
-                 need_recompute=true;
-                 //this deletion matters, so we need to recompute.
-                 break;
-                 }*/
             }
             if(!need_recompute){
                 //none of these deletions touched any shortest paths, so we can ignore them.
@@ -544,25 +491,10 @@ public:
             }
         }
 
-        /*if(last_deletion==g.nDeletions() && last_modification>0  ){
-         //Don't need to do anything at all.
-         if(last_addition==g.nAdditions()){
-         last_modification = g.getCurrentHistory();
-         stats_skipped_updates++;
-         assert(dbg_uptodate());
-         return;
-         }
-         //we can use a faster, simple dijkstra update method
-         updateFast();
-         assert(dbg_uptodate());
-         return;
-         }*/
-
         stats_full_updates++;
 
         dist.resize(g.nodes());
         prev.resize(g.nodes());
-        //old_dist.resize(g.nodes());
         q.clear();
         for(int i = 0; i < g.nodes(); i++){
             //old_dist[i]=last_modification > 0 ? dist[i]:inf();//this won't work properly if we added nodes...
@@ -576,9 +508,6 @@ public:
             int u = q.peekMin();
             if(dist[u] == inf())
                 break;
-            /*if(old_dist[u]>=inf()){
-             changed.push_back(u);
-             }*/
             q.removeMin();
             for(int i = 0; i < g.nIncident(u, undirected); i++){
                 if(!g.edgeEnabled(g.incident(u, i, undirected).id))
@@ -597,15 +526,6 @@ public:
             }
         }
 
-        /*	for(int u = 0;u<g.nodes();u++){
-         //while(q.size()){
-         //iterate through the unreached nodes and check which ones were previously reached
-
-         if(last_modification <=0  || (old_dist[u]<inf() && dist[u]>=inf())){
-         changed.push_back(u);
-         }
-         }*/
-        //}
         assert(dbg_uptodate());
         for(int u = 0; u < g.nodes(); u++){
             if(reportPolarity <= 0 && dist[u] >= inf()){
@@ -789,7 +709,6 @@ public:
             }
         }
         assert(prev != -1);
-        //assert(min_prev_dist<dist[t]);
         assert(prev_edgeID != -1);
         return prev_edgeID;
     }

@@ -60,7 +60,6 @@ void SteinerDetector<Weight, Graph>::addTerminalNode(int node, Var outer_Var){
     overTerminalSet.setNodeEnabled(node, true);
     terminal_map.growTo(g_under.nodes(), var_Undef);
     terminal_map[node] = var;
-    //vec<int> terminal_var_map;
     terminal_var_map.growTo(var + 1, -1);
     terminal_var_map[var] = node;
 }
@@ -70,8 +69,6 @@ void SteinerDetector<Weight, Graph>::addWeightLit(Weight& min_weight, Var outer_
     g_under.invalidate();
     g_over.invalidate();
 
-    //while( dist_lits[to].size()<=within_steps)
-    //	dist_lits[to].push({lit_Undef,-1});
     Var weight_var = outer->newVar(outer_weight_var, getID());
 
     Lit reachLit = mkLit(weight_var, false);
@@ -82,8 +79,7 @@ void SteinerDetector<Weight, Graph>::addWeightLit(Weight& min_weight, Var outer_
             Lit r = weight_lits[i].l;
             //force equality between the new lit and the old reach lit, in the SAT solver
             outer->makeEqual(r, reachLit);
-            /*outer->S->addClause(~r, reachLit);
-             outer->S->addClause(r, ~reachLit);*/
+
         }
     }
     if(!found){
@@ -91,7 +87,6 @@ void SteinerDetector<Weight, Graph>::addWeightLit(Weight& min_weight, Var outer_
         weight_lits.last().l = reachLit;
         weight_lits.last().min_weight = min_weight;
 
-        //weight_lit_map.insert(min_weight,weight_lits.size()-1);
     }
 
 }
@@ -147,8 +142,6 @@ void SteinerDetector<Weight, Graph>::buildMinWeightTooLargeReason(Weight& weight
         }
     }
 
-    //antig.drawFull(true);
-
     if(overapprox_detector->disconnected()){
         //Then find a separating cut between any two terminals.
 
@@ -176,15 +169,6 @@ void SteinerDetector<Weight, Graph>::buildMinWeightTooLargeReason(Weight& weight
         assert(sets.NumSets() > 1);
         vec<bool> visited;
         visited.growTo(g_under.nodes());
-        /*
-         vec<bool> hasTerminal;
-         hasTerminal.growTo(sets.NumSets());
-         //find the components that contain terminals
-         for(int i = 0;i<underTerminalSet.nodes();i++){
-         if(underTerminalSet.nodeEnabled(i)){
-         hasTerminal[sets.FindSet(i)]=true;
-         }
-         }*/
 
         for(int i = 0; i < underTerminalSet.nodes(); i++){
             if(!underTerminalSet.nodeEnabled(i) || visited[i])
@@ -260,28 +244,6 @@ void SteinerDetector<Weight, Graph>::buildMinWeightTooLargeReason(Weight& weight
             }
         }
     }
-
-    /*	//the only edges that need to be enabled are edges that would reduce the shortest path between two terminal nodes... or ANY two nodes?
-     vec<Reach*> shortestPaths;
-     //This can be made much more efficient...
-     for(int i = 0;i<overTerminalSet.nodes();i++){
-     if (overTerminalSet.nodeEnabled(i)){
-     shortestPaths.push_back(new BFSReachability<Reach::NullStatus,true>(i,g));
-     shortestPaths.back()->update();
-     //now add in the corresponding edges to the subgraph
-     for(int n = 0;n<overTerminalSet.nodes();n++){
-     if (n!=i && overTerminalSet.nodeEnabled(n)){
-     if( shortestPaths.back()->connected(n)){
-     int dist = shortestPaths.back()->distance(n);
-     induced.addEdge(i,n,-1,dist);
-     }else{
-     disconnected=true;
-     }
-     }
-     }
-     }
-     }*/
-
 }
 
 template<typename Weight, typename Graph>
@@ -302,8 +264,6 @@ void SteinerDetector<Weight, Graph>::buildReason(Lit p, vec<Lit>& reason, CRef m
         assert(weight >= 0);
         buildMinWeightTooSmallReason(weight, reason);
 
-        //double elapsed = rtime(2)-startpathtime;
-        //	pathtime+=elapsed;
     }else if(marker == overprop_marker){
         reason.push(p);
 
@@ -335,38 +295,27 @@ void SteinerDetector<Weight, Graph>::buildReason(Lit p, vec<Lit>& reason, CRef m
 
 template<typename Weight, typename Graph>
 bool SteinerDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
-    static int it = 0;
-    if(++it == 7){
-        int a = 1;
-    }
     changed_weights.clear();
     double startdreachtime = rtime(2);
     stats_under_updates++;
     underapprox_detector->update();
     double reachUpdateElapsed = rtime(2) - startdreachtime;
     stats_under_update_time += reachUpdateElapsed;
-    //}else
-    //	stats_skipped_under_updates++;
 
-    //if(negative_reach_detector && (!opt_detect_pure_theory_lits || unassigned_negatives>0)){
     double startunreachtime = rtime(2);
     stats_over_updates++;
     overapprox_detector->update();
     double unreachUpdateElapsed = rtime(2) - startunreachtime;
     stats_over_update_time += unreachUpdateElapsed;
-    //}else
-    //	stats_skipped_over_updates++;
 
     for(int j = 0; j < changed_weights.size(); j++){
         Lit l = changed_weights[j].l;
-        //printf("mst: %d\n",dimacs(l));
         Weight weight = changed_weights[j].weight;
 
         bool reach = !sign(l);
         if(outer->value(l) == l_True){
             //do nothing
         }else if(outer->value(l) == l_Undef){
-            //trail.push(Assignment(false,reach,detectorID,0,var(l)));
             if(reach)
                 outer->enqueue(l, underprop_marker);
             else
@@ -390,8 +339,6 @@ bool SteinerDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
             }
             outer->toSolver(conflict);
             return false;
-        }else{
-            int a = 1;
         }
 
     }

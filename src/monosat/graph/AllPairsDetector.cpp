@@ -181,12 +181,7 @@ void AllPairsDetector<Weight, Graph>::ReachStatus::setMininumDistance(int from, 
 
 template<typename Weight, typename Graph>
 void AllPairsDetector<Weight, Graph>::buildReachReason(int source, int to, vec<Lit>& conflict){
-    //drawFull();
     AllPairs& d = *underapprox_path_detector;
-    static int iter = 0;
-    if(++iter == 3){
-        int a = 1;
-    }
 
     double starttime = rtime(2);
     d.update();
@@ -200,13 +195,8 @@ void AllPairsDetector<Weight, Graph>::buildReachReason(int source, int to, vec<L
            throw std::runtime_error("Critical error in all pairs detector");
     }
 #endif
-    //d.update();
     d.getPath(source, to, tmp_path);
-    //if(opt_learn_reaches ==0 || opt_learn_reaches==2)
     {
-        int u = to;
-
-        //while(( p = d.previous(u)) != -1){
         for(int i = tmp_path.size() - 2; i >= 0; i--){
             int edge_id = tmp_path[i];
             int p = g_over.getEdge(edge_id).from;
@@ -216,8 +206,6 @@ void AllPairsDetector<Weight, Graph>::buildReachReason(int source, int to, vec<L
             assert(outer->value(e) == l_True);
 
             conflict.push(mkLit(e, true));
-            u = p;
-
         }
     }
     outer->num_learnt_paths++;
@@ -229,17 +217,10 @@ void AllPairsDetector<Weight, Graph>::buildReachReason(int source, int to, vec<L
 
 template<typename Weight, typename Graph>
 void AllPairsDetector<Weight, Graph>::buildNonReachReason(int source, int node, vec<Lit>& conflict){
-    static int it = 0;
-    ++it;
-    int u = node;
-    //drawFull( non_reach_detectors[detector]->getSource(),u);
-    //assert(outer->dbg_distance( source,u));
     double starttime = rtime(2);
     cutGraph.clearHistory();
     outer->stats_mc_calls++;
     {
-
-
         to_visit.clear();
         to_visit.push(node);
         seen.clear();
@@ -298,29 +279,10 @@ void AllPairsDetector<Weight, Graph>::buildReason(Lit p, vec<Lit>& reason, CRef 
 
     if(marker == underprop_marker){
         reason.push(p);
-        //	double startpathtime = rtime(2);
-
-        /*Dijkstra & detector = *reach_detectors[d]->positive_dist_detector;
-         //the reason is a path from s to p(provided by d)
-         //p is the var for a reachability detector in dijkstra, and corresponds to a node
-         detector.update();
-         Var v = var(p);
-         int u =reach_detectors[d]->getNode(v); //reach_detectors[d]->reach_lit_map[v];
-         assert(detector.connected(u));
-         int w;
-         while(( w= detector.previous(u)) > -1){
-         Lit l = mkLit( edges[w][u].v,true );
-         assert(S->value(l)==l_False);
-         reason.push(l);
-         u=w;
-         }*/
         Var v = var(p);
         int u = getNode(v);
         int source = getSource(v);
         buildReachReason(source, u, reason);
-
-        //double elapsed = rtime(2)-startpathtime;
-        //	pathtime+=elapsed;
     }else if(marker == overprop_marker){
         reason.push(p);
 
@@ -403,8 +365,6 @@ bool AllPairsDetector<Weight, Graph>::propagate(vec<Lit>& conflict){
 #endif
             outer->toSolver(conflict);
             return false;
-        }else{
-            int a = 1;
         }
 
     }
@@ -508,7 +468,6 @@ Lit AllPairsDetector<Weight, Graph>::decide(CRef& decision_reason){
     //ok, for each node that is assigned reachable, but that is not actually reachable in the under approx, decide an edge on a feasible path
 
     //this can be obviously more efficient
-    //for(int j = 0;j<nNodes();j++){
     for(int m = 0; m < sources.size(); m++){
         int s = sources[m];
         for(int k = 0; k < dist_lits[s].size(); k++){
@@ -519,9 +478,6 @@ Lit AllPairsDetector<Weight, Graph>::decide(CRef& decision_reason){
                     continue;
                 int j = getNode(var(l));
                 if(outer->value(l) == l_True){
-                    //if(S->level(var(l))>0)
-                    //	continue;
-
                     assert(overapprox_reach_detector->distance(s, j) <=
                            min_dist);//else we would already be in conflict before this decision was attempted!
                     if(underapprox_reach_detector->distance(s, j) > min_dist){
@@ -532,7 +488,6 @@ Lit AllPairsDetector<Weight, Graph>::decide(CRef& decision_reason){
                                                                     j));        //Else, we would already be in conflict
                         int p = j;
                         int last = j;
-                        //if(!opt_use_random_path_for_decisions)
                         {
                             //ok, read back the path from the over to find a candidate edge we can decide
                             //find the earliest unconnected node on this path

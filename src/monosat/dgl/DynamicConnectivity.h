@@ -96,7 +96,6 @@ public:
                     0), INF(0), reportPolarity(_reportPolarity){
         default_source = -1;
         hasPrev = false;
-        iteration = 0;
     }
 
     void addSource(int s){
@@ -141,12 +140,6 @@ public:
     }
 
     void updateEdge(int u, int v, int edgeid, bool add){
-        if(edgeid == 2){
-            int a = 1;
-        }
-        if(u == 16 || v == 16){
-            int a = 1;
-        }
         assert(transitive_closure[0][sources[0]].reachable);
         assert(
                 (g.all_edges[edgeid].to == u && g.all_edges[edgeid].from == v)
@@ -177,9 +170,6 @@ public:
 
                             int u = g.all_edges[edgeid].from;
                             int v = g.all_edges[edgeid].to;
-                            if(u == 16 || v == 16){
-                                int a = 1;
-                            }
                             assert(!(transitive_closure[i][u].reachable && transitive_closure[i][v].reachable));
                             assert((transitive_closure[i][u].reachable || transitive_closure[i][v].reachable));
                             int n = transitive_closure[i][u].reachable ? v : u;
@@ -206,9 +196,6 @@ public:
                         for(int edgeid : u_component){
                             int u = g.all_edges[edgeid].from;
                             int v = g.all_edges[edgeid].to;
-                            if(u == 16 || v == 16){
-                                int a = 1;
-                            }
                             assert(!(transitive_closure[i][u].reachable && transitive_closure[i][v].reachable));
                             assert((transitive_closure[i][u].reachable || transitive_closure[i][v].reachable));
                             int n = transitive_closure[i][u].reachable ? v : u;
@@ -243,9 +230,6 @@ public:
                             if(!v_component.size())
                                 t.getConnectedComponent(v, v_component);
                             for(int n : v_component){
-                                if(n == 16){
-                                    int a = 1;
-                                }
                                 transitive_closure[i][n].reachable = false;
 
                                 if(!transitive_closure[i][n].changed){
@@ -259,9 +243,6 @@ public:
                             if(!u_component.size())
                                 t.getConnectedComponent(u, u_component);
                             for(int n : u_component){
-                                if(n == 16){
-                                    int a = 1;
-                                }
                                 transitive_closure[i][n].reachable = false;
 
                                 if(!transitive_closure[i][n].changed){
@@ -280,7 +261,6 @@ public:
 #ifdef DEBUG_DGL
     DisjointSets dbg_sets;
 #endif
-    int iteration;
     int64_t num_updates = 0;
 
     int numUpdates() const override{
@@ -288,8 +268,6 @@ public:
     }
 
     void update() override{
-
-        int local_it = ++iteration;
 
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
@@ -404,41 +382,6 @@ public:
         }
 #endif
         dbg_transitive_closure();
-        /*
-
-         if (default_source>=0){
-         prev.clear();
-         prev.resize(g.nodes(),-1);
-         //ok, traverse the nodes connected to this component
-         component.clear();
-         static int iter=0;
-         //this is NOT the right way to do this.
-         //need to only see check from t!
-         t.getConnectedComponent(default_source,component);
-
-         if(reportPolarity>=0){
-         for(int v:component){
-         status.setReachable(v,true);
-         }
-         }
-         if(reportPolarity<=0){
-         sort(component);
-         int nextpos = 0;
-         for(int v = 0;v<g.nodes();v++){
-         if(nextpos<component.size() && v==component[nextpos]){
-         nextpos++;
-         assert(dbg_sets.FindSet(v)==dbg_sets.FindSet(default_source));
-         //status.setReachable(v,true);
-
-         }else{
-         assert(dbg_sets.FindSet(v)!=dbg_sets.FindSet(default_source));
-         status.setReachable(v,false);
-
-         }
-         }
-         }
-         }
-         */
 #ifdef DEBUG_DGL
         assert(dbg_sets.NumSets() == t.numComponents());
 #endif
@@ -450,7 +393,6 @@ public:
         history_qhead = g.historySize();
         last_history_clear = g.nHistoryClears();
 
-        //stats_full_update_time+=cpuTime()-startdupdatetime;;
     }
 
     void dbg_transitive_closure(){
@@ -556,7 +498,6 @@ public:
         assert(transitive_closure[default_source_index].size() > to);
         assert((bool) (transitive_closure[default_source_index][to].reachable) == t.connected(getSource(), to));
         return transitive_closure[default_source_index][to].reachable;
-        //return connected(getSource(),t);
     }
 
     int distance(int t){
@@ -566,31 +507,6 @@ public:
     int distance_unsafe(int t){
         return distance_unsafe(getSource(), t);
     }
-
-    /*		 int previous( int to){
-     update();
-     if(prev[to]<0){
-
-     t.getPath(getSource(),to,path);
-     for(int i:path){
-     printf("%d->",i);
-     }
-     printf("\n");
-
-     dbg_path(getSource(),to,path);
-
-     prev.clear();
-     prev.resize(g.nodes(),-1);
-     assert(path[0]==getSource());
-     for(int i = 1;i<path.size();i++){
-     prev[path[i]]=path[i-1];
-     }
-
-     }
-     assert(prev[to]!=to);
-     assert(prev[to]>=0);
-     return prev[to];
-     }*/
 
     int incomingEdge(int to) override{
         update();
@@ -603,11 +519,6 @@ public:
         if(prev[to] < 0){
             assert(t.connected(getSource(), to));
             t.getPathEdges(getSource(), to, path);
-            /*		for(int i:path){
-             printf("%d->",i);
-             }
-             printf("\n");
-             */
             dbg_path_edges(getSource(), to, path);
 
             int n = getSource();
@@ -626,7 +537,6 @@ public:
         }
         dbg_transitive_closure();
         return prev[to];
-        //return prev[to];
     }
 
     int previous(int t) override{

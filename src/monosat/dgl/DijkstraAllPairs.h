@@ -30,7 +30,7 @@
 
 
 namespace dgl {
-template<typename Weight, typename Graph = DynamicGraph <Weight>, class Status = AllPairs::NullStatus>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status = AllPairs::NullStatus>
 class DijkstraAllPairs : public AllPairs {
 public:
 
@@ -129,8 +129,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
         stats_full_updates++;
 
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
@@ -146,7 +144,6 @@ public:
 
         setNodes(g.nodes());
         q.clear();
-        //q.clear();
         for(int i = 0; i < g.nodes(); i++){
             for(int j = 0; j < g.nodes(); j++){
                 prev[i][j] = -1;
@@ -158,7 +155,6 @@ public:
         for(int s = 0; s < sources.size(); s++){
             int source = sources[s];
             q.clear();
-            //distcmp._dist=&dist[source];
             dist_ptr = &dist[source];
             dist[source][source] = 0;
             q.insert(source);
@@ -212,12 +208,6 @@ public:
         update();
         assert(dist[from][to] < INF);
         int d = dist[from][to];
-        /*	int intermediate = prev[from][to];
-         if(intermediate>-1){
-         getPath(from, intermediate, path);
-         path.push_back(intermediate);
-         getPath(intermediate,to,path);
-         }*/
         path.clear();
         path.push_back(to);
         while(prev[from][to] != -1){
@@ -242,35 +232,6 @@ public:
     }
 
     void drawFull(){
-        /*printf("digraph{\n");
-         for(int i = 0;i< g.nodes();i++){
-
-         if(seen[i]){
-         printf("n%d [fillcolor=blue style=filled]\n", i);
-         }else{
-         printf("n%d \n", i);
-         }
-
-
-         }
-
-         for(int i = 0;i< g.nodes();i++){
-         for(int j =0;j<g.nIncident(u);j++){
-         int id  =g.incident(i,j).id;
-         int u =  g.incident(i,j).node;
-         const char * s = "black";
-         if( g.edgeEnabled(id))
-         s="blue";
-         else
-         s="red";
-
-
-
-         printf("n%d -> n%d [label=\"v%d\",color=\"%s\"]\n", i,u, id, s);
-         }
-         }
-
-         printf("}\n");*/
     }
 
     bool dbg_uptodate(){
@@ -309,12 +270,6 @@ public:
         else
             return INF;
     }
-    /*	int previous(int t){
-     assert(t>=0 && t<prev.size());
-     assert(prev[t]>=-1 && prev[t]<prev.size());
-     return prev[t];
-     }*/
-
 };
 };
 #endif

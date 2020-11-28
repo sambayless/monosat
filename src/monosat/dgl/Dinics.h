@@ -61,7 +61,7 @@ public:
     std::vector<int> dist;
     std::vector<int> pos; //position in the combined forward and backward adjacency list of each node in the DFS.
     std::vector<bool> changed;
-    Graph <Weight>& g;
+    Graph<Weight>& g;
 
 
     int src = -1;
@@ -78,7 +78,7 @@ public:
 #endif
 
 public:
-    Dinitz(Graph <Weight>& _g, int source = -1, int sink = -1) :
+    Dinitz(Graph<Weight>& _g, int source = -1, int sink = -1) :
             g(_g), source(source), sink(sink), INF(0xF0F0F0)
 #ifdef DEBUG_MAXFLOW
     ,ek(_g,cap,source,sink)
@@ -91,7 +91,6 @@ public:
 
         history_qhead = -1;
         last_history_clear = -1;
-        //setAllEdgeCapacities(1);
     }
 
     int getSource() const override{
@@ -109,8 +108,6 @@ public:
     }
 
     void setCapacity(int u, int w, Weight c){
-        //C.resize(g.edges());
-        //C[ ]=c;
 
     }
 
@@ -121,10 +118,7 @@ public:
     void dbg_print_graph(int from, int to){
 #ifdef DEBUG_DGL
         return;
-        static int it = 0;
-        if (++it == 6) {
-            int a = 1;
-        }
+
         printf("Graph %d\n", it);
         printf("digraph{\n");
         for (int i = 0; i < g.nodes(); i++) {
@@ -202,19 +196,16 @@ public:
                 return M[u];
             bool found = false;
             for(; pos[u] < g.nIncident(u); pos[u]++){
-                //int edgeID = g.adjacency[u][pos[u]].id;
                 int edgeID = g.incident(u, pos[u]).id;
                 if(!g.edgeEnabled(edgeID))
                     continue;
                 int v = g.incident(u, pos[u]).node;
                 if(dist[v] == dist[u] + 1 && F[edgeID] < g.getWeight(edgeID)){
-                    //printf("%d\n",edgeID);
                     found = true;
                     Weight c = g.getWeight(edgeID) - F[edgeID];
                     M[v] = std::min(M[u], c);
                     prev[v] = LocalEdge(u, edgeID, false);
                     if(v == dst){
-                        //M[v] = min(M[u], g.getWeight(edgeID) - F[id]);
                         m = M[dst];
                         assert(Q.back() == u);
                         Q.pop_back();
@@ -222,7 +213,6 @@ public:
                             pos[Q.back()]--;
                             Q.pop_back();
                         }
-                        //pos[u]++;
                         break;
                     }else{
                         Q.push_back(v);
@@ -234,14 +224,12 @@ public:
             }
             if(!found){
                 for(; pos[u] - g.nIncident(u) < g.nIncoming(u); pos[u]++){
-                    //int edgeID = g.inverted_adjacency[u][pos[u]-g.nIncident(u)].id;
                     int edgeID = g.incoming(u, pos[u] - g.nIncident(u)).id;
                     if(!g.edgeEnabled(edgeID))
                         continue;
                     int v = g.incoming(u, pos[u] - g.nIncident(u)).node;
                     //these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
                     if(dist[v] == dist[u] + 1 && F[edgeID] > 0){
-                        //printf("-%d\n",edgeID);
                         found = true;
                         M[v] = std::min(M[u], F[edgeID]);
                         prev[v] = LocalEdge(u, edgeID, true);        //this is a backward edge
@@ -324,13 +312,11 @@ public:
             return f;
 
         for(; pos[u] < g.nIncident(u); pos[u]++){
-            //int edgeID = g.adjacency[u][pos[u]].id;
             int edgeID = g.incident(u, pos[u]).id;
             if(!g.edgeEnabled(edgeID))
                 continue;
             int v = g.incident(u, pos[u]).node;
             if(dist[v] == dist[u] + 1 && F[edgeID] < g.getWeight(edgeID)){
-                //printf("%d\n",edgeID);
                 Weight c = g.getWeight(edgeID) - F[edgeID];
                 Weight df = findAugmentingPath_recursive(v, std::min(f, c));
                 if(df > 0){
@@ -341,14 +327,12 @@ public:
         }
 
         for(; pos[u] - g.nIncident(u) < g.nIncoming(u); pos[u]++){
-            //int edgeID = g.inverted_adjacency[u][pos[u]-g.nIncident(u)].id;
             int edgeID = g.incoming(u, pos[u] - g.nIncident(u)).id;
             if(!g.edgeEnabled(edgeID))
                 continue;
             int v = g.incoming(u, pos[u] - g.nIncident(u)).node;
             //these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
             if(dist[v] == dist[u] + 1 && F[edgeID] > 0){
-                //printf("-%d\n",edgeID);
                 Weight df = findAugmentingPath_recursive(v, std::min(f, F[edgeID]));
                 if(df > 0){
                     F[edgeID] -= df;
@@ -446,13 +430,10 @@ public:
                     dbg_print_graph(s, t);
                 }
             }else{
-                //int expect = dbg_findAugmentingPath_recursive(s,INT_MAX);
                 while(Weight delta = findAugmentingPath(s)){
-                    //assert(delta==expect);
                     f += delta;
                     stats_augmenting_rounds++;
                     dbg_print_graph(s, t);
-                    //expect = dbg_findAugmentingPath_recursive(s,INT_MAX);
                 }
             }
         }
@@ -462,7 +443,6 @@ public:
         assert(f==expected_flow);
 #endif
 
-        //dbg_print_graph(s,t);
         curflow = f;
         num_updates++;
         last_modification = g.getCurrentHistory();
@@ -490,8 +470,6 @@ public:
         seen.resize(g.nodes());
         seen[s] = true;
         cut.clear();
-        /*		if(f==0)
-         return 0;*/
         //explore the residual graph
         for(int j = 0; j < Q.size(); j++){
             int u = Q[j];

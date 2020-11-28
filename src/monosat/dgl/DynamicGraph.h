@@ -331,10 +331,6 @@ public:
         return weights;
     }
 
-/*	 Weight getWeight(int edgeID){
-		 return weights[edgeID];
-	 //return all_edges[edgeID].weight;
-	 }*/
     Weight getWeight(int edgeID) override{
         return weights[edgeID];
         //return all_edges[edgeID].weight;
@@ -366,8 +362,6 @@ public:
         assert(isEdge(id));
         if(!edge_status[id]){
             edge_status[id] = true;
-            //edge_status.setStatus(id,true);
-
             modifications++;
             additions = modifications;
             history.push_back({true, false, false, false, id, modifications, additions});
@@ -389,13 +383,10 @@ public:
             return false;
 
         if(history.back().addition && history.back().id == id && history.back().mod == modifications){
-            //edge_status.setStatus(id,false);
+
             edge_status[id] = false;
 
             if(_outfile){
-                if(id + 1 == 89486){
-                    int a = 1;
-                }
                 fprintf(_outfile, "-%d\n", id + 1);
                 fflush(_outfile);
             }
@@ -413,7 +404,6 @@ public:
         assert(id < edge_status.size());
         assert(isEdge(id));
         if(edge_status[id]){
-            //edge_status.setStatus(id,false);
             edge_status[id] = false;
 
             if(_outfile){
@@ -436,7 +426,6 @@ public:
             return false;
 
         if(!history.back().addition && history.back().id == id && history.back().mod == modifications){
-            //edge_status.setStatus(id,true);
             edge_status[id] = true;
 
             if(_outfile){
@@ -550,7 +539,6 @@ public:
         }
         dynamic_algs.push_back(alg);
         dynamic_history_pos.push_back(0);
-        //n_dynamic_algs_updtodate+= (historySize()==0);
         return dynamic_algs.size() - 1;
     }
 
@@ -565,11 +553,7 @@ public:
                                          std::to_string(algorithmID) + ", " + alg->getName());
             }
         }
-        //bool was_uptodate = dynamic_history_pos[algorithmID]==historySize();
         dynamic_history_pos[algorithmID] = historyPos;
-/*		if(!was_uptodate && historyPos ==historySize()){
-			dynamic_history_pos[algorithmID]++;
-		}*/
     }
 
     EdgeChange& getChange(int64_t historyPos) override{

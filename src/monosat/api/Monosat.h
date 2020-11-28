@@ -377,6 +377,7 @@ int maximumFlow_geq_bv(SolverPtr S, GraphTheorySolver_long G, int source, int si
 int maximumFlow_gt_bv(SolverPtr S, GraphTheorySolver_long G, int source, int sink, int bvID);
 int minimumSpanningTree_leq(SolverPtr S, GraphTheorySolver_long G, Weight weight);
 int minimumSpanningTree_lt(SolverPtr S, GraphTheorySolver_long G, Weight weight);
+int connectedComponents_geq_const(SolverPtr S, GraphTheorySolver_long G, int components);
 int acyclic_undirected(SolverPtr S, GraphTheorySolver_long G);
 int acyclic_directed(SolverPtr S, GraphTheorySolver_long G);
 void newEdgeSet(SolverPtr S, GraphTheorySolver_long G, int* edges, int n_edges, bool enforceEdgeAssignment);

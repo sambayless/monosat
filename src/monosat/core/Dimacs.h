@@ -55,9 +55,9 @@ public:
     virtual ~Parser(){
     }
 
-    virtual bool parseLine(B& in, Solver& S)=0;
+    virtual bool parseLine(B& in, Solver& S) = 0;
 
-    virtual void implementConstraints(Solver& S)=0;
+    virtual void implementConstraints(Solver& S) = 0;
 
     const char* getParserName() const{
         return parser_name;

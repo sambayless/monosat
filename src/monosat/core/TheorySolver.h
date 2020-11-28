@@ -36,11 +36,11 @@ public:
 
     }
 
-    virtual double& getRandomSeed()=0;
+    virtual double& getRandomSeed() = 0;
 
-    virtual void addTheory(Theory* t)=0;
+    virtual void addTheory(Theory* t) = 0;
 
-    virtual void addHeuristic(Heuristic* h)=0;
+    virtual void addHeuristic(Heuristic* h) = 0;
 
     virtual void activateHeuristic(Heuristic* h){
 
@@ -50,19 +50,19 @@ public:
         return 0;
     }
 
-    virtual vec<Theory*>& getTheories() =0;
+    virtual vec<Theory*>& getTheories() = 0;
 
-    virtual lbool value(Lit l) const =0;
+    virtual lbool value(Lit l) const = 0;
 
-    virtual lbool value(Var v) const =0;
+    virtual lbool value(Var v) const = 0;
 
-    virtual bool isConstant(Var v) const =0;
+    virtual bool isConstant(Var v) const = 0;
 
     inline bool isConstant(Lit l) const{
         return isConstant(var(l));
     }
 
-    virtual void needsPropagation(int theoryID)=0;
+    virtual void needsPropagation(int theoryID) = 0;
 
     virtual void instantiateLazyDecision(Lit l, int atLevel, CRef reason = CRef_Undef){
 
@@ -80,40 +80,37 @@ public:
         return nullptr;
     }
 
-    /*virtual void prependToTrail(Lit solverLit, int atLevel){
-
-    }*/
-    virtual Lit True()=0;
+    virtual Lit True() = 0;
 
     //Set whether a variable can be a chosen as a decision in the SAT solver or not
-    virtual void setDecisionVar(Var solverVar, bool decidable)=0;
+    virtual void setDecisionVar(Var solverVar, bool decidable) = 0;
 
-    virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar)=0;
+    virtual Var newTheoryVar(Var solverVar, int theoryID, Var theoryVar) = 0;
 
     //Prevent this variable from being eliminated during preprocessing
-    virtual void disableElimination(Var solverVar)=0;
+    virtual void disableElimination(Var solverVar) = 0;
 
-    virtual Var newVar(bool polarity = true, bool dvar = true)=0;
+    virtual Var newVar(bool polarity = true, bool dvar = true) = 0;
 
-    virtual int nVars() const =0;
+    virtual int nVars() const = 0;
 
-    virtual bool enqueue(Lit l, CRef reason = CRef_Undef)=0;
+    virtual bool enqueue(Lit l, CRef reason = CRef_Undef) = 0;
 
-    virtual CRef newReasonMarker(Heuristic* forTheory, bool is_decision = false)=0;
+    virtual CRef newReasonMarker(Heuristic* forTheory, bool is_decision = false) = 0;
 
-    virtual CRef reason(Var v) const =0;
+    virtual CRef reason(Var v) const = 0;
 
-    virtual bool addClause(Lit l1)=0;
+    virtual bool addClause(Lit l1) = 0;
 
-    virtual bool addClause(Lit l1, Lit l2) =0;
+    virtual bool addClause(Lit l1, Lit l2) = 0;
 
-    virtual bool addClause(Lit l1, Lit l2, Lit l3)=0;
+    virtual bool addClause(Lit l1, Lit l2, Lit l3) = 0;
 
-    virtual bool addClause(const vec<Lit>& c) =0;
+    virtual bool addClause(const vec<Lit>& c) = 0;
 
-    virtual void addClauseSafely(vec<Lit>& clause)=0;
+    virtual void addClauseSafely(vec<Lit>& clause) = 0;
 
-    virtual bool addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent)=0;
+    virtual bool addConflictClause(vec<Lit>& ps, CRef& confl_out, bool permanent) = 0;
 
     virtual void setTheorySatisfied(Theory* theory){
 
@@ -123,9 +120,9 @@ public:
         return false;
     }
 
-    virtual int level(Var v) const =0;
+    virtual int level(Var v) const = 0;
 
-    virtual int decisionLevel() const =0;
+    virtual int decisionLevel() const = 0;
 
     virtual Lit theoryDecisionLit(int theoryID){
         return mkLit(newVar(true, false));

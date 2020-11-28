@@ -30,7 +30,7 @@ struct MkIndexDefault {
 
 template<class K, class V, class MkIndex = MkIndexDefault<K>>
 class IntMap {
-    vec <V> map;
+    vec<V> map;
     MkIndex index;
 public:
     explicit IntMap(MkIndex _index = MkIndex()) : index(_index){}
@@ -88,7 +88,7 @@ public:
 template<class K=int, class MkIndex = MkIndexDefault<K>>
 class IntSet {
     IntMap<K, char, MkIndex> in_set;
-    vec <K> xs;
+    vec<K> xs;
 
 public:
     // Size operations:
@@ -125,7 +125,7 @@ public:
     }
 
     // Allow inspecting the internal vector:
-    const vec <K>&
+    const vec<K>&
     toVec() const{return xs;}
 
     // Vector interface:
@@ -140,7 +140,7 @@ public:
         }
     }
 
-    void insertAll(vec <K>& from){
+    void insertAll(vec<K>& from){
         for(K& l:from){
             insert(l);
         }

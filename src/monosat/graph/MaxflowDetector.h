@@ -155,15 +155,6 @@ public:
     };
     vec<DistLit> flow_lits;
 
-/*	struct MaxflowBV{
-		int bvID=-1;
-		vec<Lit> lits;
-		Lit l=lit_Undef;
-		bool isSatisfied=false;
-	};*/
-
-    //vec<MaxflowBV> maximum_flow_bvs;
-
     int n_satisfied_lits = 0;
 
     std::vector<MaxFlowEdge> cut;
@@ -174,13 +165,12 @@ public:
     vec<bool> seen_path;
 
     struct FlowListener {
-        virtual void edgeFlowChange(int edgeID, const Weight& flow)=0;
+        virtual void edgeFlowChange(int edgeID, const Weight& flow) = 0;
     } * flowListener = nullptr;
 
     void backtrack(int level) override{
         to_decide.clear();
         last_decision_status = -1;
-        //LevelDetector::backtrack(level);
     }
 
     void collectChangedEdges();
@@ -377,56 +367,6 @@ public:
         return "Max-flow Detector";
     }
 
-/*	void decideEdge(int edgeID,  bool assign = true) {
-		assert(decisions.size() >= decisionLevel());
-
-		newDecisionLevel(outer->decisionLevel()+1);
-
-		Lit l = mkLit(outer->getEdgeVar(edgeID), !assign);
-
-		assert(!decisions.contains(l));
-		assert(!decisions.contains(~l));
-
-		//decisions.push(l);
-
-		assert(decisions.size() == decisionLevel());
-		dbg_decisions();
-	}*/
-    /*void localBacktrack() {
-        dbg_decisions();
-        //undo a decision edge, and return it to the set of potential decisions
-        assert(decisions.size() == decisionLevel() + 1);
-
-        Lit l = decisions.last();
-        decisions.pop();
-
-        assert(outer->isEdgeVar(var(l)));
-        int edgeID = outer->getEdgeID(var(l));
-
-        //assert(!is_potential_decision[edgeID]);
-        assert(!potential_decisions.contains(edgeID));
-        assert(!potential_decisions_q.contains(edgeID));
-
-        //this check is optional, but if used, must use the _conflict_ detector (to match the decisions, which are also using the conflict detector).
-        if (overapprox_conflict_detector->getEdgeFlow(edgeID) > 0) {			//this check is optional
-
-            is_potential_decision[edgeID] = true;
-            if (opt_maxflow_decisions_q == 0)
-                potential_decisions_q.insertBack(edgeID);
-            else if (opt_maxflow_decisions_q == 1) {
-                potential_decisions_q.insertBack(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-            } else if (opt_maxflow_decisions_q == 2) {
-                potential_decisions_q.insert(edgeID);			//insert in FIFO order instead
-            } else if (opt_maxflow_decisions_q == 3) {
-                potential_decisions_q.insertBack(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-            } else if (opt_maxflow_decisions_q == 4) {
-                potential_decisions_q.insert(edgeID);//insert in LIFO order, no FIFO, because we are unwinding the decisions
-            }
-        } else {
-            is_potential_decision[edgeID] = false;			//discard this edge from the set of potential decisions
-        }
-        dbg_decisions();
-    }*/
     bool preprocessed = false;
 
     void preprocess() override{
@@ -480,13 +420,8 @@ private:
     struct EdgeOrderLt {
         const vec<double>& activity;
 
-        //const vec<int> & priority;
         bool operator()(Var x, Var y) const{
-            //if (priority[x] == priority[y])
             return activity[x] > activity[y];
-            //else {
-            //	return priority[x] > priority[y];
-            //}
         }
 
         EdgeOrderLt(const vec<double>& act) :

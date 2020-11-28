@@ -32,7 +32,7 @@
 
 namespace dgl {
 
-template<typename Weight, typename Graph = DynamicGraph <Weight>, class Status = Reach::NullStatus, bool undirected = false>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status = Reach::NullStatus, bool undirected = false>
 class BFSReachability : public Reach {
 public:
 
@@ -57,9 +57,7 @@ public:
     std::vector<int> check;
     const int reportPolarity;
 
-    //std::vector<char> old_seen;
     std::vector<char> seen;
-//	std::vector<int> changed;
 
     std::vector<int> prev;
 
@@ -91,7 +89,6 @@ public:
         stats_num_skipable_deletions = 0;
         stats_fast_failed_updates = 0;
     }
-    //BFSReachability(const BFSReachability& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
 
     void setSource(int s) override{
         source = s;
@@ -104,95 +101,6 @@ public:
         return source;
     }
 
-    /*void updateFast(){
-     stats_fast_updates++;
-
-
-     assert(last_deletion==g.nDeletions());
-     last_modification=g.getCurrentHistory();
-     last_addition=g.nAdditions();
-     INF=g.nodes()+1;
-     seen.resize(g.nodes());
-     prev.resize(g.nodes());
-
-     if(lastaddlist!=g.addlistclears){
-     addition_qhead=0;
-     lastaddlist=g.addlistclears;
-     }
-     int start = q.size();
-     //ok, now check if any of the added edges allow for new BFSReachability
-     for (int i = addition_qhead;i<g.addition_list.size();i++){
-     int u=g.addition_list[i].u;
-     int v=g.addition_list[i].v;
-
-     if(!seen[v]){
-     q.push_back(v);
-     seen[v]=1;
-     prev[v]=u;
-     }
-     }
-     addition_qhead=g.addition_list.size();
-
-     for(int i = start;i<q.size();i++){
-     int u = q[i];
-     assert(seen[u]);
-     for(int i = 0;i<g.nIncident(u);i++){
-     int v = g.incident(u,i);
-
-     if(!seen[v]){
-     //this was changed
-     changed.push_back(v);
-     seen[v]=1;
-     prev[v]=u;
-     q.push_back(v);
-     }
-     }
-     }
-
-     }*/
-    /*	std::vector<int> & getChanged(){
-     return changed;
-     }
-     void clearChanged(){
-     changed.clear();
-     }*/
-
-    /*
-     * WARNING: THIS FUNDAMENTALLY WONT WORK if there are any cycles in the graph!
-     * inline void delete_update(int to){
-     q.clear();
-     q.push_back(to);
-     seen[to]=0;
-     //Is this really safe? check it very carefully, it could easily be wrong
-     while(q.size()){
-     int u = q.back();
-     q.pop_back();
-     assert(!seen[u]);
-     for(int i = 0;i<g.nIncoming(u);i++){
-     int v = g.incoming(u,i);
-     if(seen[v]){
-     seen[v]=1;
-     //Then since to is still seen, we are up to date
-     break;
-     }
-     }
-     if(!seen[u]){
-     for(int i = 0;i<g.nIncident(u);i++){
-     int v = g.incident(u,i);
-     if(seen[v] && prev[v]==to){
-     seen[v]=0;
-     }
-     }
-     }else{
-     #ifdef GRAPH_DEBUG
-     for(int i = 0;i<g.nIncident(u);i++){
-     int v = g.incident(u,i);
-     assert(seen[v]);
-     }
-     #endif
-     }
-     }
-     }*/
 
     void setNodes(int n){
         q.reserve(n);
@@ -206,16 +114,12 @@ public:
         q.clear();
         q.push_back(to);
 
-        //while(q.size()){
         for(int i = 0; i < q.size(); i++){
             int u = q[i];
             assert(seen[u]);
             if(update)
                 status.setReachable(u, seen[u]);
-            //status.setReachable(u,true);
-            //if(!old_seen[u]){
-            //	changed.push_back(u);
-            //}
+
             for(int i = 0; i < g.nIncident(u, undirected); i++){
                 if(!g.edgeEnabled(g.incident(u, i, undirected).id))
                     continue;
@@ -224,7 +128,6 @@ public:
                 if(!seen[v]){
                     seen[v] = 1;
                     prev[v] = edgeID;
-
                     q.push_back(v);
                 }
             }
@@ -239,21 +142,17 @@ public:
         check.clear();
         check.push_back(to);
 
-        //while(q.size()){
         for(int i = 0; i < q.size(); i++){
             int u = q[i];
             assert(!seen[u]);
 
             for(int i = 0; i < g.nIncident(u, undirected); i++){
-                /*				if(!g.edgeEnabled( g.incident(u,i).id))
-                 continue;*/
                 int v = g.incident(u, i, undirected).node;
                 if(seen[v] && previous(v) == u){
                     seen[v] = 0;
                     prev[v] = -1;
                     check.push_back(v);
                     q.push_back(v);
-
                 }
             }
         }
@@ -264,17 +163,14 @@ public:
             if(!seen[u]){
                 if(!undirected){
                     for(int i = 0; i < g.nIncoming(u); i++){
-
                         if(g.edgeEnabled(g.incoming(u, i).id)){
                             int from = g.incoming(u, i).node;
                             int edgeID = g.incoming(u, i).id;
                             int to = u;
                             if(seen[from]){
-
                                 seen[to] = 1;
                                 prev[to] = edgeID;
                                 add_update(to, false);
-
                                 break;
                             }
                         }
@@ -310,7 +206,6 @@ public:
 
         assert(INF > g.nodes());
         assert(seen.size() >= g.nodes());
-        //old_seen.resize(g.nodes());
         q.clear();
 
         for(int i = history_qhead; i < g.historySize(); i++){
@@ -374,7 +269,6 @@ public:
 
         assert(INF > g.nodes());
         assert(seen.size() >= g.nodes());
-        //old_seen.resize(g.nodes());
         q.clear();
 
         for(int i = history_qhead; i < g.historySize(); i++){
@@ -440,9 +334,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
             assert(dbg_uptodate());
@@ -469,7 +360,7 @@ public:
             last_history_clear = g.nHistoryClears();
             history_qhead = 0;
         }else if(opt_inc_graph && last_modification > 0 && (g.nHistoryClears() <= (last_history_clear +
-                                                                                   1))){// && (g.historySize()-history_qhead < g.edges()*mod_percentage)){
+                                                                                   1))){
             if(opt_dec_graph == 2){
                 if(incrementalUpdate())
                     return;
@@ -507,7 +398,6 @@ public:
                         return;
                 }
             }
-            /**/
         }
 
         stats_full_updates++;
@@ -611,31 +501,6 @@ public:
     }
 
     bool dbg_uptodate(){
-/*
-#ifdef DEBUG_DIJKSTRA
-		if(last_modification<=0)
-		return true;
-		UnweightedDijkstra<Reach::NullStatus,undirected> d(source,g);
-		d.update();
-		//drawFull();
-		for(int i = 0;i<g.nodes();i++) {
-
-			int dbgdist = d.dist[i];
-			if(!seen[i]) {
-				if(reportPolarity<1)
-				assert(dbgdist==d.INF );
-			} else {
-				if(reportPolarity>-1) {
-					if(!(dbgdist<d.INF)) {
-						drawFull();
-					}
-
-					assert(dbgdist<d.INF);
-				}
-			}
-		}
-#endif
-*/
         return true;
     }
 
@@ -691,7 +556,7 @@ public:
 /**
  * Detect connectivity within a number of steps in unweighted, directed graphs
  */
-template<typename Weight, typename Graph = DynamicGraph <Weight>, class Status = Distance<int>::NullStatus, bool undirected = false>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class Status = Distance<int>::NullStatus, bool undirected = false>
 class UnweightedBFS : public Distance<int> {
     using Distance<int>::inf;
     using Distance<int>::unreachable;
@@ -714,9 +579,7 @@ public:
     std::vector<int> check;
     const int reportPolarity;
 
-    //std::vector<char> old_seen;
     std::vector<int> dist;
-//	std::vector<int> changed;
 
     std::vector<int> prev;
 
@@ -767,7 +630,6 @@ public:
         stats_fast_failed_updates = 0;
     }
 
-    //Connectivity(const Connectivity& d):g(d.g), last_modification(-1),last_addition(-1),last_deletion(-1),history_qhead(0),last_history_clear(0),source(d.source),INF(0),mod_percentage(0.2),stats_full_updates(0),stats_fast_updates(0),stats_skip_deletes(0),stats_skipped_updates(0),stats_full_update_time(0),stats_fast_update_time(0){marked=false;};
     void setMaxDistance(int& _maxDistance) override{
         if(_maxDistance < 0){
             maxDistance = inf();
@@ -801,9 +663,6 @@ public:
     }
 
     void update() override{
-        static int iteration = 0;
-        int local_it = ++iteration;
-
         if(last_modification > 0 && g.getCurrentHistory() == last_modification){
             stats_skipped_updates++;
             return;

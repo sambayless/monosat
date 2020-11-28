@@ -61,16 +61,11 @@ public:
     std::vector<LocalEdge> prev;
     std::vector<Weight> M;
     std::vector<bool> changed;
-    Graph <Weight>& g;
+    Graph<Weight>& g;
 
     int source = -1;
     int sink = -1;
     Weight INF;
-    /*
-     #ifdef DEBUG_MAXFLOW
-     EdmondsKarp<Weight> ek;
-     #endif
-     */
 
     std::vector<int> Q;
 
@@ -94,7 +89,6 @@ public:
                 Weight& f = F[id];
                 Weight c = g.getWeight(id);
 
-                //  int fr = F[id];
                 if(((c - F[id]) > 0) && (prev[v].from == -1)){
                     prev[v] = LocalEdge(u, id, false);
                     Weight b = c - F[id];
@@ -132,14 +126,8 @@ public:
     }
 
 public:
-    EdmondsKarpAdj(Graph <Weight>& _g, int source = -1, int sink = -1) :
-            g(_g), source(source), sink(sink), INF(0xF0F0F0)
-    /*
-     #ifdef DEBUG_MAXFLOW
-     ,ek(_g,source,sink)
-     #endif
-     */
-    {
+    EdmondsKarpAdj(Graph<Weight>& _g, int source = -1, int sink = -1) :
+            g(_g), source(source), sink(sink), INF(0xF0F0F0){
         curflow = 0;
         last_modification = -1;
         last_deletion = -1;
@@ -147,8 +135,6 @@ public:
 
         history_qhead = -1;
         last_history_clear = -1;
-        //setAllEdgeCapacities(1);
-
     }
 
     int getSource() const override{
@@ -171,33 +157,6 @@ public:
 
     void dbg_print_graph(int from, int to){
 #ifdef DEBUG_DGL
-        /*		return;
-        static int it = 0;
-        if (++it == 6) {
-            int a = 1;
-        }
-        printf("Graph %d\n", it);
-        printf("digraph{\n");
-        for (int i = 0; i < g.nodes(); i++) {
-            if (i == from) {
-                printf("n%d [label=\"From\", style=filled, fillcolor=blue]\n", i);
-            } else if (i == to) {
-                printf("n%d [label=\"To\", style=filled, fillcolor=red]\n", i);
-            } else
-                printf("n%d\n", i);
-        }
-
-        for (int i = 0; i < g.edges(); i++) {
-            if (g.edgeEnabled(i)) {
-                auto & e = g.getEdge(i);
-                const char * s = "black";
-                std::cout << "n" << e.from << " -> n" << e.to << " [label=\"" << i << ": " << F[i] << "/" << g.getWeight(i)
-                        << "\" color=\"" << s << "\"]\n";
-                //printf("n%d -> n%d [label=\"%d: %d/%d\",color=\"%s\"]\n", e.from,e.to, i, F[i],capacity[i] , s);
-            }
-        }
-
-        printf("}\n");*/
 #endif
     }
 
@@ -299,7 +258,6 @@ public:
 
         }
 
-        //dbg_print_graph(s,t);
         curflow = f;
         num_updates++;
         last_modification = g.getCurrentHistory();

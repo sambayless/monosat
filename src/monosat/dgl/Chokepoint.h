@@ -38,7 +38,7 @@ struct ForceReason {
     int node;
 };
 
-template<typename Weight, typename Graph = DynamicGraph <Weight>, class EdgeStatus= typename Reach::NullStatus>
+template<typename Weight, typename Graph = DynamicGraph<Weight>, class EdgeStatus= typename Reach::NullStatus>
 class Chokepoint {
 
     Graph& g;

@@ -58,12 +58,10 @@ public:
 
     int history_qhead;
     int last_history_clear;
-    //std::vector<LocalEdge> prev;
-    //std::vector<int> M;
     std::vector<int> dist;
     std::vector<int> pos;    //position in the combined forward and backward adjacency list of each node in the DFS.
     std::vector<bool> changed;
-    Graph <Weight>& g;
+    Graph<Weight>& g;
 
     int source = -1;
     int sink = -1;
@@ -76,19 +74,6 @@ public:
     };
     std::vector<ParentEdge> parentEdge;
 
-    /* struct EdgeInTree{
-     union{
-     char data;
-     struct{
-     char in_tree:1;
-     char in_tree_backward:1;
-     char disabled:1;
-     char backward_disabled:1;
-     };
-     };
-     EdgeInTree():data(0){}
-     };
-     std::vector<EdgeInTree> tree_edges;//for each edge.*/
     LinkCutCost<Weight> forest;
     std::vector<int> Q;
     struct Link {
@@ -107,15 +92,12 @@ public:
 
     void printStats(){
         printf("Dinics Link Cut:\n");
-        /*printf("Total time: %f\n", totaltime);
-        printf("BFS Time: %f\n", bfstime);
-        printf("Augmenting Path Time: %f (search: %f, cleanup: %f)\n", augtime, augtime_search, augtime_cleanup);
-*/        printf("Rounds: %" PRId64 ", Augmenting Rounds: %" PRId64 "\n", stats_rounds, stats_augmenting_rounds);
+        printf("Rounds: %" PRId64 ", Augmenting Rounds: %" PRId64 "\n", stats_rounds, stats_augmenting_rounds);
         printf("Backtracks %" PRId64 " (%" PRId64 " avoided)\n", stats_backtracks, stats_avoided_backtracks);
     }
 
 public:
-    DinitzLinkCut(Graph <Weight>& _g, int source = -1, int sink = -1) :
+    DinitzLinkCut(Graph<Weight>& _g, int source = -1, int sink = -1) :
             g(_g), source(source), sink(sink), INF(0xF0F0F0){
         curflow = 0;
         last_modification = -1;
@@ -269,44 +251,34 @@ public:
 
     Weight findAugmentingPath(int src, int dst){
         dbg_print_graph(src, dst);
-        //static int outerit = 0;
-        //static int innerit = 0;
         toLink.clear();
         Weight f = 0;
         int u = forest.findRoot(src);
         while(true){
-            /*if(++outerit==10){
-             int a=1;
-             }*/
             bool found = true;
             bool foundPath = false;
-            //double starttime=rtime(4);
             dbg_print_graph(src, dst);
 
             while(found){
-                //++innerit;
                 found = false;
                 assert(dbg_isLinkRoot(u));
-                //assert(parentEdge[u].edgeID==-1);
                 if(u == dst){
                     foundPath = true;
                     break;
                 }else{
                     //extend the path
                     for(; pos[u] < g.nIncident(u); pos[u]++){
-                        //auto & edge = g.adjacency[u][pos[u]];
                         auto& edge = g.incident(u, pos[u]);
                         int edgeID = edge.id;
                         int v = edge.node;
                         if((dist[v] != dist[u] + 1) || !g.edgeEnabled(edgeID))
                             continue;
                         if(F[edgeID] < g.getWeight(edgeID)){
-                            // assert(parentEdge[u].edgeID==-1);
+
                             assert(!dbg_hasLink(u));
                             toLink.push_back({u, v, false, edgeID});
                             u = forest.findRoot(v);
                             found = true;
-                            //pos[u]++;
                             break;
                         }
                     }
@@ -321,12 +293,11 @@ public:
 
                             //these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
                             if(F[edgeID] != 0){
-                                // assert(parentEdge[u].edgeID==-1);
+
                                 assert(!dbg_hasLink(u));
                                 toLink.push_back({u, v, true, edgeID});
                                 u = forest.findRoot(v);
                                 found = true;
-                                //pos[u]++;
                                 break;
                             }
                         }
@@ -337,8 +308,6 @@ public:
             dbg_isLinkRoot(u);
             dbg_print_graph(src, dst);
 
-            // double ctime = rtime(4);
-            // augtime_search+=ctime-starttime;
             assert(!found);
             if(foundPath){
                 stats_augmenting_rounds++;
@@ -350,26 +319,21 @@ public:
                     int v = e.v;
                     int edgeID = e.edgeID;
                     bool backward = e.backward;
-                    //assert(parentEdge[u].edgeID==-1);
                     assert(edgeID >= 0);
                     assert(forest.findRoot(src) == u);
                     assert(g.getWeight(edgeID) >= F[edgeID]);
                     assert(F[edgeID] >= 0);
                     if(backward){
                         forest.link(u, v, F[edgeID]);
-                        // parent_edge_backward[u]=true;
                         parentEdge[u].edgeID = edgeID;
                         parentEdge[u].backward = true;
                     }else{
                         forest.link(u, v, g.getWeight(edgeID) - F[edgeID]);
-                        //parent_edge_backward[u]=false;
                         parentEdge[u].backward = false;
                         parentEdge[u].edgeID = edgeID;
                     }
                     assert(forest.findRoot(src) == forest.findRoot(v));
                 }
-                static int iter = 0;
-                ++iter;
                 toLink.clear();
                 dbg_print_graph(src, dst);
                 assert(forest.findRoot(src) == dst);
@@ -477,7 +441,6 @@ public:
                     }
                 }
             }
-            // augtime_cleanup+=rtime(4)- ctime;
         }
 
         return f;
@@ -490,11 +453,9 @@ public:
             bool found = true;
             bool foundPath = false;
 
-            //dbg_print_graph(src,dst);
             int u = forest.findRoot(src);
             while(found){
                 found = false;
-                //u = forest.findRoot(src);
 
                 if(u == dst){
                     foundPath = true;
@@ -503,7 +464,6 @@ public:
                     //extend the path
 
                     for(; pos[u] < g.nIncident(u); pos[u]++){
-                        //auto & edge = g.adjacency[u][pos[u]];
                         auto& edge = g.incident(u, pos[u]);
                         int edgeID = edge.id;
                         int v = edge.node;
@@ -512,7 +472,6 @@ public:
 
                         if(F[edgeID] < g.getWeight(edgeID)){
                             forest.link(u, v, g.getWeight(edgeID) - F[edgeID]);
-                            //tree_edges[edgeID].in_tree=true;
                             parentEdge[u].backward = false;
                             parentEdge[u].edgeID = edgeID;
                             assert(forest.findRoot(u) == v);
@@ -523,7 +482,7 @@ public:
                     }
                     if(!found){
                         for(; pos[u] - g.nIncident(u) < g.nIncoming(u); pos[u]++){
-                            //auto & edge = g.inverted_adjacency[u][pos[u]-g.nIncident(u)];
+
                             auto& edge = g.incoming(u, pos[u] - g.nIncident(u));
                             int edgeID = edge.id;
                             int v = edge.node;
@@ -533,7 +492,6 @@ public:
                             //these are backwards edges, which have capacity exactly if the forward edge has non-zero flow
                             if(F[edgeID]){
                                 forest.link(u, v, F[edgeID]);
-                                //tree_edges[edgeID].in_tree_backward=true;
                                 parentEdge[u].backward = true;
                                 parentEdge[u].edgeID = edgeID;
                                 assert(forest.findRoot(u) == v);
@@ -546,7 +504,6 @@ public:
                 }
 
             }
-            //forest.dbg_print_forest(true);
 
             assert(!found);
             if(foundPath){
@@ -558,12 +515,10 @@ public:
                 f += c;
                 forest.updateCostOfPathToRoot(src, -c);
                 //delete edges with no remaining capacity
-                //forest.dbg_print_forest(true);
                 Weight minC = 0;
                 while(minC == 0){
 
                     int u = forest.ancecstorFindMin(src);
-                    //forest.dbg_print_forest(true);
                     assert(forest.getCost(u) == minC);
                     int edgeID = parentEdge[u].edgeID;
                     if(!parentEdge[u].backward){
@@ -577,7 +532,6 @@ public:
                     forest.cut(u);
                     parentEdge[u].edgeID = -1;
                     minC = forest.minCost(src);
-                    //forest.dbg_print_forest(true);
                 }
 
             }else{
@@ -601,13 +555,8 @@ public:
                             parentEdge[u].edgeID = -1;
                         }
                     }
-                    /*	 for(int i = 0;i<disabled.size();i++){
-                     disabled[i]=false;
-                     }
-                     */
                     break;
                 }else{
-                    // disabled[u]=true;
                     dist[u] = -1;
                     for(int i = 0; i < g.nIncident(u); i++){
                         auto& edge = g.incident(u, i);
@@ -655,7 +604,6 @@ public:
             bool found = true;
             bool foundPath = false;
 
-            //dbg_print_graph(src,dst);
             int u = forest.findRoot(src);
             while(found){
                 found = false;
@@ -675,7 +623,7 @@ public:
 
                         if(F[edgeID] < g.getWeight(edgeID)){
                             forest.link(u, v, g.getWeight(edgeID) - F[edgeID]);
-                            //tree_edges[edgeID].in_tree=true;
+
                             parentEdge[u].backward = false;
                             parentEdge[u].edgeID = edgeID;
                             assert(forest.findRoot(u) == v);
@@ -695,7 +643,6 @@ public:
                             if(F[edgeID]){
                                 forest.link(u, v, F[edgeID]);
                                 parentEdge[u].backward = true;
-                                //tree_edges[edgeID].in_tree_backward=true;
                                 parentEdge[u].edgeID = edgeID;
                                 assert(forest.findRoot(u) == v);
                                 found = true;
@@ -706,8 +653,6 @@ public:
                 }
                 u = forest.findRoot(src);
             }
-            //forest.dbg_print_forest(true);
-
             assert(!found);
             if(foundPath){
                 //found s-t augmenting path.
@@ -717,27 +662,22 @@ public:
                 f += c;
                 forest.updateCostOfPathToRoot(src, -c);
                 //delete edges with no remaining capacity
-                //forest.dbg_print_forest(true);
                 Weight minC = 0;
                 while(minC == 0){
 
                     int u = forest.ancecstorFindMin(src);
-                    //forest.dbg_print_forest(true);
                     assert(forest.getCost(u) == minC);
                     int edgeID = parentEdge[u].edgeID;
                     if(!parentEdge[u].backward){
-                        //if(tree_edges[edgeID].in_tree){
                         assert(F[edgeID] + c <= g.getWeight(edgeID));
                         F[edgeID] += c;
                     }else{
-                        //assert(tree_edges[edgeID].in_tree_backward);
                         assert(c <= F[edgeID]);
                         F[edgeID] -= c;
                     }
                     forest.cut(u);
                     parentEdge[u].edgeID = -1;
                     minC = forest.minCost(src);
-                    //forest.dbg_print_forest(true);
                 }
 
             }else{
@@ -762,18 +702,11 @@ public:
                             parentEdge[u].edgeID = -1;
                         }
                     }
-                    /*	 for(int i = 0;i<disabled.size();i++){
-                     disabled[i]=false;
-                     }*/
-                    /*			 for(int i = 0;i<tree_edges.size();i++){
-                     tree_edges[i] = EdgeInTree();
-                     }*/
+
                     break;
                 }else{
                     dist[u] = -1;
-                    //disabled[u]=true;
-                    //forest.cut(u);
-                    //for(auto edge:g.adjacency[u]){
+
                     for(int i = 0; i < g.nIncident(u); i++){
                         auto& edge = g.incident(u, i);
                         int edgeID = edge.id;
@@ -946,8 +879,6 @@ public:
         seen.resize(g.nodes());
         seen[s] = true;
         cut.clear();
-        /*		if(f==0)
-         return 0;*/
         //explore the residual graph
         for(int j = 0; j < Q.size(); j++){
             int u = Q[j];
