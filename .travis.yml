@@ -8,7 +8,6 @@ branches:
 
 os :
   - linux
-  - osx
 
 sudo: required
 
