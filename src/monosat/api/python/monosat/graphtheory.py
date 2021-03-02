@@ -167,7 +167,7 @@ class Graph:
         else:
             name = str(name)
 
-        if name is not None and name in self.names:
+        if name is not None and name in self.nodemap:
             raise ValueError("Node %s already exists" % (str(name)))
 
         self.names[n] = name
