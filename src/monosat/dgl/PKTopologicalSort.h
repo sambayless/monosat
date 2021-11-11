@@ -262,6 +262,17 @@ private:
         //once the PK algorithm has a cycle, it is in an invalid state.
         if(has_cycle)
             return;
+        int from = g.getEdge(edgeID).from;
+        int to = g.getEdge(edgeID).to;
+        if (from == to){
+            // this edge is a self-loop
+            has_cycle = true;
+            cycle.clear();
+            cycle.push_back(edgeID);
+            checkCycle();
+            return;
+        }
+
         if(!has_topo){
             topologicalSort();//re-initialized topological sort
             if(has_cycle){
@@ -269,17 +280,11 @@ private:
                 return;
             }
         }
-        int from = g.getEdge(edgeID).from;
-        int to = g.getEdge(edgeID).to;
+
         lower_bound = ord[to];
         upper_bound = ord[from];
         if(lower_bound < upper_bound){
             dfs_forward(to);
-            if(has_cycle){
-                //visited[to]=false;
-
-            }
-
 
             if(!has_cycle){
                 dfs_backward(from, has_cycle ? to : -1, edgeID);
