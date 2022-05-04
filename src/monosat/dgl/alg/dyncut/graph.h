@@ -381,7 +381,7 @@ private:
         arc* parent = nullptr;    // node's parent
         node* next = nullptr;        // pointer to the next active node
         //   (or to itself if it is the last node in the list)
-        int TS = 0;        // timestamp showing when DIST was computed
+        u_int64_t TS = 0;        // timestamp showing when DIST was computed
         int DIST = 0;        // distance to the terminal
         int is_sink :1;    // flag showing whether the node is in the source or in the sink tree (if parent!=NULL)
         int is_marked :1;    // set by mark_node()
@@ -433,7 +433,7 @@ private:
 
     node* queue_first[2], * queue_last[2];    // list of active nodes
     nodeptr* orphan_first = nullptr, * orphan_last = nullptr;        // list of pointers to orphans
-    int TIME = 0;                    // monotonically increasing global counter
+    u_int64_t TIME = 0;                    // monotonically increasing global counter
 
     /////////////////////////////////////////////////////////////////////////
 
