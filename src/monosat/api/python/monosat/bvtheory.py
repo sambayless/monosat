@@ -17,9 +17,9 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 # OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import collections
 import monosat.monosat_c
 import sys
+from collections.abc import Iterable
 from monosat.logic import *
 from monosat.manager import Manager
 from monosat.monosat_c import Monosat
@@ -151,7 +151,7 @@ class BitVector:
             op = width
             width = mgr
             mgr = BVManager()
-        elif isinstance(mgr, collections.Iterable):
+        elif isinstance(mgr, Iterable):
             assigned_bits = list(mgr)
             mgr = BVManager()
             # Build this bitvector from a list of elements

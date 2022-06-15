@@ -17,7 +17,7 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 # OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import collections
+from collections.abc import Iterable
 import math
 import warnings
 
@@ -405,7 +405,7 @@ def And(*args):
     if len(args) == 0:
         return false()
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             return And(*args[0])
         return VAR(args[0])
     else:
@@ -423,7 +423,7 @@ def Or(*args):
     if len(args) == 0:
         return false()
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             return Or(*args[0])
         return VAR(args[0])
     else:
@@ -453,7 +453,7 @@ def Xor(*args):
     if len(args) == 0:
         return false()
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             return Xor(*args[0])
         return VAR(args[0])
     else:
@@ -500,7 +500,7 @@ def AssertOr(*args):
     if len(args) == 0:
         Assert(false())
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             _addClause(args[0])
     else:
         _addClause(args)
@@ -510,7 +510,7 @@ def AssertNor(*args):
     if len(args) == 0:
         Assert(true())
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             AssertNor(*args[0])
     else:
         # AssertAnd((v.Not() for v in args))
@@ -522,7 +522,7 @@ def AssertAnd(*args):
     if len(args) == 0:
         Assert(false())
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             AssertAnd(*args[0])
     else:
         for v in args:
@@ -533,7 +533,7 @@ def AssertNand(*args):
     if len(args) == 0:
         Assert(true())
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             AssertNand(*args[0])
     else:
         AssertOr(*[VAR(v).Not() for v in args])
@@ -543,7 +543,7 @@ def AssertXor(*args):
     if len(args) == 0:
         return false()
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             AssertXor(*args[0])
     elif len(args) == 2:
         _addSafeClause((VAR(args[0]), VAR(args[1])))
@@ -560,7 +560,7 @@ def AssertXnor(*args):
     if len(args) == 0:
         return true()
     elif len(args) == 1:
-        if isinstance(args[0], collections.Iterable):
+        if isinstance(args[0], Iterable):
             AssertXnor(*args[0])
     elif len(args) == 2:
         _addSafeClause((~VAR(args[0]), VAR(args[1])))
@@ -588,7 +588,7 @@ def AssertIff(a, b):
 
 
 def AssertEq(*args):
-    if len(args) == 1 and isinstance(args[0], collections.Iterable):
+    if len(args) == 1 and isinstance(args[0], Iterable):
         return AssertEq(*args[0])
     if len(args) == 2:
         AssertXnor(args)
@@ -648,7 +648,7 @@ def HalfAdd(a, b):
 
 # Add these bits (or arrays of bits)
 def Add(a, b, c=False):
-    if isinstance(a, collections.Iterable):
+    if isinstance(a, Iterable):
         return _AddArray(a, b, c)
     aV = VAR(a)
     bV = VAR(b)
@@ -671,7 +671,7 @@ def Add(a, b, c=False):
 
 # Subtract these bits (or arrays of bits) using 2's complement
 def Subtract(a, b):
-    if isinstance(a, collections.Iterable):
+    if isinstance(a, Iterable):
         return _SubtractArray(a, b)
     aV = VAR(a)
     bV = Not(VAR(b))
@@ -714,9 +714,9 @@ def _numberAsArray(number):
 
 
 def _AddArray(array1, array2, carry=False):
-    if not isinstance(array1, collections.Iterable):
+    if not isinstance(array1, Iterable):
         array1 = _numberAsArray(array1)
-    if not isinstance(array2, collections.Iterable):
+    if not isinstance(array2, Iterable):
         array2 = _numberAsArray(array2)
 
     a1 = list(array1)
@@ -757,7 +757,7 @@ def _SubtractArray(array1, array2):
 def Min(*args):
     from monosat.bvtheory import BitVector
 
-    if len(args) == 1 and isinstance(args[0], collections.Iterable):
+    if len(args) == 1 and isinstance(args[0], Iterable):
         return Min(*args[0])
     if len(args) > 0 and isinstance(args[0], BitVector):
         return monosat.bvtheory._bv_Min(*args)
@@ -769,7 +769,7 @@ def Min(*args):
 def Max(*args):
     from monosat.bvtheory import BitVector
 
-    if len(args) == 1 and isinstance(args[0], collections.Iterable):
+    if len(args) == 1 and isinstance(args[0], Iterable):
         return Max(*args[0])
 
     if len(args) > 0 and isinstance(args[0], BitVector):
@@ -921,7 +921,7 @@ def Eq(*args):
 
 
 def Equal(*args):
-    if len(args) == 1 and isinstance(args, collections.Iterable):
+    if len(args) == 1 and isinstance(args, Iterable):
         args = args[0]
 
     if len(args) < 2:
@@ -1198,9 +1198,9 @@ def _PopCountPairs(vars):
 
 
 def _CSA(a, b, c):
-    assert isinstance(a, collections.Iterable) == isinstance(b, collections.Iterable)
-    assert isinstance(a, collections.Iterable) == isinstance(c, collections.Iterable)
-    if isinstance(a, collections.Iterable):
+    assert isinstance(a, Iterable) == isinstance(b, Iterable)
+    assert isinstance(a, Iterable) == isinstance(c, Iterable)
+    if isinstance(a, Iterable):
         assert len(a) == len(b)
         assert len(a) == len(c)
         ps = []
@@ -1340,7 +1340,7 @@ def PopLE(constant, *arrayVars):
 
 
 def PopEq(compareTo, *arrayVars):
-    if len(arrayVars) == 1 and isinstance(arrayVars[0], collections.Iterable):
+    if len(arrayVars) == 1 and isinstance(arrayVars[0], Iterable):
         arrayVars = arrayVars[0]
     # build up a tree of add operations
     if isinstance(compareTo, (bool, int, float, complex)):
@@ -1365,7 +1365,7 @@ def PopEq(compareTo, *arrayVars):
 
 # Note: this is an UNSIGNED comparison
 def PopLT(compareTo, *arrayVars):
-    if len(arrayVars) == 1 and isinstance(arrayVars[0], collections.Iterable):
+    if len(arrayVars) == 1 and isinstance(arrayVars[0], Iterable):
         arrayVars = arrayVars[0]
     # build up a tree of add operations
     if isinstance(compareTo, (bool, int, float, complex)):
