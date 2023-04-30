@@ -424,6 +424,11 @@ private:
         skipWhitespace(in);
         int v_int = parseInt(in);
 
+        if(v_int < 0){
+            v_int = -v_int;
+            isEquality = !isEquality;
+        }
+
         v_int = v_int - 1;
         Var v = (Var) v_int;
         if(this->inVarMap((Var) v_int))
@@ -480,6 +485,11 @@ private:
 
         skipWhitespace(in);
         int v_int = parseInt(in);
+        
+        if(v_int < 0){
+            v_int = -v_int;
+            isEquality = !isEquality;
+        }
 
         v_int = v_int - 1;
         Var v = (Var) v_int;
