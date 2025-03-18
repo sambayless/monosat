@@ -544,7 +544,7 @@ int main(int argc, char** argv){
         if(opt_csv){
             opt_verb = 0;
         }
-#if defined(__linux__)
+#if defined(__linux__) && defined(_FPU_EXTENDED) && defined(_FPU_DOUBLE) && defined(_FPU_GETCW)
         fpu_control_t oldcw, newcw;
         _FPU_GETCW(oldcw);
         newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE;
